@@ -4,8 +4,9 @@
 ## Global Rules
  - no *.mjs just *js for esm
  - no *.md for whatever case unless requested.
- - test,read, see  to know, understand the problem no reasoning unless testing isnt available
- - missing depency isnt blocked just install it.
+ - 1st test,read,see to know
+    , understand the problem then  reasoning as 2nd action unless there is accessibility issuse.
+   - missing depency isnt blocked just install it.
 
 
 
