@@ -47,8 +47,13 @@ _TOKEN_PATHS = (
 )
 
 
-def load_api_config() -> tuple[str, str, str] | None:
-    """(email, password, api_key) from env or repo-root .env, else None."""
+def load_api_config() -> tuple[str | None, str | None, str, str | None] | None:
+    """(email, password, api_key, token) from env or repo-root .env, else None.
+
+    When PHATMAL_TOKEN is set (a pre-issued Bearer JWT), email+password are
+    optional — login + any OTP flow is skipped and the token is used directly.
+    The token still requires a valid PHATMAL_API_KEY (sent as x-api-key).
+    """
     dotenv = load_dotenv_values()
 
     def pick(name: str) -> str:
@@ -60,19 +65,25 @@ def load_api_config() -> tuple[str, str, str] | None:
     email = pick("PHATMAL_EMAIL")
     password = pick("PHATMAL_PASSWORD")
     api_key = pick("PHATMAL_API_KEY")
-    if not email or not password or not api_key:
+    token = pick("PHATMAL_TOKEN")
+    if not api_key:
+        print("[phatmal] missing PHATMAL_API_KEY; add to the environment or .env")
+        return None
+    if not token and (not email or not password):
         missing = ", ".join(
             name
             for name, value in (
                 ("PHATMAL_EMAIL", email),
                 ("PHATMAL_PASSWORD", password),
-                ("PHATMAL_API_KEY", api_key),
             )
             if not value
         )
-        print(f"[phatmal] missing {missing}; add to the environment or .env")
+        print(
+            f"[phatmal] missing {missing}; either set PHATMAL_TOKEN (pre-issued "
+            "Bearer JWT, skips login+OTP) or provide email+password for login."
+        )
         return None
-    return email, password, api_key
+    return email or None, password or None, api_key, token or None
 
 
 def _api_headers(api_key: str, token: str | None = None) -> dict[str, str]:
@@ -449,13 +460,18 @@ async def crawl_library(output_dir: Path | None = None) -> dict[str, int]:
     config = load_api_config()
     if config is None:
         return stats
-    email, password, api_key = config
+    email, password, api_key, preset_token = config
     out = output_dir or OUTPUT_DIR
     async with httpx.AsyncClient(follow_redirects=True) as client:
-        token = await api_login(client, email, password, api_key)
-        if token is None:
-            return stats
+        if preset_token:
+            token = preset_token
+            print("[phatmal] using PHATMAL_TOKEN from env (skipping login)")
+        else:
+            token = await api_login(client, email, password, api_key)
+            if token is None:
+                return stats
         if await api_me(client, api_key, token) is None:
+            print("[phatmal] token rejected (expired?); re-run with fresh PHATMAL_TOKEN")
             return stats
         books = await _fetch_book_list(client, api_key, token)
         stats["total"] = len(books)
@@ -476,13 +492,18 @@ async def download_single(url: str, output_dir: Path | None = None) -> bool:
     config = load_api_config()
     if config is None:
         return False
-    email, password, api_key = config
+    email, password, api_key, preset_token = config
     out = output_dir or OUTPUT_DIR
     async with httpx.AsyncClient(follow_redirects=True) as client:
-        token = await api_login(client, email, password, api_key)
-        if token is None:
-            return False
+        if preset_token:
+            token = preset_token
+            print("[phatmal] using PHATMAL_TOKEN from env (skipping login)")
+        else:
+            token = await api_login(client, email, password, api_key)
+            if token is None:
+                return False
         if await api_me(client, api_key, token) is None:
+            print("[phatmal] token rejected (expired?); re-run with fresh PHATMAL_TOKEN")
             return False
         book = await _fetch_book_detail(client, api_key, token, slug)
         if book is None:
