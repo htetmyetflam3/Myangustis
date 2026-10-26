@@ -9,7 +9,7 @@
 //   410  jobToken expired                     — terminal
 //   409  illegal job state for this call      — terminal
 //   200 + { ok:true, state:'FINISHED' }       — result accepted
-import { config, sha256Hex } from './config.mjs';
+import { config, sha256Hex } from './config.js';
 
 export class SiteClientError extends Error {
   constructor(message, { status = 0, terminal = false } = {}) {

@@ -8,14 +8,14 @@ import {
   ocrImage,
   ocrImageDetailed,
   closeOcr,
-} from "../read/ocr.mjs";
-import { writeOutput } from "../write/emit.mjs";
+} from "../read/ocr.js";
+import { writeOutput } from "../write/emit.js";
 import {
   MAX_INPUT_BYTES,
   MAX_INPUT_MB,
   MAX_PAGES,
   MAX_TEXT_CHARS,
-} from "../core/limits.mjs";
+} from "../core/limits.js";
 
 export function loadOcrBytes({ inPath, data }) {
   const bytes = inPath

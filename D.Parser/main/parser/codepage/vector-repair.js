@@ -39,20 +39,20 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { TtfFont, glyphContours } from "../read/glyf.mjs";
-import { glyphSignature } from "../shape/contour.mjs";
-import { parseTtfCmap } from "../core/ttf-cmap.mjs";
+import { TtfFont, glyphContours } from "../read/glyf.js";
+import { glyphSignature } from "../shape/contour.js";
+import { parseTtfCmap } from "../core/ttf-cmap.js";
 import {
   pickEmbeddedFont, hasMyanmarGlyphs, parsePdfObjects, getStream,
   parseToUnicodeStream, extractPageLines, findRootPages, collectPages,
-} from "../read/pdf-extract.mjs";
+} from "../read/pdf-extract.js";
 import {
   FontResourceLoader, DocumentDecoding, pageFontDecoders, PdfRef,
   detectLegacyLayoutFonts,
-} from "../read/pdf-fonts.mjs";
-import { englishLikeness } from "../text/mm-score.mjs";
-import { crowdVote, loadWitnesses } from "./outline-vote.mjs";
-import { WININNWA_LEGACY_CODE_PAGE } from "./registry.mjs";
+} from "../read/pdf-fonts.js";
+import { englishLikeness } from "../text/mm-score.js";
+import { crowdVote, loadWitnesses } from "./outline-vote.js";
+import { WININNWA_LEGACY_CODE_PAGE } from "./registry.js";
 import { emitEvent } from "../../../../Bridge/logen/core.js";
 
 const WITNESS_FILE = path.join(

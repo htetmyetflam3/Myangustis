@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createEdgeGuard, edgeContext } from './edge.js';
+import { createEdgeGuard, edgeContext } from '../../../F.Site/Backend/gateway/edge.js';
 function response() {
   return {
     statusCode: null,

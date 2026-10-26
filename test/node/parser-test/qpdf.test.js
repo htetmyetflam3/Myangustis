@@ -31,8 +31,8 @@ fs.copyFileSync(args.at(-2), args.at(-1));
 
 test("qpdf is the decrypt and Fast Web View second pass", { skip }, async () => {
   await withFakeQpdf(async (lastArgs) => {
-    const { decryptPdf } = await import("../../../Parser/main/parser/read/decrypt.mjs");
-    const { optimizePdfBytes } = await import("../../../Parser/main/parser/write/pdf-optimize.mjs");
+    const { decryptPdf } = await import("../../../D.Parser/main/parser/read/decrypt.js");
+    const { optimizePdfBytes } = await import("../../../D.Parser/main/parser/write/pdf-optimize.js");
 
     const encrypted = Buffer.from("%PDF-1.7\n/Encrypt 1 0 R\n%%EOF\n");
     const messages = [];

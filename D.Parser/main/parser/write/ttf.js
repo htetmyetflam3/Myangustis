@@ -5,4 +5,4 @@
  * read concern, and codepage/ needs it too. write/ is above read/, so
  * this re-export keeps pdf-writer.mjs unchanged.
  */
-export { TtfFont, loadFont } from "../read/ttf.mjs";
+export { TtfFont, loadFont } from "../read/ttf.js";

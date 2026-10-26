@@ -25,10 +25,10 @@
  */
 
 /* ── supervised/worker execution, used by the site backend ── */
-export { Manager } from "./manager.mjs";
+export { Manager } from "./manager.js";
 
 /* ── writers, used directly when the text is already in hand ── */
-export { writeDocxPlain, writeDocxLayout, writePdf } from "./write/render.mjs";
+export { writeDocxPlain, writeDocxLayout, writePdf } from "./write/render.js";
 
 /* ── log sinks: pass one in instead of inventing a callback ── */
-export { SILENT, collect, stdoutLog, tee, resolveLog } from "./core/log.mjs";
+export { SILENT, collect, stdoutLog, tee, resolveLog } from "./core/log.js";

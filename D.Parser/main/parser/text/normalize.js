@@ -18,8 +18,8 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { MAP_DIR } from "../core/paths.mjs";
-import { MARKS } from "./mm-score.mjs";
+import { MAP_DIR } from "../core/paths.js";
+import { MARKS } from "./mm-score.js";
 import {
   cleanImposters,
   reorderMarks,
@@ -29,7 +29,7 @@ import {
   normalizeText as normalizeGlue,
   orderText,
   cleanupText,
-} from "./cleanup.mjs";
+} from "./cleanup.js";
 
 export {
   MARKS, cleanImposters, reorderMarks, unmixZawCodeMarks, movePrebaseMarks,

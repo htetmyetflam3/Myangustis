@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseTtfCmap } from "../../../Parser/main/parser/core/ttf-cmap.mjs";
-import { parseToUnicodeStream } from "../../../Parser/main/parser/read/pdf-extract.mjs";
+import { parseTtfCmap } from "../../../D.Parser/main/parser/core/ttf-cmap.js";
+import { parseToUnicodeStream } from "../../../D.Parser/main/parser/read/pdf-extract.js";
 
 /**
  * FILE: Parsed/parser/test/cmap.test.mjs

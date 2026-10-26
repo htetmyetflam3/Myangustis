@@ -14,7 +14,7 @@
  * hangs below has negative y, and that vertical placement is itself a strong
  * discriminator. Nothing here re-centres or bbox-normalises that away.
  */
-import { loadFont, TtfFont } from "./ttf.mjs";
+import { loadFont, TtfFont } from "./ttf.js";
 
 const ON_CURVE = 0x01;
 const X_SHORT = 0x02;

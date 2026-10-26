@@ -1,6 +1,6 @@
-import { createSourceRunner } from "./runtime.mjs";
-import { runDocxWorker } from "./docx.mjs";
-import * as ocrWorker from "./ocr-ops.mjs";
+import { createSourceRunner } from "./runtime.js";
+import { runDocxWorker } from "./docx.js";
+import * as ocrWorker from "./ocr-ops.js";
 
 // Manual DOCX is the image-aware DOCX path. The pure DOCX worker skips images;
 // this module owns the DOCX+OCR boundary.

@@ -12,7 +12,7 @@
 // A DOCX has no PDF object stream and is never a legacy-font PDF, so it is
 // always parseable. Any failure fails OPEN to parsing — a classifier that
 // cannot see the document must not drop it.
-import { prepareVectorLayout } from './resolve.mjs';
+import { prepareVectorLayout } from './resolve.js';
 
 /**
  * @param {Buffer|Uint8Array|string} source  bytes or a server-local path

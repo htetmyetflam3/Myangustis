@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cookieSecurityBanner, cookieSecureEnabled, cookieSameSite } from './edge.js';
+import { cookieSecurityBanner, cookieSecureEnabled, cookieSameSite } from '../../../F.Site/Backend/gateway/edge.js';
 
 function withEnv(vars, fn) {
   const saved = {};

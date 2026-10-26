@@ -17,10 +17,10 @@
 // express resolves from the workspace root node_modules (root package.json
 // already declares express; Engine/main/package.json does too).
 import express from 'express';
-import { config, keyShape, timingSafeEq } from './config.mjs';
-import { JobStore, SlotLimiter, JOB_STATES } from './job-store.mjs';
-import { pullSource, pushResult, SiteClientError } from './site-client.mjs';
-import { runEngineJob } from './runner/engine-runner.mjs';
+import { config, keyShape, timingSafeEq } from './config.js';
+import { JobStore, SlotLimiter, JOB_STATES } from './job-store.js';
+import { pullSource, pushResult, SiteClientError } from './site-client.js';
+import { runEngineJob } from './runner/engine-runner.js';
 
 const DISPATCH_FIELDS = ['jobToken', 'formId', 'submitId', 'userId', 'sessionId', 'filename', 'extension', 'method', 'task', 'job'];
 // The 7 fields the Site queue re-validates as non-empty strings on pull/push.

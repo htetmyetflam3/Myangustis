@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { writeDocxLayout, writeDocxPlain, writePdf } from "./render.mjs";
-import { MAX_PAGES, MAX_TEXT_CHARS } from "../core/limits.mjs";
+import { writeDocxLayout, writeDocxPlain, writePdf } from "./render.js";
+import { MAX_PAGES, MAX_TEXT_CHARS } from "../core/limits.js";
 
 const MIME_TYPES = {
   ".txt": "text/plain",

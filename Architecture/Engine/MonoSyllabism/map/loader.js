@@ -12,7 +12,7 @@
 // deleteEnglishBlocks) are not exported: no engine runtime module imports
 // them. compose still runs at runtime, wrapped inside the in-box normalize
 // pipeline (the packed sourceMapper bundles it).
-import { getBox } from './host.mjs';
+import { getBox } from './host.js';
 
 const box = getBox();
 const call = (method, ...args) => box.call(method, ...args);

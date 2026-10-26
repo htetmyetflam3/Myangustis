@@ -19,11 +19,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Database from 'better-sqlite3';
-import { migrate } from './migrate.js';
-import { SqliteSessionStore } from './sessionStore.js';
-import { createRequest } from './request.js';
+import { migrate } from '../../../F.Site/Backend/db/migrate.js';
+import { SqliteSessionStore } from '../../../F.Site/Backend/db/sessionStore.js';
+import { createRequest } from '../../../F.Site/Backend/db/request.js';
 
-const SCHEMA_FILE = path.resolve(import.meta.dirname, 'schema.sql');
+const SCHEMA_FILE = path.resolve(import.meta.dirname, '../../../F.Site/Backend/db/schema.sql');
 
 function freshDb(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'linga-db-'));

@@ -1,4 +1,4 @@
-import { createSourceRunner } from "./runtime.mjs";
+import { createSourceRunner } from "./runtime.js";
 
 // A PDF with both a text layer and image areas worth reading. The text core
 // keeps what it extracted; every page carrying an image is rendered and

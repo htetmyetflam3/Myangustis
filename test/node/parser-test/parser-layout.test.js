@@ -11,7 +11,7 @@ import {
   PARSER_DIR,
   PRASER_JS,
   validatePraserAssets,
-} from "../backend/file/paths.js";
+} from "../../../F.Site/Backend/file/paths.js";
 import {
   MAP_DIR,
   MODEL_DIR,
@@ -20,12 +20,12 @@ import {
   findLatinFont,
   findModelPath,
   findMyanmarFont,
-} from "../Parsed/parser/module/paths.mjs";
-import { ruleCount } from "../Parsed/parser/module/rabbit.mjs";
-import { loadSidecarMap } from "../Parsed/parser/module/pdf-extract.mjs";
-import { Manager } from "../Parsed/parser/module/manager.mjs";
-import { ZipStreamWriter } from "../Parsed/parser/module/zip.mjs";
-import { validateDocxArchive } from "../Parsed/parser/module/docx-extract.mjs";
+} from "../../../D.Parser/main/parser/core/paths.js";
+import { ruleCount } from "../../../D.Parser/main/parser/text/rabbit.js";
+import { loadSidecarMap } from "../../../D.Parser/main/parser/read/pdf-extract.js";
+import { Manager } from "../../../D.Parser/main/parser/manager.js";
+import { ZipStreamWriter } from "../../../D.Parser/main/parser/core/zip.js";
+import { validateDocxArchive } from "../../../D.Parser/main/parser/read/docx-extract.js";
 
 const isFile = (file) => fs.statSync(file).isFile();
 
@@ -33,13 +33,14 @@ test("relocated parser has every boot-critical sidecar", () => {
   const files = validatePraserAssets();
   assert.ok(files.length >= 10);
   assert.ok(files.every(isFile));
-  assert.equal(PARSED_ROOT, "Parsed");
-  assert.equal(PARSER_DIR, "Parsed/parser");
-  assert.equal(PRASER_JS, "Parsed/parser/module/prase.mjs");
+  // Constant paths point into the D.Parser tree (restructured layout).
+  assert.ok(PARSED_ROOT.endsWith("D.Parser/main"), `PARSED_ROOT=${PARSED_ROOT}`);
+  assert.ok(PARSER_DIR.endsWith("D.Parser/main/parser"), `PARSER_DIR=${PARSER_DIR}`);
+  assert.ok(PRASER_JS.endsWith("D.Parser/main/parser/manager.js"), `PRASER_JS=${PRASER_JS}`);
 });
 
 test("parser maps and models resolve outside the executable module directory", () => {
-  assert.equal(path.basename(MAP_DIR), "map");
+  assert.equal(path.basename(MAP_DIR), "jason-map");
   assert.equal(path.basename(MODEL_DIR), "model");
   assert.equal(OCR_MODEL_DIR, MODEL_DIR);
   assert.equal(findModelPath(), path.join(MODEL_DIR, "zawgyiUnicodeModel.dat"));
@@ -78,7 +79,7 @@ test("manager parses the shipped 100-page PDF through a worker", async () => {
       method: "default",
       output: "txt",
       inputKind: "pdf",
-      inPath: abs("frontend/frontend-bootstrap/public/samples/sample.pdf"),
+      inPath: abs("Frontend/frontend-bootstrap/public/samples/sample.pdf"),
       filename: "sample.pdf",
     });
     assert.equal(result.pages, 100);

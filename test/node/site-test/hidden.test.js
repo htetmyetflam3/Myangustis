@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
-import { createHiddenProcessor } from './hidden.js';
-import { createProcessingQueue } from '../queue/processingQueue.js';
+import { createHiddenProcessor } from '../../../F.Site/Backend/gateway/api/hidden.js';
+import { createProcessingQueue } from '../../../F.Site/Backend/gateway/queue/processingQueue.js';
 const ANALYSIS_INTENT = {
   source: 'analysis', method: 'extracting', task: 'default', content: 'text',
   outputFormat: 'txt', originalName: 'doc.pdf', uploadName: 'stamp__doc.pdf',

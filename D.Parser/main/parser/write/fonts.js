@@ -1,7 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
-import { OUTPUT_FONT_DIR } from "../core/paths.mjs";
-import { pyLen } from "../core/pylib.mjs";
+import { OUTPUT_FONT_DIR } from "../core/paths.js";
+import { pyLen } from "../core/pylib.js";
 
 export const ANONYMOUS_PRO_FILES = {
   "": path.join(OUTPUT_FONT_DIR, "AnonymousPro-Regular.ttf"),

@@ -5,16 +5,15 @@
 //   Public API /api/public/...                  — helmet + express-session,
 //                                                  tokenizer router (public-api.mjs)
 //
-// This plugin ships as its own site in production and carries its own .env
-// next to this file. dotenv must run BEFORE config.mjs is evaluated, because
-// config.mjs reads process.env at import time — so the local modules are
-// dynamic-imported after loadEnv(). Real environment variables always win:
-// dotenv never overrides a key already present in process.env.
+// Environment resolution is centralized in secretloader.js (repo root).
+// It checks process.env first, then any .env next to this file, then the
+// repo root .env, then .data/.env. Real environment variables always win.
 //
 // Middleware order: helmet -> session -> public router -> site sub-app.
 //
-// Run:  node index.js   (from anywhere; .env resolves next to this file)
-import { config as loadEnv } from 'dotenv';
+// Run:  node index.js   (from anywhere; .env resolves relative to this file)
+import { loadSecrets } from '../../secretloader.js';
+await loadSecrets(import.meta.url);
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
@@ -23,13 +22,12 @@ import helmet from 'helmet';
 import session from 'express-session';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-loadEnv({ path: path.join(HERE, '.env') });
 
-// Evaluated only after the local .env has been applied.
+// Evaluated only after the .env has been applied.
 const [{ config, keyShape }, { createApp: createSiteApp }, { publicRouter }] = await Promise.all([
-  import('./config.mjs'),
-  import('./server.mjs'),
-  import('./api/public-api.mjs'),
+  import('./config.js'),
+  import('./server.js'),
+  import('./api/public-api.js'),
 ]);
 
 export function createServer() {

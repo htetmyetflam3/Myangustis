@@ -1,4 +1,4 @@
-import { runQpdf } from "../core/qpdf.mjs";
+import { runQpdf } from "../core/qpdf.js";
 
 const ENCRYPT_MARK = Buffer.from("/Encrypt");
 

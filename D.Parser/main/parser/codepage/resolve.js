@@ -33,14 +33,14 @@
 
 import fs from "node:fs";
 
-import { orderText } from "../text/normalize.mjs";
-import { scoreText } from "../text/mm-score.mjs";
+import { orderText } from "../text/normalize.js";
+import { scoreText } from "../text/mm-score.js";
 import {
   extractPageLines, parsePdfObjects, getStream, parseToUnicodeStream,
-} from "../read/pdf-extract.mjs";
-import { DocumentDecoding, detectLegacyLayoutFonts } from "../read/pdf-fonts.mjs";
-import { LEGACY_CODE_PAGES, UNICODE_PATH } from "./registry.mjs";
-import { buildVectorOutlineLayout } from "./vector-repair.mjs";
+} from "../read/pdf-extract.js";
+import { DocumentDecoding, detectLegacyLayoutFonts } from "../read/pdf-fonts.js";
+import { LEGACY_CODE_PAGES, UNICODE_PATH } from "./registry.js";
+import { buildVectorOutlineLayout } from "./vector-repair.js";
 import { emitEvent } from "../../../../Bridge/logen/core.js";
 
 /* The score a code page must clear to be used at all. It belongs here, with

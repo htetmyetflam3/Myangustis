@@ -60,6 +60,13 @@ import tempfile
 from pathlib import Path
 from typing import Sequence
 
+# Bring the repo root onto sys.path so we can import secretloader without
+# packaging. hfinit.py lives in <repo>/tools-box/python/ → parents[2] = <repo>.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+from secretloader import load_secrets  # noqa: E402
+
 # ------------------------------------------------------------------ edit these lines
 HF_USER = "htetmyetflam3"  # your Hugging Face user name (same as your git user name)
 HF_REPO_NAME = "scraper"  # the one dataset repo this script ever touches
@@ -81,34 +88,15 @@ def _fail(message: str) -> "NoReturn":  # noqa: F821 - NoReturn only needed for 
 
 
 def _load_dotenv() -> None:
-    """Fill missing environment variables from a local .env, no dependency.
+    """Fill missing env vars from .env using the centralized secretloader.
 
-    Plain Python never reads .env itself, and only uv >= 0.5 auto-loads one
-    (from its project root), so relying on that silently fails on older uv or
-    a different cwd. Look in the current directory first, then next to this
-    script. Real environment variables always win — the file only fills gaps.
-    Accepts `KEY=value`, `export KEY=value`, and single/double-quoted values.
+    Resolution order (process.env wins always):
+      1. caller .env  (next to hfinit.py — tools-box/python/.env, rarely used)
+      2. repo root .env
+      3. <repo>/.data/.env
+    Idempotent.
     """
-    for env_path in (Path.cwd() / ".env", Path(__file__).resolve().parent / ".env"):
-        if not env_path.is_file():
-            continue
-        try:
-            lines = env_path.read_text(encoding="utf-8").splitlines()
-        except OSError:
-            continue
-        for raw in lines:
-            line = raw.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            if line.startswith("export "):
-                line = line[len("export "):].strip()
-            key, _, value = line.partition("=")
-            key = key.strip()
-            value = value.strip()
-            if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
-                value = value[1:-1]
-            if key and key not in os.environ:
-                os.environ[key] = value
+    load_secrets(__file__)
 
 
 def _token_shape_ok(token: str) -> bool:

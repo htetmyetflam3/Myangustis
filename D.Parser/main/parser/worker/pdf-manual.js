@@ -1,6 +1,6 @@
-import { createSourceRunner } from "./runtime.mjs";
-import { runPdfWorker } from "./pdf.mjs";
-import * as ocrWorker from "./ocr-ops.mjs";
+import { createSourceRunner } from "./runtime.js";
+import { runPdfWorker } from "./pdf.js";
+import * as ocrWorker from "./ocr-ops.js";
 
 // Manual PDF keeps a separate module boundary from pure PDF extraction. Today
 // the manual PDF core shares the same extraction semantics; OCR is imported here

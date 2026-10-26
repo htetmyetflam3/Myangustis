@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
-import { createProcessingQueue, publicQueueStatus } from './processingQueue.js';
+import { createProcessingQueue, publicQueueStatus } from '../../../F.Site/Backend/gateway/queue/processingQueue.js';
 test('holds immutable input and measured manager/final file information', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'linga-queue-'));
   const input = path.join(dir, 'upload.pdf');

@@ -22,9 +22,9 @@
 // ONLY in req.session, so a handle is meaningless outside its own session.
 import express from 'express';
 import crypto from 'node:crypto';
-import { config } from '../config.mjs';
-import { createRateLimiter } from './rate-limit.mjs';
-import { BindEngine } from '../../architecture/bridge/bind-engine.js';
+import { config } from '../config.js';
+import { createRateLimiter } from './rate-limit.js';
+import { BindEngine } from '../../Engine/bridge/bind-engine.js';
 
 // The signature stamped on every call this API makes into the Bridge. The
 // Bridge routes on this field; Site calls will carry signature 'site' plus

@@ -1,7 +1,7 @@
 import fs from "node:fs";
-import { readCentralDirectory, readEntry } from "../core/zip.mjs";
-import { ValueError } from "../core/pylib.mjs";
-import { positiveLimit } from "../core/limits.mjs";
+import { readCentralDirectory, readEntry } from "../core/zip.js";
+import { ValueError } from "../core/pylib.js";
+import { positiveLimit } from "../core/limits.js";
 
 
 

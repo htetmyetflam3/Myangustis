@@ -11,9 +11,9 @@ import {
   SchemaDriftError,
   LATEST_VERSION,
   BASELINE_TABLES,
-} from './migrate.js';
+} from '../../../F.Site/Backend/db/migrate.js';
 
-const SCHEMA_FILE = path.resolve(import.meta.dirname, 'schema.sql');
+const SCHEMA_FILE = path.resolve(import.meta.dirname, '../../../F.Site/Backend/db/schema.sql');
 
 function tempDb(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'linga-migrate-'));

@@ -7,14 +7,14 @@ import {
   isFile,
   registerPdfFonts,
   applyPdfRole,
-} from "./fonts.mjs";
-import { OUTPUT_FONT_DIR } from "../core/paths.mjs";
+} from "./fonts.js";
+import { OUTPUT_FONT_DIR } from "../core/paths.js";
 
 const BURMESE_DOCX_NAME = BURMESE_FONTS[DEFAULT_BURMESE_KEY].docx;
-import { PdfWriter } from "./pdf-writer.mjs";
-import { writeOptimizedPdf } from "./pdf-optimize.mjs";
-import { ZipStreamWriter } from "../core/zip.mjs";
-import { pyRound, RuntimeError } from "../core/pylib.mjs";
+import { PdfWriter } from "./pdf-writer.js";
+import { writeOptimizedPdf } from "./pdf-optimize.js";
+import { ZipStreamWriter } from "../core/zip.js";
+import { pyRound, RuntimeError } from "../core/pylib.js";
 
 export function esc(s) {
   

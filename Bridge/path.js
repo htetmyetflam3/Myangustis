@@ -16,4 +16,4 @@ export {
   hashKind,
   cacheInfo,
   configureWorkspace,
-} from '../Engine/index.js';
+} from '../Architecture/index.js';

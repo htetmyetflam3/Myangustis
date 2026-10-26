@@ -1,4 +1,4 @@
-import { ValueError } from './pylib.mjs';
+import { ValueError } from './pylib.js';
 
 export function positiveLimit(name, fallback, maximum) {
   const raw = process.env[name] ?? String(fallback);

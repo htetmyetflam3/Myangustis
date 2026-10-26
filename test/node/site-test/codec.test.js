@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { decodeCookie, encodeCookie } from './codec.js';
+// ESM static imports resolve before top-level statements, so set COOKIE_SECRET
+// via a register hook before loading the codec module.
+process.env.COOKIE_SECRET ||= 'codec-test-secret-at-least-32-characters-xx';
+const { decodeCookie, encodeCookie } = await import('../../../F.Site/Backend/cookie/codec.js');
 test('authenticated cookie codec round-trips objects with fresh nonces', () => {
   const data = { id: 'USER-123', ip: '127.0.0.1', country: null };
   const first = encodeCookie(data);

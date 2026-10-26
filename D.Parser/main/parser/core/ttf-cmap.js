@@ -1,4 +1,4 @@
-import { ValueError } from "./pylib.mjs";
+import { ValueError } from "./pylib.js";
 
 /**
  * FILE: Parsed/parser/core/ttf-cmap.mjs

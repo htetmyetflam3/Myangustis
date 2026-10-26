@@ -34,8 +34,8 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { MAP_DIR } from "../core/paths.mjs";
-import { MARK_ORDER as PRIORITY, isIndex } from "./mm-score.mjs";
+import { MAP_DIR } from "../core/paths.js";
+import { MARK_ORDER as PRIORITY, isIndex } from "./mm-score.js";
 
 const DATA = JSON.parse(fs.readFileSync(path.join(MAP_DIR, "cleanup.json"), "utf8"));
 

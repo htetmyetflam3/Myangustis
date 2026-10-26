@@ -6,7 +6,7 @@
  * loading a PDF rendering engine. Opt out with PRASER_PDF_OPTIMIZE=0.
  */
 import fs from "node:fs";
-import { runQpdf } from "../core/qpdf.mjs";
+import { runQpdf } from "../core/qpdf.js";
 
 const OPTIMIZE_OFF = new Set(["0", "off", "false", "no"]);
 

@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadDetector, processPageRecord, streamPdfPages } from "../../../Parser/extend/pipeline.mjs";
+import { loadDetector, processPageRecord, streamPdfPages } from "../../../D.Parser/extend/pipeline.js";
 
 /* The cmap fork (processPageRecord): a page decoded from the font's own
    cmap/ToUnicode that the detector calls Zawgyi is either a Unicode page in
@@ -23,7 +23,7 @@ test("zawgyi-cmap: a Zawgyi font's own cmap still goes to Rabbit", () => {
   // The real thing: sample.pdf page 1 raw from the extractor. (A typed
   // Zawgyi-looking line is not the same evidence -- PDF raw is glyph order.)
   const here = path.dirname(fileURLToPath(import.meta.url));
-  const bytes = fs.readFileSync(path.join(here, "..", "..", "..", "Parser", "main", "File", "upload", "pdf", "sample.pdf"));
+  const bytes = fs.readFileSync(path.join(here, "..", "..", "..", "D.Parser", "main", "File", "upload", "pdf", "sample.pdf"));
   const det = loadDetector();
   const [, , pages] = streamPdfPages(bytes, det, () => {});
   const pg = pages.next().value;

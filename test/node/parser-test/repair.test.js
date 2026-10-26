@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   HOMOGLYPH_PAIRS, homoglyphVariants, repairToken, repairHomoglyphs,
-} from "../../../Parser/main/parser/text/repair.mjs";
+} from "../../../D.Parser/main/parser/text/repair.js";
 
 const words = new Set(["စဉ်", "အစဉ်", "လုံးဝ", "ဝဂ်", "ယာဉ်", "ရေ"]);
 
@@ -65,7 +65,7 @@ test("non-Myanmar text passes through untouched", () => {
 });
 
 // ---------------------------------------------------------------- glued numbers
-import { splitGluedNumber, repairText } from "../../../Parser/main/parser/text/repair.mjs";
+import { splitGluedNumber, repairText } from "../../../D.Parser/main/parser/text/repair.js";
 
 const toc = new Set(["သဒ္ဒါ", "ဝဂ်", "မျိုး", "စဉ်"]);
 
@@ -110,8 +110,8 @@ test("repairText is a no-op without a dictionary", () => {
    token flags unknown and the gate cannot be exercised. */
 test("zawcode mend rewrites scan-flagged spans and nothing else", async () => {
   const { fileURLToPath } = await import("node:url");
-  const { loadMap, dictionaryWords } = await import("../../../Parser/main/parser/text/scan.mjs");
-  const { mendZawCodeText } = await import("../../../Parser/main/parser/text/repair.mjs");
+  const { loadMap, dictionaryWords } = await import("../../../D.Parser/main/parser/text/scan.js");
+  const { mendZawCodeText } = await import("../../../D.Parser/main/parser/text/repair.js");
   const data = loadMap(fileURLToPath(new URL("../../../.data/master.json.enc", import.meta.url)));
   const dict = dictionaryWords(data);
   const standalone = data?.mapData?.newClause?.standalone || [];
@@ -127,8 +127,8 @@ test("zawcode mend rewrites scan-flagged spans and nothing else", async () => {
 
 test("zawcode guard splits stored order by readable result, not font name", async () => {
   const { fileURLToPath } = await import("node:url");
-  const { loadMap, dictionaryWords } = await import("../../../Parser/main/parser/text/scan.mjs");
-  const { zawCodeGuard } = await import("../../../Parser/main/parser/text/repair.mjs");
+  const { loadMap, dictionaryWords } = await import("../../../D.Parser/main/parser/text/scan.js");
+  const { zawCodeGuard } = await import("../../../D.Parser/main/parser/text/repair.js");
   const data = loadMap(fileURLToPath(new URL("../../../.data/master.json.enc", import.meta.url)));
   const dict = dictionaryWords(data);
   const standalone = data?.mapData?.newClause?.standalone || [];
@@ -148,7 +148,7 @@ test("zawcode guard splits stored order by readable result, not font name", asyn
    phantom ိ dropped, per variant. The mend arbitrates over these the
    way repairToken arbitrates over homoglyphVariants. */
 test("zawcode insertion variants offer the dropped glyphs", async () => {
-  const { zawCodeInsertionVariants, zawCodeSpuriousIVariants } = await import("../../../Parser/main/parser/text/repair.mjs");
+  const { zawCodeInsertionVariants, zawCodeSpuriousIVariants } = await import("../../../D.Parser/main/parser/text/repair.js");
   // gid 429's dropped ြ: ကောင့် is one insertion from ကြောင့်.
   assert.ok(zawCodeInsertionVariants("\u1000\u1031\u102C\u1004\u103A\u1037")
     .includes("\u1000\u103C\u1031\u102C\u1004\u103A\u1037"));
@@ -172,8 +172,8 @@ test("zawcode insertion variants offer the dropped glyphs", async () => {
 
 test("zawcode mend retraces misnamed and dropped glyphs at scan coordinates", async () => {
   const { fileURLToPath } = await import("node:url");
-  const { loadMap, dictionaryWords } = await import("../../../Parser/main/parser/text/scan.mjs");
-  const { mendZawCodeText } = await import("../../../Parser/main/parser/text/repair.mjs");
+  const { loadMap, dictionaryWords } = await import("../../../D.Parser/main/parser/text/scan.js");
+  const { mendZawCodeText } = await import("../../../D.Parser/main/parser/text/repair.js");
   const data = loadMap(fileURLToPath(new URL("../../../.data/master.json.enc", import.meta.url)));
   const dict = dictionaryWords(data);
   const standalone = data?.mapData?.newClause?.standalone || [];
@@ -209,8 +209,8 @@ test("zawcode mend retraces misnamed and dropped glyphs at scan coordinates", as
 
 test("zawcode mend frames cover the damage that still segments", async () => {
   const { fileURLToPath } = await import("node:url");
-  const { loadMap, dictionaryWords } = await import("../../../Parser/main/parser/text/scan.mjs");
-  const { mendZawCodeText } = await import("../../../Parser/main/parser/text/repair.mjs");
+  const { loadMap, dictionaryWords } = await import("../../../D.Parser/main/parser/text/scan.js");
+  const { mendZawCodeText } = await import("../../../D.Parser/main/parser/text/repair.js");
   const data = loadMap(fileURLToPath(new URL("../../../.data/master.json.enc", import.meta.url)));
   const dict = dictionaryWords(data);
   const standalone = data?.mapData?.newClause?.standalone || [];
@@ -238,8 +238,8 @@ test("zawcode mend frames cover the damage that still segments", async () => {
 
 test("repairFromScanVerdict mends only the zawcode path, text and lines together", async () => {
   const { fileURLToPath } = await import("node:url");
-  const { loadMap, dictionaryWords } = await import("../../../Parser/main/parser/text/scan.mjs");
-  const { repairFromScanVerdict } = await import("../../../Parser/main/parser/text/repair.mjs");
+  const { loadMap, dictionaryWords } = await import("../../../D.Parser/main/parser/text/scan.js");
+  const { repairFromScanVerdict } = await import("../../../D.Parser/main/parser/text/repair.js");
   const data = loadMap(fileURLToPath(new URL("../../../.data/master.json.enc", import.meta.url)));
   const dict = dictionaryWords(data);
   const standalone = data?.mapData?.newClause?.standalone || [];

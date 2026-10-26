@@ -14,8 +14,8 @@
 // to namespace segmented_<formId>_* against parallel runs — the web layer
 // never looks anything up by hash; job state in JobStore is the authority.
 import path from 'node:path';
-import { BindEngine } from '../../architecture/bridge/bind-engine.js';
-import { readFileContent } from '../../architecture/MonoSyllabism/utilities/stream.js';
+import { BindEngine } from '../../Engine/bridge/bind-engine.js';
+import { readFileContent } from '../../Engine/MonoSyllabism/utilities/stream.js';
 
 // RESULT_MIME on the Site side (analysisFinalize.js):
 //   txt -> text/plain | docx -> wordprocessingml.document | pdf -> application/pdf

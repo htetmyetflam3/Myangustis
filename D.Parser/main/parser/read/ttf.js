@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { parseTtfCmap } from "../core/ttf-cmap.mjs";
+import { parseTtfCmap } from "../core/ttf-cmap.js";
 
 function readTableDirectory(data) {
   const numTables = data.readUInt16BE(4);

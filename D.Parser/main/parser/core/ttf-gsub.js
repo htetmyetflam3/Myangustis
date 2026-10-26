@@ -1,4 +1,4 @@
-import { ttfTables } from "./ttf-cmap.mjs";
+import { ttfTables } from "./ttf-cmap.js";
 
 /**
  * FILE: Parsed/parser/core/ttf-gsub.mjs
