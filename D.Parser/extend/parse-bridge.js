@@ -52,7 +52,7 @@ if (NODE_MAJOR < 22) {
 const HERE = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", ".."); // Scraper/plugin -> repository root
 const PARSER_FRONT_DOOR = url.pathToFileURL(
-  path.join(REPO, "Parser", "main", "parser", "index.mjs"),
+  path.join(REPO, "D.Parser", "main", "parser", "index.js"),
 ).href;
 
 // Manager encoding path -> the scraper's historical encoding label.

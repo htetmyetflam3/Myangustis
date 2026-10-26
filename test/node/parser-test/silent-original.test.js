@@ -4,15 +4,20 @@ import express from "express";
 import multer from "multer";
 import path from "node:path";
 import fs from "node:fs";
-import { createIncomingRouter } from "../../R_Site/Backend/gateway/api/incoming.js";
-import { inputDirFor, ensurePraserDirs, RAW_TXT_DIR, ORIGINAL_DIR, QUARANTINE_DIR } from "../../R_Site/_file/paths.js";
+import { createIncomingRouter } from "../../../F.Site/Backend/gateway/api/incoming.js";
+import { inputDirFor, ensurePraserDirs, abs, RAW_TXT_DIR, ORIGINAL_DIR, QUARANTINE_DIR, INPUT_DIR } from "../../../F.Site/Backend/file/paths.js";
+
+const Q = abs(QUARANTINE_DIR);
+const R = abs(RAW_TXT_DIR);
+const O = abs(ORIGINAL_DIR);
+const I = abs(INPUT_DIR);
 
 ensurePraserDirs();
 
 // Same multer config as index.js
 const upload = multer({
   storage: multer.diskStorage({
-    destination: (req, file, cb) => cb(null, inputDirFor(file.originalname)),
+    destination: (req, file, cb) => cb(null, abs(inputDirFor(file.originalname))),
     filename: (req, file, cb) =>
       cb(null, `test-${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`),
   }),
@@ -46,7 +51,7 @@ async function post(file, text) {
 const list = (d) => fs.readdirSync(d).filter((f) => f.startsWith("test-"));
 const out = (d) => fs.readdirSync(d).filter((f) => f !== ".gitkeep");
 // quarantine copies are named "<timestamp>_<originalname>" (no test- prefix)
-const qcount = () => fs.readdirSync(QUARANTINE_DIR).length;
+const qcount = () => fs.readdirSync(Q).length;
 
 let failures = 0;
 function check(name, cond, extra = "") {
@@ -56,13 +61,13 @@ function check(name, cond, extra = "") {
 
 // ── Case A: docx parsed in browser (file + client text) ──
 {
-  const before = { q: qcount(), t: out(RAW_TXT_DIR).length, o: out(ORIGINAL_DIR).length };
+  const before = { q: qcount(), t: out(R).length, o: out(O).length };
   const r = await post(new File([new Uint8Array([1, 2, 3])], "letter.docx"), "မင်္ဂလာပါ browser-parsed docx text");
   check("A: docx+clientText → 202", r.status === 202);
-  check("A: docx landed in input/docx", fs.readdirSync(path.join(QUARANTINE_DIR, "..", "input", "docx")).some((f) => f.startsWith("test-")));
+  check("A: docx landed in input/docx", fs.readdirSync(path.join(I, "docx")).some((f) => f.startsWith("test-")));
   check("A: quarantine reference copy saved", qcount() > before.q);
-  check("A: raw text saved (client text, no re-parse)", out(RAW_TXT_DIR).length > before.t);
-  check("A: original copy saved to output/original", out(ORIGINAL_DIR).length > before.o);
+  check("A: raw text saved (client text, no re-parse)", out(R).length > before.t);
+  check("A: original copy saved to output/original", out(O).length > before.o);
   check("A: response returns the client text", (r.body.text || "").includes("browser-parsed"));
 }
 

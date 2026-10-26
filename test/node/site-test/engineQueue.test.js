@@ -6,8 +6,8 @@ import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
 import express from 'express';
-import { createEngineQueueRouter } from './engineCollect.js';
-import { createProcessingQueue } from '../queue/processingQueue.js';
+import { createEngineQueueRouter } from '../../../F.Site/Backend/gateway/api/engineCollect.js';
+import { createProcessingQueue } from '../../../F.Site/Backend/gateway/queue/processingQueue.js';
 const ENGINE_KEY = 'f'.repeat(32);
 const SOURCE_TEXT = 'မြန်မာစာ parsed text here';
 const RESULT_MIME = new Map([

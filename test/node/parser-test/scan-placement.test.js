@@ -13,9 +13,9 @@ import { fileURLToPath } from "node:url";
 process.env.PRASER_REGISTER = "0";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const book = (name) => path.join(HERE, "..", "..", "..", "Parser", "main", "File", "upload", "pdf", name);
+const book = (name) => path.join(HERE, "..", "..", "..", "D.Parser", "main", "File", "upload", "pdf", name);
 
-const { createSourceRunner } = await import("../../../Parser/main/parser/worker/runtime.mjs");
+const { createSourceRunner } = await import("../../../D.Parser/main/parser/worker/runtime.js");
 const runSource = createSourceRunner({ kind: "pdf", method: "default" });
 
 async function run(name) {

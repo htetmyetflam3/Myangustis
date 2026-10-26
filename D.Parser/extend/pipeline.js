@@ -1,36 +1,36 @@
-import { parseTtfCmap } from "../main/parser/core/ttf-cmap.mjs";
-import { renderPdfPagePng } from "../main/parser/read/pdf-render.mjs";
-import { note } from "../main/parser/core/provenance.mjs";
+import { parseTtfCmap } from "../main/parser/core/ttf-cmap.js";
+import { renderPdfPagePng } from "../main/parser/read/pdf-render.js";
+import { note } from "../main/parser/core/provenance.js";
 import fs from "node:fs";
 import path from "node:path";
 
-import { findModelPath } from "../main/parser/core/paths.mjs";
-import { ZawgyiDetector } from "../main/parser/text/detector.mjs";
-import { decryptPdf, isEncryptedPdf, hasObjectStreams, expandObjectStreams } from "../main/parser/read/decrypt.mjs";
-import { Rabbit } from "../main/parser/text/rabbit.mjs";
-import { cleanupText, orderText } from "../main/parser/text/normalize.mjs";
-import { extractDocxParagraphs, extractDocxImages, validateDocxArchive } from "../main/parser/read/docx-extract.mjs";
-import { extractDocxParagraphsExternal } from "../main/parser/read/docx-external.mjs";
-import { scoreText } from "../main/parser/text/mm-score.mjs";
-import { MAX_PAGES, MAX_TEXT_CHARS } from "../main/parser/core/limits.mjs";
+import { findModelPath } from "../main/parser/core/paths.js";
+import { ZawgyiDetector } from "../main/parser/text/detector.js";
+import { decryptPdf, isEncryptedPdf, hasObjectStreams, expandObjectStreams } from "../main/parser/read/decrypt.js";
+import { Rabbit } from "../main/parser/text/rabbit.js";
+import { cleanupText, orderText } from "../main/parser/text/normalize.js";
+import { extractDocxParagraphs, extractDocxImages, validateDocxArchive } from "../main/parser/read/docx-extract.js";
+import { extractDocxParagraphsExternal } from "../main/parser/read/docx-external.js";
+import { scoreText } from "../main/parser/text/mm-score.js";
+import { MAX_PAGES, MAX_TEXT_CHARS } from "../main/parser/core/limits.js";
 import {
   parsePdfObjects, findFontStreams, findToUnicodeMaps, ARLARWADE_AYAR_MAP,
   loadSidecarMap, pickEmbeddedFont, getStream, findRootPages, collectPages,
   extractPageLines, pageHasImages, parseToUnicodeStream, extractMetadata,
-} from "../main/parser/read/pdf-extract.mjs";
+} from "../main/parser/read/pdf-extract.js";
 import {
   CmapIdentityMap, LegacyAyarMap, DocumentDecoding, detectLegacyLayoutFonts,
   legacyFontFaces,
-} from "../main/parser/read/pdf-fonts.mjs";
-import { LEGACY_CODE_PAGES, UNICODE_PATH, ZawCODE_PATH } from "../main/parser/codepage/registry.mjs";
-import { zawCodeGuard } from "../main/parser/text/repair.mjs";
-import { loadScanDictionary, dictionaryWords } from "../main/parser/text/scan.mjs";
-import { writeDocxLayout, writePdf } from "../main/parser/write/render.mjs";
-import { chooseCodePage, prepareVectorLayout, LEGACY_QUALITY_FLOOR } from "../main/parser/codepage/resolve.mjs";
-import { buildVectorRepair } from "../main/parser/codepage/vector-repair.mjs";
+} from "../main/parser/read/pdf-fonts.js";
+import { LEGACY_CODE_PAGES, UNICODE_PATH, ZawCODE_PATH } from "../main/parser/codepage/registry.js";
+import { zawCodeGuard } from "../main/parser/text/repair.js";
+import { loadScanDictionary, dictionaryWords } from "../main/parser/text/scan.js";
+import { writeDocxLayout, writePdf } from "../main/parser/write/render.js";
+import { chooseCodePage, prepareVectorLayout, LEGACY_QUALITY_FLOOR } from "../main/parser/codepage/resolve.js";
+import { buildVectorRepair } from "../main/parser/codepage/vector-repair.js";
 
 export { LEGACY_QUALITY_FLOOR };
-import { pyTruthy, pyRound, RuntimeError, splitExt, baseName } from "../main/parser/core/pylib.mjs";
+import { pyTruthy, pyRound, RuntimeError, splitExt, baseName } from "../main/parser/core/pylib.js";
 
 
 

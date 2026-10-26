@@ -4,7 +4,7 @@ import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
 import crypto from 'crypto';
-import { storeAnalysisArtifact } from './artifact.js';
+import { storeAnalysisArtifact } from '../../../F.Site/Backend/gateway/queue/artifact.js';
 test('stores the validated Engine result atomically in Site-owned storage', async () => {
   const content = Buffer.from('grammar result');
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'linga-artifact-'));

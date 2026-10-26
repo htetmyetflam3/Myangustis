@@ -4,15 +4,15 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Database from 'better-sqlite3';
-import { migrate } from './migrate.js';
-import { createRequest, dailyLimit, QUOTA_OFF_SENTINEL } from './request.js';
+import { migrate } from '../../../F.Site/Backend/db/migrate.js';
+import { createRequest, dailyLimit, QUOTA_OFF_SENTINEL } from '../../../F.Site/Backend/db/request.js';
 
 const DAILY_LIMIT = dailyLimit();
 
 function freshDb(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'linga-cq-'));
   const db = new Database(path.join(dir, 'site.db'));
-  migrate(db, { schemaFile: path.resolve(import.meta.dirname, 'schema.sql') });
+  migrate(db, { schemaFile: path.resolve(import.meta.dirname, '../../../F.Site/Backend/db/schema.sql') });
   t.after(() => {
     try { db.close(); } catch { /* closed */ }
     fs.rmSync(dir, { recursive: true, force: true });

@@ -14,8 +14,8 @@ async function engine() {
   if (!engineDeps) {
     const [path, stream, formatter] = await Promise.all([
       import('./engine-plugin.path.js'),
-      import('../architecture/MonoSyllabism/utilities/stream.js'),
-      import('../architecture/MonoSyllabism/utilities/formatter.js'),
+      import('../Engine/MonoSyllabism/utilities/stream.js'),
+      import('../Engine/MonoSyllabism/utilities/formatter.js'),
     ]);
     engineDeps = { path, stream, formatter };
   }

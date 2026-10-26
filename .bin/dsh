@@ -1,0 +1,42 @@
+#!/bin/sh
+# .bin/dsh — "Debian SHell" launcher. Run from Acode's (Alpine) terminal.
+# Drop-in: `dsh` gives you an interactive Debian shell, `dsh npm test` runs a single command.
+# Uses ssh into 127.0.0.1:2222 (Conduit's Debian with sshd started by debian-setup.sh).
+#
+# Install: put this in ~/.bin/dsh on the Acode side, `chmod +x ~/.bin/dsh`,
+#          make sure ~/.bin is in PATH, and that ~/.ssh/acode_debian exists (private key).
+
+set -e
+
+KEY="${ACODE_DEBIAN_KEY:-$HOME/.ssh/acode_debian}"
+PORT="${ACODE_DEBIAN_PORT:-2222}"
+HOST="${ACODE_DEBIAN_HOST:-127.0.0.1}"
+USER="${ACODE_DEBIAN_USER:-root}"
+# Default project working directory inside Debian (on Debian's rootfs, exec-bit safe)
+DPROJ="${ACODE_DEBIAN_PROJ:-/root/Myangustis}"
+
+if [ ! -f "$KEY" ]; then
+  echo "dsh: SSH key not found at $KEY"
+  echo "     Generate/place it first (see .bin/debian-setup.sh instructions)."
+  exit 1
+fi
+
+# Probe: is Debian up? If not, print a helpful message instead of hanging.
+if ! (echo > /dev/tcp/"$HOST"/"$PORT") 2>/dev/null; then
+  echo "dsh: cannot reach $HOST:$PORT — is Conduit (Debian) running?"
+  echo "     Open Conduit once so the Debian shell comes up (sshd auto-starts on login),"
+  echo "     then leave Conduit in the background (don't force-close)."
+  exit 2
+fi
+
+SSH_OPTS="-i $KEY -p $PORT -o StrictHostKeyChecking=accept-new \
+          -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+
+if [ $# -eq 0 ]; then
+  # Interactive shell — drop into Debian at the project dir
+  exec ssh $SSH_OPTS "$USER@$HOST" -t "cd '$DPROJ' && exec bash -l"
+else
+  # Single command — run in Debian at the project dir
+  # Use cd && exec of the command so PATH/motd/profile from Debian are honored.
+  exec ssh $SSH_OPTS "$USER@$HOST" "cd '$DPROJ' && $*"
+fi

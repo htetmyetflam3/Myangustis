@@ -27,9 +27,9 @@ loadEnv({ path: path.join(HERE, '.env') });
 
 // Evaluated only after the local .env has been applied.
 const [{ config, keyShape }, { createApp: createSiteApp }, { publicRouter }] = await Promise.all([
-  import('./config.mjs'),
-  import('./server.mjs'),
-  import('./api/public-api.mjs'),
+  import('./config.js'),
+  import('./server.js'),
+  import('./api/public-api.js'),
 ]);
 
 export function createServer() {

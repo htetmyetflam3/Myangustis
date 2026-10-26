@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { scanText, formatScanReport, loadMap, dictionaryWords, scanBrokenSpans } from "../../../Parser/main/parser/text/scan.mjs";
+import { scanText, formatScanReport, loadMap, dictionaryWords, scanBrokenSpans } from "../../../D.Parser/main/parser/text/scan.js";
 
 test("JavaScript scanner mirrors the structural scan rules", () => {
   const report = scanText("ကိ ိ သွားသွားသွား", { dictionary: new Set(["ကိ"]) });

@@ -2,18 +2,18 @@ import { Worker } from "node:worker_threads";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { DEFAULT_OUTPUT_DIR } from "./core/paths.mjs";
+import { DEFAULT_OUTPUT_DIR } from "./core/paths.js";
 import {
   WORKER_HEAP_MB,
   WORKER_TIMEOUT_MS,
   MAX_OCR_PAGES,
   ocrTimeoutMs,
-} from "./core/limits.mjs";
-import { decideForCaller, normalizeCaller } from "../../extend/caller-policy.mjs";
-import { classifyScraperSource } from "./codepage/classify.mjs";
+} from "./core/limits.js";
+import { decideForCaller, normalizeCaller } from "../../extend/caller-policy.js";
+import { classifyScraperSource } from "./codepage/classify.js";
 
-const EXTRACT_URL = new URL("./worker/extract.entry.mjs", import.meta.url); 
-const OCR_URL = new URL("./worker/ocr.entry.mjs", import.meta.url); 
+const EXTRACT_URL = new URL("./worker/extract.entry.js", import.meta.url);
+const OCR_URL = new URL("./worker/ocr.entry.js", import.meta.url);
 
 const OUTPUT_TYPES = new Set(["txt", "docx", "pdf"]);
 const JOBS = new Set(["extracting", "ocr", "null"]);
@@ -57,7 +57,7 @@ function inferInputKind(job) {
 
 async function countOcrPages(job) {
   try {
-    const { pdfPageCount } = await import("./read/ocr.mjs");
+    const { pdfPageCount } = await import("./read/ocr.js");
     const bytes = job.data ?? (job.inPath ? await (await import("node:fs/promises")).readFile(job.inPath) : null);
     if (!bytes) return 0;
     return (await pdfPageCount(bytes)) || 0;

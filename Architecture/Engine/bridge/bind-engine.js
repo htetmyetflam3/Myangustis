@@ -27,8 +27,8 @@
 // by Bridge/api-server.js and the Site upload side, sized by
 // config.maxConcurrent (SlotLimiter in job-store.mjs, the pending-list
 // queue primitive). Local in-process signatures run inline, no queue.
-import { config } from '../../host/config.mjs';
-import { SlotLimiter } from '../../host/job-store.mjs';
+import { config } from '../../host/config.js';
+import { SlotLimiter } from '../../host/job-store.js';
 import { handlers } from './bridge.js';
 
 // One bound for the whole process: web requests wait here, local calls don't.

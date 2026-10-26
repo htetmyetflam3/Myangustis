@@ -3,9 +3,9 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import {
   ZAWCODE_LEGACY_CODE_PAGE, ZAWCODE_INPUT_CMAP_INVENTORY, buildZawCodeCodePage,
-} from "../../../Parser/main/parser/codepage/zawcode-layout.mjs";
-import { LEGACY_CODE_PAGES, UNICODE_PATH, ZawCODE_PATH } from "../../../Parser/main/parser/codepage/registry.mjs";
-import { unmixZawCodeMarks } from "../../../Parser/main/parser/text/cleanup.mjs";
+} from "../../../D.Parser/main/parser/codepage/zawcode-layout.js";
+import { LEGACY_CODE_PAGES, UNICODE_PATH, ZawCODE_PATH } from "../../../D.Parser/main/parser/codepage/registry.js";
+import { unmixZawCodeMarks } from "../../../D.Parser/main/parser/text/cleanup.js";
 
 /**
  * FILE: Parsed/parser/test/zawcode-layout.test.mjs
@@ -17,7 +17,7 @@ import { unmixZawCodeMarks } from "../../../Parser/main/parser/text/cleanup.mjs"
  * (MyanmarSagar) is not involved anywhere here.
  */
 
-const kms = fs.readFileSync(new URL("../../../Parser/main/parser/codepage/zawcode.kms", import.meta.url), "utf8");
+const kms = fs.readFileSync(new URL("../../../D.Parser/main/parser/codepage/zawcode.kms", import.meta.url), "utf8");
 const decodeSlots = (s) => [...s].map((c) => ZAWCODE_LEGACY_CODE_PAGE.get(c.codePointAt(0)) ?? "?").join("");
 
 test("the Keymagic layout ships in-repo, bound to the input font", () => {

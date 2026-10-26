@@ -1,5 +1,5 @@
 import { parentPort } from "node:worker_threads";
-import { handleOcrMessage } from "./ocr-ops.mjs";
+import { handleOcrMessage } from "./ocr-ops.js";
 
 if (!parentPort) {
   throw new Error("ocr.worker.mjs must be run as a worker thread");

@@ -16,7 +16,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { VECTOR_MAP_DIR } from "../core/paths.mjs";
+import { VECTOR_MAP_DIR } from "../core/paths.js";
 
 /* ── per-glyph accept bars ────────────────────────────────────────────
    Loaded once, read with a Map lookup. Everything expensive about this
@@ -80,7 +80,7 @@ export function isCrossFontAlias(a, b) {
   const t = aliasTable();
   return t.has(`${a}\u0000${b}`) || t.has(`${b}\u0000${a}`);
 }
-import { loadSheet } from "./svg.mjs";
+import { loadSheet } from "./svg.js";
 
 const DEFAULT_SHEET_PREFIX = "PYIDAUNGSU-2.5.2_REGULAR-sheet-";
 const DEFAULT_GRID = 48;

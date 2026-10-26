@@ -4,9 +4,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Database from 'better-sqlite3';
-import { migrate } from './migrate.js';
+import { migrate } from '../../../F.Site/Backend/db/migrate.js';
 
-const SCHEMA_FILE = path.resolve(import.meta.dirname, 'schema.sql');
+const SCHEMA_FILE = path.resolve(import.meta.dirname, '../../../F.Site/Backend/db/schema.sql');
 
 // createOrUpdateCookie binds to the shared singleton db at import time, so the
 // behaviour under test is reproduced against a throwaway database here. The

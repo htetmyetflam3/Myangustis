@@ -4,17 +4,17 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { englishLikeness } from "../../../Parser/main/parser/text/mm-score.mjs";
+import { englishLikeness } from "../../../D.Parser/main/parser/text/mm-score.js";
 import {
   LEGACY_CODE_PAGES,
   WININNWA_LEGACY_CODE_PAGE,
-} from "../../../Parser/main/parser/codepage/registry.mjs";
-import { buildVectorOutlineLayout } from "../../../Parser/main/parser/codepage/vector-repair.mjs";
+} from "../../../D.Parser/main/parser/codepage/registry.js";
+import { buildVectorOutlineLayout } from "../../../D.Parser/main/parser/codepage/vector-repair.js";
 import {
   loadDetector,
   streamPdfPages,
-} from "../../../Parser/extend/pipeline.mjs";
-import { prepareVectorLayout } from "../../../Parser/main/parser/codepage/resolve.mjs";
+} from "../../../D.Parser/extend/pipeline.js";
+import { prepareVectorLayout } from "../../../D.Parser/main/parser/codepage/resolve.js";
 
 /**
  * Reliability of the outline layout-table build for UNKNOWN fonts, end to end.
@@ -42,8 +42,8 @@ import { prepareVectorLayout } from "../../../Parser/main/parser/codepage/resolv
 // site frontend samples are not in this tree; both books are tracked here
 // as upload fixtures (the site sample.pdf is byte-identical to this one).
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const FIXTURE = path.join(HERE, "..", "..", "..", "Parser", "main", "File", "upload", "pdf", "bg-mlc-1-1.pdf");
-const SAMPLE = path.join(HERE, "..", "..", "..", "Parser", "main", "File", "upload", "pdf", "sample.pdf");
+const FIXTURE = path.join(HERE, "..", "..", "..", "D.Parser", "main", "File", "upload", "pdf", "bg-mlc-1-1.pdf");
+const SAMPLE = path.join(HERE, "..", "..", "..", "D.Parser", "main", "File", "upload", "pdf", "sample.pdf");
 const KNOWN_NAME = "EAAAAA+WinInnwa";
 // Same byte length (15) so the rename never moves a PDF offset.
 const UNKNOWN_NAME = "QQXZT7+Fntb00k1";

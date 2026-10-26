@@ -1,7 +1,7 @@
-import { pyChr } from "../core/pylib.mjs";
-import { BASE_ENCODINGS, GLYPH_NAME_TO_UNICODE } from "./pdf-encodings.mjs";
-import { isLegacyFontName } from "../codepage/names.mjs";
-import { parseTtfGsubReverse, parseTtfVariantSlots } from "../core/ttf-gsub.mjs";
+import { pyChr } from "../core/pylib.js";
+import { BASE_ENCODINGS, GLYPH_NAME_TO_UNICODE } from "./pdf-encodings.js";
+import { isLegacyFontName } from "../codepage/names.js";
+import { parseTtfGsubReverse, parseTtfVariantSlots } from "../core/ttf-gsub.js";
 
 
 

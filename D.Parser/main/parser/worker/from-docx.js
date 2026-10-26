@@ -1,5 +1,5 @@
-import { runDocxWorker } from "./docx.mjs";
-import { runDocxManualWorker } from "./docx-manual.mjs";
+import { runDocxWorker } from "./docx.js";
+import { runDocxManualWorker } from "./docx-manual.js";
 
 /* Image boxes are only touched when something is going to USE them:
 

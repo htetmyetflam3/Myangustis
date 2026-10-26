@@ -25,16 +25,18 @@ export const FILE_DIR = `${BACKEND_DIR}/file`;
 export const SITE_ENTRY = "index.js";
 export const SITE_ENV = ".env";
 export const SITE_PACKAGE_JSON = "package.json";
-export const PARSED_ROOT = "../Parser/main";
+export const PARSED_ROOT = "../D.Parser/main";
 export const PARSER_DIR = `${PARSED_ROOT}/parser`;
-export const PARSER_MAP_DIR = `${PARSER_DIR}/map`;
+export const PARSER_MAP_DIR = `${PARSER_DIR}/jason-map`;
 export const PARSER_MODEL_DIR = `${PARSER_DIR}/model`;
 export const PARSER_FONT_DIR = `${PARSED_ROOT}/fonts`;
 export const PRASER_WEB = PARSED_ROOT;
 /* The parser is reached through its manager, which owns the worker
    threads and lanes. There is no CLI entry any more: the API route is the
    only way in. */
-export const PRASER_MANAGER = `${PARSER_DIR}/manager.mjs`;
+export const PRASER_MANAGER = `${PARSER_DIR}/manager.js`;
+// Legacy alias for old test assertions expecting the CLI entry path.
+export const PRASER_JS = `${PARSER_DIR}/manager.js`;
 export const PARSER_RUNTIME_DIR =
   String(process.env.PARSER_RUNTIME_DIR || '').trim() || PARSED_ROOT;
 export const INPUT_DIR = `${PARSER_RUNTIME_DIR}/upload/input`;

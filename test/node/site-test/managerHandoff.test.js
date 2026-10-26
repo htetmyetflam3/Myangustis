@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { managerPayload } from './managerHandoff.js';
+import { managerPayload } from '../../../F.Site/Backend/gateway/queue/managerHandoff.js';
 
 test('passes conversion output selected by the user', () => {
   assert.deepEqual(

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import zlib from "node:zlib";
 import { Readable } from "node:stream";
-import { positiveLimit } from "./limits.mjs";
+import { positiveLimit } from "./limits.js";
 
 const MAX_ZIP_ENTRIES = positiveLimit("PRASER_MAX_DOCX_ENTRIES", 4096, 20000);
 const EOCD_SIG = 0x06054b50;

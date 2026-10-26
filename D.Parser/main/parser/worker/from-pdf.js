@@ -1,5 +1,5 @@
-import { runPdfWorker } from "./pdf.mjs";
-import { runPdfImageWorker } from "./pdf-images.mjs";
+import { runPdfWorker } from "./pdf.js";
+import { runPdfImageWorker } from "./pdf-images.js";
 
 /* handling "null" is the mixed case: a text layer AND image areas. The text
    core reads the text and marks the image pages; the second worker group

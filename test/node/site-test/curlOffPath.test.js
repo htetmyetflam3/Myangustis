@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 const load = async () => {
-  const mod = await import(`./api/curlGate.js?v=${Math.random()}`);
+  const mod = await import(`../../../F.Site/Backend/gateway/api/curlGate.js?v=${Math.random()}`);
   return mod;
 };
 
@@ -58,7 +58,7 @@ test('the suffix is normalised, and the domain is never part of it', async () =>
 
 test('no host, scheme or port is ever read from configuration', async () => {
   const source = await (await import('node:fs/promises'))
-    .readFile(new URL('./api/curlGate.js', import.meta.url), 'utf8');
+    .readFile(new URL('../../../F.Site/Backend/gateway/api/curlGate.js', import.meta.url), 'utf8');
   // The host must come from the request. Anything else is a hardcoded domain.
   assert.match(source, /req\.get\('host'\)/u);
   assert.equal(/process\.env\.(?:HOST|PORT|DOMAIN|SITE_URL)/u.test(source), false);
@@ -67,7 +67,7 @@ test('no host, scheme or port is ever read from configuration', async () => {
 const hasExpress = await import('express').then(() => true, () => false);
 
 test('createCurlRouter returns null when unconfigured, and a mount when armed', { skip: !hasExpress && 'express not installed' }, async () => {
-  const { createCurlRouter } = await import('./api/curl.js');
+  const { createCurlRouter } = await import('../../../F.Site/Backend/gateway/api/curl.js');
   withEnv({ CURL_ENDPOINT: undefined, CURL_KEY: undefined }, () => {
     assert.equal(createCurlRouter(), null);
   });
@@ -79,7 +79,7 @@ test('createCurlRouter returns null when unconfigured, and a mount when armed', 
 });
 
 test('a wrong or missing key gets 404, never 403 — the path must not confirm itself', { skip: !hasExpress && 'express not installed' }, async () => {
-  const { createCurlRouter } = await import('./api/curl.js');
+  const { createCurlRouter } = await import('../../../F.Site/Backend/gateway/api/curl.js');
   await withEnv({ CURL_ENDPOINT: '/secret', CURL_KEY: 'right-key' }, async () => {
     const { router } = createCurlRouter();
 
@@ -105,7 +105,7 @@ test('a wrong or missing key gets 404, never 403 — the path must not confirm i
 });
 
 test('the key is accepted from a header, a bearer token, or ?key=', { skip: !hasExpress && 'express not installed' }, async () => {
-  const { createCurlRouter } = await import('./api/curl.js');
+  const { createCurlRouter } = await import('../../../F.Site/Backend/gateway/api/curl.js');
   await withEnv({ CURL_ENDPOINT: '/secret', CURL_KEY: 'right-key' }, async () => {
     const { router } = createCurlRouter();
 
@@ -133,7 +133,7 @@ test('the key is accepted from a header, a bearer token, or ?key=', { skip: !has
 
 test('the off-path never imports the engine', async () => {
   const source = await (await import('node:fs/promises'))
-    .readFile(new URL('./api/curl.js', import.meta.url), 'utf8');
+    .readFile(new URL('../../../F.Site/Backend/gateway/api/curl.js', import.meta.url), 'utf8');
   for (const forbidden of ['engine', 'processingQueue', 'engineCollect', 'engineDispatcher']) {
     assert.equal(
       new RegExp(`from\\s+'[^']*${forbidden}`, 'iu').test(source),

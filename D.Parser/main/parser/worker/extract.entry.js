@@ -1,7 +1,7 @@
 import { parentPort } from "node:worker_threads";
 import path from "node:path";
-import { runFromPdf } from "./from-pdf.mjs";
-import { runFromDocx } from "./from-docx.mjs";
+import { runFromPdf } from "./from-pdf.js";
+import { runFromDocx } from "./from-docx.js";
 
 if (!parentPort) {
   throw new Error("prase.worker.mjs must be run as a worker thread");

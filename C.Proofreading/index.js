@@ -13,4 +13,4 @@ export {
   cacheInfo,
   configureWorkspace,
 } from '../Bridge/path.js';
-export { tagProofreading } from '../Bridge/proofreading-tagger.mjs';
+export { tagProofreading } from '../Bridge/proofreading-tagger.js';

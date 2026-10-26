@@ -18,7 +18,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..', '..');
 
 // The door under test — imported exactly as an external service would.
-const engineEntry = await import('../../../Engine/index.js');
+const engineEntry = await import('../../../Architecture/index.js');
 const { BindEngine, readFileContent, getDateTimeHash, hashKind } = engineEntry;
 const facade = await import(path.join(REPO, 'Bridge', 'path.js'));
 

@@ -26,13 +26,13 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { MAP_DIR } from "../core/paths.mjs";
-import { scanText, scanBrokenSpans } from "./scan.mjs";
+import { MAP_DIR } from "../core/paths.js";
+import { scanText, scanBrokenSpans } from "./scan.js";
 import {
   orderText, unmixZawCodeMarks, retraceZawCodeMarks, settleZawCodeAhE,
   medialFollows, reorderMarks,
-} from "./cleanup.mjs";
-import { scoreText, isIndex } from "./mm-score.mjs";
+} from "./cleanup.js";
+import { scoreText, isIndex } from "./mm-score.js";
 
 const DATA = JSON.parse(fs.readFileSync(path.join(MAP_DIR, "homoglyphs.json"), "utf8"));
 

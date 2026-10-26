@@ -1,4 +1,4 @@
-import { createSourceRunner } from "./runtime.mjs";
+import { createSourceRunner } from "./runtime.js";
 
 // Pure text-based DOCX extraction. Image areas are skipped here; DOCX image OCR
 // belongs to docxmanualworker. The null method is also pure and DOCX-only, so it

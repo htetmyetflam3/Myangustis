@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import zlib from "node:zlib";
-import { TtfFont } from "./ttf.mjs";
+import { TtfFont } from "./ttf.js";
 
 const PT_PER_MM = 72 / 25.4;
 

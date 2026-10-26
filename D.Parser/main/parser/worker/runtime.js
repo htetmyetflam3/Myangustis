@@ -1,14 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { loadDetector, processBytesForMethod, buildFinalPages, markPdfImagePages } from "../../../extend/pipeline.mjs";
-import { writeOutput } from "../write/emit.mjs";
-import { scanText, formatScanReport, loadScanDictionary, dictionaryWords } from "../text/scan.mjs";
-import { repairText, repairFromScanVerdict } from "../text/repair.mjs";
+import { loadDetector, processBytesForMethod, buildFinalPages, markPdfImagePages } from "../../../extend/pipeline.js";
+import { writeOutput } from "../write/emit.js";
+import { scanText, formatScanReport, loadScanDictionary, dictionaryWords } from "../text/scan.js";
+import { repairText, repairFromScanVerdict } from "../text/repair.js";
 import { emitEvent } from "../../../../Bridge/logen/core.js";
-import { MAX_INPUT_BYTES, MAX_INPUT_MB } from "../core/limits.mjs";
-import { REGISTER_LOG } from "../core/paths.mjs";
-import { startRecord, note, appendRecord, registerPath } from "../core/provenance.mjs";
+import { MAX_INPUT_BYTES, MAX_INPUT_MB } from "../core/limits.js";
+import { REGISTER_LOG } from "../core/paths.js";
+import { startRecord, note, appendRecord, registerPath } from "../core/provenance.js";
 import { installPassiveLog } from "../../../../Bridge/logen/site.js";
 
 /* The praser runs in a worker thread, so the listener installed in index.js

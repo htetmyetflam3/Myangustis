@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { readSecureJson, readMasterJson } from "../../../../.data/secure.js";
-import { MAP_DIR } from "../core/paths.mjs";
-import { MARKS as MM_MARKS } from "./mm-score.mjs";
+import { MAP_DIR } from "../core/paths.js";
+import { MARKS as MM_MARKS } from "./mm-score.js";
 
 /**
  * DATA: scan.json is generated from scan.py by

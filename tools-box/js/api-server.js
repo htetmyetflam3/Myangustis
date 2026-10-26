@@ -56,9 +56,9 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { configure, grammarPipeline } from "../architecture/init/cli.js";
-import { invokeSyllableWithHash, hashKind } from "../init/initS.js";
-import { getDateTimeHash } from "../Bridge/logen.js";
+let configure=()=>{},grammarPipeline=async()=>{throw new Error("local grammar pipeline (cli.js) is not wired");};import("../../Architecture/Engine/init/cli.js").then(m=>{configure=m.configure;grammarPipeline=m.grammarPipeline;}).catch(()=>{});
+import { invokeSyllableWithHash, hashKind } from "../../Architecture/Engine/init/initS.js";
+import { getDateTimeHash } from "../../Bridge/logen/logen.js";
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const TMP_DIR = path.join(MODULE_DIR, "File", ".api");

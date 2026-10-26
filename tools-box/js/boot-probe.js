@@ -23,8 +23,8 @@ import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
 
-import { abs, FRONTEND_DIR } from "../../R_Site/_file/paths.js";
-import { GetOutputDir, GetEnvCandidates, resolvePath } from "../../R_Engine/Bridge/path.js";
+import { abs, FRONTEND_DIR } from "../../F.Site/Backend/file/paths.js";
+import { GetOutputDir, GetEnvCandidates, resolvePath } from "../../Architecture/host/path.js";
 
 const SITE = `http://127.0.0.1:${process.env.SITE_PORT || process.env.PORT || 3000}`;
 const ENGINE = `http://127.0.0.1:${process.env.ENGINE_PORT || 9000}`;

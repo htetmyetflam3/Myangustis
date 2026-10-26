@@ -16,9 +16,9 @@
 //   hashKind         output-id shape guard (flat filename token only)
 //   cacheInfo        built-in prebuilt-tree manifest view (verifies on read)
 //   configureWorkspace  retarget the mutable workspace for an offline run
-export { BindEngine } from './architecture/bridge/bind-engine.js';
-export { readFileContent } from './architecture/MonoSyllabism/utilities/stream.js';
-export { getDateTimeHash } from './architecture/bridge/logen.js';
-export { hashKind } from './architecture/init/initS.js';
-export { cacheInfo } from './architecture/MonoSyllabism/main/grapheme/cache-integrity.js';
-export { configureWorkspace } from './architecture/bridge/path.js';
+export { BindEngine } from './Engine/bridge/bind-engine.js';
+export { readFileContent } from './Engine/MonoSyllabism/utilities/stream.js';
+export { getDateTimeHash } from './Engine/bridge/logen.js';
+export { hashKind } from './Engine/init/initS.js';
+export { cacheInfo } from './Engine/MonoSyllabism/main/grapheme/cache-integrity.js';
+export { configureWorkspace } from './Engine/bridge/path.js';

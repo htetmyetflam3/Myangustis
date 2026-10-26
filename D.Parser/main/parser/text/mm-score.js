@@ -3,7 +3,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { MAP_DIR } from "../core/paths.mjs";
+import { MAP_DIR } from "../core/paths.js";
 
 /**
  * DATA: mm-score.json is generated from mm_score.py by
