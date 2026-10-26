@@ -1,20 +1,19 @@
 {
-  "name": "lingux-standalone-web",
+  "name": "@myangustis/host",
   "version": "1.0.0",
   "private": true,
+  "description": "Standalone Express front for Engine/main: keyed Site API plus session-scoped public tokenizer API.",
   "type": "module",
-  "description": "standalone-web plugin: Express front for Engine/main — keyed Site API plus session-scoped public tokenizer API",
   "main": "index.js",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "node index.js"
   },
-  "engines": {
-    "node": ">=20"
-  },
   "dependencies": {
-    "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-    "helmet": "^8.1.0"
+    "helmet": "^8.3.0"
   }
 }
