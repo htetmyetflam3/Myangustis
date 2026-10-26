@@ -24,12 +24,16 @@ from site_login import load_dotenv_values
 
 API_BASE = "https://api.phatmal.com/api"
 REFERER = "https://phatmal.com/"
+ORIGIN = "https://phatmal.com"
 BOOK_HOSTS = frozenset({"phatmal.com", "www.phatmal.com"})
-USER_AGENT = (
-    "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36"
+# Match a real Android WebView (the Expo app) so bot-gate lets us through.
+# Override per-env with PHATMAL_UA to impersonate a specific device.
+_USER_AGENT_DEFAULT = (
+    "Mozilla/5.0 (Linux; Android 12; M2003J15SC Build/SP1A.210812.016; wv) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 "
+    "Chrome/155.0.8059.43 Mobile Safari/537.36"
 )
-REQUEST_TIMEOUT = 20.0
+REQUEST_TIMEOUT = 30.0
 
 # Where the JWT may live in the login response (tried in order). The exact
 # key is still unconfirmed, so every common shape is accepted and a miss
@@ -47,8 +51,8 @@ _TOKEN_PATHS = (
 )
 
 
-def load_api_config() -> tuple[str | None, str | None, str, str | None] | None:
-    """(email, password, api_key, token) from env or repo-root .env, else None.
+def load_api_config() -> tuple[str | None, str | None, str, str | None, str] | None:
+    """(email, password, api_key, token, user_agent) from env or repo-root .env, else None.
 
     When PHATMAL_TOKEN is set (a pre-issued Bearer JWT), email+password are
     optional — login + any OTP flow is skipped and the token is used directly.
@@ -66,6 +70,7 @@ def load_api_config() -> tuple[str | None, str | None, str, str | None] | None:
     password = pick("PHATMAL_PASSWORD")
     api_key = pick("PHATMAL_API_KEY")
     token = pick("PHATMAL_TOKEN")
+    user_agent = pick("PHATMAL_UA") or _USER_AGENT_DEFAULT
     if not api_key:
         print("[phatmal] missing PHATMAL_API_KEY; add to the environment or .env")
         return None
@@ -83,16 +88,27 @@ def load_api_config() -> tuple[str | None, str | None, str, str | None] | None:
             "Bearer JWT, skips login+OTP) or provide email+password for login."
         )
         return None
-    return email or None, password or None, api_key, token or None
+    return email or None, password or None, api_key, token or None, user_agent
 
 
-def _api_headers(api_key: str, token: str | None = None) -> dict[str, str]:
+def _api_headers(api_key: str, token: str | None = None,
+                 user_agent: str = _USER_AGENT_DEFAULT,
+                 method: str = "GET") -> dict[str, str]:
     headers = {
         "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9",
         "Content-Type": "application/json",
-        "x-api-key": api_key,
-        "User-Agent": USER_AGENT,
+        "Origin": ORIGIN,
         "Referer": REFERER,
+        "Sec-Ch-Ua": '"Chromium";v="155", "Not?A_Brand";v="8"',
+        "Sec-Ch-Ua-Mobile": "?1",
+        "Sec-Ch-Ua-Platform": '"Android"',
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-site" if method.upper() == "GET" else "same-origin",
+        "User-Agent": user_agent,
+        "X-Requested-With": "phatmal",
+        "x-api-key": api_key,
     }
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -122,14 +138,15 @@ def _top_keys(payload: object) -> str:
 
 
 async def api_login(
-    client: httpx.AsyncClient, email: str, password: str, api_key: str
+    client: httpx.AsyncClient, email: str, password: str, api_key: str,
+    user_agent: str = _USER_AGENT_DEFAULT,
 ) -> str | None:
     """POST the credentials; return the Bearer JWT or None. Never logs secrets."""
     try:
         response = await client.post(
             f"{API_BASE}/auth/login",
             json={"email": email, "password": password},
-            headers=_api_headers(api_key),
+            headers=_api_headers(api_key, user_agent=user_agent, method="POST"),
             timeout=REQUEST_TIMEOUT,
         )
     except (httpx.HTTPError, ValueError) as error:
@@ -155,13 +172,14 @@ async def api_login(
 
 
 async def api_me(
-    client: httpx.AsyncClient, api_key: str, token: str
+    client: httpx.AsyncClient, api_key: str, token: str,
+    user_agent: str = _USER_AGENT_DEFAULT,
 ) -> dict | None:
     """GET the session endpoint; proves the token works. Returns the user object."""
     try:
         response = await client.get(
             f"{API_BASE}/auth/me",
-            headers=_api_headers(api_key, token),
+            headers=_api_headers(api_key, token, user_agent=user_agent),
             timeout=REQUEST_TIMEOUT,
         )
     except (httpx.HTTPError, ValueError) as error:
@@ -206,13 +224,14 @@ def slug_from_url(url: str) -> str:
 
 
 async def api_get_json(
-    client: httpx.AsyncClient, api_key: str, token: str, path: str
+    client: httpx.AsyncClient, api_key: str, token: str, path: str,
+    user_agent: str = _USER_AGENT_DEFAULT,
 ) -> tuple[int, object | None]:
     """Authorized GET; returns (status, parsed JSON or None)."""
     try:
         response = await client.get(
             f"{API_BASE}/{path.lstrip('/')}",
-            headers=_api_headers(api_key, token),
+            headers=_api_headers(api_key, token, user_agent=user_agent),
             timeout=REQUEST_TIMEOUT,
         )
     except (httpx.HTTPError, ValueError) as error:
@@ -349,13 +368,14 @@ def _remember_book(slug: str, filename: str, path: Path | None = None) -> None:
 
 
 async def _fetch_book_list(
-    client: httpx.AsyncClient, api_key: str, token: str
+    client: httpx.AsyncClient, api_key: str, token: str,
+    user_agent: str = _USER_AGENT_DEFAULT,
 ) -> list[dict]:
     books: list[dict] = []
     page = 1
     while True:
         status, payload = await api_get_json(
-            client, api_key, token, f"ebooks?page={page}&limit={PAGE_LIMIT}"
+            client, api_key, token, f"ebooks?page={page}&limit={PAGE_LIMIT}", user_agent=user_agent
         )
         if status != 200 or not isinstance(payload, dict):
             print(f"[phatmal] list page {page} failed (HTTP {status}); stopping")
@@ -380,7 +400,7 @@ async def _fetch_book_list(
 async def _fetch_book_detail(
     client: httpx.AsyncClient, api_key: str, token: str, slug: str
 ) -> dict | None:
-    status, payload = await api_get_json(client, api_key, token, f"ebooks/{slug}")
+    status, payload = await api_get_json(client, api_key, token, f"ebooks/{slug}", user_agent=user_agent)
     if status == 200 and isinstance(payload, dict):
         data = payload.get("data")
         if isinstance(data, dict):
@@ -388,11 +408,21 @@ async def _fetch_book_detail(
     return None
 
 
-async def _download_file(client: httpx.AsyncClient, url: str) -> bytes | None:
-    """Plain GET with no auth headers (S3 rejects unknown Authorization)."""
+async def _download_file(client: httpx.AsyncClient, url: str, user_agent: str = _USER_AGENT_DEFAULT) -> bytes | None:
+    """Plain GET with no auth headers (S3/CDN rejects unknown Authorization)."""
     try:
         response = await client.get(
-            url, headers={"User-Agent": USER_AGENT}, timeout=FILE_TIMEOUT
+            url,
+            headers={
+                "User-Agent": user_agent,
+                "Accept": "*/*",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Referer": REFERER,
+                "Sec-Fetch-Dest": "document",
+                "Sec-Fetch-Mode": "navigate",
+                "Sec-Fetch-Site": "same-site",
+            },
+            timeout=FILE_TIMEOUT,
         )
         response.raise_for_status()
         return response.content
@@ -408,6 +438,7 @@ async def download_book(
     book: dict,
     output_dir: Path,
     known: dict[str, str],
+    user_agent: str = _USER_AGENT_DEFAULT,
 ) -> str:
     """Save one book; returns saved | known | skipped | failed (logs incl)."""
     slug = str(book.get("slug") or "")
@@ -421,7 +452,7 @@ async def download_book(
         return "known"
     picked = pick_book_file(book)
     if picked is None and slug:
-        detail = await _fetch_book_detail(client, api_key, token, slug)
+        detail = await _fetch_book_detail(client, api_key, token, slug, user_agent=user_agent)
         if detail is not None:
             book = detail
             picked = pick_book_file(book)
@@ -431,7 +462,7 @@ async def download_book(
     url, _kind = picked
     check_disk(output_dir)  # under the 5 GB kept for the system every command quits
     print(f"[phatmal] [download] {title}", flush=True)
-    data = await _download_file(client, url)
+    data = await _download_file(client, url, user_agent=user_agent)
     if data is None:
         return "failed"
     extension = sniff_extension(data)
@@ -460,24 +491,24 @@ async def crawl_library(output_dir: Path | None = None) -> dict[str, int]:
     config = load_api_config()
     if config is None:
         return stats
-    email, password, api_key, preset_token = config
+    email, password, api_key, preset_token, user_agent = config
     out = output_dir or OUTPUT_DIR
-    async with httpx.AsyncClient(follow_redirects=True) as client:
+    async with httpx.AsyncClient(follow_redirects=True, timeout=REQUEST_TIMEOUT) as client:
         if preset_token:
             token = preset_token
             print("[phatmal] using PHATMAL_TOKEN from env (skipping login)")
         else:
-            token = await api_login(client, email, password, api_key)
+            token = await api_login(client, email, password, api_key, user_agent=user_agent)
             if token is None:
                 return stats
-        if await api_me(client, api_key, token) is None:
+        if await api_me(client, api_key, token, user_agent=user_agent) is None:
             print("[phatmal] token rejected (expired?); re-run with fresh PHATMAL_TOKEN")
             return stats
-        books = await _fetch_book_list(client, api_key, token)
+        books = await _fetch_book_list(client, api_key, token, user_agent=user_agent)
         stats["total"] = len(books)
         known = _load_known()
         for book in books:
-            outcome = await download_book(client, api_key, token, book, out, known)
+            outcome = await download_book(client, api_key, token, book, out, known, user_agent=user_agent)
             stats[outcome] += 1
     print(
         f"[phatmal] done: {stats['saved']} saved, {stats['known']} known, "
@@ -492,24 +523,24 @@ async def download_single(url: str, output_dir: Path | None = None) -> bool:
     config = load_api_config()
     if config is None:
         return False
-    email, password, api_key, preset_token = config
+    email, password, api_key, preset_token, user_agent = config
     out = output_dir or OUTPUT_DIR
-    async with httpx.AsyncClient(follow_redirects=True) as client:
+    async with httpx.AsyncClient(follow_redirects=True, timeout=REQUEST_TIMEOUT) as client:
         if preset_token:
             token = preset_token
             print("[phatmal] using PHATMAL_TOKEN from env (skipping login)")
         else:
-            token = await api_login(client, email, password, api_key)
+            token = await api_login(client, email, password, api_key, user_agent=user_agent)
             if token is None:
                 return False
-        if await api_me(client, api_key, token) is None:
+        if await api_me(client, api_key, token, user_agent=user_agent) is None:
             print("[phatmal] token rejected (expired?); re-run with fresh PHATMAL_TOKEN")
             return False
-        book = await _fetch_book_detail(client, api_key, token, slug)
+        book = await _fetch_book_detail(client, api_key, token, slug, user_agent=user_agent)
         if book is None:
             print(f"[phatmal] no book found for {slug!r}")
             return False
-        outcome = await download_book(client, api_key, token, book, out, _load_known())
+        outcome = await download_book(client, api_key, token, book, out, _load_known(), user_agent=user_agent)
         return outcome in {"saved", "known"}
 
 
