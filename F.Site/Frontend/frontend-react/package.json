@@ -1,21 +1,20 @@
 {
-  "name": "@linga/frontend-react",
-  "private": true,
+  "name": "@myangustis/frontend-react",
   "version": "0.0.0",
-  "engines": {
-    "node": ">=20"
-  },
+  "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@types/canvas-confetti": "^1.9.0",
     "canvas-confetti": "^1.9.4",
     "clsx": "2.1.1",
-    "framer-motion": "^12.23.12",
+    "framer-motion": "^12.23.1",
     "jszip": "^3.10.2",
     "lucide-react": "^1.47.0",
     "react": "19.2.6",
@@ -24,11 +23,12 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.1.17",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "22.19.17",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.1",
-    "mammoth": "1.13.0",
+    "mammoth": "^1.13.0",
     "pdfjs-dist": "6.4.299",
     "tailwindcss": "4.1.17",
     "typescript": "5.9.3",

@@ -164,3 +164,4 @@ vite.config.ts.timestamp-*
 /__pycache__/
 *pycache*
 *uv*.envvars
+.venv

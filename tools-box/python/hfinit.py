@@ -61,8 +61,14 @@ from pathlib import Path
 from typing import Sequence
 
 # Bring the repo root onto sys.path so we can import secretloader without
-# packaging. hfinit.py lives in <repo>/tools-box/python/ → parents[2] = <repo>.
-_REPO_ROOT = Path(__file__).resolve().parents[2]
+# packaging. Walk up from this file until a directory containing
+# secretloader.py is found — works when tools-box/ sits at the repo root
+# (whole-repo checkout) OR when tools-box/ is uploaded standalone with
+# secretloader.py copied alongside pyproject.toml.
+_THIS_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _THIS_DIR
+while _REPO_ROOT.parent != _REPO_ROOT and not (_REPO_ROOT / "secretloader.py").is_file():
+    _REPO_ROOT = _REPO_ROOT.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 from secretloader import load_secrets  # noqa: E402

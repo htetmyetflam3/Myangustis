@@ -1,7 +1,7 @@
 [project]
-name = "mmpdf-to-Text"
+name = "myangustis-parser"
 version = "0.2.2"
-description = "Extract and normalize Burmese text from PDFs. Handles Zawgyi-encoded embedded fonts that standard extractors fail on, plus Unicode PDFs where fonts use non-standard character substitutions (e.g., ၄င်း → ၎င်း)."
+description = "Extract and normalize Burmese text from PDFs. Handles Zawgyi-encoded embedded fonts and non-standard Unicode substitutions."
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
@@ -19,15 +19,17 @@ classifiers = [
     "Topic :: Text Processing :: Linguistic",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-
 dependencies = [
     "flask>=3.0.0",
-    "fpdf2>=2.8.8"
+    "fpdf2>=2.8.8",
 ]
 
 [project.optional-dependencies]
-# Linearized ("fast web view") PDF output. Optional so the default install
-# stays flask+fpdf2 only; when present, _write_pdf emits a linearized file.
 pdf-linearize = ["pikepdf>=8"]
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.wheel]
+packages = ["main"]

@@ -1,0 +1,14 @@
+{
+  "name": "@myangustis/scraper",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Scraper toolchain (Python-driven; JS provides check-node and build helpers).",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build:wasm": "sh main/deploy/continuous-ocr/rebuild-box.sh",
+    "rebuild": "node main/scripts/check-node.js && node ../../Architecture/Engine/MonoSyllabism/map/restore-master.js"
+  }
+}

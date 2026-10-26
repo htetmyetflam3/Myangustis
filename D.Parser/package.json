@@ -1,0 +1,22 @@
+{
+  "name": "@myangustis/parser",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Burmese PDF/DOCX parser core: extraction, encoding normalisation, DOCX/PDF writers.",
+  "type": "module",
+  "main": "main/parser/index.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "optionalDependencies": {
+    "@napi-rs/canvas": "1.0.10",
+    "mammoth": "^1.13.0",
+    "tesseract.js": "7.0.0"
+  },
+  "dependencies": {
+    "pdfjs-dist": "6.4.299"
+  },
+  "devDependencies": {
+    "harfbuzzjs": "1.6.3"
+  }
+}
