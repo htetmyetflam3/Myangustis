@@ -50,6 +50,21 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
+# Repo root (holds secretloader.py) — rapidapi_translator.py is at
+# <repo>/C.Proofreading/main/tools/api/, walk up 5 parents.
+_THIS_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _THIS_DIR
+while _REPO_ROOT.parent != _REPO_ROOT and not (_REPO_ROOT / "secretloader.py").is_file():
+    _REPO_ROOT = _REPO_ROOT.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+from secretloader import load_secrets as _sl_load, parse_dotenv as _sl_parse  # noqa: E402
+
+# Auto-load the standard secret chain (process.env → caller .env → repo root
+# → .data/.env) once at import. `--env-file` can still add extra keys via
+# load_env_file() below.
+_sl_load(__file__)
+
 ROOT = Path(__file__).resolve().parent.parent
 
 HOST = "multi-format-ai-translator-the-most-complete.p.rapidapi.com"
@@ -108,51 +123,38 @@ class BatchResult:
 
 # ---------------------------------------------------------------- .env
 
-_VALID_KEY = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-
-
 def parse_env_file(path: Path | str) -> dict[str, str]:
-    """KEY=VALUE lines from a dotenv file. Comments, blanks and `export ` allowed.
+    """Parse a dotenv file into {key: value}. Delegates to secretloader.parse_dotenv.
 
-    Supports single or double quotes around the value. No substitution is
-    performed, so `$` and `{` stay literal; a line without `=` or with an
-    invalid name is skipped rather than raising.
+    Kept as a thin wrapper so existing callers (tests, mcp.py, apicaller.py)
+    don't break.
     """
-    values: dict[str, str] = {}
-    for raw in Path(path).read_text(encoding="utf-8").splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
-        if line.startswith("export "):
-            line = line[len("export "):].lstrip()
-        name, sep, value = line.partition("=")
-        if not sep:
-            continue
-        name = name.strip()
-        if not _VALID_KEY.match(name):
-            continue
-        value = value.strip()
-        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
-            value = value[1:-1]
-        elif " #" in value:
-            value = value.split(" #", 1)[0].rstrip()
-        values[name] = value
-    return values
+    return _sl_parse(Path(path).read_text(encoding="utf-8"))
 
 
 def load_env_file(path: Path | str | None = None, *,
                   override: bool = False) -> list[str]:
-    """Load a dotenv file into os.environ and return the names that were set.
+    """Load an explicit dotenv file into os.environ and return the set names.
 
-    A variable already present with a non-empty value is kept unless `override`
-    is true, so `export RAPIDAPI_KEY=...` in the shell beats the file. Values
-    are never printed; a missing file raises, because a silent no-op would hide
-    a typo in the path.
+    With no argument: re-run the standard secretloader chain (process.env →
+    caller .env → repo root .env → .data/.env) — useful for scripts that
+    import this module early and want to guarantee the environment is fully
+    populated before reading RAPIDAPI_KEY.
+
+    With an explicit path: parse that file (raises TranslatorError if missing
+    or unreadable) and apply its values. The shell environment wins unless
+    `override=True`.
     """
-    target = path or os.environ.get(ENV_FILE_ENV)
-    if not target:
+    if path is None:
+        target = os.environ.get(ENV_FILE_ENV)
+        if target:
+            path = target
+    if path is None:
+        # No explicit file: refresh the standard chain. load_secrets is
+        # idempotent — calling again is a cheap no-op if already loaded.
+        _sl_load(__file__)
         return []
-    file = Path(target).expanduser()
+    file = Path(path).expanduser()
     if not file.is_file():
         raise TranslatorError(f"no env file at {file}")
     loaded: list[str] = []

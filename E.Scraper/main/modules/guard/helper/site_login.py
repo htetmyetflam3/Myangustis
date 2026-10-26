@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import os
 import re
+import sys
 import urllib.parse
 from dataclasses import dataclass
 from pathlib import Path
@@ -31,8 +32,23 @@ from pathlib import Path
 import httpx
 from bs4 import BeautifulSoup, Tag
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-DOTENV_PATH = REPO_ROOT / ".env"  # repo root, next to main.py
+# Walk up to the repo root (holds secretloader.py) and add to sys.path so we
+# can import it without making E.Scraper a pip-installed package.
+_THIS_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _THIS_DIR
+while _REPO_ROOT.parent != _REPO_ROOT and not (_REPO_ROOT / "secretloader.py").is_file():
+    _REPO_ROOT = _REPO_ROOT.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+from secretloader import load_secrets, secret  # noqa: E402
+
+# Ensure .env is loaded for this caller (E.Scraper → repo root resolution).
+load_secrets(__file__)
+
+# DOTENV_PATH kept for backward compatibility with code that references it.
+REPO_ROOT = _REPO_ROOT
+DOTENV_PATH = REPO_ROOT / ".env"
 LOGIN_TIMEOUT = 20.0
 
 LOGOUT_MARKER = re.compile(r"\b(log\s?out|logout|sign\s?out|signout)\b", re.I)
@@ -64,31 +80,27 @@ _NON_SUBMIT_TYPES = frozenset({"submit", "button", "image", "reset", "file"})
 
 
 def load_dotenv_values(path: Path | None = None) -> dict[str, str]:
-    """Parse a .env file the same way fetch_results does (quotes, export)."""
-    try:
-        lines = (path or DOTENV_PATH).read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return {}
-    values: dict[str, str] = {}
-    for line in lines:
-        entry = line.strip()
-        if entry.startswith("export "):
-            entry = entry[7:].lstrip()
-        if not entry or entry.startswith("#") or "=" not in entry:
-            continue
-        name, value = entry.split("=", 1)
-        name = name.strip()
-        if not name or name in values:
-            continue
-        value = value.strip()
-        if value[:1] in ('"', "'"):
-            closing_quote = value.find(value[0], 1)
-            if closing_quote > 0:
-                value = value[1:closing_quote]
-        else:
-            value = value.split("#", 1)[0].strip()
-        values[name] = value
-    return values
+    """Backward-compatible .env reader.
+
+    Secret resolution now goes through secretloader (process.env → caller .env
+    → repo root .env → .data/.env). When an explicit path is given we parse
+    that file directly (matching the old single-file behaviour for callers
+    that pass `--env-file` style arguments).
+    """
+    if path is not None:
+        # Explicit file — parse and return without touching os.environ.
+        from secretloader import parse_dotenv
+        try:
+            return parse_dotenv(Path(path).read_text(encoding="utf-8"))
+        except OSError:
+            return {}
+    # No path: return the effective environment for keys we can see. Build a
+    # dict from the current os.environ snapshot (which load_secrets already
+    # populated) so existing callers that do `dotenv.get(name, "")` keep working.
+    return {k: os.environ[k] for k in os.environ if _VALID_KEY.match(k)}
+
+
+_VALID_KEY = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def _host_token(host: str) -> str:

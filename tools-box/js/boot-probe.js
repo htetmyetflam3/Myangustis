@@ -23,8 +23,11 @@ import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
 
+import { loadSecrets, secret } from "../../secretloader.js";
+loadSecrets(import.meta.url);
+
 import { abs, FRONTEND_DIR } from "../../F.Site/Backend/file/paths.js";
-import { GetOutputDir, GetEnvCandidates, resolvePath } from "../../Architecture/host/path.js";
+import { GetOutputDir, resolvePath } from "../../Architecture/host/path.js";
 
 const SITE = `http://127.0.0.1:${process.env.SITE_PORT || process.env.PORT || 3000}`;
 const ENGINE = `http://127.0.0.1:${process.env.ENGINE_PORT || 9000}`;
@@ -55,18 +58,8 @@ async function reachable(url) {
   }
 }
 
-/** .env reader for the engine key — the webs' own precedence, not a copy. */
-function readEnvKey(name) {
-  if (process.env[name]) return process.env[name];
-  for (const p of GetEnvCandidates()) {
-    if (!fs.existsSync(p)) continue;
-    for (const line of fs.readFileSync(p, "utf8").split("\n")) {
-      const m = line.match(new RegExp(`^\\s*${name}\\s*=\\s*(.*)$`));
-      if (m) return m[1].trim();
-    }
-  }
-  return "";
-}
+/** Read an env key — process.env already populated by loadSecrets() above. */
+const readEnvKey = (name) => secret(name, "");
 
 // ── 0) the webs are up at all? ───────────────────────────────────────────
 const [siteUp, engineUp] = [await reachable(`${SITE}/csrf-token`), await reachable(`${ENGINE}/health`)];

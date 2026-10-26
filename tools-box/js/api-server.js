@@ -56,9 +56,12 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { loadSecrets, candidateEnvFiles } from "../../secretloader.js";
 let configure=()=>{},grammarPipeline=async()=>{throw new Error("local grammar pipeline (cli.js) is not wired");};import("../../Architecture/Engine/init/cli.js").then(m=>{configure=m.configure;grammarPipeline=m.grammarPipeline;}).catch(()=>{});
 import { invokeSyllableWithHash, hashKind } from "../../Architecture/Engine/init/initS.js";
 import { getDateTimeHash } from "../../Bridge/logen/logen.js";
+
+loadSecrets(import.meta.url);
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const TMP_DIR = path.join(MODULE_DIR, "File", ".api");
@@ -66,20 +69,11 @@ const PORT = parseInt(process.env.PORT || process.env.API_PORT || "9000", 10);
 const MAX_PAYLOAD = parseInt(process.env.MAX_PAYLOAD_MB || "256", 10) * 1024 * 1024;
 
 /* ── handshake gate — key + caller IP + origin, fail closed ────
-   "Key validating must exist before handshake success": the key is the
-   one from the root .env (the same FSM_KEY the Site bridge sends). The
-   engine resolves it at boot and refuses /metadata + /process unless
-   ALL of these hold:
-     1. X-API-Key equals the configured key (timing-safe compare). If the
-        engine has NO key configured it rejects everything — a gate that
-        cannot validate must not open.
-     2. Caller IP (socket) is allow-listed. Dev placeholders: loopback +
-        every DEV_BYPASS_IP entry from .env (ENGINE_ALLOWED_IPS overrides).
-     3. Origin/Referer, when the caller sends one, resolves to a host on
-        the origin allowlist (dev placeholder: localhost:3000 via
-        ENGINE_ALLOWED_ORIGINS). Server-to-server fetches send neither —
-        key + IP still gate them. /health stays open (liveness only). */
-const ROOT_ENV = path.resolve(MODULE_DIR, "..", "..", ".env");
+   Secret resolution is handled by secretloader.js (process.env first,
+   then caller .env, then repo root .env, then .data/.env). We only
+   re-parse the files here to honour duplicate DEV_BYPASS_IP entries,
+   which secretloader collapses to last-value-wins on purpose (normal
+   dotenv semantics). Real env always wins. */
 
 /* .env reader that KEEPS duplicate keys as arrays (DEV_BYPASS_IP is listed
    more than once in the file — every entry is a valid dev IP). */
@@ -103,7 +97,21 @@ function readEnvFileMulti(p) {
 	return out;
 }
 
-const FILE_ENV = readEnvFileMulti(ROOT_ENV);
+// Merge from every .env candidate in discovery order (closer files win per
+// duplicate-key, but real process.env always wins — already applied by
+// loadSecrets above).
+const FILE_ENV = {};
+for (const f of candidateEnvFiles(fileURLToPath(import.meta.url))) {
+	for (const [k, v] of Object.entries(readEnvFileMulti(f))) {
+		if (k in FILE_ENV) {
+			const prev = FILE_ENV[k];
+			if (Array.isArray(prev)) FILE_ENV[k] = v; // farther file's dupes lose; we only keep caller's list
+			// else keep existing single value
+		} else {
+			FILE_ENV[k] = v;
+		}
+	}
+}
 const asList = (v) =>
 	v === undefined || v === null || v === ""
 		? []

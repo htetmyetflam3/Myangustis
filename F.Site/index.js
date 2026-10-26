@@ -1,4 +1,5 @@
-import "dotenv/config";
+import { loadSecrets } from '../secretloader.js';
+await loadSecrets(import.meta.url);
 import crypto from "node:crypto";
 import express from "express";
 import cookieParser from "cookie-parser";
