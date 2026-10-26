@@ -1,0 +1,16 @@
+{
+  "rebuilt": "2026-10-25",
+  "note": "prebuilt syllable/rtl/pos trees shipped inside the engine; verified by the loader itself (cache-integrity.js), replacing per-caller CACHE-SOURCE.json checks",
+  "generatedAt": "2026-10-25T11:39:51.858Z",
+  "treeDir": "architecture/.cache-tree",
+  "counts": {
+    "posRoots": 1907
+  },
+  "files": {
+    "pos.tree.json": "ad09e33890927bea4ccf5524967da066e33a4a6e88a778a4e4669307440ff391",
+    "ref-syllables.json": "0dc67326cf6322da12f45259100d735f7d83c1a046d996cc3720ec40dbe9f176",
+    "rtl-tree.json": "c64807558f98e7ecb60e67f2ce103d303b857ace2d1f00e2fcd91c93631e7f7a",
+    "syllable.mapped.txt": "303d16b20c34bec4227bc73f4788b8a9cc704998b0764edca470da12bb1220a6",
+    "syllable.tree.json": "137384690e67750ae5d3302f072d497126b7e01d4ba91ca954f5b9aca9fcb087"
+  }
+}

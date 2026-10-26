@@ -1,0 +1,1150 @@
+<!doctype html>
+<html lang="my">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="AKKHARA — text-based Zawgyi/Myanmar PDF ထဲက embedded font mapping ကို ဖတ်ပြီး စစ်ဆေးနိုင်သော Unicode, TXT နှင့် DOCX output ထုတ်ပေးသည့် parser။ Scan PDF အတွက် OCR ရလဒ်က scan အရည်အသွေးအတိုင်းသာ ထွက်သည်။ ထို ရလဒ်ကို ပိုမှန်အောင် ပြင်ပေးမည့် language-aware grammar layer ကို တည်ဆောက်နေသည်။"
+    />
+    <title>AKKHARA — Myanmar PDF ထဲက စာထုတ်ခြင်း & Custom OCR</title>
+    <!-- Preload the two faces every page needs up front: Cherry Unicode for
+         body copy, Masterpiece UniSerif for headings. Myanmar Sagar and Yoe
+         Yar One are fallback / on-demand and load when first used. -->
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/cherry-unicode-400.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/masterpiece-uni-serif-400.woff2" crossorigin />
+    <link rel="stylesheet" href="/scss/main.scss" />
+    <link rel="preload" as="image" href="images/akkhara-logo.svg" />
+    <link rel="preload" as="image" href="images/akkhara-wordmark.svg" />
+    <link rel="preload" as="image" href="images/voices.jpg" />
+    <link rel="preload" as="image" href="images/band.jpg" />
+  </head>
+  <body>
+
+    
+    <svg class="ak-sprite d-none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+      <defs>
+      <symbol id="i-mark" viewBox="0 0 48 48"><defs>
+                <linearGradient id="mk" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#C63B26"></stop>
+                  <stop offset="100%" stop-color="#E0A63C"></stop>
+                </linearGradient>
+              
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></symbol>
+      <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"></path></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"></path><path d="M12 5v14"></path></symbol>
+      <symbol id="i-scan-lines" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><path d="M7 8h8"></path><path d="M7 12h10"></path><path d="M7 16h6"></path></symbol>
+      <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"></path><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"></path><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"></path></symbol>
+      <symbol id="i-keyboard" viewBox="0 0 24 24"><path d="M10 8h.01"></path><path d="M12 12h.01"></path><path d="M14 8h.01"></path><path d="M16 12h.01"></path><path d="M18 8h.01"></path><path d="M6 8h.01"></path><path d="M7 16h10"></path><path d="M8 12h.01"></path><rect width="20" height="16" x="2" y="4" rx="2"></rect></symbol>
+      </defs>
+              <rect x="1.5" y="1.5" width="45" height="45" rx="11" fill="none" stroke="currentColor" stroke-width="2"></rect>
+              <path d="M9 16.5l4.2-3.4 4 3.4 4.3-3.4 4 3.4 4.3-3.4 4 3.4 4.2-3.4" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" opacity="0.42"></path>
+              <path d="M9 26.5h30M9 34.5h22" fill="none" stroke="url(#mk)" stroke-width="3" stroke-linecap="round"></path>
+              <circle cx="36.5" cy="34.5" r="3.2" fill="url(#mk)"></circle></symbol>
+      <symbol id="i-arrow-up-right" viewBox="0 0 24 24"><path d="M7 7h10v10"></path><path d="M7 17 17 7"></path></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 15V3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 3v12"></path><path d="m17 8-5-5-5 5"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"></path></symbol>
+      <symbol id="i-scan-frame" viewBox="0 0 24 24"><path d="M12 20v2"></path><path d="M12 2v2"></path><path d="M17 20v2"></path><path d="M17 2v2"></path><path d="M2 12h2"></path><path d="M2 17h2"></path><path d="M2 7h2"></path><path d="M20 12h2"></path><path d="M20 17h2"></path><path d="M20 7h2"></path><path d="M7 20v2"></path><path d="M7 2v2"></path><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="8" y="8" width="8" height="8" rx="1"></rect></symbol>
+      <symbol id="i-file-check" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"></path><path d="M14 2v5a1 1 0 0 0 1 1h5"></path><path d="m9 15 2 2 4-4"></path></symbol>
+      <symbol id="i-external-link" viewBox="0 0 24 24"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></symbol>
+      <symbol id="i-info-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="8" y2="12"></line><line x1="12" x2="12.01" y1="16" y2="16"></line></symbol>
+      <symbol id="i-circle-check" viewBox="0 0 24 24"><path d="M21.801 10A10 10 0 1 1 17 3.335"></path><path d="m9 11 3 3L22 4"></path></symbol>
+      <symbol id="i-circle-slash" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="m4.9 4.9 14.2 14.2"></path></symbol>
+      <symbol id="i-alert-triangle" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></symbol>
+      <symbol id="i-scan-text" viewBox="0 0 24 24"><path d="M21 7V5a2 2 0 0 0-2-2h-2"></path><path d="M7 3H5a2 2 0 0 0-2 2v2"></path><path d="M17 21h2a2 2 0 0 0 2-2v-2"></path><path d="M3 17v2a2 2 0 0 0 2 2h2"></path><path d="M7 8h8"></path><path d="M7 12h10"></path><path d="M7 16h6"></path></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></symbol>
+      <symbol id="i-download-box" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></symbol>
+      <symbol id="i-book-open" viewBox="0 0 24 24"><path d="M12 5v16"></path><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z"></path></symbol>
+      <symbol id="i-file-up" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"></path><path d="M14 2v5a1 1 0 0 0 1 1h5"></path><path d="M12 12v6"></path><path d="m15 15-3-3-3 3"></path></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></symbol>
+      
+      <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></symbol>
+      <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></symbol>
+      <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></symbol>
+      <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M8 13h7"></path><path d="M8 17h5"></path></symbol>
+      <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="m12 3 1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"></path><path d="m19 14.5.95 2.3 2.3.95-2.3.95L19 21l-.95-2.3-2.3-.95 2.3-.95z"></path></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.6v14.8L19 12z" fill="currentColor" stroke="none"></path></symbol>
+      <symbol id="i-diagram" viewBox="0 0 24 24"><rect x="9" y="2.5" width="6" height="5" rx="1.5"></rect><rect x="2" y="16.5" width="6" height="5" rx="1.5"></rect><rect x="16" y="16.5" width="6" height="5" rx="1.5"></rect><path d="M12 7.5v4.5"></path><path d="M5 16.5V12h14v4.5"></path></symbol>
+      <symbol id="i-bounding-box" viewBox="0 0 24 24"><path d="M3 7.5V5a2 2 0 0 1 2-2h2.5"></path><path d="M16.5 3H19a2 2 0 0 1 2 2v2.5"></path><path d="M21 16.5V19a2 2 0 0 1-2 2h-2.5"></path><path d="M7.5 21H5a2 2 0 0 1-2-2v-2.5"></path><circle cx="12" cy="12" r="6.5"></circle><circle cx="12" cy="12" r="2.5"></circle></symbol>
+      
+      <symbol id="i-shell-dots" viewBox="0 0 44 12"><circle cx="6" cy="6" r="6" fill="#c63b26" stroke="none"></circle><circle cx="22" cy="6" r="6" fill="#e0a63c" stroke="none"></circle><circle cx="38" cy="6" r="6" fill="#2e7d5b" stroke="none"></circle></symbol>
+      <symbol id="i-window-dots" viewBox="0 0 38 10"><circle cx="5" cy="5" r="5" fill="#ff5f57" stroke="none"></circle><circle cx="19" cy="5" r="5" fill="#febc2e" stroke="none"></circle><circle cx="33" cy="5" r="5" fill="#28c840" stroke="none"></circle></symbol>
+      <symbol id="i-wand" viewBox="0 0 24 24"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"></path><path d="m14 7 3 3"></path><path d="M5 6v4"></path><path d="M19 14v4"></path><path d="M10 2v2"></path><path d="M7 8H3"></path><path d="M21 16h-4"></path><path d="M11 3H9"></path></symbol>
+      </defs>
+    </svg>
+    <div class="ak-page">
+      <a href="#hero" class="ak-skip">အကြောင်းအရာသို့ ကျော်သွားရန်</a>
+
+      
+      <header class="ak-nav position-relative z-50" id="nav">
+        <div class="ak-nav-bar hstack gap-6 mw-rail mx-auto px-5 px-sm-8 px-lg-12 py-3-5">
+          <a href="#hero" class="ak-brand d-flex align-items-center gap-3 text-decoration-none">
+            <span class="brand-mark ak-brand-mark" aria-hidden="true">
+              <span class="brand-mark-wiggle">
+                <span class="brand-mark-flip">
+                  <img src="images/akkhara-logo.svg" alt="" draggable="false" />
+                </span>
+              </span>
+            </span>
+            <span class="lh-1">
+              <span class="ak-brand-name d-block font-display">AKKHARA</span>
+              <span class="ak-brand-tag d-block micro">myanmar pdf lab</span>
+            </span>
+          </a>
+
+          <nav class="ak-nav-links-bar ms-auto d-none d-lg-flex align-items-center gap-8">
+            <a href="#how" class="sweep mm">ဘယ်လိုအလုပ်လုပ်လဲ</a>
+            <a href="#compare" class="sweep mm">နှိုင်းယှဉ်ချက်</a>
+            <a href="#features" class="sweep mm">အကျိုးကျေးဇူးများ</a>
+            <a href="#faq" class="sweep mm">မေးခွန်းများ</a>
+          </nav>
+
+          <div class="ak-nav-actions-bar d-flex align-items-center gap-3 ms-auto ms-lg-0">
+            <button type="button" class="btn btn-primary btn-sm d-none d-sm-inline-flex" data-open-upload-scroll aria-label="PDF တင်ရန်">
+              PDF တင်ရန်
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg>
+            </button>
+            <button
+              type="button"
+              class="ak-burger-box d-inline-flex d-lg-none align-items-center justify-content-center size-10 rounded-circle"
+              id="navBurger"
+              aria-label="မီနူး ဖွင့်ရန်"
+              aria-expanded="false"
+            >
+              <svg class="ak-burger-open" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-menu"></use></svg>
+              <svg class="ak-burger-close" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-x"></use></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="ak-drawer glass d-grid d-lg-none overflow-hidden" id="navDrawer">
+          <div class="ak-drawer-stack vstack gap-1 px-5 py-4 min-h-0">
+            <a href="#how" class="mm" data-nav-close>ဘယ်လိုအလုပ်လုပ်လဲ</a>
+            <a href="#compare" class="mm" data-nav-close>နှိုင်းယှဉ်ချက်</a>
+            <a href="#features" class="mm" data-nav-close>အကျိုးကျေးဇူးများ</a>
+            <a href="#faq" class="mm" data-nav-close>မေးခွန်းများ</a>
+            <button type="button" class="btn btn-primary" data-open-upload-scroll>
+              PDF တင်ရန်
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        
+        <section id="hero">
+          <div class="position-relative overflow-hidden w-100 mw-7xl mx-auto px-0 px-lg-6 pt-6 pt-lg-8" id="heroSlider">
+            <div class="lp-kicker-bar d-none d-lg-flex align-items-end justify-content-between mb-5 px-lg-0">
+              <span class="lp-kicker d-inline-flex align-items-center gap-2 ak-micro">myanmar pdf → text you can use</span>
+              <span class="ak-micro" style="color: #7c7466">pdf · docx · scanned pdf · txt</span>
+            </div>
+
+            <div class="lp-hero-grid d-grid align-items-stretch gap-8 gap-lg-10">
+              <div class="lp-slider-col position-relative min-w-0 d-flex flex-column">
+                <div class="lp-frame w-100 d-flex flex-column flex-grow-1">
+                  <div class="lp-chrome-bar lp-chrome-blue d-flex align-items-center gap-2">
+                    <svg class="lp-live" viewBox="0 0 14 14" aria-hidden="true">
+                      <circle class="lp-live-halo" cx="7" cy="7" r="3.25"></circle>
+                      <circle class="lp-live-dot" cx="7" cy="7" r="3.25"></circle>
+                    </svg>
+                    <span class="lp-chrome-title">Myanmar text your other tools could not read</span>
+                  </div>
+
+                  <div class="lp-stage position-relative overflow-hidden flex-grow-1">
+                    <div class="lp-track d-flex align-items-stretch h-100" id="heroTrack" style="transform: translateX(-0%)">
+                      <div class="lp-slide lp-slide-art w-100 flex-shrink-0 min-w-0">
+                        <div class="lp-screen-box position-relative overflow-hidden h-100">
+                          <svg viewBox="0 0 1200 820" class="svg-fx" role="img" aria-label="Animated illustration: a Zawgyi PDF being converted into selectable Unicode DOCX, TXT and PDF files" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="akSky" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#faf1e9"></stop><stop offset="100%" stop-color="#f2f6ee"></stop></linearGradient><linearGradient id="akBar" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#f3ded3"></stop><stop offset="55%" stop-color="#f6e6d8"></stop><stop offset="100%" stop-color="#e0efe4"></stop></linearGradient><linearGradient id="akArrow" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#c63b26"></stop><stop offset="100%" stop-color="#d9682c"></stop></linearGradient><marker id="akHead" viewBox="0 0 12 12" refX="7" refY="6" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1 L11 6 L1 11 z" fill="#c63b26"></path></marker><marker id="akHeadTeal" viewBox="0 0 12 12" refX="7" refY="6" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1 L11 6 L1 11 z" fill="#2e7d5b"></path></marker></defs><circle cx="250" cy="180" r="190" fill="url(#akSky)" opacity="0.75"></circle><circle cx="960" cy="620" r="215" fill="url(#akSky)" opacity="0.7"></circle><g class="fx-float"><path d="M175 128 a58 58 0 0 1 22 -100 a62 62 0 0 1 108 14 a48 48 0 0 1 12 92 Z" fill="#fff" stroke="#0e1626" stroke-width="6"></path><rect x="206" y="42" width="60" height="70" rx="10" fill="#f7ded8" stroke="#0e1626" stroke-width="5"></rect><path d="M236 60 c-10 12 -16 24 -8 32 c8 8 22 -4 18 -16 c-4 -12 -12 -18 -10 -16" fill="none" stroke="#b32026" stroke-width="5"></path><path d="M266 78 h30" stroke="#0e1626" stroke-width="5" marker-end="url(#akHead)"></path></g><path class="fx-dash" d="M330 70 H520 Q548 70 548 104 V150" fill="none" stroke="#c63b26" stroke-width="6" marker-end="url(#akHead)"></path><path class="fx-dash-rev" d="M232 210 Q166 210 166 162 V138" fill="none" stroke="#2e7d5b" stroke-width="6" marker-end="url(#akHeadTeal)"></path><g><rect x="208" y="152" width="812" height="330" rx="34" fill="#fff" stroke="#0e1626" stroke-width="7"></rect><rect x="232" y="176" width="764" height="282" rx="24" fill="#fdfaf6" stroke="#0e1626" stroke-width="5"></rect><rect x="232" y="176" width="764" height="84" rx="24" fill="url(#akBar)" stroke="#0e1626" stroke-width="5"></rect><text x="266" y="234" font-size="44" font-weight="800" fill="#0e1626" font-family="Myanmar Sagar, sans-serif">PDF to Text</text><g transform="translate(524 186)"><rect x="0" y="6" width="54" height="62" rx="10" fill="#f7ded8" stroke="#0e1626" stroke-width="4"></rect><text x="27" y="46" text-anchor="middle" font-size="17" font-weight="800" fill="#b32026" font-family="Myanmar Sagar, sans-serif">PDF</text><path class="fx-slide-x" d="M70 38 h34" stroke="#0e1626" stroke-width="5" marker-end="url(#akHead)"></path><rect x="120" y="6" width="54" height="62" rx="10" fill="#f3ded3" stroke="#0e1626" stroke-width="4"></rect><text x="147" y="46" text-anchor="middle" font-size="15" font-weight="800" fill="#c63b26" font-family="Myanmar Sagar, sans-serif">DOCX</text><rect x="188" y="6" width="54" height="62" rx="10" fill="#e0efe4" stroke="#0e1626" stroke-width="4"></rect><text x="215" y="46" text-anchor="middle" font-size="17" font-weight="800" fill="#2e7d5b" font-family="Myanmar Sagar, sans-serif">TXT</text></g><g transform="translate(862 190)"><circle cx="18" cy="28" r="18" fill="#fff" stroke="#0e1626" stroke-width="4"></circle><path d="M10 28 h16" stroke="#0e1626" stroke-width="4"></path><circle cx="66" cy="28" r="18" fill="#fff" stroke="#0e1626" stroke-width="4"></circle><rect x="58" y="20" width="16" height="16" rx="3" fill="none" stroke="#0e1626" stroke-width="4"></rect><circle cx="114" cy="28" r="18" fill="#f7ded8" stroke="#0e1626" stroke-width="4"></circle><path d="M107 21 l14 14 M121 21 l-14 14" stroke="#b32026" stroke-width="4"></path></g><g opacity="0.22"><rect class="fx-glow" x="252" y="286" width="722" height="8" rx="4" fill="#c63b26" opacity="0.25"></rect><rect class="fx-glow" x="252" y="348" width="722" height="8" rx="4" fill="#d9682c" opacity="0.2" style="animation-delay:0.6s"></rect><rect class="fx-glow" x="252" y="410" width="722" height="8" rx="4" fill="#2e7d5b" opacity="0.2" style="animation-delay:1.2s"></rect></g></g><g transform="rotate(-2.5)"><g class="fx-float"><path d="M96 316 a18 18 0 0 1 18 -18 h218 a18 18 0 0 1 18 18 v242 l-52 52 h-184 a18 18 0 0 1 -18 -18 Z" fill="#fff" stroke="#0e1626" stroke-width="7"></path><path d="M350 558 l-52 52 v-34 a18 18 0 0 1 18 -18 Z" fill="#f7ded8" stroke="#0e1626" stroke-width="6"></path><rect x="96" y="298" width="254" height="76" rx="18" fill="#f7ded8" stroke="#0e1626" stroke-width="6"></rect><path d="M150 316 c-12 16 -20 32 -10 42 c11 10 28 -6 23 -20 c-5 -14 -16 -24 -13 -22" fill="none" stroke="#b32026" stroke-width="6"></path><text x="214" y="352" font-size="34" font-weight="800" fill="#0e1626" font-family="Myanmar Sagar, sans-serif">PDF</text><g><rect class="fx-line" x="120" y="398" width="206" height="12" rx="6" fill="#f2cfc7" opacity="0.9" style="animation-delay:0.1s"></rect><rect class="fx-line" x="120" y="425" width="206" height="12" rx="6" fill="#f2cfc7" opacity="0.9" style="animation-delay:0.26s"></rect><rect class="fx-line" x="120" y="452" width="206" height="12" rx="6" fill="#f2cfc7" opacity="0.9" style="animation-delay:0.42000000000000004s"></rect><rect class="fx-line" x="120" y="479" width="206" height="12" rx="6" fill="#f2cfc7" opacity="0.9" style="animation-delay:0.58s"></rect><rect class="fx-line" x="120" y="506" width="206" height="12" rx="6" fill="#f2cfc7" opacity="0.9" style="animation-delay:0.74s"></rect><rect class="fx-line" x="120" y="533" width="127.72" height="12" rx="6" fill="#f2cfc7" opacity="0.9" style="animation-delay:0.9s"></rect></g></g></g><g class="fx-float-sm" style="animation-delay:0.4s"><rect x="392" y="300" width="286" height="72" rx="36" fill="#fff" stroke="#0e1626" stroke-width="6"></rect><g transform="translate(432 336)"><g class="fx-spin-fast"><path d="M14.6,-4.1L19.7,-3.6L19.7,3.6L14.6,4.1L13.8,6.3L17.4,9.9L12.7,15.4L8.6,12.5L6.6,13.7L7.0,18.7L-0.1,20.0L-1.5,15.1L-3.8,14.7L-6.7,18.8L-13.0,15.2L-10.9,10.6L-12.4,8.8L-17.3,10.1L-19.7,3.3L-15.2,1.2L-15.2,-1.2L-19.7,-3.3L-17.3,-10.1L-12.4,-8.8L-10.9,-10.6L-13.0,-15.2L-6.7,-18.8L-3.8,-14.7L-1.5,-15.1L-0.1,-20.0L7.0,-18.7L6.6,-13.7L8.6,-12.5L12.7,-15.4L17.4,-9.9L13.8,-6.3Z" fill="#e0a63c" stroke="#0e1626" stroke-width="4" stroke-linejoin="round"></path><circle cx="0" cy="0" r="6.800000000000001" fill="#fff" stroke="#0e1626" stroke-width="4"></circle></g></g><text x="468" y="348" font-size="26" font-weight="800" fill="#0e1626" font-family="Myanmar Sagar, sans-serif" letter-spacing="1">CONVERTING...</text><g class="fx-slide-x"><path d="M612 288 l84 48 l-84 48 v-26 h-30 v-44 h30 Z" fill="url(#akArrow)" stroke="#0e1626" stroke-width="6" stroke-linejoin="round"></path></g><path class="fx-glow" d="M378 268 l14 -26 M690 268 l-14 -26" stroke="#e0a63c" stroke-width="7"></path></g><g class="fx-float-sm" style="animation-delay:0.1s"><path d="M702 308 a16 16 0 0 1 16 -16 h124 a16 16 0 0 1 16 16 v212 l-40 40 h-116 a16 16 0 0 1 -16 -16 Z" fill="#fff" stroke="#0e1626" stroke-width="5" stroke-linejoin="round"></path><path d="M858 520 l-40 40 v-26 a14 14 0 0 1 14 -14 Z" fill="#f3ded3" stroke="#0e1626" stroke-width="5" stroke-linejoin="round"></path><rect x="718" y="310" width="42" height="38" rx="10" fill="#f3ded3" stroke="#0e1626" stroke-width="4"></rect><text x="739" y="337" text-anchor="middle" font-size="21" font-weight="800" fill="#c63b26" font-family="Myanmar Sagar, sans-serif">W</text><text x="768" y="338" font-size="22" font-weight="800" fill="#0e1626" font-family="Myanmar Sagar, sans-serif" letter-spacing="0.5">DOCX</text><g><rect class="fx-line" x="720" y="370" width="120" height="10" rx="5" fill="#f3ded3" opacity="0.9" style="animation-delay:0.1s"></rect><rect class="fx-line" x="720" y="394" width="120" height="10" rx="5" fill="#f3ded3" opacity="0.9" style="animation-delay:0.26s"></rect><rect class="fx-line" x="720" y="418" width="120" height="10" rx="5" fill="#f3ded3" opacity="0.9" style="animation-delay:0.42000000000000004s"></rect><rect class="fx-line" x="720" y="442" width="120" height="10" rx="5" fill="#f3ded3" opacity="0.9" style="animation-delay:0.58s"></rect><rect class="fx-line" x="720" y="466" width="120" height="10" rx="5" fill="#f3ded3" opacity="0.9" style="animation-delay:0.74s"></rect><rect class="fx-line" x="720" y="490" width="74.4" height="10" rx="5" fill="#f3ded3" opacity="0.9" style="animation-delay:0.9s"></rect></g></g><g class="fx-float-sm" style="animation-delay:0.45s"><path d="M870 308 a16 16 0 0 1 16 -16 h124 a16 16 0 0 1 16 16 v212 l-40 40 h-116 a16 16 0 0 1 -16 -16 Z" fill="#fff" stroke="#0e1626" stroke-width="5" stroke-linejoin="round"></path><path d="M1026 520 l-40 40 v-26 a14 14 0 0 1 14 -14 Z" fill="#e0efe4" stroke="#0e1626" stroke-width="5" stroke-linejoin="round"></path><rect x="886" y="310" width="42" height="38" rx="10" fill="#e0efe4" stroke="#0e1626" stroke-width="4"></rect><text x="907" y="337" text-anchor="middle" font-size="21" font-weight="800" fill="#2e7d5b" font-family="Myanmar Sagar, sans-serif">T</text><text x="936" y="338" font-size="22" font-weight="800" fill="#0e1626" font-family="Myanmar Sagar, sans-serif" letter-spacing="0.5">TXT</text><g><rect class="fx-line" x="888" y="370" width="120" height="10" rx="5" fill="#e0efe4" opacity="0.9" style="animation-delay:0.45s"></rect><rect class="fx-line" x="888" y="394" width="120" height="10" rx="5" fill="#e0efe4" opacity="0.9" style="animation-delay:0.61s"></rect><rect class="fx-line" x="888" y="418" width="120" height="10" rx="5" fill="#e0efe4" opacity="0.9" style="animation-delay:0.77s"></rect><rect class="fx-line" x="888" y="442" width="120" height="10" rx="5" fill="#e0efe4" opacity="0.9" style="animation-delay:0.9299999999999999s"></rect><rect class="fx-line" x="888" y="466" width="120" height="10" rx="5" fill="#e0efe4" opacity="0.9" style="animation-delay:1.09s"></rect><rect class="fx-line" x="888" y="490" width="74.4" height="10" rx="5" fill="#e0efe4" opacity="0.9" style="animation-delay:1.25s"></rect></g></g><g class="fx-float-sm" style="animation-delay:0.8s"><path d="M1038 308 a16 16 0 0 1 16 -16 h118 a16 16 0 0 1 16 16 v212 l-40 40 h-110 a16 16 0 0 1 -16 -16 Z" fill="#fff" stroke="#0e1626" stroke-width="5" stroke-linejoin="round"></path><path d="M1188 520 l-40 40 v-26 a14 14 0 0 1 14 -14 Z" fill="#f6e6d8" stroke="#0e1626" stroke-width="5" stroke-linejoin="round"></path><rect x="1054" y="310" width="42" height="38" rx="10" fill="#f6e6d8" stroke="#0e1626" stroke-width="4"></rect><text x="1075" y="337" text-anchor="middle" font-size="21" font-weight="800" fill="#d9682c" font-family="Myanmar Sagar, sans-serif">A</text><text x="1104" y="338" font-size="22" font-weight="800" fill="#0e1626" font-family="Myanmar Sagar, sans-serif" letter-spacing="0.5">PDF</text><g><rect class="fx-line" x="1056" y="370" width="114" height="10" rx="5" fill="#f6e6d8" opacity="0.9" style="animation-delay:0.8s"></rect><rect class="fx-line" x="1056" y="394" width="114" height="10" rx="5" fill="#f6e6d8" opacity="0.9" style="animation-delay:0.9600000000000001s"></rect><rect class="fx-line" x="1056" y="418" width="114" height="10" rx="5" fill="#f6e6d8" opacity="0.9" style="animation-delay:1.12s"></rect><rect class="fx-line" x="1056" y="442" width="114" height="10" rx="5" fill="#f6e6d8" opacity="0.9" style="animation-delay:1.28s"></rect><rect class="fx-line" x="1056" y="466" width="114" height="10" rx="5" fill="#f6e6d8" opacity="0.9" style="animation-delay:1.44s"></rect><rect class="fx-line" x="1056" y="490" width="70.67999999999999" height="10" rx="5" fill="#f6e6d8" opacity="0.9" style="animation-delay:1.6s"></rect></g></g><path d="M356 688 H1042" stroke="#0e1626" stroke-width="6" opacity="0.85"></path><path d="M1042 688 V562" stroke="#0e1626" stroke-width="6" opacity="0.4"></path><path d="M1086 688 V562" stroke="#0e1626" stroke-width="6" opacity="0.4"></path><g><path class="fx-glow" d="M556 452 l-22 44 h22 l-14 40 l38 -56 h-24 l16 -28 Z" fill="#e0a63c" stroke="#0e1626" stroke-width="5"></path><path d="M478 640 q0 -66 74 -66 q74 0 74 66 Z" fill="#f3ded3" stroke="#0e1626" stroke-width="6"></path><ellipse cx="552" cy="612" rx="18" ry="22" fill="#e0a63c" stroke="#0e1626" stroke-width="5"></ellipse><path d="M486 600 l-52 18 l-26 -6" fill="none" stroke="#0e1626" stroke-width="7"></path><path d="M414 604 a16 16 0 1 0 0 24 h24 a12 12 0 0 0 0 -24 Z" fill="#f3ded3" stroke="#0e1626" stroke-width="5"></path><circle cx="552" cy="546" r="58" fill="#fff" stroke="#0e1626" stroke-width="7"></circle><path d="M486 546 a66 58 0 0 1 132 0" fill="none" stroke="#0e1626" stroke-width="8"></path><rect x="464" y="528" width="34" height="52" rx="16" fill="#d9682c" stroke="#0e1626" stroke-width="6"></rect><rect x="606" y="528" width="34" height="52" rx="16" fill="#d9682c" stroke="#0e1626" stroke-width="6"></rect><circle cx="530" cy="544" r="23" fill="#faf1e9" stroke="#0e1626" stroke-width="5"></circle><circle cx="580" cy="544" r="23" fill="#faf1e9" stroke="#0e1626" stroke-width="5"></circle><path d="M553 544 h4" stroke="#0e1626" stroke-width="5"></path><circle class="fx-blink" cx="530" cy="545" r="9" fill="#0e1626"></circle><circle class="fx-blink" cx="580" cy="545" r="9" fill="#0e1626" style="animation-delay:0.06s"></circle><path d="M534 576 q18 20 36 0 q-18 8 -36 0 Z" fill="#b32026" stroke="#0e1626" stroke-width="4"></path><circle cx="508" cy="570" r="7" fill="#f2cfc7"></circle><circle cx="598" cy="570" r="7" fill="#f2cfc7"></circle><rect x="414" y="636" width="276" height="22" rx="10" fill="#fff" stroke="#0e1626" stroke-width="6"></rect><rect x="446" y="658" width="20" height="32" fill="#fff" stroke="#0e1626" stroke-width="6"></rect><rect x="638" y="658" width="20" height="32" fill="#fff" stroke="#0e1626" stroke-width="6"></rect></g><g><path d="M104 612 a16 16 0 0 1 16 -16 h176 a16 16 0 0 1 16 16 v182 a16 16 0 0 1 -16 16 h-176 a16 16 0 0 1 -16 -16 Z" fill="#fff" stroke="#0e1626" stroke-width="6"></path><g><rect class="fx-line" x="128" y="630" width="158" height="10" rx="5" fill="#e6d8c8" opacity="0.9" style="animation-delay:0.2s"></rect><rect class="fx-line" x="128" y="654" width="158" height="10" rx="5" fill="#e6d8c8" opacity="0.9" style="animation-delay:0.36s"></rect><rect class="fx-line" x="128" y="678" width="158" height="10" rx="5" fill="#e6d8c8" opacity="0.9" style="animation-delay:0.52s"></rect><rect class="fx-line" x="128" y="702" width="158" height="10" rx="5" fill="#e6d8c8" opacity="0.9" style="animation-delay:0.6799999999999999s"></rect><rect class="fx-line" x="128" y="726" width="158" height="10" rx="5" fill="#e6d8c8" opacity="0.9" style="animation-delay:0.8400000000000001s"></rect><rect class="fx-line" x="128" y="750" width="97.96" height="10" rx="5" fill="#e6d8c8" opacity="0.9" style="animation-delay:1s"></rect></g></g><g class="fx-lens"><circle cx="258" cy="736" r="44" fill="#faf1e9" fill-opacity="0.7" stroke="#0e1626" stroke-width="7"></circle><circle cx="258" cy="736" r="31" fill="none" stroke="#c63b26" stroke-width="4" opacity="0.55"></circle><path d="M244 728 h28 M244 742 h18" stroke="#c63b26" stroke-width="5"></path><path d="M290 768 l30 30" stroke="#0e1626" stroke-width="12"></path><path d="M290 768 l30 30" stroke="#2e7d5b" stroke-width="5"></path></g><g><circle class="fx-pop" cx="820" cy="640" r="36" fill="#e0efe4" stroke="#0e1626" stroke-width="6"></circle><path class="fx-pop" d="M802 640 l12 14 l24 -28" fill="none" stroke="#2e7d5b" stroke-width="7"></path><g class="fx-spin" style="animation-duration:9s"><path d="M949.2,723.1L963.5,724.1L963.5,739.9L949.2,740.9L947.9,745.8L959.7,753.9L951.8,767.5L938.9,761.3L935.3,764.9L941.5,777.8L927.9,785.7L919.8,773.9L914.9,775.2L913.9,789.5L898.1,789.5L897.1,775.2L892.2,773.9L884.1,785.7L870.5,777.8L876.7,764.9L873.1,761.3L860.2,767.5L852.3,753.9L864.1,745.8L862.8,740.9L848.5,739.9L848.5,724.1L862.8,723.1L864.1,718.2L852.3,710.1L860.2,696.5L873.1,702.7L876.7,699.1L870.5,686.2L884.1,678.3L892.2,690.1L897.1,688.8L898.1,674.5L913.9,674.5L914.9,688.8L919.8,690.1L927.9,678.3L941.5,686.2L935.3,699.1L938.9,702.7L951.8,696.5L959.7,710.1L947.9,718.2Z" fill="#f3ded3" stroke="#0e1626" stroke-width="4" stroke-linejoin="round"></path><circle cx="906" cy="732" r="19.720000000000002" fill="#fff" stroke="#0e1626" stroke-width="4"></circle></g><g class="fx-spin-rev" style="animation-duration:7s"><path d="M1043.9,659.5L1055.4,660.5L1055.4,675.5L1043.9,676.5L1042.4,681.1L1051.1,688.6L1042.3,700.7L1032.5,694.8L1028.5,697.6L1031.1,708.9L1016.9,713.5L1012.4,702.9L1007.6,702.9L1003.1,713.5L988.9,708.9L991.5,697.6L987.5,694.8L977.7,700.7L968.9,688.6L977.6,681.1L976.1,676.5L964.6,675.5L964.6,660.5L976.1,659.5L977.6,654.9L968.9,647.4L977.7,635.3L987.5,641.2L991.5,638.4L988.9,627.1L1003.1,622.5L1007.6,633.1L1012.4,633.1L1016.9,622.5L1031.1,627.1L1028.5,638.4L1032.5,641.2L1042.3,635.3L1051.1,647.4L1042.4,654.9Z" fill="#f6e6d8" stroke="#0e1626" stroke-width="4" stroke-linejoin="round"></path><circle cx="1010" cy="668" r="15.64" fill="#fff" stroke="#0e1626" stroke-width="4"></circle></g><g class="fx-spin" style="animation-duration:5s"><path d="M1030.9,769.1L1039.4,769.9L1039.4,782.1L1030.9,782.9L1029.5,786.7L1035.6,792.8L1027.7,802.2L1020.6,797.3L1017.2,799.3L1017.9,807.9L1005.8,810.0L1003.5,801.7L999.6,801.0L994.6,808.0L984.0,801.9L987.5,794.1L985.0,791.0L976.7,793.2L972.5,781.7L980.2,778.0L980.2,774.0L972.5,770.3L976.7,758.8L985.0,761.0L987.5,757.9L984.0,750.1L994.6,744.0L999.6,751.0L1003.5,750.3L1005.8,742.0L1017.9,744.1L1017.2,752.7L1020.6,754.7L1027.7,749.8L1035.6,759.2L1029.5,765.3Z" fill="#f8ecd4" stroke="#0e1626" stroke-width="4" stroke-linejoin="round"></path><circle cx="1006" cy="776" r="11.56" fill="#fff" stroke="#0e1626" stroke-width="4"></circle></g><g class="fx-spin-rev" style="animation-duration:4s"><path d="M1114.8,734.0L1121.5,734.7L1121.5,745.3L1114.8,746.0L1113.5,749.1L1117.7,754.3L1110.3,761.7L1105.1,757.5L1102.0,758.8L1101.3,765.5L1090.7,765.5L1090.0,758.8L1086.9,757.5L1081.7,761.7L1074.3,754.3L1078.5,749.1L1077.2,746.0L1070.5,745.3L1070.5,734.7L1077.2,734.0L1078.5,730.9L1074.3,725.7L1081.7,718.3L1086.9,722.5L1090.0,721.2L1090.7,714.5L1101.3,714.5L1102.0,721.2L1105.1,722.5L1110.3,718.3L1117.7,725.7L1113.5,730.9Z" fill="#e0efe4" stroke="#0e1626" stroke-width="4" stroke-linejoin="round"></path><circle cx="1096" cy="740" r="8.84" fill="#fff" stroke="#0e1626" stroke-width="4"></circle></g><g class="fx-spin" style="animation-duration:7s"><path d="M1058 576 a44 44 0 0 1 72 -16 M1130 560 v26 h-26" fill="none" stroke="#2e7d5b" stroke-width="7"></path><path d="M1142 616 a44 44 0 0 1 -72 16 M1070 632 v-26 h26" fill="none" stroke="#c63b26" stroke-width="7"></path></g></g></svg>
+                        </div>
+                      </div>
+
+                      <div class="lp-slide lp-slide-text w-100 flex-shrink-0 min-w-0">
+                        <div class="lp-text-scene h-100 d-flex flex-column justify-content-center">
+                          <div class="lp-chip is-blue d-inline-flex align-items-center gap-2 py-1 px-3 mb-4 rounded-pill">
+                            <svg class="lp-chip-dot" viewBox="0 0 14 14" aria-hidden="true"><circle class="lp-chip-halo" cx="7" cy="7" r="3.25"></circle><circle class="lp-chip-core" cx="7" cy="7" r="3.25"></circle></svg>
+                            <span>01 / pdf · docx</span>
+                          </div>
+                          <p class="lp-h1">
+                            ယူနီကုဒ်နဲ့ ရိုက်ထားတဲ့<br />
+                            <span class="lp-grad">PDF · DOCX</span>
+                          </p>
+                          <p class="lp-lead">PDF နဲ့ Word (DOCX) ဖိုင်တွေထဲက စာကို စာပိုဒ်၊ ခေါင်းစဉ် ပုံစံအတိုင်း ပြန်ထုတ်ပေးပါတယ်။ ထွက်လာတဲ့ စာသားကို ကူးယူလို့၊ ရှာဖွေလို့၊ ပြန်တည်းဖြတ်လို့ ရပါတယ်။</p>
+                          <p class="lp-note mm">ဒီလို ယူနီကုဒ်ဖိုင်တွေကိုတော့ အွန်လိုင်းမှာ ရှိတဲ့ multi language converter အများစုကလည်း ဖတ်နိုင်ပါတယ်။</p>
+                          <p class="lp-en">Unicode PDFs and Word files. The text comes back with its paragraphs and headings in place.</p>
+                        </div>
+                      </div>
+
+                      <div class="lp-slide lp-slide-text w-100 flex-shrink-0 min-w-0">
+                        <div class="lp-text-scene h-100 d-flex flex-column justify-content-center">
+                          <div class="lp-chip is-blue d-inline-flex align-items-center gap-2 py-1 px-3 mb-4 rounded-pill">
+                            <svg class="lp-chip-dot" viewBox="0 0 14 14" aria-hidden="true"><circle class="lp-chip-halo" cx="7" cy="7" r="3.25"></circle><circle class="lp-chip-core" cx="7" cy="7" r="3.25"></circle></svg>
+                            <span>02 / pdf → word · ဇော်ဂျီ</span>
+                          </div>
+                          <p class="lp-h1">
+                            မြန်မာစာ မပေါ်တဲ့<br />
+                            <span class="lp-grad">ဇော်ဂျီ PDF</span>
+                          </p>
+                          <p class="lp-lead">PDF ကို Microsoft Word ဒါမှမဟုတ် အွန်လိုင်း converter နဲ့ ပြောင်းကြည့်တဲ့အခါ မြန်မာစာ လုံးဝ မထွက်တာ၊ စာလုံးတွေ ပုံပျက်နေတာ ကြုံဖူးမှာပါ။ အဲဒီဖိုင်တွေက ယူနီကုဒ် မဟုတ်ဘဲ ဇော်ဂျီနဲ့ ရိုက်ထားလို့ပါ။ ဇော်ဂျီကို သီးသန့်နည်းနဲ့ ပြန်ဖတ်မှ ရပါတယ်။</p>
+                          <p class="lp-note mm">AKKHARA က ဒီလိုဖိုင်မျိုးကို မှန်ကန်တဲ့ မြန်မာစာအဖြစ် ပြောင်းပေးပါတယ်။</p>
+                          <p class="lp-en">Open a Zawgyi PDF in Word or an online converter and the Myanmar text comes out blank or scrambled. AKKHARA reads it properly.</p>
+                        </div>
+                      </div>
+
+                      <div class="lp-slide lp-slide-text w-100 flex-shrink-0 min-w-0">
+                        <div class="lp-text-scene h-100 d-flex flex-column justify-content-center">
+                          <div class="lp-chip is-blue d-inline-flex align-items-center gap-2 py-1 px-3 mb-4 rounded-pill">
+                            <svg class="lp-chip-dot" viewBox="0 0 14 14" aria-hidden="true"><circle class="lp-chip-halo" cx="7" cy="7" r="3.25"></circle><circle class="lp-chip-core" cx="7" cy="7" r="3.25"></circle></svg>
+                            <span>03 / scan pdf · ဓာတ်ပုံ</span>
+                          </div>
+                          <p class="lp-h1">
+                            ဓာတ်ပုံအဖြစ်သာ ရှိတဲ့<br />
+                            <span class="lp-grad">Scan PDF</span>
+                          </p>
+                          <p class="lp-lead">Scan ဖတ်ထားတဲ့ စာမျက်နှာမှာ စာလုံးဆိုတာ မရှိပါဘူး — ဓာတ်ပုံပဲ ရှိတာပါ။ ဒါကြောင့် ပုံထဲက စာကို ဖတ်ပြီး စာသားအဖြစ် ပြန်ရေးပေးတဲ့ OCR လိုအပ်ပါတယ်။ AKKHARA ရဲ့ OCR ကို မြန်မာစာအတွက် သီးသန့် ပြင်ဆင်ထားပါတယ်။</p>
+                          <p class="lp-note mm">Scan ဖိုင်တွေမှာ ပုံမှုန်နေရင် အဖြေလည်း မှုန်ပါတယ်။ CamScanner၊ Adobe Scan တို့နဲ့ ရိုက်ထားတဲ့ ဖိုင်တွေမှာ အထူးသိသာပါတယ်။</p>
+                          <p class="lp-en">A scanned page is a picture, not text. OCR reads the picture — how clear the scan is decides how good the result is.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="lp-demo-bar">
+                    <p class="lp-demo-title">Try a converted sample, then edit the text</p>
+                    <div class="lp-demo-btns" role="group" aria-label="Open a converted sample">
+                      <button type="button" class="lp-demo-btn" data-demo="pdf">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-file-text"></use></svg>
+                        Zawgyi PDF
+                      </button>
+                      <button type="button" class="lp-demo-btn" data-demo="docx">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-file-check"></use></svg>
+                        DOCX
+                      </button>
+                      <button type="button" class="lp-demo-btn" data-demo="scan">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-scan-text"></use></svg>
+                        Scan PDF
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+
+              </div>
+
+<aside class="lp-upload" id="upload" aria-labelledby="upTitle">
+                <div class="lp-upload-chrome d-flex align-items-center gap-2">
+                  <svg class="lp-live" viewBox="0 0 14 14" aria-hidden="true">
+                    <circle class="lp-live-halo" cx="7" cy="7" r="3.25"></circle>
+                    <circle class="lp-live-dot" cx="7" cy="7" r="3.25"></circle>
+                  </svg>
+                  <span class="lp-upload-file font-mono2" id="upFile">conversion · pdf / docx</span>
+                  <span class="ts-status ms-auto" id="upStatus"><i></i>Waiting for a file</span>
+                </div>
+
+                <div class="lp-upload-body">
+                  <h2 class="lp-upload-title" id="upTitle">Upload a PDF or DOCX</h2>
+                  <p class="lp-upload-sub mm" id="upSub">Your file is checked in the browser first, and that check decides which method to use.</p>
+
+<div class="up-quota" id="upQuota" hidden>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-circle-slash"></use></svg>
+                        <span id="upQuotaText"></span>
+                      </div>
+
+                      <label class="up-drop" id="upDrop">
+                        <span class="up-drop-ico" id="upDropIco">
+                          <svg class="up-ico-idle" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-upload"></use></svg>
+                          <svg class="up-ico-busy tw-spin" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-refresh"></use></svg>
+                        </span>
+                        <h4 id="upDropTitle">Drop a PDF or DOCX here, or click to choose</h4>
+                        <p class="mm">PDF၊ Word နဲ့ scan ဖတ်ထားတဲ့ ဖိုင် အားလုံး လက်ခံပါတယ်။ ဖိုင်ကို ကိုယ့်စက်ထဲမှာပဲ စစ်ပြီး လိုအပ်တဲ့ နည်းလမ်းကို အလိုအလျောက် ရွေးပေးပါတယ်။</p>
+                        <input type="file" id="upInput" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                        <p class="up-drop-err" id="upError" hidden>
+                          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-alert-triangle"></use></svg>
+                          <span id="upErrorText"></span>
+                        </p>
+                      </label>
+
+                      <div class="up-result" id="upResult" hidden>
+                        <div class="up-card">
+                          <div class="up-card-top">
+                            <span class="up-name">
+                              <svg class="up-name-ico" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-file-check"></use></svg>
+                              <span id="upName"></span>
+                            </span>
+                            <span class="up-chip font-mono2" id="upChip">extracting · default</span>
+                          </div>
+                          <dl class="up-stats font-mono2" id="upStats"></dl>
+                        </div>
+
+                        <div class="up-notice" id="upNotice">
+                          <svg class="up-notice-ico" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-circle-check"></use></svg>
+                          <span class="mm" id="upNoticeText"></span>
+                        </div>
+
+                        <div class="up-prompt is-zawgyi" id="upPromptZawgyi" hidden>
+                          <span class="up-prompt-body">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-alert-triangle"></use></svg>
+                            <span>
+                              <span id="upZawgyiEn"></span>
+                              <span class="mm up-prompt-mm" id="upZawgyiMm"></span>
+                            </span>
+                          </span>
+                          <span class="up-prompt-btns">
+                            <button type="button" class="up-btn is-dark" data-up-confirm="zawgyi">Yes — convert it first</button>
+                            <button type="button" class="up-btn is-plain" data-up-reset>No — cancel</button>
+                          </span>
+                        </div>
+
+                        <div class="up-prompt is-ocr" id="upPromptOcr" hidden>
+                          <span class="up-prompt-body">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-scan-text"></use></svg>
+                            <span id="upOcrText"></span>
+                          </span>
+                          <span class="up-prompt-btns">
+                            <button type="button" class="up-btn is-dark" data-up-confirm="ocr">Yes — run OCR first</button>
+                            <button type="button" class="up-btn is-plain" data-up-reset>No — cancel</button>
+                          </span>
+                        </div>
+
+                        <div class="up-chooser" id="upChooser" hidden>
+                          <label class="mm" for="uploadEngine">ဒီ DOCX ကို ဘယ်နည်းလမ်းနဲ့ ပြောင်းမလဲ ရွေးပါ</label>
+                          <select id="uploadEngine">
+                            <option value="default">Default — convert the text, skip pictures</option>
+                            <option value="manual">Auto — OCR the picture pages, convert the rest</option>
+                          </select>
+                        </div>
+
+                        <div class="up-chooser" id="upOutputChooser" hidden>
+                          <label class="mm" for="uploadOutput">ထွက်လာမယ့် ဖိုင်အမျိုးအစားကို မဖြစ်မနေ ရွေးပါ</label>
+                          <select id="uploadOutput" required>
+                            <option value="">Choose output format…</option>
+                            <option value="txt">TXT — plain text</option>
+                            <option value="docx">DOCX — editable Word document</option>
+                            <option value="pdf">PDF — finished PDF</option>
+                          </select>
+                          <p class="up-drop-err" id="upOutputRequired">Choose TXT, DOCX, or PDF before uploading.</p>
+                        </div>
+
+                        
+                        <div class="up-actions" id="upActions">
+                          <span class="up-file-chip" id="upFileChip">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-file"></use></svg>
+                            <span id="upChipName"></span>
+                          </span>
+                          <button type="button" class="up-btn is-dark" id="upSubmit">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-upload"></use></svg>
+                            <span id="upSubmitLabel">Process</span>
+                          </button>
+                          <button type="button" class="up-btn is-plain" data-up-reset>Choose another file</button>
+                        </div>
+
+                        <div class="up-sending" id="upSending" hidden>
+                          <div class="up-working-art">
+                            <svg viewBox="0 0 1200 820" class="svg-fx" role="img" aria-label="Animated illustration: an image-only Burmese PDF moving through a Tesseract recognition model and custom Myanmar processing logic" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="ocr-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f8eee7"></stop><stop offset="100%" stop-color="#eee8db"></stop></linearGradient><linearGradient id="ocr-scan" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#c63b26" stop-opacity="0"></stop><stop offset="50%" stop-color="#c63b26" stop-opacity="0.9"></stop><stop offset="100%" stop-color="#e0a63c" stop-opacity="0"></stop></linearGradient><marker id="ocr-arrow" viewBox="0 0 12 12" refX="8" refY="6" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1 L11 6 L1 11 z" fill="#e0a63c"></path></marker></defs><rect width="1200" height="820" fill="url(#ocr-bg)"></rect><circle cx="190" cy="170" r="145" fill="#f3ded3" opacity="0.72"></circle><circle cx="1045" cy="660" r="190" fill="#e4eee7" opacity="0.78"></circle><g><rect x="120" y="90" width="960" height="610" rx="36" fill="#fff" stroke="#0e1626" stroke-width="7"></rect><rect x="146" y="116" width="908" height="78" rx="22" fill="#f7f2e7" stroke="#0e1626" stroke-width="5"></rect><circle cx="188" cy="155" r="11" fill="#b32026" stroke="#0e1626" stroke-width="4"></circle><circle cx="224" cy="155" r="11" fill="#e0a63c" stroke="#0e1626" stroke-width="4"></circle><circle cx="260" cy="155" r="11" fill="#2e7d5b" stroke="#0e1626" stroke-width="4"></circle><text x="306" y="165" font-size="24" font-weight="750" fill="#0e1626" font-family="Anonymous Pro, monospace">myanmar_ocr_pipeline.dev</text><rect x="864" y="135" width="156" height="40" rx="20" fill="#f8ecd4" stroke="#0e1626" stroke-width="4"></rect><text x="942" y="162" text-anchor="middle" font-size="18" font-weight="800" fill="#c63b26" font-family="Anonymous Pro, monospace">SCAN-BOUND</text></g><g class="fx-float-sm"><rect x="180" y="242" width="300" height="370" rx="24" fill="#f1eee7" stroke="#0e1626" stroke-width="7"></rect><rect x="206" y="270" width="248" height="52" rx="14" fill="#d9d3c9"></rect><text x="330" y="303" text-anchor="middle" font-size="20" font-weight="800" fill="#0e1626" font-family="Anonymous Pro, monospace">IMAGE-ONLY PDF</text><rect x="218" y="350" width="224" height="190" rx="12" fill="#e3ded4" stroke="#837a6d" stroke-width="4" stroke-dasharray="9 9"></rect><path d="M246 494 l54 -62 42 42 36 -34 42 54" fill="none" stroke="#837a6d" stroke-width="8"></path><circle cx="384" cy="392" r="19" fill="#e0a63c" opacity="0.8"></circle><text x="330" y="578" text-anchor="middle" font-size="18" font-weight="700" fill="#7a7266" font-family="Myanmar Sagar, sans-serif">no selectable text layer</text><rect class="fx-slide-y" x="204" y="334" width="252" height="12" rx="6" fill="url(#ocr-scan)"></rect></g><g class="fx-float"><circle cx="604" cy="430" r="108" fill="#f8ecd4" stroke="#0e1626" stroke-width="7"></circle><circle class="fx-spin" cx="604" cy="430" r="78" fill="none" stroke="#e0a63c" stroke-width="7" stroke-dasharray="32 20"></circle><rect x="552" y="382" width="104" height="96" rx="18" fill="#fff" stroke="#0e1626" stroke-width="5"></rect><text x="604" y="421" text-anchor="middle" font-size="20" font-weight="850" fill="#c63b26" font-family="Anonymous Pro, monospace">MODEL</text><text x="604" y="454" text-anchor="middle" font-size="27" font-weight="900" fill="#0e1626" font-family="Anonymous Pro, monospace">OCR</text><path class="fx-dash" d="M486 430 H520" stroke="#e0a63c" stroke-width="7" marker-end="url(#ocr-arrow)"></path><path class="fx-dash" d="M688 430 H730" stroke="#e0a63c" stroke-width="7" marker-end="url(#ocr-arrow)"></path></g><g><rect x="746" y="242" width="270" height="370" rx="24" fill="#fff" stroke="#0e1626" stroke-width="7"></rect><rect x="772" y="270" width="218" height="52" rx="14" fill="#e4eee7" stroke="#2e7d5b" stroke-width="3"></rect><text x="881" y="303" text-anchor="middle" font-size="19" font-weight="800" fill="#2e7d5b" font-family="Anonymous Pro, monospace">MYANMAR LOGIC</text><rect class="fx-line" x="782" y="360" width="178" height="12" rx="6" fill="#d9cec0" style="animation-delay:0s"></rect><rect class="fx-line" x="782" y="402" width="150" height="12" rx="6" fill="#d9cec0" style="animation-delay:0.18s"></rect><rect class="fx-line" x="782" y="444" width="196" height="12" rx="6" fill="#d9cec0" style="animation-delay:0.36s"></rect><rect class="fx-line" x="782" y="486" width="132" height="12" rx="6" fill="#d9cec0" style="animation-delay:0.54s"></rect><rect x="782" y="532" width="198" height="48" rx="16" fill="#e4eee7" stroke="#2e7d5b" stroke-width="4"></rect><text x="881" y="563" text-anchor="middle" font-size="18" font-weight="800" fill="#2e7d5b" font-family="Myanmar Sagar, sans-serif">reviewable text</text></g><g><rect x="392" y="722" width="416" height="58" rx="29" fill="#0e1626"></rect><text x="600" y="758" text-anchor="middle" font-size="20" font-weight="700" fill="#fff" font-family="Myanmar Sagar, sans-serif">Tesseract model + AKKHARA processing logic</text></g></svg>
+                          </div>
+                          <p class="up-working-txt">
+                            <svg class="tw-spin" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-refresh"></use></svg>
+                            <span id="upSendingText"></span>
+                          </p>
+                        </div>
+
+                        <div class="up-delivery" id="upDelivery" hidden>
+                          <span class="up-delivery-state">
+                            <svg class="up-delivery-ico tw-spin" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-refresh"></use></svg>
+                            <span id="upDeliveryLabel"></span>
+                          </span>
+                          <a class="up-btn is-dark" id="upDownload" target="_blank" rel="noreferrer" hidden>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-download-box"></use></svg>
+                            <span id="upDownloadLabel">Download</span>
+                          </a>
+                          <p class="up-delivery-err" id="upDeliveryError" hidden></p>
+                        </div>
+
+                        <div class="up-sent" id="upSent" hidden>
+                          <div class="up-sent-t">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use id="upSentIcon" href="#i-circle-check"></use></svg>
+                            <span id="upSentTitle">Submitted</span>
+                          </div>
+                          <p class="up-sent-note" id="upSentNote"></p>
+                          <div class="up-sent-actions">
+                            <button type="button" class="up-btn is-dark" id="upSentRetry" hidden>
+                              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-refresh"></use></svg>
+                              Try again
+                            </button>
+                            <button type="button" class="up-btn is-plain" data-up-reset>Upload another file</button>
+                          </div>
+                        </div>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </section>
+        
+        <section class="ak-proof">
+          <div class="ak-shell ak-proof-inner">
+            <div class="ak-proof-grid">
+              <div class="reveal">
+                <div class="ak-stat">
+                  <div class="ak-stat-v mm-display">၁၀၀</div>
+                  <div class="ak-stat-l micro">pages in the tested file</div>
+                </div>
+              </div>
+              <div class="reveal" style="--reveal-delay: 0.08s">
+                <div class="ak-stat">
+                  <div class="ak-stat-v mm-display">၁၀၀ / ၁၀၀</div>
+                  <div class="ak-stat-l micro">pages that were Zawgyi</div>
+                </div>
+              </div>
+              <div class="reveal" style="--reveal-delay: 0.16s">
+                <div class="ak-stat">
+                  <div class="ak-stat-v mm-display">TXT · DOCX</div>
+                  <div class="ak-stat-l micro">formats you can save to</div>
+                </div>
+              </div>
+              <div class="reveal" style="--reveal-delay: 0.24s">
+                <div class="ak-stat">
+                  <div class="ak-stat-v mm-display">OCR</div>
+                  <div class="ak-stat-l micro">spell fixing in development</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ak-marquee">
+            <div class="ak-marquee-row marquee-track" id="proofMarquee"></div>
+          </div>
+        </section>
+
+        
+        <section id="how" class="ak-shell ak-shell-sec">
+          <div class="reveal">
+            <div class="ak-label">
+              <span class="ak-label-n font-mono2">01</span>
+              <span class="ak-label-en micro">how it works</span>
+              <span class="ak-label-mm mm">လုပ်ဆောင်ပုံ သုံးဆင့်</span>
+            </div>
+            <h2 class="ak-h2 is-tight is-20ch mm-display">
+              ဖိုင်တင်လိုက်ရုံနဲ့ <span class="ak-grad-text">ပြန်သုံးလို့ရတဲ့ စာသား ရပါပြီ</span>
+            </h2>
+          </div>
+
+          <div class="ak-steps">
+            <div class="reveal">
+              <div class="ak-step" style="padding-left: 0px">
+                <span class="ak-step-n font-display">01</span>
+                <h3 class="ak-step-t mm-display">ဖိုင်တင်ခြင်း</h3>
+                <p class="ak-step-d mm">
+                  PDF ဒါမှမဟုတ် Word (DOCX) ဖိုင်ကို တင်လိုက်ရုံပါပဲ။ ယူနီကုဒ်လား၊ ဇော်ဂျီလား၊ scan လုပ်ထားတာလားဆိုတာ ကြိုသိစရာ မလိုပါဘူး။
+                </p>
+                <span class="ak-step-m micro">pdf · docx</span>
+              </div>
+            </div>
+            <div class="reveal" style="--reveal-delay: 0.1s">
+              <div class="ak-step" style="padding-left: 24px">
+                <span class="ak-step-n font-display">02</span>
+                <h3 class="ak-step-t mm-display">စာမျက်နှာအလိုက် ဖတ်ခြင်း</h3>
+                <p class="ak-step-d mm">
+                  စာမျက်နှာတစ်ခုချင်းစီကို စစ်ပြီး မြန်မာစာကို မှန်ကန်တဲ့ ပုံစံအဖြစ် အလိုအလျောက် ပြောင်းပေးပါတယ်။ Scan ဖြစ်နေရင် ပုံထဲက စာကို ဖတ်ပေးပါတယ်။
+                </p>
+                <span class="ak-step-m micro">detect · convert</span>
+              </div>
+            </div>
+            <div class="reveal" style="--reveal-delay: 0.2s">
+              <div class="ak-step" style="padding-left: 48px">
+                <span class="ak-step-n font-display">03</span>
+                <h3 class="ak-step-t mm-display">မူရင်းနဲ့ တိုက်စစ်ခြင်း</h3>
+                <p class="ak-step-d mm">
+                  ထွက်လာတဲ့ စာနဲ့ မူရင်းဖိုင်ကို ဘေးချင်းထားပြီး စာကြောင်းလိုက် တိုက်ကြည့်လို့ ရပါတယ် — ဖုန်းပေါ်မှာပါ။ မှားနေတာ တွေ့ရင် ချက်ချင်း ပြင်ပြီး TXT ဒါမှမဟုတ် Word (DOCX) အဖြစ် သိမ်းလိုက်ရုံပါပဲ။
+                </p>
+                <span class="ak-step-m micro">review · .txt · .docx</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        
+        <section id="compare" class="ak-cmp ink-panel grain grain-dark position-relative overflow-hidden">
+          <div class="ak-shell ak-shell-sec">
+            <div class="reveal">
+              <div class="ak-label">
+                <span class="ak-label-n font-mono2">02</span>
+                <span class="ak-label-en micro">comparison</span>
+                <span class="ak-label-mm mm">တခြား tools တွေနဲ့ နှိုင်းယှဉ်ချက်</span>
+              </div>
+              <h2 class="ak-h2 is-24ch mm-display">
+                ဘာတွေ လုပ်နိုင်ပြီလဲ — <span class="ak-grad-text is-gold">ဘာတွေ မလုပ်နိုင်သေးဘူးလဲ</span>
+              </h2>
+              <p class="ak-cmp-lead mm">
+                ယူနီကုဒ်နဲ့ ဇော်ဂျီ PDF၊ Word ဖိုင်တွေကို အခု ပြောင်းပေးနိုင်ပါပြီ။ Scan ဖိုင်တွေကိုလည်း ဖတ်ပေးပါတယ် — ဒါပေမယ့် ပုံမှုန်နေရင် အဖြေလည်း မှုန်ပါတယ်။ စာထဲက အမှားလေးတွေကို အလိုအလျောက် ပြန်ပြင်ပေးတဲ့ အပိုင်းကတော့ ဆက်လုပ်နေဆဲပါ။
+              </p>
+            </div>
+
+            <div class="reveal ak-cmp-body" style="--reveal-delay: 0.12s">
+              
+              <div class="ak-cmp-cards" role="table" aria-label="Comparison with other converters" id="cmpCards"></div>
+
+              
+              <div class="ak-cmp-table-wrap">
+                <table class="ak-cmp-table">
+                  <thead>
+                    <tr>
+                      <th class="is-crit micro">criteria</th>
+                      <th class="mm">Other converters</th>
+                      <th class="mm">Basic OCR</th>
+                      <th class="mm is-us">AKKHARA</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cmpRows"></tbody>
+                </table>
+              </div>
+              <p class="ak-cmp-foot micro">what works today · other tools vary · scan results depend on how clear the page is</p>
+            </div>
+
+            <div class="reveal ak-bm-wrap" style="--reveal-delay: 0.16s">
+              <div id="benchmark" class="ak-bm">
+                <div class="ak-bm-head">
+                  <div>
+                    <div class="ak-bm-kicker micro">
+                      <span>reproducible benchmark</span>
+                      <span class="ak-bm-rule"></span>
+                      <span>100 pages</span>
+                    </div>
+                    <h3 class="ak-bm-h mm-display">ဒီ sample တစ်ခုတည်းကို tools တိုင်းမှာ စမ်းကြည့်ပါ</h3>
+                    <p class="ak-bm-p mm">
+                      ဒီမှာ သုံးထားတာက စာမျက်နှာ ၁၀၀ ပါတဲ့ ဇော်ဂျီ PDF အတိအကျပါ။ ဖိုင်ကို တစ်ကြိမ် download လုပ်ပြီး အောက်က tool တွေမှာ ဘာမှ မပြင်ဘဲ တင်ကြည့်ပါ။ ထွက်လာတဲ့ မြန်မာစာ၊ အင်္ဂလိပ်စာ၊ သင်္ကေတနဲ့ စာမျက်နှာ အပိုင်းအခြားတွေကို မူရင်းနဲ့ ယှဉ်ကြည့်နိုင်ပါတယ်။
+                    </p>
+                  </div>
+
+                  <div class="ak-bm-steps">
+                    <div class="ak-bm-step">
+                      <span class="ak-bm-step-n font-mono2">01</span>
+                      <div>
+                        <div class="ak-bm-step-t">Download</div>
+                        <div class="ak-bm-step-d">Exact sample.pdf · 269,519 bytes</div>
+                      </div>
+                    </div>
+                    <div class="ak-bm-step">
+                      <span class="ak-bm-step-n font-mono2">02</span>
+                      <div>
+                        <div class="ak-bm-step-t">Upload unchanged</div>
+                        <div class="ak-bm-step-d">Use each official link below</div>
+                      </div>
+                    </div>
+                    <div class="ak-bm-step">
+                      <span class="ak-bm-step-n font-mono2">03</span>
+                      <div>
+                        <div class="ak-bm-step-t">Compare complete output</div>
+                        <div class="ak-bm-step-d">One sample is evidence, not a universal accuracy score</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ak-bm-body">
+                  <div class="ak-bm-actions">
+                    <a href="/samples/sample.pdf" download="sample.pdf" target="_blank" rel="noreferrer" class="ak-bm-btn is-gold">
+                      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-download"></use></svg>
+                      Download exact sample PDF
+                    </a>
+                    <button type="button" class="ak-bm-btn is-ghost" data-open-pdf>
+                      Run the API demo
+                      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg>
+                    </button>
+                  </div>
+
+                  <div class="ak-bm-sub">
+                    <div class="ak-bm-cap micro">test with the article&apos;s referenced tools</div>
+                    <div class="ak-bm-tools">
+                      <a href="https://www.pdf2go.com/pdf-to-text" target="_blank" rel="noreferrer" class="ak-bm-tool">
+                        <div class="ak-bm-tool-row">
+                          <span class="ak-bm-tool-n">PDF2Go</span>
+                          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg>
+                        </div>
+                        <p class="ak-bm-tool-d">PDF-to-Text upload page</p>
+                      </a>
+                      <a href="https://www.adobe.com/acrobat/online/pdf-to-word.html" target="_blank" rel="noreferrer" class="ak-bm-tool">
+                        <div class="ak-bm-tool-row">
+                          <span class="ak-bm-tool-n">Adobe Acrobat</span>
+                          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg>
+                        </div>
+                        <p class="ak-bm-tool-d">PDF-to-Word converter</p>
+                      </a>
+                      <a href="https://support.google.com/drive/answer/176692?hl=en&amp;co=GENIE.Platform%3DDesktop" target="_blank" rel="noreferrer" class="ak-bm-tool">
+                        <div class="ak-bm-tool-row">
+                          <span class="ak-bm-tool-n">Google Drive / Docs</span>
+                          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg>
+                        </div>
+                        <p class="ak-bm-tool-d">Official OCR instructions</p>
+                      </a>
+                      <a href="https://www.freeconvert.com/pdf-to-text" target="_blank" rel="noreferrer" class="ak-bm-tool">
+                        <div class="ak-bm-tool-row">
+                          <span class="ak-bm-tool-n">FreeConvert</span>
+                          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg>
+                        </div>
+                        <p class="ak-bm-tool-d">PDF-to-Text upload page</p>
+                      </a>
+                    </div>
+                    <p class="ak-bm-disc">
+                      These are independent third-party services. Review each service&apos;s privacy and file-retention terms before uploading another document.
+                    </p>
+                  </div>
+
+                  <div class="ak-bm-saved">
+                    <div class="ak-bm-cap micro">download the saved full-text evidence</div>
+                    <div class="ak-bm-chips">
+                      <a href="/samples/sample.praser.txt" download target="_blank" rel="noreferrer" class="ak-bm-chip">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-download"></use></svg>
+                        AKKHARA · cleanup off
+                      </a>
+                      <a href="/samples/sample-freeconvert.txt" download target="_blank" rel="noreferrer" class="ak-bm-chip">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-download"></use></svg>
+                        FreeConvert
+                      </a>
+                      <a href="/samples/sample-pdf2go.txt" download target="_blank" rel="noreferrer" class="ak-bm-chip">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-download"></use></svg>
+                        PDF2Go
+                      </a>
+                      <a href="/samples/sample-pdf24.txt" download target="_blank" rel="noreferrer" class="ak-bm-chip">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-download"></use></svg>
+                        PDF24
+                      </a>
+                      <a href="/samples/sample-pdftotext.txt" download target="_blank" rel="noreferrer" class="ak-bm-chip">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-download"></use></svg>
+                        pdftotext
+                      </a>
+                    </div>
+                    <p class="ak-bm-foot mm">
+                      AKKHARA ဖိုင်ကတော့ အမှားပြင်တာကို ပိတ်ထားပြီး ထွက်လာတဲ့အတိုင်း တင်ထားတာပါ။ ဖိုင်အပြည့်ကို download လုပ်ကြည့်လို့ ရပါတယ်။ ဒီဖိုင်တစ်ခုတည်းနဲ့ ဖိုင်အမျိုးအစား အားလုံးအတွက် အာမခံချက်အဖြစ် မယူထားပါဘူး။
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        
+        <section id="features" class="ak-shell ak-shell-sec">
+          <div class="reveal">
+            <div class="ak-label">
+              <span class="ak-label-n font-mono2">03</span>
+              <span class="ak-label-en micro">why akkhara</span>
+              <span class="ak-label-mm mm">အကျိုးကျေးဇူးများ</span>
+            </div>
+            <h2 class="ak-h2 is-tight is-22ch mm-display">PDF ထဲက စာကို ပြန်ထုတ်ပြီး မူရင်းနဲ့ တိုက်စစ်လို့ ရပါတယ်</h2>
+          </div>
+
+          <div class="ak-ben-grid" id="benefitsGrid"></div>
+        </section>
+
+        
+        <section id="voices" class="ak-shell ak-shell-sec">
+          <div class="ak-voi-grid">
+            <div class="reveal">
+              <span class="ak-kicker micro">
+                <span class="ak-kicker-rule"></span>
+                test notes · စမ်းသပ်မှတ်တမ်း
+              </span>
+              <div class="ak-voi-photo hairline">
+                <img src="images/voices.jpg" alt="မြန်မာစာ စာရွက်စာတမ်းများ" />
+                <div class="ak-voi-veil"></div>
+                <div class="ak-voi-cap"><p class="micro">sample · compare · review</p></div>
+              </div>
+              <p class="ak-voi-note mm">
+                Customer testimonial မဟုတ်ပါ — နမူနာဖိုင်ကို အမှန်တကယ် ပြောင်းကြည့်ပြီး မှတ်ထားတဲ့ မှတ်ချက်တွေပါ။
+              </p>
+            </div>
+
+            <div class="ak-quotes">
+              <figure class="ak-quote reveal" style="--reveal-y: 22px">
+                <div class="ak-quote-head">
+                  <span class="ak-quote-mark font-display">“</span>
+                  <span class="ak-quote-n font-mono2">01</span>
+                </div>
+                <div>
+                  <blockquote class="mm-quote">
+                    စာမျက်နှာ ၁၀၀ လုံးကို ဇော်ဂျီမှန်း မှန်မှန်ကန်ကန် သိနိုင်ခဲ့ပြီး တခြား converter တွေမှာ ပျောက်နေတဲ့ မြန်မာစာကို ပြန်ထုတ်ပေးနိုင်ခဲ့ပါတယ်။
+                  </blockquote>
+                  <figcaption>
+                    <span class="ak-quote-name mm">Checked on the sample file</span>
+                    <span class="ak-quote-rule"></span>
+                    <span class="ak-quote-role micro">100 pages · cleanup off</span>
+                  </figcaption>
+                </div>
+              </figure>
+              <figure class="ak-quote reveal" style="--reveal-y: 22px; --reveal-delay: 0.09s">
+                <div class="ak-quote-head">
+                  <span class="ak-quote-mark font-display">“</span>
+                  <span class="ak-quote-n font-mono2">02</span>
+                </div>
+                <div>
+                  <blockquote class="mm-quote">
+                    တခြား converter တွေမှာ အင်္ဂလိပ်စာနဲ့ နံပါတ်တွေ ကျန်ပေမယ့် မြန်မာစာ အများစု ပျောက်သွားတာကို နှိုင်းယှဉ်ဖိုင်တွေမှာ မြင်နိုင်ပါတယ်။
+                  </blockquote>
+                  <figcaption>
+                    <span class="ak-quote-name mm">Side-by-side evidence</span>
+                    <span class="ak-quote-rule"></span>
+                    <span class="ak-quote-role micro">the side-by-side files</span>
+                  </figcaption>
+                </div>
+              </figure>
+              <figure class="ak-quote reveal" style="--reveal-y: 22px; --reveal-delay: 0.18s">
+                <div class="ak-quote-head">
+                  <span class="ak-quote-mark font-display">“</span>
+                  <span class="ak-quote-n font-mono2">03</span>
+                </div>
+                <div>
+                  <blockquote class="mm-quote">
+                    ထွက်လာတဲ့ ရလဒ်က ၁၀၀% တိကျတယ်လို့ မပြောနိုင်ပါဘူး။ အင်္ဂလိပ်စာ၊ ကွင်းစကွင်းပိတ်၊ နေရာလွတ်နဲ့ သင်္ကေတတချို့ကို မူရင်းဖိုင်နဲ့ ပြန်စစ်ပေးဖို့ လိုပါတယ်။
+                  </blockquote>
+                  <figcaption>
+                    <span class="ak-quote-name mm">Review note</span>
+                    <span class="ak-quote-rule"></span>
+                    <span class="ak-quote-role micro">what to double-check</span>
+                  </figcaption>
+                </div>
+              </figure>
+            </div>
+          </div>
+        </section>
+
+        
+        <section id="faq" class="ak-faq">
+          <div class="ak-shell ak-shell-sec">
+            <div class="ak-faq-grid">
+              <div class="reveal">
+                <div class="ak-label">
+                  <span class="ak-label-n font-mono2">04</span>
+                  <span class="ak-label-en micro">faq</span>
+                  <span class="ak-label-mm mm">မေးခွန်းများ</span>
+                </div>
+                <h2 class="ak-h2 mm-display">မေးလေ့ရှိတဲ့ မေးခွန်း ခြောက်ခု</h2>
+                <p class="ak-faq-lead">Still unsure? Write to us in Burmese — we answer within one working day.</p>
+                <a href="mailto:hello@akkhara.mm" class="ak-faq-mail sweep font-mono2">hello@akkhara.mm</a>
+              </div>
+
+              <div class="ak-faq-list" id="faqList"></div>
+            </div>
+          </div>
+        </section>
+
+        
+        <section class="ak-cta">
+          <img src="images/band.jpg" alt="" class="ak-cta-img" />
+          <div class="ak-cta-veil"></div>
+          <div class="ak-cta-inner">
+            <div class="reveal">
+              <span class="ak-cta-kicker micro">start now · ရန်ကုန်</span>
+              <h2 class="ak-h2 mm-display">
+                ဖတ်လို့မရတဲ့ PDF ကို <span class="ak-grad-text is-gold">ဒီကနေ စမ်းကြည့်ပါ</span>
+              </h2>
+              <p class="ak-cta-p mm">
+                စာမျက်နှာ ၁၀၀ ပါတဲ့ နမူနာဖိုင်မှာ တခြား converter ရဲ့ ရလဒ်နဲ့ AKKHARA ရဲ့ ရလဒ် ဘယ်လောက် ကွာသလဲဆိုတာ အရင် နှိုင်းယှဉ်ကြည့်ပါ။
+              </p>
+              <div class="ak-cta-actions">
+                <button type="button" class="btn btn-primary" data-open-upload-scroll>
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-upload"></use></svg>
+                  ဖိုင်တင်ရန်
+                </button>
+                <button type="button" class="btn ak-btn-light" data-open-grammar-scroll>စာသား စစ်ဆေးရန်</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      
+      <footer class="ak-foot">
+        <div class="ak-foot-grid">
+          <div>
+            <div class="ak-foot-brand">
+              <img class="brand-wordmark" src="images/akkhara-wordmark.svg" alt="အက္ခရာ — AKKHARA" draggable="false" />
+            </div>
+            <p class="ak-foot-p mm">
+              မြန်မာစာပါတဲ့ PDF နဲ့ Word ဖိုင်တွေထဲက စာကို ပြန်ထုတ်ပေးတဲ့ ကိရိယာပါ။ ဇော်ဂျီဖြစ်နေရင်လည်း မှန်ကန်တဲ့ မြန်မာစာအဖြစ် ပြောင်းပေးပါတယ်။
+            </p>
+            <p class="ak-foot-meta micro">yangon · myanmar · since 2021</p>
+          </div>
+          <div>
+            <h4 class="mm-display">ကိရိယာများ</h4>
+            <ul>
+              <li><a href="#hero" class="sweep mm">PDF ထဲက စာထုတ်ခြင်း</a></li>
+              <li><a href="#hero" class="sweep mm">Zawgyi → Unicode</a></li>
+              <li><a href="#hero" class="sweep mm">Scan PDF ဖတ်ခြင်း</a></li>
+              <li><a href="#hero" class="sweep mm">Word အဖြစ် သိမ်းခြင်း</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="mm-display">အကူအညီ</h4>
+            <ul>
+              <li><a href="#hero" class="sweep mm">အသုံးပြုနည်း</a></li>
+              <li><a href="#hero" class="sweep mm">API</a></li>
+              <li><a href="#hero" class="sweep mm">ဈေးနှုန်း</a></li>
+              <li><a href="#hero" class="sweep mm">ဆက်သွယ်ရန်</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="mm-display">ဥပဒေဆိုင်ရာ</h4>
+            <ul>
+              <li><a href="#hero" class="sweep mm">ကိုယ်ရေးအချက်အလက် မူဝါဒ</a></li>
+              <li><a href="#hero" class="sweep mm">စည်းမျဉ်းစည်းကမ်း</a></li>
+              <li><a href="#hero" class="sweep mm">ဖိုင်မူဝါဒ</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="ak-foot-bar">
+          <div class="ak-foot-bar-inner">
+            <span class="micro">© 2026 akkhara lab</span>
+            <button type="button" class="ak-to-top" id="toTop" aria-label="စာမျက်နှာ အပေါ်ဆုံးသို့ ပြန်တက်ရန်">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"></path></svg>
+              <span class="mm">အပေါ်ဆုံးသို့</span>
+            </button>
+            <span class="micro">unicode first · zawgyi welcome</span>
+          </div>
+        </div>
+      </footer>
+
+      
+      <button type="button" class="ak-dock" id="uploadDock" data-open-upload-scroll aria-label="ဖိုင်တင်ရန် နေရာသို့ သွားရန်" title="ဖိုင်တင်ရန်">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-upload"></use></svg>
+      </button>
+
+      <div class="ak-sticky" id="stickyCta">
+        <div class="ak-sticky-bar glass">
+          <span class="ak-sticky-dot accent-grad"></span>
+          <p class="ak-sticky-txt mm">
+            ဇော်ဂျီ PDF — <span>ဖိုင်တင်ပြီး Unicode စာသား ထုတ်ယူပါ</span>
+          </p>
+          <button type="button" class="btn btn-primary btn-sm flex-shrink-0" data-open-upload-scroll>
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-upload"></use></svg>
+            ဖိုင်တင်ရန်
+          </button>
+          <button type="button" class="ak-sticky-x" id="stickyClose" aria-label="ဒီ အသိပေးချက်ကို ပိတ်ရန်">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-x"></use></svg>
+          </button>
+        </div>
+      </div>
+
+      
+      <div class="ts-backdrop ak-fade" id="demoOverlay" role="dialog" aria-modal="true" aria-label="conversion result" hidden>
+        <div class="ts-card ak-zoom">
+          <div class="ts-chrome">
+            <svg class="ts-dots" viewBox="0 0 44 12" aria-hidden="true"><use href="#i-shell-dots"></use></svg>
+            <span class="ts-file font-mono2" id="dmFile">sample.pdf</span>
+            <span class="ts-status" id="dmStatus"><i></i>Converting…</span>
+            <button type="button" class="ts-x" data-close-overlay aria-label="Close">
+              <svg fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><use href="#i-close"></use></svg>
+            </button>
+          </div>
+
+          <div class="ts-head">
+            <span class="ts-ico">
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-scan-frame"></use></svg>
+            </span>
+            <div class="ts-head-txt">
+              <p class="ts-eyebrow font-mono2" id="dmEyebrow">pdf → unicode text</p>
+              <h2 class="ts-title" id="dmTitle">Conversion Result</h2>
+              <p class="ts-sub mm" id="dmSub"></p>
+            </div>
+            <div class="ts-badges"><span class="ts-badge" id="dmBadge">Unicode output</span></div>
+          </div>
+
+          <div class="ts-body ak-scroll">
+            <div class="dm-loading" id="dmLoading">
+              <div class="dm-loading-ico">
+                <svg class="tw-spin" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-refresh"></use></svg>
+              </div>
+              <h4 id="dmLoadingTitle">Converting</h4>
+              <p id="dmLoadingNote">Opening the output in full.</p>
+            </div>
+
+            <div class="dm-error" id="dmError" hidden>
+              <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-info-circle"></use></svg>
+              <h4>The output could not be loaded</h4>
+              <p id="dmErrorText"></p>
+            </div>
+
+            <div class="dm-result" id="dmResult" hidden>
+              <textarea class="dm-text scrollbar-thin" id="dmText" readonly spellcheck="false" aria-label="Converted text"></textarea>
+              <div class="dm-save">
+                <span class="dm-save-l">Save as</span>
+                <a class="dm-save-btn" id="dmSaveDocx" download target="_blank" rel="noreferrer">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-download"></use></svg>
+                  DOCX
+                </a>
+                <a class="dm-save-btn" id="dmSavePdf" download target="_blank" rel="noreferrer">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-download"></use></svg>
+                  editable PDF
+                </a>
+                <a class="dm-save-btn" id="dmSaveTxt" download target="_blank" rel="noreferrer">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-download"></use></svg>
+                  TXT
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ts-backdrop ak-fade" id="pdfOverlay" role="dialog" aria-modal="true" aria-label="pdf → unicode text" hidden>
+        <div class="ts-card ak-zoom">
+          <div class="ts-chrome">
+            <svg class="ts-dots" viewBox="0 0 44 12" aria-hidden="true"><use href="#i-shell-dots"></use></svg>
+            <span class="ts-file font-mono2">sample.pdf · 100 pages · 269,519 bytes</span>
+            <span class="ts-status" id="pdfStatus"><i></i>Converting…</span>
+            <button type="button" class="ts-x" data-close-overlay aria-label="Close">
+              <svg fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><use href="#i-close"></use></svg>
+            </button>
+          </div>
+
+          <div class="ts-head">
+            <span class="ts-ico">
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-scan-frame"></use></svg>
+            </span>
+            <div class="ts-head-txt">
+              <p class="ts-eyebrow font-mono2">pdf → unicode text</p>
+              <h2 class="ts-title">Conversion Result</h2>
+              <p class="ts-sub mm">
+                The same 100-page Zawgyi PDF through two converters — a standard PDF-to-text tool on the left, AKKHARA on the right. Both results are complete, nothing cut short.
+              </p>
+            </div>
+            <div class="ts-badges"><span class="ts-badge">Unicode output · TXT</span></div>
+          </div>
+
+          <div class="ts-body ak-scroll">
+            <div class="pd-fixture">
+              <div class="min-w-0">
+                <div class="pd-fixture-t">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-file-check"></use></svg>
+                  <span>sample.pdf · 100 pages · 269,519 bytes</span>
+                </div>
+              </div>
+              <div class="pd-fixture-actions">
+                <a href="/samples/sample.pdf" download="sample.pdf" target="_blank" rel="noreferrer" class="pd-btn is-amber">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-download"></use></svg>
+                  Download source PDF
+                </a>
+                <a href="#benchmark" class="pd-btn is-white" data-close-overlay>
+                  How this was produced
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-external-link"></use></svg>
+                </a>
+              </div>
+            </div>
+
+            <div class="pd-loading" id="pdfLoading">
+              <div class="pd-loading-ico">
+                <svg class="tw-spin" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-refresh"></use></svg>
+              </div>
+              <h4>Converting sample.pdf</h4>
+              <p>Both outputs open in full — 100 pages each, nothing truncated.</p>
+            </div>
+
+            <div class="pd-error" id="pdfError" hidden>
+              <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-info-circle"></use></svg>
+              <h4>The output could not be loaded</h4>
+              <p id="pdfErrorMsg"></p>
+              <button type="button" class="pd-retry" id="pdfRetry">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-refresh"></use></svg>
+                Retry
+              </button>
+            </div>
+
+            <div class="pd-result" id="pdfResult" hidden>
+              <div class="pd-legend">
+                <span>
+                  <strong>One source, two converters:</strong> the left frame is the FreeConvert output; the right frame is AKKHARA&apos;s, with cleanup off.
+                </span>
+                <span class="pd-legend-tag font-mono2" id="pdfSource">loading…</span>
+              </div>
+
+              <div class="pd-panes">
+                <section class="pd-pane is-generic">
+                  <header class="pd-pane-head">
+                    <div class="pd-pane-head-l">
+                      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-info-circle"></use></svg>
+                      <div class="min-w-0">
+                        <h4 class="pd-pane-h">Standard converter output</h4>
+                        <p class="pd-pane-s">FreeConvert · same source file</p>
+                      </div>
+                    </div>
+                    <a href="https://www.freeconvert.com/pdf-to-text" target="_blank" rel="noreferrer" class="pd-pane-link" aria-label="Open FreeConvert PDF to text">
+                      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-external-link"></use></svg>
+                    </a>
+                  </header>
+                  <div class="pd-pane-body">
+                    <pre class="pd-pre scrollbar-thin" id="pdfGeneric"></pre>
+                    <div class="pd-pane-foot">
+                      <span class="pd-pane-file font-mono2">sample-freeconvert.txt</span>
+                      <a href="/samples/sample-freeconvert.txt" download target="_blank" rel="noreferrer" class="pd-dl is-generic">Download full output</a>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="pd-pane is-parsed">
+                  <header class="pd-pane-head">
+                    <div class="pd-pane-head-l">
+                      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-circle-check"></use></svg>
+                      <div class="min-w-0">
+                        <h4 class="pd-pane-h">AKKHARA Unicode output</h4>
+                        <p class="pd-pane-s">Cleanup off · review against the source</p>
+                      </div>
+                    </div>
+                    <span class="pd-pages">100 pages</span>
+                  </header>
+                  <div class="pd-pane-body">
+                    <pre class="pd-pre scrollbar-thin" id="pdfParsed"></pre>
+                    <div class="pd-pane-foot">
+                      <span class="pd-pane-file font-mono2">sample.praser.txt</span>
+                      <a href="/samples/sample.praser.txt" download target="_blank" rel="noreferrer" class="pd-dl is-parsed">Download full output</a>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <div class="pd-repro">
+                <div>
+                  <h4>Reproduce this yourself</h4>
+                  <p>Download the source PDF, run it through the linked tools, then read their complete output against this one.</p>
+                </div>
+                <div class="pd-repro-actions">
+                  <a href="/samples/sample.pdf" download="sample.pdf" target="_blank" rel="noreferrer" class="pd-repro-btn is-amber">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-download"></use></svg>
+                    Download source
+                  </a>
+                  <a href="#benchmark" class="pd-repro-btn is-ghost" data-close-overlay>
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-download"></use></svg>
+                    See how this was produced
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      
+      
+      <div class="ts-backdrop ak-fade" id="grammarOverlay" role="dialog" aria-modal="true" aria-label="spell &amp; grammar preview" hidden>
+        <div class="ts-card ak-zoom">
+          <div class="ts-chrome">
+            <svg class="ts-dots" viewBox="0 0 44 12" aria-hidden="true"><use href="#i-shell-dots"></use></svg>
+            <span class="ts-file font-mono2">burmese_rule_review.demo</span>
+            <span class="ts-status" id="grammarStatus"><i></i>6 sample suggestions</span>
+            <button type="button" class="ts-x" data-close-overlay aria-label="Close">
+              <svg fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><use href="#i-close"></use></svg>
+            </button>
+          </div>
+
+          <div class="ts-head">
+            <span class="ts-ico">
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-book-open"></use></svg>
+            </span>
+            <div class="ts-head-txt">
+              <p class="ts-eyebrow font-mono2">spell &amp; grammar preview</p>
+              <h2 class="ts-title">Burmese Spell &amp; Grammar Review</h2>
+              <p class="ts-sub mm">Review an illustrative rule-based sample and decide which suggestions to apply</p>
+            </div>
+            <div class="ts-badges"><span class="ts-badge">Frontend rule preview</span></div>
+          </div>
+
+          <div class="ts-body ak-scroll">
+            <div class="gr-grid">
+              <div class="gr-main">
+                <div class="gr-bar">
+                  <span class="gr-bar-l">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-file-up"></use></svg>
+                    Text editor &amp; sample suggestion preview
+                  </span>
+                  <div class="gr-bar-r">
+                    <button type="button" class="gr-link" id="grLoadSample">Load Sample Document</button>
+                    <span class="gr-sep">|</span>
+                    <span id="grCount">0 Characters</span>
+                  </div>
+                </div>
+
+                <div class="gr-drop" id="grDrop">
+                  <div class="gr-drop-veil">
+                    <svg class="tw-bounce" width="64" height="64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-upload"></use></svg>
+                    <h4>Drop Your Document Here</h4>
+                    <p>Release TXT, PDF, or DOCX to load readable Burmese text into this analysis panel</p>
+                  </div>
+
+                  <textarea
+                    class="gr-editor"
+                    id="grEditor"
+                    rows="12"
+                    placeholder="Type or paste Burmese text here, or drag and drop TXT, PDF, or DOCX…"
+                  ></textarea>
+
+                  <div class="gr-tools">
+                    <div class="gr-tools-l">
+                      <label class="gr-upload">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-upload"></use></svg>
+                        <span>Load plain text</span>
+                        <input type="file" accept=".txt,text/plain" id="grFile" />
+                      </label>
+                      
+                      <label class="gr-upload">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-upload"></use></svg>
+                        <span>Load PDF / DOCX text</span>
+                        <input type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" id="grDocFile" />
+                      </label>
+                      <span class="gr-hint">• Drag files directly into the box</span>
+                    </div>
+
+                    <div class="gr-tools-r">
+                      <button type="button" class="gr-tool-btn" id="grCopy">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-copy"></use></svg>
+                        Copy
+                      </button>
+                      <a class="gr-tool-btn" id="grExport" download="checked_burmese_document.txt" href="#">
+                        <svg class="is-indigo" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-download"></use></svg>
+                        Export TXT
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="gr-side">
+                <div class="gr-bar">
+                  <span class="gr-bar-l">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-wand"></use></svg>
+                    Sample suggestions (<span id="grIssueCount">0</span>)
+                  </span>
+                  <button type="button" class="gr-fixall" id="grFixAll">Fix All Issues</button>
+                </div>
+
+                <div class="gr-issues" id="grIssues"></div>
+
+                <div class="gr-tip">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-alert-triangle"></use></svg>
+                  <span>
+                    <strong>သတိပြုရန်:</strong> စကားပြောစာဟန် (ဥပမာ — ပါတယ်) ကနေ ရုံးသုံးစာဟန် (ဥပမာ — ပါသည်) အဖြစ် အလိုအလျောက် ပြောင်းပေးတဲ့ သဒ္ဒါပြင်ဆင်မှုကိုလည်း လုပ်ဆောင်နိုင်ပါတယ်။
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="gr-toast" id="grToast" hidden>
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-circle-check"></use></svg>
+        <span id="grToastText"></span>
+      </div>
+    </div>
+
+    <script type="module" src="/js/main.js"></script>
+    <!-- Mirror trap: hidden from people, Disallow-ed in robots.txt, and
+         rel=nofollow so no search crawler follows it. Only a recursive
+         downloader walking every href arrives here, and doing so bans it. -->
+    <a href="/offline-archive-index" rel="nofollow noreferrer" aria-hidden="true" tabindex="-1"
+       style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">archive</a>
+  </body>
+</html>

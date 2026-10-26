@@ -1,0 +1,36 @@
+{
+   "name": "MyGmr",
+   "version": "3.2.0",
+   "description": "Root workspace for reponame linga development toolchain",
+   "author": "KaungMyatThu",
+   "license": "ISC",
+   "private": true,
+   "type": "module",
+   "scripts": {
+      "build": "vite build --config R_Site/Build/spa/vite.config.js",
+      "lint": "eslint .",
+      "lint:fix": "eslint . --fix",
+      "format": "prettier --write .",
+      "dev": "nodemon --config nodemon.json R_Site/index.js",
+      "gh": "gh",
+      "api": "node Bridge/api-server.js"
+   },
+   "main": "eslint.config.js",
+   "keywords": [],
+   "dependencies": {
+      "bytenode": "^1.7.0",
+      "express": "^5.2.1",
+      "pdfjs-dist": "^4.10.38"
+   },
+   "devDependencies": {
+      "@eslint/js": "^10.0.1",
+      "axios": "^1.20.0",
+      "better-sqlite3": "^13.0.3",
+      "eslint": "^10.8.0",
+      "eslint-config-prettier": "^10.1.8",
+      "github-cli": "^0.0.2",
+      "helmet": "^8.3.0",
+      "morgan": "^1.12.1",
+      "nodemon": "^3.1.11"
+   }
+}

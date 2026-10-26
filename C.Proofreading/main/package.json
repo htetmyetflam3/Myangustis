@@ -1,0 +1,13 @@
+{
+  "name": "proofreading-engine",
+  "private": true,
+  "type": "module",
+  "description": "Owner Engine with required rebuilt scraper WASM; no plaintext map runtime",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build:wasm": "sh scraper/wasm/rebuild-box.sh",
+    "tag:docx": "python3 tag_docx.py"
+  }
+}

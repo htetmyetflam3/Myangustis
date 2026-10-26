@@ -1,0 +1,28 @@
+{
+  "name": "@linga/frontend-bootstrap",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module",
+  "comment:scripts": "No --config flag on purpose: the path was relative, so it only resolved when the process already sat in this folder. Vite picks up ./vite.config.js from its own cwd, and every caller (root scripts, npm/yarn/pnpm workspace commands) runs the script with cwd set here.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "comment:dependencies": "canvas-confetti and jszip are runtime dependencies of the shipped client; mammoth and pdfjs-dist are devDependencies on purpose because vite bundles them at build time and nothing requires them in the browser. The canonical copies for the Node side are the ones in the root package.json, found by walking up from this folder, and both folders carry the same exact pins so the client and the server cannot parse a file differently.",
+  "dependencies": {
+    "canvas-confetti": "^1.9.4",
+    "jszip": "^3.10.2"
+  },
+  "devDependencies": {
+    "bootstrap": "^5.3.8",
+    "mammoth": "1.13.0",
+    "pdfjs-dist": "6.4.299",
+    "@fullhuman/postcss-purgecss": "^8.0.0",
+    "sass-embedded": "^1.100.0",
+    "vite": "7.3.7"
+  }
+}

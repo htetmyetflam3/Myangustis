@@ -1,0 +1,85 @@
+
+@font-face {
+  font-family: "Myanmar Sagar";
+  src: url("/fonts/myanmar-sagar-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Cherry Unicode";
+  src: url("/fonts/cherry-unicode-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Titles and headings. The cmap is partial — it carries 75 of the 160 Myanmar
+   code points and only a space from ASCII — so Latin runs such as "AKKHARA"
+   and the missing Myanmar marks fall through to the next family per glyph. */
+@font-face {
+  font-family: "Masterpiece UniSerif";
+  src: url("/fonts/masterpiece-uni-serif-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Quoted and preformatted copy. */
+@font-face {
+  font-family: "Yoe Yar One";
+  src: url("/fonts/yoe-yar-one-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Anonymous Pro";
+  src: url("/fonts/anonymous-pro-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Anonymous Pro";
+  src: url("/fonts/anonymous-pro-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Anonymous Pro";
+  src: url("/fonts/anonymous-pro-400-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Anonymous Pro";
+  src: url("/fonts/anonymous-pro-700-italic.woff2") format("woff2");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  /* Body copy and paragraphs. Cherry Unicode is the face the parser writes
+     Unicode output with, so what the site says and what it hands back match.
+     Myanmar Sagar stays first fallback for any glyph Cherry lacks. */
+  --font-sans: "Cherry Unicode", "Myanmar Sagar", "Noto Sans Myanmar",
+    "Padauk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Titles and section headings. Masterpiece UniSerif is a display serif with
+     a partial cmap; Cherry Unicode fills the characters it does not carry. */
+  --font-display: "Masterpiece UniSerif", "Cherry Unicode", "Myanmar Sagar",
+    "Noto Sans Myanmar", Georgia, serif;
+  /* Quoted text — blockquote, q — and preformatted blocks. */
+  --font-quote: "Yoe Yar One", "Cherry Unicode", "Myanmar Sagar",
+    "Noto Sans Myanmar", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-mono: "Anonymous Pro", ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace;
+}

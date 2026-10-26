@@ -1,0 +1,270 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/htetmyetflam3/lingux/engine-plugin.schema.json",
+  "title": "lingux standalone-web engine plugin — package and deployment contract",
+  "description": "Describes what the release zip ships versus what MUST exist at runtime. The zip is a WordPress-style drop-in plugin shell: it cannot serve tokenizer read-back in production by itself, because the engine modules and the bridge entry are deployment-side components listed under runtimeRequired. A deployment missing any required component is invalid even though the plugin process may still boot.",
+  "type": "object",
+  "required": ["package", "shippedFiles", "runtimeRequired", "bridgeContract", "workspace", "env"],
+  "additionalProperties": false,
+  "properties": {
+    "package": {
+      "type": "object",
+      "required": ["name", "version", "type", "entry"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "const": "lingux-standalone-web" },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "type": { "const": "module" },
+        "entry": { "const": "index.js" }
+      }
+    },
+    "shippedFiles": {
+      "type": "array",
+      "description": "Exact contents of the release zip, relative to the standalone-web/ root. bridge/, node_modules/ and workspace/ are deliberately absent.",
+      "items": { "type": "string" },
+      "uniqueItems": true,
+      "contains": { "const": "engine-plugin.schema.json" },
+      "not": {
+        "contains": {
+          "type": "string",
+          "pattern": "^(bridge/|node_modules/|workspace/)"
+        }
+      }
+    },
+    "runtimeRequired": {
+      "type": "object",
+      "required": ["node", "npmDependencies", "bridge", "engineModules", "pathContract"],
+      "additionalProperties": false,
+      "properties": {
+        "node": {
+          "type": "object",
+          "required": ["engines"],
+          "properties": {
+            "engines": { "const": ">=20" },
+            "reason": { "const": "ESM, global fetch, AbortSignal.timeout, node:crypto WebCrypto-free APIs" }
+          }
+        },
+        "npmDependencies": {
+          "type": "object",
+          "required": ["express", "helmet", "express-session", "dotenv"],
+          "additionalProperties": false,
+          "properties": {
+            "express": { "type": "string" },
+            "helmet": { "type": "string" },
+            "express-session": { "type": "string" },
+            "dotenv": { "type": "string" }
+          }
+        },
+        "bridge": {
+          "type": "object",
+          "description": "The signature-routed engine Bridge entry. Not shipped in the zip; merged from the plugin's bridge/ build into the engine Bridge at release assembly time.",
+          "required": ["path", "required", "exports", "signatures"],
+          "additionalProperties": false,
+          "properties": {
+            "path": { "const": "bridge/bridge.js" },
+            "required": { "const": true },
+            "exports": {
+              "type": "array",
+              "items": { "enum": ["bridgeInvoke", "BridgeError"] },
+              "minItems": 2,
+              "uniqueItems": true
+            },
+            "signatures": {
+              "type": "object",
+              "required": ["public"],
+              "additionalProperties": false,
+              "properties": {
+                "public": {
+                  "type": "object",
+                  "required": ["modes"],
+                  "properties": {
+                    "modes": {
+                      "type": "array",
+                      "items": { "enum": ["raw", "syllable"] },
+                      "minItems": 2,
+                      "uniqueItems": true
+                    }
+                  }
+                },
+                "site": {
+                  "type": "object",
+                  "description": "Reserved: future Site job calls carry the full job field set (jobToken, formId, submitId, userId, sessionId, filename, extension, method, task, job)."
+                }
+              }
+            }
+          }
+        },
+        "engineModules": {
+          "type": "array",
+          "description": "Engine modules assumed inside the plugin root by tokenizer.js (lazy imports). The whole MonoSyllabism/knowledge tree is supplied by the engine deployment; the entries below are the direct seam.",
+          "items": {
+            "type": "object",
+            "required": ["path", "required", "consumes"],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string",
+                "enum": [
+                  "MonoSyllabism/utilities/stream.js",
+                  "MonoSyllabism/utilities/formatter.js"
+                ]
+              },
+              "required": { "const": true },
+              "consumes": {
+                "type": "array",
+                "items": { "type": "string" },
+                "minItems": 1
+              }
+            }
+          },
+          "minItems": 2
+        },
+        "pathContract": {
+          "type": "object",
+          "required": ["path", "shipped", "dropInFor"],
+          "additionalProperties": false,
+          "properties": {
+            "path": { "const": "engine-plugin.path.js" },
+            "shipped": { "const": true },
+            "dropInFor": { "const": "Bridge/path.js" },
+            "rootDerivation": { "const": "directory of this module, never process.cwd()" },
+            "bridgeDepth": { "const": "one level: <root>/bridge" }
+          }
+        }
+      }
+    },
+    "bridgeContract": {
+      "type": "object",
+      "required": ["request", "responses", "errors"],
+      "additionalProperties": false,
+      "properties": {
+        "request": { "$ref": "#/$defs/bridgeRequest" },
+        "responses": {
+          "type": "object",
+          "required": ["raw", "syllable"],
+          "additionalProperties": false,
+          "properties": {
+            "raw": { "$ref": "#/$defs/rawResponse" },
+            "syllable": { "$ref": "#/$defs/syllableResponse" }
+          }
+        },
+        "errors": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/bridgeError" },
+          "minItems": 3
+        }
+      }
+    },
+    "workspace": {
+      "type": "object",
+      "description": "Mutable runtime dirs created under standalone-web/workspace by engine-plugin.path.js; never shipped, always gitignored.",
+      "required": ["root", "dirs"],
+      "additionalProperties": false,
+      "properties": {
+        "root": { "const": "workspace" },
+        "dirs": {
+          "type": "array",
+          "items": { "enum": ["tree", "log", "output", "data", "input"] },
+          "uniqueItems": true,
+          "minItems": 5
+        },
+        "outputFilePattern": { "const": "segmented_{hash}_raw_pos.txt" },
+        "syllableFilePattern": { "const": "segmented_{hash}_syllable.txt" }
+      }
+    },
+    "env": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "requiredInProduction"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": [
+              "PORT",
+              "NODE_ENV",
+              "TRUST_PROXY",
+              "SESSION_SECRET",
+              "SESSION_COOKIE_NAME",
+              "SESSION_TTL_MS",
+              "SITE_TO_ENGINE_KEY",
+              "ENGINE_TO_SITE_KEY",
+              "SITE_QUEUE_URL",
+              "HANDSHAKE_RATE_WINDOW_MS",
+              "HANDSHAKE_RATE_MAX",
+              "API_RATE_WINDOW_MS",
+              "API_RATE_MAX",
+              "MASTER_JSON_KEY"
+            ]
+          },
+          "requiredInProduction": { "type": "boolean" },
+          "note": { "type": "string" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "bridgeRequest": {
+      "type": "object",
+      "required": ["hash", "signature"],
+      "additionalProperties": true,
+      "properties": {
+        "hash": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Engine session hash minted at the Express handshake, shape YYYYMMDD_HHMMSS_mmm."
+        },
+        "signature": {
+          "type": "string",
+          "enum": ["public", "site"],
+          "description": "Caller-routing field; the bridge taps the handler for this signature and refuses unknown values."
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["raw", "syllable"],
+          "default": "raw"
+        }
+      }
+    },
+    "rawResponse": {
+      "type": "object",
+      "required": ["mode", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "const": "raw" },
+        "text": { "type": "string" }
+      }
+    },
+    "syllableResponse": {
+      "type": "object",
+      "required": ["mode", "positions"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "const": "syllable" },
+        "positions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["index", "syllable"],
+            "additionalProperties": false,
+            "properties": {
+              "index": { "type": "string" },
+              "syllable": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "bridgeError": {
+      "type": "object",
+      "required": ["name", "status", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "const": "BridgeError" },
+        "status": { "type": "integer", "enum": [400, 404, 503] },
+        "message": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

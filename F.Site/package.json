@@ -1,0 +1,33 @@
+{
+  "name": "lingux-site",
+  "version": "2.0.0",
+  "description": "Site web service: SPA hosting, SQLite sessions and the in-process Myanmar parser queue",
+  "author": "KaungMyatThu",
+  "license": "ISC",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "comment:install": "Self-contained web layer. The parser's heavy libraries (pdfjs-dist, @napi-rs/canvas, harfbuzzjs, mammoth, tesseract.js) are declared in Parser/main/parser/package.json and loaded lazily through the Manager, so booting this service does not require them. Node resolves them from the parser folder when a parse actually runs.",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon --config nodemon.json",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "express-session": "^1.19.0",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.1",
+    "multer": "^2.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}

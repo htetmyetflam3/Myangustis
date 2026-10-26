@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/nodemon.json",
+
+  "//": "Test watcher — re-runs the suite on save. Used by `npm run test:watch` and by bootstrap.sh's test flow (BOOT_LIVE decides whether the live webs are probed).",
+
+  "exec": "node .bin/node/run-tests.mjs",
+
+  "watch": [
+    "R_Site/index.js",
+    "R_Site/Backend",
+    "R_Site/_file",
+    "R_Engine/init",
+    "R_Engine/Linga",
+    ".bin/node"
+  ],
+
+  "ext": "js,mjs,cjs,json",
+
+  "ignore": [
+    "**/node_modules/**",
+    "R_Site/Build/**",
+    "R_Site/Praser/Python/logs/**",
+    "R_Site/Praser/Python/upload/**",
+    "R_Site/Praser/Python/.output/**"
+  ],
+
+  "delay": 600
+}

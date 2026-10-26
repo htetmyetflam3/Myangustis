@@ -1,0 +1,37 @@
+{
+	"watch": [
+		"path.js",
+		"R_Site/index.js",
+		"R_Site/Backend",
+		"R_Site/_file"
+	],
+	"ignore": [
+		"**/.map/**",
+		"*.map",
+		"**/*.map",
+		"**/bundle.js",
+		"**/map-runtime.*",
+		"**/*.jsc",
+		"**/frontend/**",
+		"R_Site/Build",
+		"R_Site/Praser",
+		"**/.output/**",
+		"**/.tree/**",
+		"**/logs/**",
+		"*.log",
+		"output/",
+		"dist/",
+		"coverage/",
+		"node_modules/",
+		"**/node_modules/**",
+		"**/.git/**",
+		"**/__pycache__/**",
+		"utility-tools/**",
+		"R_Engine/**"
+	],
+	"delay": "300",
+	"signal": "SIGTERM",
+	"restartable": "rs",
+	"colours": true,
+	"verbose": false
+}

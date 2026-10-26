@@ -1,0 +1,15 @@
+{
+  "name": "linga",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Root toolchain for the scraper: Engine build (rebuild) and the wasm box (rebuild:wasm)",
+  "license": "ISC",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "rebuild": "node scripts/check-node.mjs && if [ ! -d Engine/MonoSyllabism/mapbuilder/node_modules/bytenode ] || [ ! -d Engine/MonoSyllabism/mapbuilder/node_modules/javascript-obfuscator ]; then npm install --prefix Engine/MonoSyllabism/mapbuilder --no-package-lock; fi && node Engine/Bridge/restore-master.js && node Engine/MonoSyllabism/mapbuilder/obfuscator.js",
+    "rebuild:wasm": "node scripts/check-node.mjs && sh ./wasm/rebuild-box.sh"
+  }
+}
