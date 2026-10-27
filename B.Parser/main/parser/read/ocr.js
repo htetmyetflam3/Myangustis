@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
-import { OCR_MODEL_DIR } from "../core/paths.js";
+import { OCR_MODEL_DIR } from "../../../_path.js";
 import { MAX_OCR_PIXELS } from "../core/limits.js";
 import {
   pageHasRasterImage,

@@ -21,7 +21,7 @@
 // workspace contract) are real siblings, not top-level Bridge placeholders.
 
 // Engine bridge path contract (architecture/bridge/path.js).
-import { OutputFile } from "../bridge/path.js";
+import { OutputFile } from "../_path.js";
 // Report-first logger + the internal datetime hash minter.
 import { bridgeStart, bridgeEnd, bridgeLineCount, getDateTimeHash } from "../bridge/logen.js";
 // Rule-engine kernel — pass-through today (architecture/bridge/Ginit.js).

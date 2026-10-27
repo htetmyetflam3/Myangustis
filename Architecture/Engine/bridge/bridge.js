@@ -26,8 +26,8 @@
 //
 // Payload: file-based callers (the web worker) pass { hash, inputPath } and
 // the segmentor generator is assembled here exactly as runMain does. An
-// in-process caller may instead pass a ready `seg` generator. Either way the
-// hash is mandatory at the BindEngine boundary.
+// in-process caller may instead pass a ready `seg` generator. BindEngine
+// requires the external caller to supply its hash.
 //
 // Throws are plain strings, quiet by contract: BindEngine owns the boundary
 // and the express layer turns them into refusal responses.
@@ -63,62 +63,67 @@ function inputRef(fields = {}) {
   return undefined;
 }
 
-// Bind the caller's hash into the disk session so createStreamWriter names
-// the outputs segmented_<callerHash>_*. This is the same receiver runMain
-// calls; without it the writer would mint its own datetime hash and the
-// caller could not read its result back by the id it sent.
-async function bindHash(fields = {}) {
-  const mod = await import(ENGINE_BRIDGE);
-  return fields.hash
-    ? mod.receiveCallerHash(fields.hash)
-    : mod.receiveInternalHash();
-}
-
 /* ── Path B: syllable-only — the tagger and kernel are never built ── */
 async function pathBSyllable(fields = {}) {
-  const { bridgeSyllable } = await import(ENGINE_BRIDGE);
-  const sessionHash = await bindHash(fields);
+  const { bridgeSyllable, receiveCallerHash } = await import(ENGINE_BRIDGE);
+  const sessionHash = receiveCallerHash(fields.hash);
   const seg = resolveSeg(fields);
   return bridgeSyllable(seg, { syllable: true }, sessionHash, inputRef(fields));
 }
 
 /* ── Path A: full tagger/kernel, dual syllable + raw_pos writers ── */
 async function pathAFull(fields = {}) {
-  const { bridge } = await import(ENGINE_BRIDGE);
-  const sessionHash = await bindHash(fields);
+  const { bridge, receiveCallerHash } = await import(ENGINE_BRIDGE);
+  const sessionHash = receiveCallerHash(fields.hash);
   const seg = resolveSeg(fields);
   return bridge(seg, { syllable: true, rawPos: true }, sessionHash, inputRef(fields));
 }
 
 /* ── Path A debug: five hardcoded observability outputs, same kernel ── */
 async function pathADebug(fields = {}) {
-  const { bridgeDebug } = await import(ENGINE_BRIDGE);
-  const sessionHash = await bindHash(fields);
+  const { bridgeDebug, receiveCallerHash } = await import(ENGINE_BRIDGE);
+  const sessionHash = receiveCallerHash(fields.hash);
   const seg = resolveSeg(fields);
   return bridgeDebug(seg, null, sessionHash, inputRef(fields));
 }
 
-// Internal dispatch table — BindEngine is the only importer. Adding a caller
-// means adding one handler here, nothing else changes.
-export const handlers = Object.freeze({
-  // Rate-limited public tokenizer API: segmenting only, so it always takes B.
-  public: (fields) => pathBSyllable(fields),
-  // Local library caller (scraper): same syllable-only guarantee, same path.
-  scraper: (fields) => pathBSyllable(fields),
-  // HTTP caller from the Site: full path-A pipeline, driven by the /job worker.
-  site: (fields) => pathAFull(fields),
-  // Local proofreading quality work: current two-file path-A output.
-  proofreading: (fields) => pathAFull(fields),
-  // Rare-event mapping inspection: five-file debug form, same kernel.
-  debugger: (fields) => pathADebug(fields),
-});
+// Workspace setup and output read-back belong to the bridge, not its callers.
+// The engine writer/session and workspace are process-global. Keep each run's
+// setup, pipeline and read-back together before letting the next caller in.
+let pendingRun = Promise.resolve();
+function run(fields, routine) {
+  const result = pendingRun.then(() => runInWorkspace(fields, routine));
+  pendingRun = result.catch(() => {});
+  return result;
+}
 
-// Which engine routine each signature is contracted to. Internal contract
-// table for readability; not exported — BindEngine is the only public entry.
-const CALLER_PATHS = Object.freeze({
-  public: "B",
-  scraper: "B",
-  site: "A",
-  proofreading: "A",
-  debugger: "A",
+async function runInWorkspace(fields, routine) {
+  const { configureWorkspace, GetOutputDir, GetLogDir } = await import('../_path.js');
+  const { readFileContent } = await import('../MonoSyllabism/utilities/stream.js');
+  const previous = { outputDir: GetOutputDir(), logDir: GetLogDir() };
+  try {
+    if (fields.work) {
+      const fs = await import('node:fs');
+      const path = await import('node:path');
+      const dirs = { outputDir: path.resolve(fields.work, 'out'), logDir: path.resolve(fields.work, 'log') };
+      for (const dir of Object.values(dirs)) fs.mkdirSync(dir, { recursive: true });
+      configureWorkspace(dirs);
+    }
+    const result = await routine(fields);
+    return {
+      ...result,
+      syllable: result.syllablePath ? await readFileContent(result.syllablePath) : null,
+      rawPos: result.rawPosPath ? await readFileContent(result.rawPosPath) : null,
+    };
+  } finally {
+    if (fields.work) configureWorkspace(previous);
+  }
+}
+
+export const handlers = Object.freeze({
+  public: fields => run(fields, pathBSyllable),
+  scraper: fields => run(fields, pathBSyllable),
+  site: fields => run(fields, pathAFull),
+  proofreading: fields => run(fields, pathAFull),
+  debugger: fields => run(fields, pathADebug),
 });

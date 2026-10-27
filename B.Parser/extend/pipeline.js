@@ -4,7 +4,7 @@ import { note } from "../main/parser/core/provenance.js";
 import fs from "node:fs";
 import path from "node:path";
 
-import { findModelPath } from "../main/parser/core/paths.js";
+import { findModelPath } from "../_path.js";
 import { ZawgyiDetector } from "../main/parser/text/detector.js";
 import { decryptPdf, isEncryptedPdf, hasObjectStreams, expandObjectStreams } from "../main/parser/read/decrypt.js";
 import { Rabbit } from "../main/parser/text/rabbit.js";

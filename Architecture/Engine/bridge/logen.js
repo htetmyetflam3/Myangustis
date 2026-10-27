@@ -17,7 +17,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { LogFile } from './path.js';
+import { LogFile } from '../_path.js';
 
 // ── State ──
 let _debug = false;

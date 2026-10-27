@@ -8,7 +8,7 @@ import {
   registerPdfFonts,
   applyPdfRole,
 } from "./fonts.js";
-import { OUTPUT_FONT_DIR } from "../core/paths.js";
+import { OUTPUT_FONT_DIR } from "../../../_path.js";
 
 const BURMESE_DOCX_NAME = BURMESE_FONTS[DEFAULT_BURMESE_KEY].docx;
 import { PdfWriter } from "./pdf-writer.js";

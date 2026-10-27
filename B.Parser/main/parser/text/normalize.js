@@ -18,7 +18,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { MAP_DIR } from "../core/paths.js";
+import { MAP_DIR } from "../../../_path.js";
 import { MARKS } from "./mm-score.js";
 import {
   cleanImposters,

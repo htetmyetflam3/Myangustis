@@ -18,7 +18,10 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { TreeFile } from '../../../bridge/path.js';
+import { fileURLToPath } from 'node:url';
+
+// Bundled engine data, never a configurable workspace directory.
+export const TREE_DIR = fileURLToPath(new URL('../../../.cache-tree/', import.meta.url));
 
 export const CACHE_MANIFEST = 'CACHE-MANIFEST.json';
 
@@ -41,7 +44,7 @@ function sha256File(filePath) {
  * @throws {Error} manifest missing/unparseable, a listed file missing, or a
  *                 digest mismatch — with the offending file named.
  */
-export function verifyCacheTree(treeDir = TreeFile()) {
+export function verifyCacheTree(treeDir = TREE_DIR) {
   const dir = path.resolve(treeDir);
   const cached = verified.get(dir);
   if (cached) return cached;
@@ -94,7 +97,7 @@ export function verifyCacheTree(treeDir = TreeFile()) {
  * @param {object} [meta] optional provenance fields (rebuilt date, note, ...)
  * @returns {object} the manifest written
  */
-export function writeCacheManifest(treeDir = TreeFile(), meta = {}) {
+export function writeCacheManifest(treeDir = TREE_DIR, meta = {}) {
   const dir = path.resolve(treeDir);
   const names = fs
     .readdirSync(dir)
@@ -125,7 +128,7 @@ export function writeCacheManifest(treeDir = TreeFile(), meta = {}) {
 }
 
 /** Manifest metadata after verification — the safe caller-facing view. */
-export function cacheInfo(treeDir = TreeFile()) {
+export function cacheInfo(treeDir = TREE_DIR) {
   const manifest = verifyCacheTree(treeDir);
   return {
     manifest: CACHE_MANIFEST,

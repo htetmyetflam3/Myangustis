@@ -1,81 +1,60 @@
-// Architecture/Engine/_path.js — engine internal path anchor + re-export hub.
-//
-// Imports BindEngine and helpers by their EXACT names from the source
-// files, then re-exports them. This is the only file that knows internal
-// file locations; everything above imports from here.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Exact-name imports from their source files (no aliasing here):
-import { BindEngine } from "./bridge/bind-engine.js";
-
-import { readFileContent } from "./MonoSyllabism/utilities/stream.js";
-import { getDateTimeHash } from "./bridge/logen.js";
-import { hashKind } from "./init/initS.js";
-import { cacheInfo } from "./MonoSyllabism/main/grapheme/cache-integrity.js";
-export { BindEngine, readFileContent, getDateTimeHash, hashKind};
-// Anchor deterministically from __dirname (Engine/ is this file's dir).
-import "../../path-index.js"; // side-effect: .env + Junk/
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 export const FALLBACK_ROOT = __dirname;
-export const ENGINE_ROOT = path.resolve(__dirname, "..", "..");
+export const ENGINE_ROOT = __dirname;
+
+async function resolveBaseDir() {
+  const rootExporter = new URL('../../index-path.js', import.meta.url);
+  const componentExporter = new URL('../_index.js', import.meta.url);
+  if (fs.existsSync(rootExporter) && fs.existsSync(componentExporter)) {
+    try {
+      const { JUNK_DIR } = await import('../_index.js');
+      if (typeof JUNK_DIR === 'string' && path.isAbsolute(JUNK_DIR)) return JUNK_DIR;
+    } catch {
+      // Standalone engines use their own directory when exporters cannot load.
+    }
+  }
+  return __dirname;
+}
+export const BASE_DIR = await resolveBaseDir();
 
 function ensureDir(p) { fs.mkdirSync(p, { recursive: true }); return p; }
 
 function resolveJunkDir(rel) {
-  return path.isAbsolute(rel) ? rel : path.join(ENGINE_ROOT, "Junk", rel);
+  return path.isAbsolute(rel) ? rel : path.join(BASE_DIR, rel);
 }
 
-let _ensured = false;
 export function ensureDirs() {
-  ensureDir(path.join(ENGINE_ROOT, "PDFs"));
-  ensureDir(path.join(ENGINE_ROOT, "docx"));
-  ensureDir(path.join(FALLBACK_ROOT, ".cache-tree"));
-  ensureDir(path.join(FALLBACK_ROOT, "PDFs"));
-  ensureDir(path.join(FALLBACK_ROOT, "docx"));
-  ensureDir(resolveJunkDir("input"));
-  ensureDir(resolveJunkDir("upload"));
-  ensureDir(resolveJunkDir("upload/input"));
-  ensureDir(resolveJunkDir("output"));
-  ensureDir(resolveJunkDir("output/txt"));
-  ensureDir(resolveJunkDir("output/docx"));
-  ensureDir(resolveJunkDir("output/pdf"));
-  ensureDir(resolveJunkDir("log/logfromengine"));
-  ensureDir(resolveJunkDir("File/input"));
-  const FJ = path.join(FALLBACK_ROOT, "Junk");
-  ["input", path.join("upload","input"), path.join("output","txt"),
-   path.join("output","docx"), path.join("output","pdf"),
-   path.join("log","logfromengine"), path.join("File","input")].forEach(d=>ensureDir(path.join(FJ,d)));
-  _ensured = true;
+  for (const dir of ["PDFs", "docx", "input", "upload/input", "output/txt",
+    "output/docx", "output/pdf", "log/logfromengine", "File/input"]) {
+    ensureDir(resolveJunkDir(dir));
+  }
   return {
     INPUT_DIR: resolveJunkDir("input"),
     UPLOAD_DIR: resolveJunkDir("upload"),
     OUTPUT_DIR: resolveJunkDir("output"),
-    TREE_DIR: path.join(FALLBACK_ROOT, ".cache-tree"),
     LOG_DIR: resolveJunkDir("log/logfromengine"),
   };
 }
 
 const INITIAL_DIRS = ensureDirs();
-export function configureWorkspace({ treeDir, logDir, outputDir, dataDir } = {}) {
-  if (treeDir !== undefined) INITIAL_DIRS.TREE_DIR = path.resolve(treeDir);
+export function configureWorkspace({ logDir, outputDir } = {}) {
   if (logDir !== undefined) INITIAL_DIRS.LOG_DIR = path.resolve(logDir);
   if (outputDir !== undefined) INITIAL_DIRS.OUTPUT_DIR = path.resolve(outputDir);
 }
 export function GetInputDir() { return INITIAL_DIRS.INPUT_DIR; }
 export function GetUploadDir() { return INITIAL_DIRS.UPLOAD_DIR; }
 export function GetOutputDir() { return INITIAL_DIRS.OUTPUT_DIR; }
-export function GetTreeDir() { return INITIAL_DIRS.TREE_DIR; }
 export function GetLogDir() { return INITIAL_DIRS.LOG_DIR; }
-export function GetPDFDir() { return path.join(ENGINE_ROOT, "PDFs"); }
-export function GetDocxDir() { return path.join(ENGINE_ROOT, "docx"); }
+export function GetPDFDir() { return resolveJunkDir("PDFs"); }
+export function GetDocxDir() { return resolveJunkDir("docx"); }
 export function InputFile() { return path.join(INITIAL_DIRS.INPUT_DIR, "input.txt"); }
 export function OutputFile() { return INITIAL_DIRS.OUTPUT_DIR; }
 export function LogFile() { return INITIAL_DIRS.LOG_DIR; }
-export function TreeFile() { return INITIAL_DIRS.TREE_DIR; }
 export function DataFile() { return path.join(ENGINE_ROOT, "knowledge", "isTreasure"); }
 export function EngineRoot() { return ENGINE_ROOT; }
 export function resolvePath(p) { return path.isAbsolute(p) ? p : path.resolve(ENGINE_ROOT, p); }
@@ -150,7 +129,6 @@ export function onPathEnsure(dirPath, reset = null) {
   return resolved;
 }
 export function resetWorkspace(opts = null) {
-  onPathEnsure(GetTreeDir(), false);
   onPathEnsure(GetOutputDir(), opts);
   onPathEnsure(GetLogDir(), opts);
 }

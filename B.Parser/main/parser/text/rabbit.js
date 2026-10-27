@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { MAP_DIR } from "../core/paths.js";
+import { MAP_DIR } from "../../../_path.js";
 
 const RULES_PATH = path.join(MAP_DIR, "zg2uni-rules.json");
 

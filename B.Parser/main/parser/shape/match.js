@@ -16,7 +16,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { VECTOR_MAP_DIR } from "../core/paths.js";
+import { VECTOR_MAP_DIR } from "../../../_path.js";
 
 /* ── per-glyph accept bars ────────────────────────────────────────────
    Loaded once, read with a Map lookup. Everything expensive about this

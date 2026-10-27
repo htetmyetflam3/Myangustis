@@ -26,7 +26,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { MAP_DIR } from "../core/paths.js";
+import { MAP_DIR } from "../../../_path.js";
 import { scanText, scanBrokenSpans } from "./scan.js";
 import {
   orderText, unmixZawCodeMarks, retraceZawCodeMarks, settleZawCodeAhE,

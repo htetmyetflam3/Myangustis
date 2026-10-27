@@ -14,7 +14,7 @@
 // Or pass a full job object as a single JSON argv token.
 import path from "node:path";
 import { Manager } from "../main/parser/manager.js";
-import { DEFAULT_OUTPUT_DIR } from "../main/parser/core/paths.js";
+import { DEFAULT_OUTPUT_DIR } from "../_path.js";
 
 function parseArgs(argv) {
   const [first, second, third] = argv;

@@ -20,7 +20,7 @@ import {
   findLatinFont,
   findModelPath,
   findMyanmarFont,
-} from "../../../D.Parser/main/parser/core/paths.js";
+} from "../../../B.Parser/_path.js";
 import { ruleCount } from "../../../D.Parser/main/parser/text/rabbit.js";
 import { loadSidecarMap } from "../../../D.Parser/main/parser/read/pdf-extract.js";
 import { Manager } from "../../../D.Parser/main/parser/manager.js";

@@ -3,11 +3,11 @@
  *
  * Moved from MonoSyllabism/map/base/idmapper.js (map/base/ deleted: the map
  * dir holds only generated artifacts now). Loads once, lazily, from
- * File/.tree/syllable.mapped.txt written by the build phase. Row parsing
+ * .cache-tree/syllable.mapped.txt written by the build phase. Row parsing
  * goes through Tree.loaded.loadMappedRows — the single home for that file.
  */
 
-import { TreeFile } from "../../bridge/path.js";
+import { TREE_DIR } from "../main/grapheme/cache-integrity.js";
 import { loadMappedRows } from "../main/grapheme/Tree.loaded.js";
 
 let _asciiToId = null;
@@ -23,9 +23,9 @@ function loadMappings() {
 	_burmeseToId = new Map();
 	_idToBurmese = new Map();
 
-	const rows = loadMappedRows(TreeFile());
+	const rows = loadMappedRows(TREE_DIR);
 	if (!rows) {
-		console.warn(`[syllableToID] Not found: ${TreeFile()}/syllable.mapped.txt`);
+		console.warn(`[syllableToID] Not found: ${TREE_DIR}/syllable.mapped.txt`);
 		return;
 	}
 

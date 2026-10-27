@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { readSecureJson, readMasterJson } from "../../../../.data/secure.js";
-import { MAP_DIR } from "../core/paths.js";
+import { MAP_DIR } from "../../../_path.js";
 import { MARKS as MM_MARKS } from "./mm-score.js";
 
 /**
