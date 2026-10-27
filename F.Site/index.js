@@ -34,7 +34,6 @@ import {
 } from "./Backend/gateway/generator/engine.js";
 import { createProcessingQueue } from "./Backend/gateway/queue/processingQueue.js";
 import { closePraserManager } from "./Backend/file/praser.js";
-import { cleanupExpiredRuntimeFiles } from "./Backend/file/runtimeCleanup.js";
 import {
   DB_FILE,
   FRONTEND_DIR,
@@ -100,15 +99,7 @@ if (cookieSecret === sessionSecret) {
 }
 validatePraserAssets();
 ensurePraserDirs();
-const runArtifactCleanup = () =>
-  cleanupExpiredRuntimeFiles({ maxAgeMs: ARTIFACT_TTL_MS })
-    .then((removed) => {
-      if (removed) console.log(`[cleanup] removed ${removed} expired runtime artifact(s)`);
-    })
-    .catch((error) => console.error("[cleanup] runtime artifact cleanup failed", error));
-runArtifactCleanup();
-const cleanupTimer = setInterval(runArtifactCleanup, 60 * 60 * 1000);
-cleanupTimer.unref();
+// Startup creates directories above; existing artifacts are retained.
 
 const frontendIndex = path.join(FRONTEND, "index.html");
 const reactIndex = path.join(REACT_FRONTEND, "index.html");
@@ -384,7 +375,6 @@ async function shutdown(signal) {
   if (closing) return;
   closing = true;
   console.log(`[site] ${signal} — shutting down`);
-  clearInterval(cleanupTimer);
   processingQueue.dispose();
   await new Promise((resolve) => server.close(resolve));
   await closePraserManager().catch(() => {});

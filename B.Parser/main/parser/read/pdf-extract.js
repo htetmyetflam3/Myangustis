@@ -2,8 +2,8 @@ import { parseTtfCmap } from "../core/ttf-cmap.js";
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
-import { ValueError, pyTruthy, pyChr, pyInt, pyFloat, fromHexStrict, pyStripBytes } from "../core/pylib.js";
-import { MAP_DIR } from "../core/paths.js";
+import { ValueError, pyTruthy, pyInt, pyFloat, fromHexStrict, pyStripBytes } from "../core/pylib.js";
+import { MAP_DIR } from "../../../_path.js";
 import { MAX_PAGES, positiveLimit } from "../core/limits.js";
 import {
   Lexer, PdfName, PdfHexBytes, isNumeric, toNumber,

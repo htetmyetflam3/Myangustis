@@ -17,7 +17,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { LogFile } from './path.js';
+import { LogFile } from '../_path.js';
 
 // ── State ──
 let _debug = false;
@@ -350,14 +350,6 @@ function logPath(fileName) {
   return path.join(ensureLogDir(), fileName);
 }
 
-function clearLogs() {
-  const dir = ensureLogDir();
-  for (const file of Object.values(FILE_MAP)) {
-    const p = path.join(dir, file);
-    try { fs.writeFileSync(p, '', 'utf8'); } catch {} // eslint-disable-line no-empty -- best-effort cleanup
-  }
-}
-
 function writeFileLog(module, level, event, data) {
   const file = FILE_MAP[module];
   if (!file) return;
@@ -485,7 +477,7 @@ export function init(flags = {}) {
   if (_initialized) return;
   _debug = flags.DEBUG === true;
   _batchMode = flags.BATCH === true || flags.SEGMENTED_MODE === 'readdir';
-  clearLogs();
+  ensureLogDir();
   _initialized = true;
 
   if (_debug) {
@@ -699,7 +691,7 @@ const DEBUG_LOG = path.join(LogFile(), 'normalize-debug.log');
 export function debugLogInit() {
   if (!_debug) return;
   try {
-    fs.writeFileSync(DEBUG_LOG, `--- ${isoTs()} ---\n`, 'utf8');
+    fs.appendFileSync(DEBUG_LOG, `--- ${isoTs()} ---\n`, 'utf8');
   } catch {} // eslint-disable-line no-empty -- best-effort cleanup
 }
 

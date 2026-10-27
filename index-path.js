@@ -1,9 +1,11 @@
-/*
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import from Architecture '_index.js'  for other top level dir that demand something  from Engine 
-*/
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const workspace = './Junk';
 
-/*
-for other dir  B C D export back as 
-export default {   } ;
-*/
+export const JUNK_DIR = path.resolve(__dirname, workspace);
+fs.mkdirSync(JUNK_DIR, { recursive: true });
+
+export default { JUNK_DIR };

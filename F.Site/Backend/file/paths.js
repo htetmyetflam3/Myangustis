@@ -1,3 +1,4 @@
+import { OUTPUT_FONT_DIR } from "../../../B.Parser/_path.js";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -25,11 +26,11 @@ export const FILE_DIR = `${BACKEND_DIR}/file`;
 export const SITE_ENTRY = "index.js";
 export const SITE_ENV = ".env";
 export const SITE_PACKAGE_JSON = "package.json";
-export const PARSED_ROOT = "../D.Parser/main";
+export const PARSED_ROOT = "../B.Parser/main";
 export const PARSER_DIR = `${PARSED_ROOT}/parser`;
 export const PARSER_MAP_DIR = `${PARSER_DIR}/jason-map`;
 export const PARSER_MODEL_DIR = `${PARSER_DIR}/model`;
-export const PARSER_FONT_DIR = `${PARSED_ROOT}/fonts`;
+export const PARSER_FONT_DIR = path.dirname(OUTPUT_FONT_DIR);
 export const PRASER_WEB = PARSED_ROOT;
 /* The parser is reached through its manager, which owns the worker
    threads and lanes. There is no CLI entry any more: the API route is the

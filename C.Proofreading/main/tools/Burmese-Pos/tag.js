@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { BindEngine, configureWorkspace, readFileContent } from '../../../../Bridge/path.js';
+import { BindEngine } from '../../../../Bridge/path.js';
 
 const hash = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 
@@ -28,25 +28,14 @@ if (!fs.existsSync(source)) {
   process.exit(2);
 }
 
-// Only the mutable run outputs are retargeted at the scratch WORK dir; the
-// engine's tree and data stay exactly where the engine itself resolves them.
-const outputDir = path.join(work, 'out');
-const logDir = path.join(work, 'log');
-for (const dir of [outputDir, logDir]) fs.mkdirSync(dir, { recursive: true });
-configureWorkspace({ outputDir, logDir });
-
-// Content-derived session id names segmented_<hash>_* purely to keep parallel
-// runs from colliding; job state, not this hash, is the engine's authority.
 const sourceBytes = fs.readFileSync(source);
 const session = hash(sourceBytes).slice(0, 24);
-
-/* proofreading is path A: syllable + raw_pos writers, one boundary call. */
-const result = await BindEngine('proofreading', { hash: session, inputPath: source });
+const result = await BindEngine('proofreading', { hash: session, inputPath: source, work });
 if (!result.rawPosPath || !result.syllablePath) {
   throw new Error('Engine did not produce both views');
 }
 
-const raw = await readFileContent(result.rawPosPath);
+const raw = result.rawPos;
 const stats = {
   engine_entry: 'Engine/index.js via repo-root Bridge/path.js facade',
   source_sha256: hash(sourceBytes),

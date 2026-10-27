@@ -18,7 +18,7 @@ const { createEngineQueueRouter } = await import('../../../F.Site/Backend/gatewa
 const { createHiddenProcessor } = await import('../../../F.Site/Backend/gateway/api/hidden.js');
 const { engineConfig, createEngineDispatcher } = await import('../../../F.Site/Backend/gateway/generator/engine.js');
 const SAMPLE_PDF = path.resolve(
-  'frontend/frontend-bootstrap/public/samples/sample.pdf',
+  'F.Site/Frontend/frontend-bootstrap/public/samples/sample.pdf',
 );
 const SITE_TO_ENGINE_KEY = 'a'.repeat(32);
 const ENGINE_TO_SITE_KEY = 'b'.repeat(32);

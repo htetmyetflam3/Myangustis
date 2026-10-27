@@ -9,7 +9,7 @@
 */
 
 import fs from "node:fs";
-import { resolvePath } from "../../bridge/path.js";
+import { resolvePath } from "../../_path.js";
 
 /**
  * Split a buffer at its last newline — prevents slicing multi-byte Burmese

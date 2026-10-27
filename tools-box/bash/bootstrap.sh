@@ -54,7 +54,7 @@
 #   dev        setup → boot → run the test flow once → watch tests with nodemon
 #   stop       stop webs started by this script
 #   status     show what is listening on each port (with `full`: the tunnel too)
-#   clean      stop webs, then drop the built SPA + the runtime scratch dirs
+#   clean      stop webs, then drop only the built SPA (runtime files are retained)
 #
 # The flag
 #   full       after the webs are healthy, run the rest of the flow: stage 3,
@@ -456,10 +456,10 @@ do_setup() {
   # restating the list here (restating it is how a layout rename silently
   # strands a writer in a directory nobody creates).
   if "$NODE_BIN" --input-type=module -e '
-    const { ensurePraserDirs } = await import("./R_Site/_file/paths.js");
-    const { resetWorkspace }  = await import("./R_Engine/Bridge/path.js");
+    const { ensurePraserDirs } = await import("./F.Site/Backend/file/paths.js");
+    const { ensureWorkspace } = await import("./Architecture/Engine/_path.js");
     ensurePraserDirs();
-    resetWorkspace();
+    ensureWorkspace();
   ' 2>&1; then
     ok "runtime dirs ensured by the path maps (uploads · .output · .tree · logs)"
   else
@@ -902,9 +902,8 @@ case "$CMD" in
 
   clean)
     stop_all
-    say "dropping build output + runtime scratch (all gitignored; ./.bin/bootstrap.sh rebuilds them)"
-    rm -rf "$BUILD_DIR/spa/frontend" "$ENGINE_DIR/.output" "$ENGINE_DIR/.tree" \
-           "$ENGINE_DIR/input" "$LOGS_DIR"
+    say "dropping built SPA only; preserving runtime workspaces"
+    rm -rf "$BUILD_DIR/spa/frontend"
     ok "clean"
     ;;
 

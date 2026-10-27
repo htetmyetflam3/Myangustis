@@ -4,7 +4,7 @@ import { note } from "../main/parser/core/provenance.js";
 import fs from "node:fs";
 import path from "node:path";
 
-import { findModelPath } from "../main/parser/core/paths.js";
+import { findModelPath } from "../_path.js";
 import { ZawgyiDetector } from "../main/parser/text/detector.js";
 import { decryptPdf, isEncryptedPdf, hasObjectStreams, expandObjectStreams } from "../main/parser/read/decrypt.js";
 import { Rabbit } from "../main/parser/text/rabbit.js";
@@ -25,12 +25,11 @@ import {
 import { LEGACY_CODE_PAGES, UNICODE_PATH, ZawCODE_PATH } from "../main/parser/codepage/registry.js";
 import { zawCodeGuard } from "../main/parser/text/repair.js";
 import { loadScanDictionary, dictionaryWords } from "../main/parser/text/scan.js";
-import { writeDocxLayout, writePdf } from "../main/parser/write/render.js";
 import { chooseCodePage, prepareVectorLayout, LEGACY_QUALITY_FLOOR } from "../main/parser/codepage/resolve.js";
 import { buildVectorRepair } from "../main/parser/codepage/vector-repair.js";
 
 export { LEGACY_QUALITY_FLOOR };
-import { pyTruthy, pyRound, RuntimeError, splitExt, baseName } from "../main/parser/core/pylib.js";
+import { pyTruthy, pyRound, RuntimeError, baseName } from "../main/parser/core/pylib.js";
 
 
 

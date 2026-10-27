@@ -10,7 +10,7 @@
 */
 
 import fs from "node:fs";
-import { resolvePath } from "../../bridge/path.js";
+import { resolvePath } from "../../_path.js";
 import { splitBuffer, getReadChunkSize } from "./buffer.js";
 
 /**

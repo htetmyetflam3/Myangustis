@@ -6,8 +6,7 @@
 // source text over the queue and hands the string straight into the bridge:
 // the readFromApi() memory generator head feeds the same pipeline a file
 // would, so no temp .txt is ever staged. The tagged output is streamed to
-// the engine workspace by the engine's own writer and read back with the
-// engine's stream reader (readFileContent), not host-level fs calls.
+// the engine workspace; the bridge returns the output text alongside its path.
 //
 // Job identity: the Site queue's formId (one UUID per file, derived at
 // upload) IS the job id on both webs. It is passed as the bridge hash solely
@@ -15,7 +14,6 @@
 // never looks anything up by hash; job state in JobStore is the authority.
 import path from 'node:path';
 import { BindEngine } from '../../Engine/bridge/bind-engine.js';
-import { readFileContent } from '../../Engine/MonoSyllabism/utilities/stream.js';
 
 // RESULT_MIME on the Site side (analysisFinalize.js):
 //   txt -> text/plain | docx -> wordprocessingml.document | pdf -> application/pdf
@@ -48,7 +46,7 @@ export async function runEngineJob({ record, sourceText }) {
   if (!result.rawPosPath) {
     throw new Error('engine path-A returned no rawPosPath output');
   }
-  const outputText = await readFileContent(result.rawPosPath);
+  const outputText = result.rawPos;
 
   const bytes = Buffer.from(outputText, 'utf8');
   return {

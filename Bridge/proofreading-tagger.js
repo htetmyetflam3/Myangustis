@@ -7,14 +7,10 @@
 // signature 'proofreading' is path A (fullstopHolder -> runTagger ->
 // runRuleEngine, dual syllable/raw_pos stream writers).
 //
-// New engine shape: no runMain, no initS readback, no placeholder paths. The
-// engine owns routine selection and returns the concrete output paths; this
-// bridge only prepares the workspace and forwards one call. Cache seeding and
-// the master audit are production-entry concerns and live in
-// Proofreading/plugin/engine/tag-text.mjs, not here.
+// This caller supplies the hash; Engine owns workspace setup and read-back.
 import fs from 'node:fs';
-import path from 'node:path';
-import { BindEngine, configureWorkspace, getDateTimeHash, readFileContent } from './path.js';
+import { randomUUID } from 'node:crypto';
+import { BindEngine } from './path.js';
 
 /**
  * Run the native tagger for a proofreading request.
@@ -26,7 +22,7 @@ import { BindEngine, configureWorkspace, getDateTimeHash, readFileContent } from
  *              wins over source when both are given)
  *   hash       caller id naming segmented_<hash>_*; minted when omitted
  *   work       optional disposable work dir — retargets the engine workspace
- *              to work/{tree,data,out,log} for the run, like tag-both did
+ *              to work/{out,log} for the run, like tag-both did
  *   views      'both' (default) returns both outputs; 'syllable' nulls the
  *              raw POS view (the path-A run still produces it internally)
  * @returns {Promise<{hash:string, rawPosPath:string|null, syllablePath:string,
@@ -41,22 +37,7 @@ export async function tagProofreading({ source, sourceText, hash, work, views = 
     throw new Error(`tagProofreading: source not found: ${source}`);
   }
 
-  if (work) {
-    // The disposable layout tag-both.mjs used to assemble per run. The stream
-    // writer opens files directly, so the dirs must exist first; then the
-    // engine workspace is retargeted at them.
-    const dirs = {
-      treeDir: path.join(work, 'tree'),
-      dataDir: path.join(work, 'data'),
-      outputDir: path.join(work, 'out'),
-      logDir: path.join(work, 'log'),
-    };
-    for (const dir of Object.values(dirs)) fs.mkdirSync(dir, { recursive: true });
-    configureWorkspace(dirs);
-  }
-
-  const sessionHash = hash || getDateTimeHash();
-  const payload = { hash: sessionHash };
+  const payload = { work, hash: hash ?? randomUUID() };
   if (hasMemoryText) payload.sourceText = sourceText;
   else payload.inputPath = source;
 
@@ -75,7 +56,7 @@ export async function tagProofreading({ source, sourceText, hash, work, views = 
     lineCount: result.lineCount,
     syllablePath: result.syllablePath,
     rawPosPath: wantBoth ? result.rawPosPath : null,
-    syllable: await readFileContent(result.syllablePath),
-    rawPos: wantBoth ? await readFileContent(result.rawPosPath) : null,
+    syllable: result.syllable,
+    rawPos: wantBoth ? result.rawPos : null,
   };
 }

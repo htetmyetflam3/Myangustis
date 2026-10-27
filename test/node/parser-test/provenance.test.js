@@ -18,13 +18,13 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { extractMetadata, parsePdfObjects } from "../../../D.Parser/main/parser/read/pdf-extract.js";
-import { startRecord, note, appendRecord, registerPath } from "../../../D.Parser/main/parser/core/provenance.js";
+import { extractMetadata, parsePdfObjects } from "../../../B.Parser/main/parser/read/pdf-extract.js";
+import { startRecord, note, appendRecord, registerPath } from "../../../B.Parser/main/parser/core/provenance.js";
 
 const REPO = path.dirname(path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.url)))));
 // working-branch mapping: the fixtures this suite wants live in the upload
 // books here, not under Parsed/fixtures (which exists on no branch).
-const fixture = (name) => path.join(REPO, "D.Parser/main/File/upload/pdf", name);
+const fixture = (name) => path.join(REPO, "Junk/Parser/upload/pdf", name);
 const readInfo = (file) => {
   const bytes = fs.readFileSync(file);
   return extractMetadata(parsePdfObjects(bytes), bytes);

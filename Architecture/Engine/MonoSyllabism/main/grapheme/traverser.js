@@ -2,8 +2,7 @@
 import { getStepKey, findEntry, getTree, getRtlTree, getPosTree } from './Tree.loaded.js';
 import { walkReverse } from './reverse.js';
 import {
-  // eslint-disable-next-line no-unused-vars -- intentional unused variable in test/experimental code
-  walkerStart, walkerEnd,
+  walkerStart,
   walkStepHit, walkStepEmpty, walkQuit, walkFail, walkOutputSyllables,
 } from '../../../bridge/logen.js';
 

@@ -9,7 +9,7 @@
  * UUID submit id from the Site, 32-hex session key) while refusing anything
  * that could escape the output directory.
  */
-import { OutputFile, joinPath } from "../bridge/path.js";
+import { OutputFile, joinPath } from "../_path.js";
 import { readFileContent } from "../MonoSyllabism/utilities/stream.js";
 import { toPositions } from "../MonoSyllabism/utilities/formatter.js";
 

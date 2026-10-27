@@ -8,14 +8,7 @@
 // the internal bridge.js sibling; reaching around this entry is a design
 // violation, not a supported call style.
 //
-// Boundary contract (kept FFI-shaped on purpose):
-//   signature  a plain STRING naming the caller, not a field of an options
-//              object — the routine and the field set are decided FROM it.
-//   payload    object carrying this caller's own fields; every payload must
-//              carry hash. The hash is NOT validated for shape here and the
-//              segmentor never sees it: it only names segmented_<hash>_* so
-//              parallel processes cannot collide on the output workspace.
-//              Missing hash stops the run at input receiving.
+// External callers must supply their own hash. BindEngine never mints one.
 //
 // Throws are plain STRINGS, never Error objects: a string is what crosses a
 // WASM/serialized boundary intact. Nothing here logs — a boundary throw is a
@@ -26,10 +19,9 @@
 // slot before their routine runs — the accept-fast/queue shape already used
 // by Bridge/api-server.js and the Site upload side, sized by
 // config.maxConcurrent (SlotLimiter in job-store.mjs, the pending-list
-// queue primitive). Local in-process signatures run inline, no queue.
+// queue primitive). The bridge serializes access to engine-global run state.
 import { config } from '../../host/config.js';
 import { SlotLimiter } from '../../host/job-store.js';
-import { handlers } from './bridge.js';
 
 // One bound for the whole process: web requests wait here, local calls don't.
 const webSlots = new SlotLimiter(config.maxConcurrent);
@@ -39,7 +31,7 @@ const QUEUED_SIGNATURES = Object.freeze(new Set(['public', 'site']));
  * Bind a caller to its predefined engine routine.
  *
  * @param {string} signature caller name; selects path A/B and the routine.
- * @param {object} [payload]  the caller's fields; hash is mandatory.
+ * @param {object} [payload]  the caller's input and required external hash.
  * @returns {Promise<object>} the routine's result object.
  * @throws {string} quiet string failure; the web layer maps it to a refusal.
  */
@@ -52,13 +44,12 @@ export async function BindEngine(signature, payload = {}) {
     throw 'BindEngine: provide a caller signature';
   }
 
-  // Hash guard at input receiving. Presence only — its job is output
-  // namespacing across parallel runs, so a missing one must stop here.
   const { hash } = payload;
   if (typeof hash !== 'string' || hash === '') {
     throw 'BindEngine: hash is required';
   }
 
+  const { handlers } = await import('./bridge.js');
   const routine = handlers[signature];
   if (!routine) {
     throw 'BindEngine: unknown caller signature';

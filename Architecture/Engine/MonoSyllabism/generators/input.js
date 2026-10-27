@@ -1,6 +1,6 @@
 import { collector, collectFromText } from '../utilities/stream.js';
 import { normalize, mapperStr } from '../map/loader.js';
-import { InputFile } from '../../bridge/path.js';
+import { InputFile } from '../../_path.js';
 /**
  * Generator: raw file → normalize → mapperStr (ASCII internal).
  * Yields mapped blocks ready for the segmentor.

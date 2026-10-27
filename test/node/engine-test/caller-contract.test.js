@@ -1,10 +1,7 @@
-// External-caller contract tests — Scraper and Proofreading entering the
-// engine through its SINGLE door (Engine/index.js, re-exported by the
-// repo-root Bridge/path.js facade). No deep MonoSyllabism imports exist on
-// either caller path; these tests pin that shape.
-//
-// Run: node --test Engine/test/caller-contract.test.mjs
+// External callers supply their own hash through BindEngine.
+// Run: node --test test/node/engine-test/caller-contract.test.js
 import { test } from 'node:test';
+import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -13,46 +10,40 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-// .bin/node/engine-test -> three levels up (.bin/node/engine-test ->
-// .bin/node -> .bin -> repo root)
 const REPO = path.resolve(HERE, '..', '..', '..');
 
 // The door under test — imported exactly as an external service would.
-const engineEntry = await import('../../../Architecture/index.js');
-const { BindEngine, readFileContent, getDateTimeHash, hashKind } = engineEntry;
+const engineEntry = await import('../../../Architecture/_index.js');
+const { BindEngine } = engineEntry;
 const facade = await import(path.join(REPO, 'Bridge', 'path.js'));
 
 const SAMPLE = 'ကောင်းကင်သည် ကြည်လင်သည်။\nအင်ဂျင် စမ်းသပ်ချက်။\n';
-const uniqueHash = (label) => `${getDateTimeHash()}_${label}_${process.pid}`;
 
 test('engine entry exposes the single-boundary surface only', () => {
   assert.equal(typeof BindEngine, 'function');
-  assert.equal(typeof readFileContent, 'function');
-  assert.equal(typeof getDateTimeHash, 'function');
-  assert.equal(typeof hashKind, 'function');
-  // Root Bridge facade is a pure re-export of the same entry references.
+  assert.deepEqual(Object.keys(engineEntry).sort(), ['BindEngine', 'JUNK_DIR']);
+  assert.deepEqual(Object.keys(facade), ['BindEngine']);
   assert.equal(facade.BindEngine, BindEngine);
-  assert.equal(facade.readFileContent, readFileContent);
 });
 
 test('SCRAPER call: BindEngine("scraper") runs path B (syllables only, memory head)', async () => {
-  const hash = uniqueHash('scraper');
+  const hash = randomUUID();
   const result = await BindEngine('scraper', { hash, sourceText: SAMPLE });
-
   assert.equal(result.hash, hash);
+
+  assert.equal(typeof result.hash, 'string');
+  assert.ok(result.hash.length > 0);
   assert.ok(result.syllablePath, 'path B must return a syllable output path');
   assert.equal(result.rawPosPath, null, 'scraper never builds the POS tagger');
   assert.ok(result.lineCount >= 2, 'one count per input line');
 
-  const text = await readFileContent(result.syllablePath);
+  const text = result.syllable;
   assert.ok(text.includes('က'), 'syllable output carries Burmese surfaces');
   assert.ok(fs.existsSync(result.syllablePath));
-  assert.ok(hashKind(hash), 'hash is a flat output token');
 });
 
 test('PROOFREADING call: BindEngine("proofreading") runs path A (tagger, dual writers)', async () => {
-  const hash = uniqueHash('proof');
-  const result = await BindEngine('proofreading', { hash, sourceText: SAMPLE });
+  const result = await BindEngine('proofreading', { hash: randomUUID(), sourceText: SAMPLE });
 
   assert.ok(result.syllablePath, 'proofreading keeps the syllable view');
   assert.ok(result.rawPosPath, 'proofreading requires the raw POS view');
@@ -60,7 +51,7 @@ test('PROOFREADING call: BindEngine("proofreading") runs path A (tagger, dual wr
   // second ။), not input lines — the two-line sample yields one unit.
   assert.ok(result.lineCount >= 1);
 
-  const rawPos = await readFileContent(result.rawPosPath);
+  const rawPos = result.rawPos;
   assert.match(rawPos, /\{[^{}]+\}/, 'raw POS view carries tag markers');
   assert.ok(rawPos.includes('<eos>'), 'sentence end markers survive the kernel');
 });
@@ -69,10 +60,10 @@ test('memory head and file head are interchangeable for proofreading', async () 
   const tmp = path.join(os.tmpdir(), `caller-contract-${process.pid}.txt`);
   fs.writeFileSync(tmp, SAMPLE, 'utf8');
   try {
-    const mem = await BindEngine('proofreading', { hash: uniqueHash('mem'), sourceText: SAMPLE });
-    const file = await BindEngine('proofreading', { hash: uniqueHash('file'), inputPath: tmp });
-    const a = await readFileContent(mem.rawPosPath);
-    const b = await readFileContent(file.rawPosPath);
+    const mem = await BindEngine('proofreading', { hash: randomUUID(), sourceText: SAMPLE });
+    const file = await BindEngine('proofreading', { hash: randomUUID(), inputPath: tmp });
+    const a = mem.rawPos;
+    const b = file.rawPos;
     // Same engine output modulo the hash-named file path header lines.
     assert.equal(a.replace(/\s+/g, ' ').trim(), b.replace(/\s+/g, ' ').trim());
   } finally {
@@ -82,7 +73,7 @@ test('memory head and file head are interchangeable for proofreading', async () 
 
 test('proofreading bridge wrapper: both/syllable views and work-dir retarget', async () => {
   const { tagProofreading } = await import(
-    path.join(REPO, 'Bridge', 'proofreading-tagger.mjs')
+    path.join(REPO, 'Bridge', 'proofreading-tagger.js')
   );
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'proof-work-'));
   try {
@@ -96,7 +87,6 @@ test('proofreading bridge wrapper: both/syllable views and work-dir retarget', a
       sourceText: SAMPLE,
       work,
       views: 'syllable',
-      hash: uniqueHash('sylview'),
     });
     assert.equal(syllableOnly.rawPosPath, null);
     assert.equal(syllableOnly.rawPos, null);
@@ -107,12 +97,12 @@ test('proofreading bridge wrapper: both/syllable views and work-dir retarget', a
 });
 
 test('scraper segment_bridge CLI: one facade import, U+001D stdin contract preserved', () => {
-  const bin = path.join(REPO, 'Scraper', 'main', 'crawler', 'bin', 'segment_bridge.mjs');
+  const bin = path.join(REPO, 'E.Scraper', 'main', 'extend', 'scraper-segmented.js');
   const source = fs.readFileSync(bin, 'utf8');
   // Static guard: the old deep-import shape must never come back.
   assert.ok(!source.includes('MonoSyllabism/'), 'no deep engine imports in the scraper bridge');
   assert.ok(source.includes('BindEngine'), 'the scraper bridge calls the single boundary');
-  assert.ok(source.includes('Bridge', ) && source.includes('path.js'), 'goes through the root facade');
+  assert.ok(source.includes('../../_index.js'), 'goes through the component entry');
 
   const outFile = path.join(os.tmpdir(), `segment-out-${process.pid}.txt`);
   const SEP = '\u001d';
@@ -129,3 +119,44 @@ test('scraper segment_bridge CLI: one facade import, U+001D stdin contract prese
   assert.equal(docs[2], '', 'empty input document maps to empty output document');
   fs.rmSync(outFile, { force: true });
 });
+
+test('concurrent callers keep workspace and caller-supplied ids separate', async () => {
+  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'bridge-concurrent-'));
+  try {
+    const dirs = [path.join(work, 'first'), path.join(work, 'second')];
+    const hashes = dirs.map(() => randomUUID());
+    const results = await Promise.all(dirs.map((dir, i) =>
+      BindEngine('scraper', { hash: hashes[i], sourceText: SAMPLE, work: dir })));
+    for (let i = 0; i < results.length; i++) {
+      assert.equal(results[i].hash, hashes[i]);
+      assert.equal(path.dirname(results[i].syllablePath), path.join(dirs[i], 'out'));
+      assert.ok(results[i].syllable.includes('က'));
+    }
+    assert.notEqual(results[0].hash, results[1].hash);
+  } finally {
+    fs.rmSync(work, { recursive: true, force: true });
+  }
+});
+
+test('failed run restores workspace and does not block the next caller', async () => {
+  const { GetOutputDir, GetLogDir } = await import('../../../Architecture/Engine/_path.js');
+  const previous = [GetOutputDir(), GetLogDir()];
+  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'bridge-failure-'));
+  try {
+    await assert.rejects(BindEngine('scraper', { hash: randomUUID(), work }),
+      error => String(error).includes('inputPath or sourceText'));
+    assert.deepEqual([GetOutputDir(), GetLogDir()], previous);
+    const result = await BindEngine('scraper', { hash: randomUUID(), work, sourceText: SAMPLE });
+    assert.ok(result.syllable.includes('က'));
+    assert.deepEqual([GetOutputDir(), GetLogDir()], previous);
+  } finally {
+    fs.rmSync(work, { recursive: true, force: true });
+  }
+});
+
+for (const hash of [undefined, null, '', 123]) {
+  test(`BindEngine rejects missing/invalid external hash: ${String(hash)}`, async () => {
+    await assert.rejects(BindEngine('scraper', { hash, sourceText: SAMPLE }),
+      error => error === 'BindEngine: hash is required');
+  });
+}

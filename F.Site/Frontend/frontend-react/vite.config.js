@@ -13,7 +13,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
     outDir: path.resolve(__dirname, "../dist/react"),
-    emptyOutDir: true,
+    emptyOutDir: false,
 
     /*
      * This client used to ship through `vite-plugin-singlefile`: every chunk,

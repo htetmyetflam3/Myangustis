@@ -1,6 +1,6 @@
-import { TreeFile, DataFile, MasterFile, resolvePath } from '../../../bridge/path.js';
+import { DataFile, MasterFile } from '../../../_path.js';
 import { readSecureText, readSecureJson } from '../../../../../.data/secure.js';
-import { verifyCacheTree } from './cache-integrity.js';
+import { TREE_DIR, verifyCacheTree } from './cache-integrity.js';
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
@@ -21,7 +21,7 @@ let rtlTree = null;
 export function getTree() {
   if (syllableTree) return syllableTree;
   verifyCacheTree(); // built-in manifest gate — never load an unverified trie
-  const p = path.join(TreeFile(), 'syllable.tree.json');
+  const p = path.join(TREE_DIR, 'syllable.tree.json');
   syllableTree = parseJson(p);
   if (!syllableTree) throw new Error(`Syllable tree failed to parse: ${p}`);
   return syllableTree;
@@ -34,7 +34,7 @@ export function resetTree() {
 export function getRtlTree() {
   if (rtlTree) return rtlTree;
   verifyCacheTree();
-  const p = path.join(TreeFile(), 'rtl-tree.json');
+  const p = path.join(TREE_DIR, 'rtl-tree.json');
   rtlTree = parseJson(p);
   if (!rtlTree) throw new Error(`RTL tree not found at: ${p}`);
   return rtlTree;
@@ -72,7 +72,7 @@ let posTree = null;
 export function getPosTree() {
   if (posTree) return posTree;
   verifyCacheTree();
-  const p = path.join(TreeFile(), 'pos.tree.json');
+  const p = path.join(TREE_DIR, 'pos.tree.json');
   posTree = JSON.parse(fs.readFileSync(p, 'utf-8'));
   return posTree;
 }
@@ -157,7 +157,7 @@ export async function loadSyllablesData(jsonPath = MasterFile()) {
 // file is absent (callers keep their own missing-file policy: build throws,
 // lookup warns). opts.skipComments (default true): lookup behavior; build
 // passes false to preserve its exact legacy parse. opts.onBadLine(n, line).
-export function loadMappedRows(treeDir = TreeFile(), opts = {}) {
+export function loadMappedRows(treeDir = TREE_DIR, opts = {}) {
   const { skipComments = true, onBadLine = null } = opts;
   verifyCacheTree(treeDir);
   const p = path.join(treeDir, 'syllable.mapped.txt');

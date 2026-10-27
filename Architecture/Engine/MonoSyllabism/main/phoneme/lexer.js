@@ -1,25 +1,7 @@
 import { walk } from "../grapheme/traverser.js";
 import { isTail, isBase, isLowercaseAZ } from "../../map/loader.js";
 import { toSyllableToken, SPACE_TOKEN } from "../../utilities/formatter.js";
-import {
-	segmentStart,
-	// eslint-disable-next-line no-unused-vars -- intentional unused variable in test/experimental code
-	segmentEnd,
-	// eslint-disable-next-line no-unused-vars -- intentional unused variable in test/experimental code
-	segLineCount,
-	// eslint-disable-next-line no-unused-vars -- intentional unused variable in test/experimental code
-	segEmittedSyllables,
-	// eslint-disable-next-line no-unused-vars -- intentional unused variable in test/experimental code
-	segValidSyllable,
-	// eslint-disable-next-line no-unused-vars -- intentional unused variable in test/experimental code
-	segPossibleSyllable,
-	// eslint-disable-next-line no-unused-vars -- intentional unused variable in test/experimental code
-	segUnknownSyllable,
-	// eslint-disable-next-line no-unused-vars -- intentional unused variable in test/experimental code
-	segInvalidChar,
-	// eslint-disable-next-line no-unused-vars -- intentional unused variable in test/experimental code
-	segDelimiter,
-} from "../../../bridge/logen.js";
+import { segmentStart } from "../../../bridge/logen.js";
 
 function isBaseAsat(tok) {
 	return isLowercaseAZ(tok);

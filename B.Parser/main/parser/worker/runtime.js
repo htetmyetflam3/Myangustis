@@ -7,7 +7,7 @@ import { scanText, formatScanReport, loadScanDictionary, dictionaryWords } from 
 import { repairText, repairFromScanVerdict } from "../text/repair.js";
 import { emitEvent } from "../../../../Bridge/logen/core.js";
 import { MAX_INPUT_BYTES, MAX_INPUT_MB } from "../core/limits.js";
-import { REGISTER_LOG } from "../core/paths.js";
+import { REGISTER_LOG } from "../../../_path.js";
 import { startRecord, note, appendRecord, registerPath } from "../core/provenance.js";
 import { installPassiveLog } from "../../../../Bridge/logen/site.js";
 

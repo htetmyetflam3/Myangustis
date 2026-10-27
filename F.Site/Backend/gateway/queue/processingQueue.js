@@ -1,7 +1,6 @@
 import crypto from 'node:crypto';
 import { emitEvent } from '../../../../Bridge/logen/site.js';
 import { createReadStream } from 'node:fs';
-import fs from 'node:fs/promises';
 const now = () => new Date().toISOString();
 async function snapshot(filePath) {
   const hash = crypto.createHash('sha256');
@@ -143,10 +142,8 @@ export function createProcessingQueue({
     records.delete(id);
     if (record.submitId) bySubmitId.delete(record.submitId);
     if (record.engineTimer) clearTimeout(record.engineTimer);
-    const files = new Set(
-      [record.inputPath, record.rawPath, record.originalPath, record.finalPath].filter(Boolean),
-    );
-    for (const file of files) fs.unlink(file).catch(() => {});
+    // Expire only the in-memory record. A later request must not delete
+    // artifacts produced by an earlier run.
   }
   function prune() {
     const cutoff = Date.now() - ttlMs;

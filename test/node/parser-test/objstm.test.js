@@ -48,7 +48,7 @@ const PLAIN_PDF = Buffer.from("%PDF-1.4\ntrailer<</Size 1>>\n%%EOF\n", "latin1")
 
 test("object streams are detected by marker and expanded through qpdf", { skip }, async () => {
   await withFakeQpdf(async ({ called, lastArgs }) => {
-    const { hasObjectStreams, expandObjectStreams } = await import("../../../D.Parser/main/parser/read/decrypt.js");
+    const { hasObjectStreams, expandObjectStreams } = await import("../../../B.Parser/main/parser/read/decrypt.js");
 
     assert.equal(hasObjectStreams(OBJSTM_PDF), true);
     assert.equal(hasObjectStreams(PLAIN_PDF), false);
@@ -68,7 +68,7 @@ test("object streams are detected by marker and expanded through qpdf", { skip }
 });
 
 test("the sync extraction path names object streams instead of failing silently", async () => {
-  const { streamPdfPages } = await import("../../../D.Parser/extend/pipeline.js");
+  const { streamPdfPages } = await import("../../../B.Parser/extend/pipeline.js");
   assert.throws(
     () => streamPdfPages(OBJSTM_PDF, null, () => {}),
     /object streams \(\/ObjStm\)/,

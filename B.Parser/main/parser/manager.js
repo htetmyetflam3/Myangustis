@@ -2,7 +2,7 @@ import { Worker } from "node:worker_threads";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { DEFAULT_OUTPUT_DIR } from "./core/paths.js";
+import { DEFAULT_OUTPUT_DIR } from "../../_path.js";
 import {
   WORKER_HEAP_MB,
   WORKER_TIMEOUT_MS,

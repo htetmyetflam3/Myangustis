@@ -11,8 +11,9 @@
 */
 
 import fs from "fs";
+import { TREE_DIR } from "../main/grapheme/cache-integrity.js";
 import { writerStart, writerEnd, writerWrote, getDateTimeHash, readerStart, readerEnd, readerFail } from "../../bridge/logen.js";
-import { OutputFile, TreeFile, joinPath } from "../../bridge/path.js";
+import { OutputFile, joinPath } from "../../_path.js";
 import { toSyllableLine } from "./formatter.js";
 import { toLineStrings } from "../generators/SfomatterForP.js";
 
@@ -82,25 +83,25 @@ export function createStreamWriter(outputDir = OutputFile(), suffix = "", flushL
 }
 
 // ── tree writers (the graph build's output channel) ──
-export function writeTreeToDir(treeData, treeDir = TreeFile()) {
+export function writeTreeToDir(treeData, treeDir = TREE_DIR) {
 	const filePath = joinPath(treeDir, "syllable.tree.json");
 	fs.writeFileSync(filePath, JSON.stringify(treeData, null, 2), "utf8");
 	return filePath;
 }
 
-export function writeMappedToDir(lines, treeDir = TreeFile()) {
+export function writeMappedToDir(lines, treeDir = TREE_DIR) {
 	const filePath = joinPath(treeDir, "syllable.mapped.txt");
 	fs.writeFileSync(filePath, lines.join("\n") + "\n", "utf8");
 	return filePath;
 }
 
-export function writeRtlToDir(rtlData, treeDir = TreeFile()) {
+export function writeRtlToDir(rtlData, treeDir = TREE_DIR) {
 	const filePath = joinPath(treeDir, "rtl-tree.json");
 	fs.writeFileSync(filePath, JSON.stringify(rtlData, null, 2), "utf8");
 	return filePath;
 }
 
-export function writeRefToDir(refData, treeDir = TreeFile()) {
+export function writeRefToDir(refData, treeDir = TREE_DIR) {
 	const filePath = joinPath(treeDir, "ref-syllables.json");
 	fs.writeFileSync(filePath, JSON.stringify(refData, null, 2), "utf8");
 	return filePath;
