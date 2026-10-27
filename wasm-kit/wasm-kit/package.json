@@ -1,0 +1,14 @@
+{
+  "name": "linga-wasm-kit",
+  "private": true,
+  "type": "module",
+  "description": "External-key QuickJS box build for the main engine map modules",
+  "scripts": {
+    "payload": "node build-payload.mjs",
+    "pack": "node tools/pack-box.mjs",
+    "rebuild": "node build-payload.mjs && node tools/pack-box.mjs"
+  },
+  "dependencies": {
+    "javascript-obfuscator": "^5.9.0"
+  }
+}
