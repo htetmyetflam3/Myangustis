@@ -25,7 +25,7 @@ export default defineConfig({
   ],
   build: {
     outDir: path.resolve(__dirname, "../dist/react"),
-    emptyOutDir: true,
+    emptyOutDir: false,
     // what useRecommendedBuildConfig would have set, minus the base rewrite
     assetsInlineLimit: 100_000_000,
     chunkSizeWarningLimit: 100_000_000,

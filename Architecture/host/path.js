@@ -209,91 +209,12 @@ export function GetJsonSourceFile() {
   return resolvePath(JSON_SOURCE_FILE);
 }
 
-// ── Simple glob matcher (used by the directory cleaner) ──
-function matchPattern(filename, pattern) {
-  const regex = new RegExp(
-    "^" +
-      pattern.replace(/\./g, "\\.").replace(/\*/g, ".*").replace(/\?/g, ".") +
-      "$",
-  );
-  return regex.test(filename);
-}
-
-// ── Directory cleaner: wipes a dir while preserving named files/dirs ──
-function cleanDir(dirPath, opts) {
-  if (!fs.existsSync(dirPath)) return;
-
-  const excludeFiles = opts?.files || [];
-  const excludeDirs = opts?.dirs || [];
-  const tmpDir = path.join(dirPath, ".tmp-preserve");
-  const preserved = [];
-
-  function shouldExcludeDir(name, fullPath) {
-    return excludeDirs.some((d) => {
-      const target = resolvePath(d);
-      return name === d || fullPath === target || fullPath.endsWith(path.sep + d);
-    });
-  }
-
-  function scan(currentPath) {
-    const entries = fs.readdirSync(currentPath, { withFileTypes: true });
-
-    for (const entry of entries) {
-      const fullPath = path.join(currentPath, entry.name);
-      if (entry.name === ".tmp-preserve") continue;
-
-      if (entry.isDirectory()) {
-        if (shouldExcludeDir(entry.name, fullPath)) continue;
-        scan(fullPath);
-        try {
-          fs.rmdirSync(fullPath);
-        } catch {} // eslint-disable-line no-empty -- best-effort cleanup
-      } else if (excludeFiles.some((p) => matchPattern(entry.name, p))) {
-        if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
-        const tmpPath = path.join(tmpDir, entry.name);
-        fs.renameSync(fullPath, tmpPath);
-        preserved.push({ original: fullPath, tmp: tmpPath });
-      } else {
-        fs.unlinkSync(fullPath);
-      }
-    }
-  }
-
-  scan(dirPath);
-
-  for (const item of preserved) {
-    if (fs.existsSync(item.original)) {
-      const conflictName = item.original + ".restored-" + Date.now();
-      fs.renameSync(item.tmp, conflictName);
-    } else {
-      fs.renameSync(item.tmp, item.original);
-    }
-  }
-
-  if (fs.existsSync(tmpDir)) {
-    try {
-      fs.rmSync(tmpDir, { recursive: true, force: true });
-    } catch {} // eslint-disable-line no-empty -- best-effort cleanup
-  }
-}
-
-export function onPathEnsure(dirPath, reset = null) {
+// Workspace setup is create-only, including repeated startup calls.
+export function onPathEnsure(dirPath) {
   const resolved = resolvePath(dirPath);
-
-  if (reset !== false && fs.existsSync(resolved)) {
-    cleanDir(resolved, reset);
-  }
-
-  if (!fs.existsSync(resolved)) {
-    fs.mkdirSync(resolved, { recursive: true });
-  }
-
+  fs.mkdirSync(resolved, { recursive: true });
   return resolved;
 }
-
-export function resetWorkspace(opts = null) {
-  const targets = [GetTreeDir(), GetOutputDir(), GetLogDir()];
-  for (const dir of targets) {
-    onPathEnsure(dir, opts);
-  }
+export function ensureWorkspace() {
+  for (const dir of [GetTreeDir(), GetOutputDir(), GetLogDir()]) onPathEnsure(dir);
 }

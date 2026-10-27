@@ -86,51 +86,14 @@ export function resolveInputs(src) {
   throw new Error(`Input not found: ${abs}`);
 }
 
-// onPathEnsure / resetWorkspace / cleanDir (used by engine init):
-function matchPattern(filename, pattern) {
-  return new RegExp("^" + pattern.replace(/\./g,"\\.").replace(/\*/g,".*").replace(/\?/g,".") + "$").test(filename);
-}
-function cleanDir(dirPath, opts) {
-  if (!fs.existsSync(dirPath)) return;
-  const excludeFiles = opts?.files || [];
-  const excludeDirs = opts?.dirs || [];
-  const tmpDir = path.join(dirPath, ".tmp-preserve");
-  const preserved = [];
-  function shouldExcludeDir(name, fullPath) {
-    return excludeDirs.some(d => name === d || fullPath.endsWith(path.sep + d));
-  }
-  function scan(currentPath) {
-    for (const entry of fs.readdirSync(currentPath,{withFileTypes:true})) {
-      const fullPath = path.join(currentPath, entry.name);
-      if (entry.name === ".tmp-preserve") continue;
-      if (entry.isDirectory()) {
-        if (shouldExcludeDir(entry.name, fullPath)) continue;
-        scan(fullPath);
-        try { fs.rmdirSync(fullPath); } catch {}
-      } else if (excludeFiles.some(p => matchPattern(entry.name, p))) {
-        if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir,{recursive:true});
-        const tmpPath = path.join(tmpDir, entry.name);
-        fs.renameSync(fullPath, tmpPath);
-        preserved.push({original:fullPath, tmp:tmpPath});
-      } else { fs.unlinkSync(fullPath); }
-    }
-  }
-  scan(dirPath);
-  for (const item of preserved) {
-    if (fs.existsSync(item.original)) fs.renameSync(item.tmp, item.original+".restored-"+Date.now());
-    else fs.renameSync(item.tmp, item.original);
-  }
-  if (fs.existsSync(tmpDir)) { try{fs.rmSync(tmpDir,{recursive:true,force:true});}catch{} }
-}
-export function onPathEnsure(dirPath, reset = null) {
+// Workspace setup only creates missing directories; later runs preserve files.
+export function onPathEnsure(dirPath) {
   const resolved = resolvePath(dirPath);
-  if (reset !== false && fs.existsSync(resolved)) cleanDir(resolved, reset);
-  if (!fs.existsSync(resolved)) fs.mkdirSync(resolved, { recursive: true });
+  fs.mkdirSync(resolved, { recursive: true });
   return resolved;
 }
-export function resetWorkspace(opts = null) {
-  onPathEnsure(GetOutputDir(), opts);
-  onPathEnsure(GetLogDir(), opts);
+export function ensureWorkspace() {
+  for (const dir of [GetOutputDir(), GetLogDir()]) onPathEnsure(dir);
 }
 export function PDF_DIR() { return GetPDFDir(); }
 export function DOCX_DIR() { return GetDocxDir(); }
