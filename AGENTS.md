@@ -1,21 +1,19 @@
 
-----
 
-## Global Rules
- - no *.mjs just *js for esm
- - no *.md for whatever case unless requested.
- - 1st test,read,see to know
-    , understand the problem then  reasoning as 2nd action unless there is accessibility issuse.
-   - missing depency isnt blocked just install it.
-
-
-
-
+ ## Global Rules
+ - no *.mjs always just *js for esm
+ - do not create *.md for whatever case unless explicity request
+ - test,read,see to know , understand the problem then  reasoning as second phase and action as third unless there is accessibility issuse.
+- missing depency isnt blocked just install it.
+-  uncertainties are things to suggest pratically not  to report back plainly.
+- ask clarification for ambigious case.
+- avoid long tutorials or exhaustive file trees
+-  avoid dumping all new files in one place (except tools and test)
+- backward compability is 
 ## Exclude 
 - Reading code under Lexic_No_inspect/*
 - generic software advice
-- long tutorials or exhaustive file trees
-- obvious language conventions
+- obvious language conventions 
 - speculative claims or anything you could not verify
 
 
@@ -25,6 +23,7 @@
 - creating test files in root
 - techanical jargon in architecture questions and  explainations 
 - Do not ask about anything the repo already makes clear.
+  
 
 -----
 
@@ -40,9 +39,12 @@
 -  verified with the result .Do not reason and call it verified.
 - Say what you could **not** verify, and flag anything you added unasked.
 - Ask architecture questions plainly
-- Keep reusable scripts in `./.bin
--  squeeze commits ,  CHANGELOG.md update  must done before PR
-- Append** a new dated entry in changelog.md update
+- maintain existing dir layout  and place new file appropiately
+- avoid performing task out of the scope however appropiate adjustment is necessary and keeping old logic for backward compability is prohibited and duplicated scripts are policy violation.
+- on PR request
+
+  - must execute all test and update   CHANGELOG.md update  must done before PR
+  - Append** a new dated entry in changelog.md update
 
  ```format
   ## [1.4.0] - 2026-09-08
@@ -50,7 +52,3 @@
   ## Changed / Fixed / Removed
 ```
 
-## Important Notic
-- changeslogs and projectstructure in each brach are not sync and  describe old behaviour . so if ur working on main brach make sure both of your content cover all other braches .for sub braches clean the  old changeslog and project structure .reflect the current  brach behaviour in each brach documentations.
-
----
