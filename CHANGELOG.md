@@ -5,3 +5,17 @@
 - Remove Site startup/hourly artifact deletion; queue eviction now expires records without deleting their input or output files.
 - Preserve React build output on rebuild and exclude runtime workspaces from the bootstrap clean command.
 - Add seven focused preservation tests, including real detached Engine/host path imports. Full application startup was not exercised.
+
+## [Unreleased] - 2026-10-28 — Import cleanup and test maintenance
+### Changed / Fixed / Removed
+- Remove unused logging imports, queue filesystem import, tree path helper import, and redundant Parser writer/helper imports. Active extraction and output writers remain in place.
+- Delete `wasm-kit/`; retain the deployed Engine WASM/runtime files.
+- Correct stale `D.Parser` references in tests and Site-to-Parser integration, shared font locations, moved PDF fixtures, and the upload-metadata test import.
+- Update queue-status expectations to include the current task/leg/completion fields.
+- Remove the retired browser-extraction `silent-original` suites (both copies) and the obsolete standalone startup-chain suite. These expected superseded upload/startup contracts; current upload-metadata, signature, queue and Engine-roundtrip coverage remains.
+
+**All tests in `npm test` pass except 8 explicitly skipped: 212 passed, 0 failed.**
+
+- Six sealed-dictionary tests require `MASTER_JSON_KEY`, which is unavailable in this environment; they remain enabled automatically when that key is supplied.
+- Two existing skips require unavailable PDF/OCR fixtures.
+- This result covers the complete Node suite invoked by `npm test`, not an unexecuted Python or deployed-service suite.

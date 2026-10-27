@@ -7,7 +7,7 @@ import {
   unmixZawCodeMarks,
   retraceZawCodeMarks,
   settleZawCodeAhE,
-} from "../../../D.Parser/main/parser/text/cleanup.js";
+} from "../../../B.Parser/main/parser/text/cleanup.js";
 
 /**
  * FILE: Parsed/parser/test/reorder.test.mjs

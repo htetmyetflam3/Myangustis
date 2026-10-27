@@ -21,11 +21,11 @@ import {
   findModelPath,
   findMyanmarFont,
 } from "../../../B.Parser/_path.js";
-import { ruleCount } from "../../../D.Parser/main/parser/text/rabbit.js";
-import { loadSidecarMap } from "../../../D.Parser/main/parser/read/pdf-extract.js";
-import { Manager } from "../../../D.Parser/main/parser/manager.js";
-import { ZipStreamWriter } from "../../../D.Parser/main/parser/core/zip.js";
-import { validateDocxArchive } from "../../../D.Parser/main/parser/read/docx-extract.js";
+import { ruleCount } from "../../../B.Parser/main/parser/text/rabbit.js";
+import { loadSidecarMap } from "../../../B.Parser/main/parser/read/pdf-extract.js";
+import { Manager } from "../../../B.Parser/main/parser/manager.js";
+import { ZipStreamWriter } from "../../../B.Parser/main/parser/core/zip.js";
+import { validateDocxArchive } from "../../../B.Parser/main/parser/read/docx-extract.js";
 
 const isFile = (file) => fs.statSync(file).isFile();
 
@@ -33,10 +33,10 @@ test("relocated parser has every boot-critical sidecar", () => {
   const files = validatePraserAssets();
   assert.ok(files.length >= 10);
   assert.ok(files.every(isFile));
-  // Constant paths point into the D.Parser tree (restructured layout).
-  assert.ok(PARSED_ROOT.endsWith("D.Parser/main"), `PARSED_ROOT=${PARSED_ROOT}`);
-  assert.ok(PARSER_DIR.endsWith("D.Parser/main/parser"), `PARSER_DIR=${PARSER_DIR}`);
-  assert.ok(PRASER_JS.endsWith("D.Parser/main/parser/manager.js"), `PRASER_JS=${PRASER_JS}`);
+  // Constant paths point into the B.Parser tree (restructured layout).
+  assert.ok(PARSED_ROOT.endsWith("B.Parser/main"), `PARSED_ROOT=${PARSED_ROOT}`);
+  assert.ok(PARSER_DIR.endsWith("B.Parser/main/parser"), `PARSER_DIR=${PARSER_DIR}`);
+  assert.ok(PRASER_JS.endsWith("B.Parser/main/parser/manager.js"), `PRASER_JS=${PRASER_JS}`);
 });
 
 test("parser maps and models resolve outside the executable module directory", () => {
@@ -49,8 +49,8 @@ test("parser maps and models resolve outside the executable module directory", (
   assert.ok(loadSidecarMap().size > 0);
 });
 
-test("relocated output fonts resolve from Parsed/fonts/used", () => {
-  assert.equal(path.relative(abs(PARSED_ROOT), OUTPUT_FONT_DIR), "fonts/used");
+test("relocated output fonts resolve from shared Junk/fonts/used", () => {
+  assert.equal(OUTPUT_FONT_DIR, path.resolve(abs("../Junk/fonts/used")));
   assert.ok(isFile(findMyanmarFont()));
   assert.ok(isFile(findLatinFont()));
 });

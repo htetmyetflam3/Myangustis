@@ -25,12 +25,11 @@ import {
 import { LEGACY_CODE_PAGES, UNICODE_PATH, ZawCODE_PATH } from "../main/parser/codepage/registry.js";
 import { zawCodeGuard } from "../main/parser/text/repair.js";
 import { loadScanDictionary, dictionaryWords } from "../main/parser/text/scan.js";
-import { writeDocxLayout, writePdf } from "../main/parser/write/render.js";
 import { chooseCodePage, prepareVectorLayout, LEGACY_QUALITY_FLOOR } from "../main/parser/codepage/resolve.js";
 import { buildVectorRepair } from "../main/parser/codepage/vector-repair.js";
 
 export { LEGACY_QUALITY_FLOOR };
-import { pyTruthy, pyRound, RuntimeError, splitExt, baseName } from "../main/parser/core/pylib.js";
+import { pyTruthy, pyRound, RuntimeError, baseName } from "../main/parser/core/pylib.js";
 
 
 

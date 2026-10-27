@@ -61,6 +61,8 @@ test('holds immutable input and measured manager/final file information', async 
   assert.deepEqual(publicQueueStatus(record), {
     submitId: 'submit',
     state: 'FINISHED',
+    task: 'conversion', circle: 'half', leg: { index: 1, name: 'site', of: 1 },
+    partial: false, complete: true, engineRound: null,
     finalFilename: 'result.docx',
     finalBytes: 13,
     downloadUrl: '/api/submit/file/submit',

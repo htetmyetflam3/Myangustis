@@ -4,21 +4,21 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { LEGACY_CODE_PAGES } from "../../../D.Parser/main/parser/codepage/registry.js";
-import { matchImageToVector, matchPdfRegionToVector, repairTextRegionWithVector } from "../../../D.Parser/main/parser/codepage/vote.js";
-import { loadVectorIndex, matchRasterMask, vectorSheetFiles } from "../../../D.Parser/main/parser/shape/match.js";
+import { LEGACY_CODE_PAGES } from "../../../B.Parser/main/parser/codepage/registry.js";
+import { matchImageToVector, matchPdfRegionToVector, repairTextRegionWithVector } from "../../../B.Parser/main/parser/codepage/vote.js";
+import { loadVectorIndex, matchRasterMask, vectorSheetFiles } from "../../../B.Parser/main/parser/shape/match.js";
 import {
   loadDetector,
   streamPdfPages,
-} from "../../../D.Parser/extend/pipeline.js";
-import { prepareVectorLayout } from "../../../D.Parser/main/parser/codepage/resolve.js";
+} from "../../../B.Parser/extend/pipeline.js";
+import { prepareVectorLayout } from "../../../B.Parser/main/parser/codepage/resolve.js";
 
 // working-branch mapping: Parsed/fixtures/ exists on no branch; the same
 // book is tracked here as an upload fixture.
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const FIXTURE = path.join(HERE, "..", "..", "..", "D.Parser", "main", "File", "upload", "pdf", "bg-mlc-1-1.pdf");
-const OCR_CROP = path.join(HERE, "..", "..", "..", "D.Parser", "main", "File", "upload", "ocr-marked", "zoom-kyone.png");
-const OCR_LINE = path.join(HERE, "..", "..", "..", "D.Parser", "main", "File", "upload", "ocr-marked", "zoom-line9.png");
+const FIXTURE = path.join(HERE, "..", "..", "..", "Junk", "Parser", "upload", "pdf", "bg-mlc-1-1.pdf");
+const OCR_CROP = path.join(HERE, "..", "..", "..", "B.Parser", "main", "File", "upload", "ocr-marked", "zoom-kyone.png");
+const OCR_LINE = path.join(HERE, "..", "..", "..", "B.Parser", "main", "File", "upload", "ocr-marked", "zoom-line9.png");
 let index;
 const vectorIndex = () => (index ||= loadVectorIndex());
 
@@ -151,8 +151,8 @@ test("runtime outline layout selects only WinInnwa and preserves Latin resources
    place with one candidate must NOT be placed once its alias partner is in the
    running. Nothing here renders a page or opens a font. */
 test("a claim is refused when the witness crowd cannot place the pair", async () => {
-  const { matchRasterMask, getDefaultVectorIndex, isCrossFontAlias } = await import("../../../D.Parser/main/parser/shape/match.js");
-  const alias = JSON.parse(fs.readFileSync(new URL("../../../D.Parser/main/parser/jason-map/vector/shape-alias.json", import.meta.url), "utf8"));
+  const { matchRasterMask, getDefaultVectorIndex, isCrossFontAlias } = await import("../../../B.Parser/main/parser/shape/match.js");
+  const alias = JSON.parse(fs.readFileSync(new URL("../../../B.Parser/main/parser/jason-map/vector/shape-alias.json", import.meta.url), "utf8"));
   assert.ok(alias.pairs.length > 0, "the generator produced a veto list");
   assert.ok(alias.pairs.every(([a, b]) => a !== b));
 

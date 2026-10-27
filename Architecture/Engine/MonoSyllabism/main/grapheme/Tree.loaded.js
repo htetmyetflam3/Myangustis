@@ -1,4 +1,4 @@
-import { DataFile, MasterFile, resolvePath } from '../../../_path.js';
+import { DataFile, MasterFile } from '../../../_path.js';
 import { readSecureText, readSecureJson } from '../../../../../.data/secure.js';
 import { TREE_DIR, verifyCacheTree } from './cache-integrity.js';
 import fs from 'fs';
