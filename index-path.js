@@ -4,6 +4,6 @@ import from Architecture '_index.js'  for other top level dir that demand someth
 */
 
 /*
-for other dir export back as 
+for other dir  B C D export back as 
 export default {   } ;
 */
