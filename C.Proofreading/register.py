@@ -13,13 +13,13 @@ WHAT IT ANSWERS
 The two halves of the answer come from two different places, and that is the
 whole point of the tool:
 
-  * the register a form belongs to  ->  Engine/knowledge/isTreasure/master.json
-                                        resolution.single  (42 rows)
+  * the register a form belongs to  ->  engine-owned master data,
+                                        resolution.single
   * the register a sentence is in   ->  the text itself, classified per block
 
-master.json is READ ONLY. Nothing here writes to Engine/, master.json, the
-POS tree or any cache. The only writes are inside --work and the optional
---json report.
+The engine owns the sealed master and its cache. This tool requests its data
+through the shared engine bridge; its own writes are inside --work and the
+optional --json report.
 
 REGISTER RULE (mt/quality/MT.md:206-207)
     LSE  literary     default prose / narration
@@ -57,7 +57,7 @@ from collections import Counter, defaultdict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
-MASTER = os.path.join(REPO, "Engine", "knowledge", "isTreasure", "master.json")
+DATA_BRIDGE = os.path.join(os.path.dirname(HERE), "tools-box", "js", "engine-data.js")
 TAGGER = os.path.join(HERE, "tag-both.mjs")
 RUNTIME_GUARD = os.path.join(REPO, "scraper", "wasm", "box", "runtime-guard.mjs")
 
@@ -76,9 +76,16 @@ MYANMAR_RE = re.compile(r"[\u1000-\u1049\u1050-\u109F]")
 
 
 # --------------------------------------------------------------------- master
-def load_master(path=MASTER):
-    with open(path, encoding="utf-8") as fh:
-        data = json.load(fh)
+def engine_data(operation, path=None):
+    command = ["node", DATA_BRIDGE, operation]
+    if path is not None:
+        command.append(os.path.abspath(path))
+    result = subprocess.run(command, capture_output=True, text=True, check=True)
+    return json.loads(result.stdout)
+
+
+def load_master(path=None):
+    data = engine_data("file", path) if path is not None else engine_data("master")
     single = data["resolution"]["single"]
     wibat = data["top"]["wibat"]
 
@@ -357,7 +364,7 @@ def audit(source, raw_pos_path=None, work=None):
     return {
         "source": source,
         "raw_pos": raw_pos_path,
-        "master": MASTER,
+        "master": engine_data("paths")["master"],
         "tagger_meta": meta,
         "token_stream_aligned": aligned,
         "tokens": len(toks),

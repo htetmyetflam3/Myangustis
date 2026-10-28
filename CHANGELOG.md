@@ -29,3 +29,8 @@
 - Route Python POS comparison and tagging through the engine instead of maintaining a separate Python POS code map.
 - Remove the obsolete scraper run-end text flush; per-file upload processing continues to segment and write Parquet rows.
 - Remove ordinary JavaScript comments while retaining ESLint and tool directives, and remove the obsolete package-removal explanation from the license.
+## [Unreleased] - 2026-10-28 — Engine master cache
+### Changed / Fixed / Removed
+- Route master-data consumers and fingerprint requests through the shared engine data entry, including the proofreading register tool.
+- Cache parsed master data in memory with caller isolation and source/key invalidation; retain the encrypted disk cache and existing verified tree caches.
+- Add synthetic encrypted-master and tree-cache regression tests.

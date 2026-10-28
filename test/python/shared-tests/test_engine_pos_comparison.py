@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 import json
 import os
@@ -27,7 +28,8 @@ class EnginePosComparisonTests(unittest.TestCase):
             for name in ('master.enc', 'rules.js', 'box.wasm'):
                 (root / name).write_bytes(b'fixture')
             with patch.object(comparison, 'REPO', root), \
-                 patch.object(comparison, 'engine_data', return_value={'master': str(root / 'master.enc')}), \
+                 patch.object(comparison, 'engine_data', return_value={
+                     'master': str(root / 'master.enc'), 'sha256': hashlib.sha256(b'fixture').hexdigest()}), \
                  patch.object(comparison, 'RULES', root / 'rules.js'), \
                  patch.object(comparison, 'BOX_WASM', root / 'box.wasm'), \
                  patch.object(comparison, 'load_master', return_value=master), \
@@ -47,7 +49,7 @@ class EnginePosComparisonTests(unittest.TestCase):
 
     def test_knowledge_reads_sealed_data_and_keeps_family_labels_unmapped(self):
         master = {
-            'top': {'engine_family': ['ကောင်းကင်']},
+            'top': {'engine_family': ['ကောင်းကင်'], 'wibat': {'n': {}, 'v': {}}},
             'resolution': {'single': {}}, 'dictionary': {}, 'mapData': {},
         }
         with tempfile.TemporaryDirectory() as tmp:
@@ -82,9 +84,16 @@ class EnginePosComparisonTests(unittest.TestCase):
                  patch.object(comparison, 'RULES', rules), \
                  patch.object(comparison, 'BOX_WASM', box):
                 data = comparison.knowledge(root)
+                register_spec = importlib.util.spec_from_file_location('register_for_data_test', REPO / 'C.Proofreading/register.py')
+                register = importlib.util.module_from_spec(register_spec)
+                register_spec.loader.exec_module(register)
+                with patch.object(register, 'DATA_BRIDGE', str(root / 'tools-box/js/engine-data.js')):
+                    self.assertEqual(register.load_master(), ({}, {}))
+                    self.assertEqual(register.engine_data('paths')['master'], str(root / 'Architecture/Engine/.data/master.json.enc'))
             self.assertNotIn('pos_codes', data)
             self.assertNotIn('pos_code', data['bindings'][0])
             self.assertEqual(data['bindings'][0]['family'], 'engine_family')
+            self.assertEqual(data['sources']['master_sha256'], hashlib.sha256((root / 'Architecture/Engine/.data/master.json.enc').read_bytes()).hexdigest())
 
     def test_parser_reads_encrypted_override_through_engine_bridge(self):
         modules = REPO / 'B.Parser/main/Python/modules'

@@ -19,7 +19,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { getBox, assertMapData } from '../../../../Engine/architecture/MonoSyllabism/map/host.mjs';
 import { getEngineData } from '../../../../index-path.js';
-const { readMasterJson, MASTER_ENC } = await getEngineData();
+const { readMasterJson, masterFingerprint } = await getEngineData();
 
 
 
@@ -47,7 +47,7 @@ const read = relative => fs.readFileSync(path.join(ROOT, relative));
 
 const masterPath = 'master.json.enc';
 const rulesPath = 'Engine/knowledge/isTreasure/mainrules.js';
-const masterBytes = fs.readFileSync(MASTER_ENC), rulesBytes = read(rulesPath);
+const masterSha256 = masterFingerprint(), rulesBytes = read(rulesPath);
 
 
 
@@ -175,7 +175,7 @@ const comparisonData = {top:master.top, resolution:master.resolution, rules};
 const annotationData = {dictionary:master.dictionary, mapData:master.mapData};
 const result = {
   schema_version:1,
-  sources:{master:masterPath, master_sha256:sha(masterBytes), rules:rulesPath, rules_sha256:sha(rulesBytes)},
+  sources:{master:masterPath, master_sha256:masterSha256, rules:rulesPath, rules_sha256:sha(rulesBytes)},
   comparison_data_sha256:sha(JSON.stringify(comparisonData)),
   tag_data_sha256:sha(JSON.stringify(annotationData)), wasm_sha256:build.box_sha256,
   pos_codes:POS_MAP, bindings, unresolved, normalizations,

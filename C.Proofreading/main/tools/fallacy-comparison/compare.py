@@ -158,7 +158,8 @@ def load_master() -> dict:
 
 def knowledge(work=WORK):
     master = load_master()
-    master_path = Path(engine_data('paths')['master'])
+    master_info = engine_data('master-info')
+    master_path = Path(master_info['master'])
     if not master.get('top') or not master.get('resolution'):
         raise ComparisonError('Master top/resolution sections are required for comparison')
     rules = _rules_document()
@@ -246,7 +247,7 @@ def knowledge(work=WORK):
     annotation_data = {'dictionary': master['dictionary'], 'mapData': master['mapData']}
     obj = {
         'schema_version': 2,
-        'sources': {'master': str(master_path.relative_to(REPO)), 'master_sha256': file_hash(master_path),
+        'sources': {'master': str(master_path.relative_to(REPO)), 'master_sha256': master_info['sha256'],
                     'rules': str(RULES.relative_to(REPO)), 'rules_sha256': file_hash(RULES),
                     'box_wasm_sha256': file_hash(BOX_WASM)},
         'comparison_data_sha256': identity(comparison_data),

@@ -72,6 +72,22 @@ function sha256(file) {
 }
 
 let memoizedText;
+let memoizedJson;
+let memoizedSourceHash;
+let memoizedKeyHash;
+
+export function masterFingerprint() {
+  return sha256(MASTER_ENC);
+}
+
+function rememberMaster(text, sourceHash, keyHash) {
+  const parsed = JSON.parse(text);
+  memoizedText = text;
+  memoizedJson = parsed;
+  memoizedSourceHash = sourceHash;
+  memoizedKeyHash = keyHash;
+  return text;
+}
 
 function writeCache(key, sourceHash, text) {
   const tmp = `${CACHE_FILE}.${process.pid}.tmp`;
@@ -80,39 +96,52 @@ function writeCache(key, sourceHash, text) {
 }
 
 export function readMasterText() {
-  if (memoizedText !== undefined) return memoizedText;
   const key = loadKey();
-  const sourceHash = sha256(MASTER_ENC);
+  const sourceHash = masterFingerprint();
+  const keyHash = crypto.createHash("sha256").update(key).digest("hex");
+  if (memoizedText !== undefined && memoizedSourceHash === sourceHash && memoizedKeyHash === keyHash) {
+    return memoizedText;
+  }
   if (fs.existsSync(CACHE_FILE)) {
     try {
       const envelope = JSON.parse(openContainer(CACHE_MAGIC, key, CACHE_FILE));
       if (envelope.src === sourceHash && typeof envelope.text === "string") {
-        memoizedText = envelope.text;
-        return memoizedText;
+        return rememberMaster(envelope.text, sourceHash, keyHash);
       }
     } catch {
       // Wrong key (rotation), tampered or stale cache — rebuild below.
     }
   }
   const text = openContainer(MAGIC, key, MASTER_ENC);
-  JSON.parse(text);
+  const parsed = JSON.parse(text);
   writeCache(key, sourceHash, text);
   memoizedText = text;
-  return memoizedText;
+  memoizedJson = parsed;
+  memoizedSourceHash = sourceHash;
+  memoizedKeyHash = keyHash;
+  return text;
 }
 
 export function readMasterJson() {
-  return JSON.parse(readMasterText());
+  readMasterText();
+  // Each caller receives its own object, as it did when parsing on every call.
+  return globalThis.structuredClone(memoizedJson);
 }
 
 
 
+function isMasterFile(file) {
+  const enc = file.endsWith(".enc") ? file : `${file}.enc`;
+  return path.resolve(enc) === MASTER_ENC;
+}
+
 export function readSecureText(file) {
+  if (isMasterFile(file)) return readMasterText();
   const enc = file.endsWith(".enc") ? file : `${file}.enc`;
   if (fs.existsSync(enc)) return openContainer(MAGIC, loadKey(), enc);
   return fs.readFileSync(file, "utf8");
 }
 
 export function readSecureJson(file) {
-  return JSON.parse(readSecureText(file));
+  return isMasterFile(file) ? readMasterJson() : JSON.parse(readSecureText(file));
 }

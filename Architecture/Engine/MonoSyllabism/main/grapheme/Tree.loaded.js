@@ -1,5 +1,5 @@
 import { DataFile, MasterFile, getEngineData } from '../../../_path.js';
-const { readSecureText, readSecureJson } = await getEngineData();
+const { MASTER_ENC, readMasterText, readSecureText, readSecureJson } = await getEngineData();
 import { TREE_DIR, verifyCacheTree } from './cache-integrity.js';
 import fs from 'fs';
 import path from 'path';
@@ -109,7 +109,7 @@ async function* _syllablesFromLines(lines) {
   for await (const line of lines) {
     const trimmed = line.trim();
     if (!inSection) {
-      const m = trimmed.match(/^"syllables"\s*:\s*([\[{])/);
+      const m = trimmed.match(/^"syllables"\s*:\s*([\x5b{])/);
       if (m) {
         inSection = true;
         collecting = m[1] === '[';
@@ -133,7 +133,10 @@ async function _collect(lines) {
 }
 
 export async function streamSyllables(jsonPath) {
-
+  const resolved = path.resolve(jsonPath);
+  if (resolved === MASTER_ENC || `${resolved}.enc` === MASTER_ENC) {
+    return _collect(readMasterText().split('\n'));
+  }
   if (fs.existsSync(jsonPath + '.enc')) {
     const text = readSecureText(jsonPath);
     return _collect(text.split('\n'));
