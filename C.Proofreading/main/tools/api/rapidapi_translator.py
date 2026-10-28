@@ -57,7 +57,7 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 _workspace = importlib.import_module("index-path")
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 
 HOST = "multi-format-ai-translator-the-most-complete.p.rapidapi.com"
 BASE_URL = "https://" + HOST

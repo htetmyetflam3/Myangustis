@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import unittest
@@ -50,10 +51,22 @@ class McpCliTests(unittest.TestCase):
         self.assertEqual(payload["chapter"], 194)
         self.assertEqual(len(payload["paragraphs"]), 1)
 
-    def test_get_title_spellings_and_audit_typo_alias(self):
+    def test_standalone_cli_finds_moved_modules_and_review(self):
+        env = dict(os.environ)
+        env.pop("PYTHONPATH", None)
+        result = subprocess.run(
+            [sys.executable, str(CLI), "--review-brief", "--json"], cwd=ROOT,
+            capture_output=True, text=True, timeout=30, env=env,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertGreater(json.loads(result.stdout)["sections"], 0)
+
+    def test_get_title_alias(self):
         title = self.run_cli("--getTitle", "193")
         self.assertEqual(title.returncode, 0, title.stderr)
         self.assertIn("葉大人來了", title.stdout)
+
+    def test_audit_typo_alias(self):
         audit = self.run_cli("--insecpt", "--check-range", "194-408")
         self.assertEqual(audit.returncode, 1)
         self.assertIn("298, 299", audit.stdout)

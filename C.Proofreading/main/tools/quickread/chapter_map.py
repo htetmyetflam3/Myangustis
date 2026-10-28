@@ -44,8 +44,8 @@ from xml.etree import ElementTree as ET
 from zipfile import ZipFile
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent
-sys.path.insert(0, str(HERE))
+ROOT = HERE.parent.parent
+sys.path.insert(0, str(ROOT / "translate"))
 
 from translate import chinese_number  # noqa: E402
 

@@ -17,28 +17,23 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { getBox, assertMapData } from '../../../../Engine/architecture/MonoSyllabism/map/host.mjs';
+import { getBox, assertMapData } from '../../../../Architecture/Engine/MonoSyllabism/map/host.js';
+import { mapperNormalize, toBurmeseStr } from '../../../../Architecture/Engine/MonoSyllabism/map/loader.js';
 import { getEngineData } from '../../../../index-path.js';
 const { readMasterJson, masterFingerprint } = await getEngineData();
 
 
 
 const POS_MAP = null;
-const ENGINE_NORMALIZER = null;
-const { mapperNormalize, toBurmeseStr } = ENGINE_NORMALIZER ?? {};
 
-if (globalThis[Symbol.for('proofreading.scraper.wasm-only')] !== true) {
-  throw new Error('Comparison metadata requires the shared WASM-only runtime guard');
-}
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const [destination, extraFormsFile] = process.argv.slice(2);
-if (!destination) throw new Error('usage: export-comparison-data.mjs OUTPUT_JSON [EXTRA_FORMS_JSON]');
+if (!destination) throw new Error('usage: export-comparison-data.js OUTPUT_JSON [EXTRA_FORMS_JSON]');
 
-if (POS_MAP === null || ENGINE_NORMALIZER === null) {
+if (POS_MAP === null) {
   throw new Error(
     'export-comparison-data: comparison POS view is unported after the graph/build.js ' +
-      'removal (no disassembler POS_MAP, no guarded normalizer binding). Re-supply both via ' +
-      'the Engine/index.js surface before running this adapter.',
+      'removal (no disassembler POS_MAP). Re-supply it via the engine surface before running this adapter.',
   );
 }
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
@@ -46,7 +41,7 @@ const read = relative => fs.readFileSync(path.join(ROOT, relative));
 
 
 const masterPath = 'master.json.enc';
-const rulesPath = 'Engine/knowledge/isTreasure/mainrules.js';
+const rulesPath = 'Architecture/Engine/knowledge/isTreasure/mainrules.js';
 const masterSha256 = masterFingerprint(), rulesBytes = read(rulesPath);
 
 
@@ -56,30 +51,7 @@ const masterSha256 = masterFingerprint(), rulesBytes = read(rulesPath);
 
 
 function parseRules(bytes) {
-  const text = bytes.toString('utf8');
-  const marker = text.search(/\bconst\s+MYANMAR_GRAMMAR_SEQUENCES\s*=/);
-  const head = marker >= 0 ? text.slice(0, marker) : text;
-  let out = '', inString = false, escaped = false;
-  for (let i = 0; i < head.length; i++) {
-    const ch = head[i];
-    if (inString) {
-      out += ch;
-      if (escaped) escaped = false;
-      else if (ch === '\\') escaped = true;
-      else if (ch === '"') inString = false;
-      continue;
-    }
-    if (ch === '"') { inString = true; out += ch; continue; }
-    if (ch === ',') {
-      let j = i + 1;
-      while (j < head.length && /\s/.test(head[j])) j++;
-      if (head[j] === '}' || head[j] === ']') continue;
-    }
-    out += ch;
-  }
-  out = out.replace(/\s+$/, '');
-  if (!out.endsWith('}')) throw new Error('mainrules.js JSON head does not close with }');
-  return JSON.parse(out);
+  return JSON.parse(bytes.toString('utf8'));
 }
 
 const master = readMasterJson(), rules = parseRules(rulesBytes);

@@ -1,13 +1,35 @@
 """Dictionary/segmentation probes used by the agent tools."""
 import sys
 import unittest
+from unittest import mock
 from pathlib import Path
 
 import _paths  # noqa: F401 - configure the split proofreading modules
 
 ROOT = Path(__file__).resolve().parents[3] / "C.Proofreading" / "main"
 sys.path.insert(0, str(ROOT / "translate"))
+import lexicon
 from lexicon import lookup, suggest, coverage
+
+class LexiconLoaderPaths(unittest.TestCase):
+    def test_loader_failure_is_explained(self):
+        result = mock.Mock(returncode=1, stderr='Missing required secret "MASTER_JSON_KEY"')
+        with mock.patch.object(lexicon.subprocess, "run", return_value=result):
+            with self.assertRaisesRegex(RuntimeError, "MASTER_JSON_KEY"):
+                lexicon._load_master()
+
+    def test_loaded_dictionary_uses_current_mapped_inventory(self):
+        self.assertTrue(lexicon.MAPPED.is_file())
+        lexicon._tables.cache_clear()
+        self.addCleanup(lexicon._tables.cache_clear)
+        with mock.patch.object(lexicon, "_load_master", return_value={
+            "dictionary": {"NOUN": ["အ  ခြေ  အ  နေ"]},
+        }) as load:
+            result = lookup("အခြေအနေ")
+        load.assert_called_once_with()
+        self.assertTrue(result["reachable"])
+        self.assertEqual(result["families"], ["NOUN"])
+
 
 class Lexicon(unittest.TestCase):
     def test_entry(self):

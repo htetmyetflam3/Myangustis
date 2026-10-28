@@ -34,18 +34,19 @@ from collections import defaultdict
 from functools import lru_cache
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-REPO = ROOT.parents[1]
+TOOLS = Path(__file__).resolve().parents[2]
 DATA_REPO = next(p for p in Path(__file__).resolve().parents if (p / "index-path.js").is_file())
 DATA_BRIDGE = DATA_REPO / "tools-box/js/engine-data.js"
-MAPPED = ROOT / "Engine/.cache-tree/syllable.mapped.txt"
+MAPPED = DATA_REPO / "Architecture/Engine/.cache-tree/syllable.mapped.txt"
 
 
 def _load_master() -> dict:
     """Read the engine's sealed master through the shared Node bridge."""
-    out = subprocess.run(["node", str(DATA_BRIDGE), "master"],
-                         capture_output=True, check=True, text=True).stdout
-    return json.loads(out)
+    result = subprocess.run(["node", str(DATA_BRIDGE), "master"],
+                            capture_output=True, text=True)
+    if result.returncode:
+        raise RuntimeError(f"Engine dictionary loader failed: {result.stderr.strip()}")
+    return json.loads(result.stdout)
 
 # The engine writes asat (U+103A) before dot-below (U+1037); NFC writes the
 # reverse. Compare both spellings under one key.
@@ -137,7 +138,7 @@ def _classify(tokens: list[dict], index: int, units: set[str],
 
 def segment(text: str, with_tags: bool = True) -> dict:
     """Segment text with the repo engine and explain every split."""
-    sys.path.insert(0, str(ROOT / "mt/quality"))
+    sys.path.insert(0, str(TOOLS / "Burmese-Pos"))
     from tag import tag_text  # noqa: PLC0415  (imports node at call time)
 
     sentences = tag_text(text)

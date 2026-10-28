@@ -11,8 +11,7 @@ Two regressions are guarded here.
    (`ဥုံ` <- `ဉုံ`, `ဥမ်` <- `ဉမ်`). `ဥ်` was the one missing its partner, so
    `ဥ်` never became `ဉ်`.
 
-The table is read as data: the table is what the WASM payload inlines, and
-`scraper/wasm/box/tools/verify-payload.mjs` proves the binary carries it.
+The tests read the engine mapper loader’s IMPOSTER table from the WASM payload.
 """
 import json
 import subprocess
@@ -20,14 +19,13 @@ import unittest
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-ROOT = REPO / "C.Proofreading" / "main"
-DATA_REPO = next(p for p in Path(__file__).resolve().parents if (p / "index-path.js").is_file())
-DATA_BRIDGE = DATA_REPO / "tools-box/js/engine-data.js"
+LOADER = REPO / "Architecture/Engine/MonoSyllabism/map/loader.js"
 
 
-def _load_master():
-    # Read the engine's sealed master through the shared Node bridge.
-    out = subprocess.run(["node", str(DATA_BRIDGE), "master"],
+def _load_imposter():
+    # Check the actual mapper payload used by the engine, not the sealed source.
+    script = f"import {{ IMPOSTER }} from {json.dumps(LOADER.as_uri())}; console.log(JSON.stringify(IMPOSTER))"
+    out = subprocess.run(["node", "--input-type=module", "-e", script],
                          capture_output=True, check=True, text=True).stdout
     return json.loads(out)
 
@@ -38,8 +36,7 @@ U_SIBLINGS = {"ဥုံ": "ဉုံ", "ဥမ်": "ဉမ်", "ဉ်": "ဥ
 class ImposterTable(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        master = _load_master()
-        cls.imposter = master["mapData"]["IMPOSTER"]
+        cls.imposter = _load_imposter()
 
     def test_bare_katka_no_longer_rewrites_real_conjuncts(self):
         for correct, entry in self.imposter.items():

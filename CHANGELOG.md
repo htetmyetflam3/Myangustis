@@ -61,3 +61,13 @@
 - Node: 252 tests, 244 passed, 8 skipped; both frontend builds passed with existing bundle-size warnings.
 - Python: 316 passed, 17 failed, 6 skipped, 8 errors and 35 subtests passed; failures and collection errors match the prior baseline involving unavailable source modules and fixtures.
 - Targeted ESLint and the bridge, caller, public API, tools API and environment-chain tests passed.
+
+## [Unreleased] - 2026-10-29 — Proofreading path and DOCX repairs
+### Changed / Fixed / Removed
+- Regenerate `episodes.docx` from the tracked Chinese and Burmese sources using the verified 195 chapter pairs; restore the title CLI regression and fix the moved DOCX generator imports and source paths.
+- Point review, names, chapter-map, translation and dictionary inventory paths at their current directories; make the MCP entry discover its split modules and generate client configs for the actual CLI.
+- Use the engine mapper loader for imposter-table tests, retain the sealed dictionary tests and report loader failures, and update grammar tests for JSON without the retired runtime guard. The comparison POS view remains unported.
+- Replace the unrelated `docx` dependency with `python-docx`, as used by the generator.
+### Verification
+- Node: 252 tests, 244 passed, 8 skipped. Targeted Python: 128 passed. Targeted ESLint and `git diff --check` passed.
+- Full Python: 333 passed, 11 failed, 3 skipped, 4 collection errors, and 35 subtests passed. Six failures need `MASTER_JSON_KEY`; one needs the unported comparison POS view; four failures and four collection errors involve missing `agent_work`, `agent_english`, or `audit_source` modules. These tests remain in place.

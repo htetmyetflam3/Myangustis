@@ -36,7 +36,7 @@ from docx.oxml.ns import qn
 from docx.shared import Pt
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent / "formatting"))
 
 from merge_episodes import (  # noqa: E402
     BURMESE,

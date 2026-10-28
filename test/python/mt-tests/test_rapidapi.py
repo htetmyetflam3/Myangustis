@@ -762,12 +762,12 @@ class ConfigTests(unittest.TestCase):
             data = json.loads(body)
             table = (data.get("mcp") or data.get("mcpServers"))["rapidapi-translator"]
             if client == "kilo":
-                self.assertTrue(table["command"][0].endswith("python3"))
+                self.assertEqual(table["command"][0], sys.executable)
                 self.assertIn("mcp.py", table["command"][1])
                 self.assertEqual(table["environment"]["RAPIDAPI_KEY"],
                                  "{env:RAPIDAPI_KEY}")
             else:
-                self.assertTrue(table["command"].endswith("python3"))
+                self.assertEqual(table["command"], sys.executable)
                 self.assertTrue(table["args"][0].endswith("mcp.py"))
         unknown = self.run_server("--print-config", "--client", "nope")
         self.assertNotEqual(unknown.returncode, 0)

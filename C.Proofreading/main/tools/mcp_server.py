@@ -32,9 +32,11 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
-MT = ROOT / "mt"
-if str(MT) not in sys.path:
-    sys.path.insert(0, str(MT))
+for _path in (HERE, ROOT / "translate", HERE / "api", HERE / "quickread",
+              HERE / "dictionary" / "Burmese", HERE / "formatting",
+              HERE / "utility", HERE / "installer"):
+    if str(_path) not in sys.path:
+        sys.path.insert(0, str(_path))
 
 from rapidapi_translator import (  # noqa: E402
     CACHE_ENV,
@@ -1044,7 +1046,7 @@ class Server:
 
 # The one entry point a client launches. This file holds the tools; tools/mcp.py
 # holds every flag, so a client and a human go through the same door.
-ENTRY = ROOT / "mcp.py"
+ENTRY = HERE / "mcp.py"
 
 CLIENTS = ("json", "claude", "kilo", "codex", "gemini")
 
