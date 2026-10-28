@@ -97,3 +97,12 @@
 - Node: 255 tests, 247 passed, 8 skipped. Both frontend builds passed with existing bundle-size warnings; targeted ESLint and `git diff --check` passed.
 - Python: 343 passed, 7 failed, 3 skipped and 35 subtests passed; six failures require `MASTER_JSON_KEY` and one requires the unported comparison POS view.
 - Site backend started using a temporary database and returned HTTP 200 from `/healthz`. Fallback path/output behavior was tested separately; complete standalone operation still requires the shared logger and other service dependencies.
+
+## [Unreleased] - 2026-10-29 — Shared engine entry holder
+### Changed / Fixed / Removed
+- Run the existing per-line entry holder after normalization and segmentation in both syllable and POS lanes. POS then passes those lines through its two-full-stop holder before tagging; debug uses the same chain.
+- Wrap the existing syllable formatter for hashed positional streams, preserving non-debug no-file output, the web slot limit and paired syllable/POS output.
+- Add holder ordering, cross-line grouping, lazy cancellation and positional-wrapper tests; compare representative outputs with the preceding implementation.
+### Verification
+- Node: 258 tests, 250 passed, 8 skipped; targeted ESLint and `git diff --check` passed.
+- Python: 343 passed, 7 failed, 3 skipped and 35 subtests passed; six failures need `MASTER_JSON_KEY`, and one needs the unported comparison POS view.

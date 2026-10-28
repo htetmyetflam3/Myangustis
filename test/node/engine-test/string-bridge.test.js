@@ -10,9 +10,11 @@ import { consumePos } from '../../../Architecture/Engine/init/pos-guard.js';
 import { readFromApi } from '../../../Architecture/Engine/MonoSyllabism/generators/input.js';
 import { runSegmentor } from '../../../Architecture/Engine/MonoSyllabism/main/phoneme/lexer.js';
 import { fullstopHolder } from '../../../Architecture/Engine/MonoSyllabism/generators/pos-input.js';
+import { toLineStrings } from '../../../Architecture/Engine/MonoSyllabism/generators/SfomatterForP.js';
 import { runTagger } from '../../../Architecture/Engine/MonoSyllabism/main/phoneme/phonology.js';
 import { runRuleEngine } from '../../../Architecture/Engine/bridge/Ginit.js';
-import { toBurmeseLine, toBurmeseLineWithPos } from '../../../Architecture/Engine/MonoSyllabism/utilities/formatter.js';
+import { toBurmeseLine, toBurmeseLineWithPos, toSyllableLine, toPositions } from '../../../Architecture/Engine/MonoSyllabism/utilities/formatter.js';
+import { positionalSyllableLines } from '../../../Architecture/Engine/init/tokenizer.js';
 
 const text = 'ကောင်းကင် စမ်းသပ်။\n';
 const hash = n => String(n).repeat(72);
@@ -27,6 +29,47 @@ test('bridge accepts strings, validates flags and 72-character caller hashes', (
   assert.throws(() => BindEngine({ flag: 'syllable', sourceText: text, hash: 'x'.repeat(73) }), /72/);
   assert.throws(() => BindEngine({ flag: 'pos', sourceText: text, hash: '../' + 'x'.repeat(69) }), /72/);
   assert.throws(() => BindEngine({ flag: 'pos', sourceText: text, debug: 'true' }), /boolean/);
+});
+
+test('the shared entry holder emits lines and the POS holder groups two stops across them', async () => {
+  async function* segments() {
+    yield 'က√'; yield '။√'; yield '\n';
+    yield '\n'; yield 'ခ√'; yield '။√'; yield 'ဂ√'; yield '။√';
+  }
+  assert.deepEqual(await collect(toLineStrings(segments())), [
+    'က√။√', '', 'ခ√။√ဂ√။√',
+  ]);
+  assert.deepEqual(await collect(fullstopHolder(toLineStrings(segments()))), [
+    'က√။√ √ √ခ√။√', 'ဂ√။√',
+  ]);
+});
+
+test('two holders stream without consuming later entry lines', async () => {
+  let closed = false;
+  async function* segments() {
+    try {
+      yield 'က√'; yield '။√'; yield '\n';
+      yield 'ခ√'; yield '။√'; yield '\n';
+      throw new Error('later line should not be consumed');
+    } finally {
+      closed = true;
+    }
+  }
+  const holder = fullstopHolder(toLineStrings(segments()));
+  assert.deepEqual(await holder.next(), { value: 'က√။√ √ခ√။√', done: false });
+  await holder.return();
+  assert.equal(closed, true);
+});
+
+test('positional wrapper reuses the line formatter and streams its coordinates', async () => {
+  async function* lines() {
+    yield 'ကောင်း√ကင်√'; yield ''; yield 'နေ√';
+  }
+  const expected = [toPositions(toSyllableLine('ကောင်း√ကင်√')),
+    toPositions(toSyllableLine('နေ√'))];
+  const wrapped = positionalSyllableLines(lines());
+  assert.equal(typeof wrapped[Symbol.asyncIterator], 'function');
+  assert.deepEqual(await collect(wrapped), expected);
 });
 
 test('syllables stream per line and hashed callers receive positional lines', async () => {
@@ -44,7 +87,7 @@ test('syllables stream per line and hashed callers receive positional lines', as
 
 test('POS streams paired syllable and tagged views; hashed POS guard consumes and returns its placeholder', async () => {
   const input = 'ကောင်းကင် စမ်းသပ်။\nမြန်မာစာ။ နေကောင်းလား။\n';
-  const units = fullstopHolder(runSegmentor(readFromApi(input)));
+  const units = fullstopHolder(toLineStrings(runSegmentor(readFromApi(input))));
   const expected = [];
   for await (const line of runRuleEngine(runTagger(units), undefined)) {
     expected.push({ syllable: toBurmeseLine(line), rawPos: toBurmeseLineWithPos(line, 'rawPos') });

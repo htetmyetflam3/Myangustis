@@ -1,4 +1,4 @@
-import { toPositions } from '../MonoSyllabism/utilities/formatter.js';
+import { toPositions, toSyllableLine } from '../MonoSyllabism/utilities/formatter.js';
 
 /* ── Positional syllable API ─────────────────────────────────────
    The public API does NOT hand back ready-made segmented text.
@@ -35,4 +35,12 @@ import { toPositions } from '../MonoSyllabism/utilities/formatter.js';
 /** Return positional boundaries for one formatted syllable line, or null. */
 export function syllablePosition(line) {
   return toPositions(line);
+}
+
+// Wrap the shared line formatter; only the positional view reaches this caller.
+export async function* positionalSyllableLines(lines) {
+  for await (const line of lines) {
+    const positions = syllablePosition(toSyllableLine(line));
+    if (positions !== null) yield positions;
+  }
 }

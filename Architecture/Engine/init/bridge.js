@@ -6,34 +6,32 @@ import { SlotLimiter } from '../../host/job-store.js';
 
 const webSlots = new SlotLimiter(2);
 
-// Input is normalized and mapped by readFromApi, segmented into Burmese
-// syllables, and grouped by fullstopHolder before the requested formatter.
+// Every lane shares text collection, normalization, segmentation and the
+// per-line entry holder. POS adds the two-full-stop holder after that stage.
 async function* Engine({ sourceText, flag }, hash, positional) {
-  const [{ readFromApi }, { runSegmentor }, { fullstopHolder }, formatter] = await Promise.all([
+  const [{ readFromApi }, { runSegmentor }, { toLineStrings }, formatter] = await Promise.all([
     import('../MonoSyllabism/generators/input.js'),
     import('../MonoSyllabism/main/phoneme/lexer.js'),
-    import('../MonoSyllabism/generators/pos-input.js'),
+    import('../MonoSyllabism/generators/SfomatterForP.js'),
     import('../MonoSyllabism/utilities/formatter.js'),
   ]);
-  const seg = runSegmentor(readFromApi(sourceText));
+  const lines = toLineStrings(runSegmentor(readFromApi(sourceText)));
   if (flag === 'syllable') {
-    const tokenizer = positional ? await import('./tokenizer.js') : null;
-    for await (const line of fullstopHolder(seg, { perLine: true })) {
-      const formatted = formatter.toSyllableLine(line);
-      if (!positional) yield formatted;
-      else {
-        const positions = tokenizer.syllablePosition(formatted);
-        if (positions !== null) yield positions;
-      }
+    if (positional) {
+      const { positionalSyllableLines } = await import('./tokenizer.js');
+      yield* positionalSyllableLines(lines);
+    } else {
+      for await (const line of lines) yield formatter.toSyllableLine(line);
     }
     return;
   }
 
-  const [{ runTagger }, { runRuleEngine }] = await Promise.all([
+  const [{ fullstopHolder }, { runTagger }, { runRuleEngine }] = await Promise.all([
+    import('../MonoSyllabism/generators/pos-input.js'),
     import('../MonoSyllabism/main/phoneme/phonology.js'),
     import('../bridge/Ginit.js'),
   ]);
-  const tagged = runTagger(fullstopHolder(seg), hash);
+  const tagged = runTagger(fullstopHolder(lines), hash);
   for await (const line of runRuleEngine(tagged, hash)) {
     yield {
       syllable: formatter.toBurmeseLine(line),

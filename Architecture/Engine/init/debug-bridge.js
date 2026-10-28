@@ -5,6 +5,7 @@ import { getFlushLines } from '../MonoSyllabism/utilities/buffer.js';
 import { readFromApi } from '../MonoSyllabism/generators/input.js';
 import { runSegmentor } from '../MonoSyllabism/main/phoneme/lexer.js';
 import { fullstopHolder } from '../MonoSyllabism/generators/pos-input.js';
+import { toLineStrings } from '../MonoSyllabism/generators/SfomatterForP.js';
 import { runTagger } from '../MonoSyllabism/main/phoneme/phonology.js';
 import { runRuleEngine } from '../bridge/Ginit.js';
 import { burmeseToId } from '../MonoSyllabism/generators/idmap.js';
@@ -46,7 +47,7 @@ async function writeDebug(sourceText, hash) {
       idMerged: createStreamWriter(outputDir, 'id_merged', flushLines, { exclusive: true }),
     };
     const seg = runSegmentor(readFromApi(sourceText));
-    const tagged = runTagger(fullstopHolder(seg), hash);
+    const tagged = runTagger(fullstopHolder(toLineStrings(seg)), hash);
     let lineCount = 0;
     for await (const line of runRuleEngine(tagged, hash)) {
       writers.syllable.writeLine([toBurmeseLine(line)]);
