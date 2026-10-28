@@ -23,7 +23,8 @@
 
 import { OutputFile } from "../_path.js";
 
-import { bridgeStart, bridgeEnd, bridgeLineCount, getDateTimeHash } from "../bridge/logen.js";
+import { getLogen } from "../_path.js";
+const { bridgeStart, bridgeEnd, bridgeLineCount, getDateTimeHash } = (await getLogen()).legacyLog;
 
 import { runRuleEngine } from "../bridge/Ginit.js";
 

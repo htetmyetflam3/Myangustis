@@ -1,4 +1,5 @@
-import logger from '../../../Bridge/logen/site.js';
+import { getLogen } from "../../_path.js";
+const logger = (await getLogen()).siteLog.default;
 import crypto from 'node:crypto';
 import { createOrUpdateCookie } from '../db/cookie.js';
 import { decodeCookie } from './codec.js';

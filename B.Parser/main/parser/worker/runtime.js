@@ -1,3 +1,5 @@
+import { getLogen } from "../../../_path.js";
+const { emitEvent, installPassiveLog } = (await getLogen()).siteLog;
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
@@ -5,11 +7,11 @@ import { loadDetector, processBytesForMethod, buildFinalPages, markPdfImagePages
 import { writeOutput } from "../write/emit.js";
 import { scanText, formatScanReport, loadScanDictionary, dictionaryWords } from "../text/scan.js";
 import { repairText, repairFromScanVerdict } from "../text/repair.js";
-import { emitEvent } from "../../../../Bridge/logen/core.js";
+
 import { MAX_INPUT_BYTES, MAX_INPUT_MB } from "../core/limits.js";
 import { REGISTER_LOG } from "../../../_path.js";
 import { startRecord, note, appendRecord, registerPath } from "../core/provenance.js";
-import { installPassiveLog } from "../../../../Bridge/logen/site.js";
+
 
 
 

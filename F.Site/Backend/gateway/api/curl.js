@@ -5,7 +5,8 @@ import express from 'express';
 import multer from 'multer';
 import { createPdfParser, createDocxParser } from '../../file/praser.js';
 import { INPUT_PDF, INPUT_DOCX, abs } from '../../file/paths.js';
-import logger from '../../../../Bridge/logen/site.js';
+import { getLogen } from "../../../_path.js";
+const logger = (await getLogen()).siteLog.default;
 import {
   curlEndpointPath, curlEndpointEnabled, keyMatches, presentedKey, endpointUrl,
 } from './curlGate.js';

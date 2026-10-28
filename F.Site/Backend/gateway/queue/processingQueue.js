@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
-import { emitEvent } from '../../../../Bridge/logen/site.js';
+import { getLogen } from "../../../_path.js";
+const { emitEvent } = (await getLogen()).siteLog;
 import { createReadStream } from 'node:fs';
 const now = () => new Date().toISOString();
 async function snapshot(filePath) {

@@ -12,7 +12,8 @@
 
 import fs from "fs";
 import { TREE_DIR } from "../main/grapheme/cache-integrity.js";
-import { writerStart, writerEnd, writerWrote, getDateTimeHash, readerStart, readerEnd, readerFail } from "../../bridge/logen.js";
+import { getLogen } from "../../_path.js";
+const { writerStart, writerEnd, writerWrote, getDateTimeHash, readerStart, readerEnd, readerFail } = (await getLogen()).legacyLog;
 import { OutputFile, joinPath } from "../../_path.js";
 import { toSyllableLine } from "./formatter.js";
 import { toLineStrings } from "../generators/SfomatterForP.js";

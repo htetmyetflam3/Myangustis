@@ -1,3 +1,5 @@
+import { getLogen } from "../../../_path.js";
+const { emitEvent } = (await getLogen()).coreLog;
 
 
 
@@ -41,7 +43,7 @@ import {
 import { DocumentDecoding, detectLegacyLayoutFonts } from "../read/pdf-fonts.js";
 import { LEGACY_CODE_PAGES, UNICODE_PATH } from "./registry.js";
 import { buildVectorOutlineLayout } from "./vector-repair.js";
-import { emitEvent } from "../../../../Bridge/logen/core.js";
+
 
 
 

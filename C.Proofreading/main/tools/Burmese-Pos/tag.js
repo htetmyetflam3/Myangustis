@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { BindEngine } from '../../../../Bridge/path.js';
+import { BindEngine } from '../../../_path.js';
 
 const hash = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 
@@ -37,7 +37,7 @@ if (!result.rawPosPath || !result.syllablePath) {
 
 const raw = result.rawPos;
 const stats = {
-  engine_entry: 'Engine/index.js via repo-root Bridge/path.js facade',
+  engine_entry: 'Engine binding via proofreading path chain',
   source_sha256: hash(sourceBytes),
   raw_pos_path: result.rawPosPath,
   syllable_path: result.syllablePath,

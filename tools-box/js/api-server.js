@@ -59,7 +59,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { ENV_RESULT } from "../../index-path.js";
 let configure=()=>{},grammarPipeline=async()=>{throw new Error("local grammar pipeline (cli.js) is not wired");};import("../../Architecture/Engine/init/cli.js").then(m=>{configure=m.configure;grammarPipeline=m.grammarPipeline;}).catch(()=>{});
 import { invokeSyllableWithHash, hashKind } from "../../Architecture/Engine/init/initS.js";
-import { getDateTimeHash } from "../../Bridge/logen/logen.js";
+import { getLogen } from "../_path.js";
+const { getDateTimeHash } = (await getLogen()).legacyLog;
 
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));

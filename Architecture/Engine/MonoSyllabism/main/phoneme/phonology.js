@@ -1,9 +1,8 @@
-import {
-	taggerStart,
+import { getLogen } from "../../../_path.js";
+const { taggerStart,
 	taggerEnd,
 	tagTokenReceived,
-	tagWordCount,
-} from "../../../bridge/logen.js";
+	tagWordCount, } = (await getLogen()).legacyLog;
 
 import { walkPos } from "../grapheme/traverser.js";
 import { PUNCTUATION, ALL_DIGITS } from "../../map/loader.js";

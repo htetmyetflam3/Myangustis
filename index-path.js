@@ -41,4 +41,13 @@ export async function getEngineData() {
   return entry.getEngineData();
 }
 
-export default { JUNK_DIR, ENV_RESULT, getEngineData };
+export async function getLogen() {
+  return import('./logen.js');
+}
+
+export async function getEngineBinding() {
+  const entry = await import('./Architecture/_index.js');
+  return entry.BindEngine;
+}
+
+export default { JUNK_DIR, ENV_RESULT, getEngineData, getLogen, getEngineBinding };

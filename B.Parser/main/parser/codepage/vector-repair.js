@@ -1,3 +1,5 @@
+import { getLogen } from "../../../_path.js";
+const { emitEvent } = (await getLogen()).coreLog;
 
 
 
@@ -56,7 +58,7 @@ import {
 import { englishLikeness } from "../text/mm-score.js";
 import { crowdVote, loadWitnesses } from "./outline-vote.js";
 import { WININNWA_LEGACY_CODE_PAGE } from "./registry.js";
-import { emitEvent } from "../../../../Bridge/logen/core.js";
+
 
 const WITNESS_FILE = path.join(VECTOR_MAP_DIR, "font-witnesses.json");
 

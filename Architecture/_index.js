@@ -1,5 +1,5 @@
 
-export { JUNK_DIR, ENV_RESULT } from '../index-path.js';
+export { JUNK_DIR, ENV_RESULT, getLogen } from '../index-path.js';
 export { BindEngine } from './Engine/bridge/bind-engine.js';
 
 

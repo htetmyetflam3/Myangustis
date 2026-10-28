@@ -1,7 +1,8 @@
 import { walk } from "../grapheme/traverser.js";
 import { isTail, isBase, isLowercaseAZ } from "../../map/loader.js";
 import { toSyllableToken, SPACE_TOKEN } from "../../utilities/formatter.js";
-import { segmentStart } from "../../../bridge/logen.js";
+import { getLogen } from "../../../_path.js";
+const { segmentStart } = (await getLogen()).legacyLog;
 
 function isBaseAsat(tok) {
 	return isLowercaseAZ(tok);

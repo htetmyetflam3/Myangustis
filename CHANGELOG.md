@@ -44,3 +44,9 @@
 ### Changed / Fixed / Removed
 - Load parser JSON maps on demand through one source-aware in-memory cache, with isolated return values and regression tests.
 - Correct parser workspace and scraper integration paths to `B.Parser`; retain the existing `E.Scraper` workspace.
+
+## [Unreleased] - 2026-10-28 — Shared logging and proofreading paths
+### Changed / Fixed / Removed
+- Consolidate server-side logging implementations and helpers into root `logen.js`, accessed by components through their index/path chains; leave browser-side logging unchanged.
+- Move the proofreading tagger into `C.Proofreading/main` and resolve its engine binding through the proofreading path chain.
+- Preserve shared event-bus behavior and append-only engine logs; add logging-chain and relocated-tagger tests.

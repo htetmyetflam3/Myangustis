@@ -34,7 +34,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { run } from 'node:test';
-import { emitLog, reportInc } from '../../Bridge/logen/core.js';
+import { getLogen } from "../_path.js";
+const { emitLog, reportInc } = (await getLogen()).coreLog;
 
 /** The pure files: no sqlite, no socket. Keep this list honest -- adding a
  *  file that opens a database here makes every boot write one. */

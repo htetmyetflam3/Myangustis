@@ -21,7 +21,7 @@ const SAMPLE = 'ကောင်းကင်သည် ကြည်လင်သည
 
 test('engine entry exposes the single-boundary surface only', () => {
   assert.equal(typeof BindEngine, 'function');
-  assert.deepEqual(Object.keys(engineEntry).sort(), ['BindEngine', 'ENV_RESULT', 'JUNK_DIR', 'getEngineData']);
+  assert.deepEqual(Object.keys(engineEntry).sort(), ['BindEngine', 'ENV_RESULT', 'JUNK_DIR', 'getEngineData', 'getLogen']);
   assert.deepEqual(Object.keys(facade), ['BindEngine']);
   assert.equal(facade.BindEngine, BindEngine);
 });
@@ -73,7 +73,7 @@ test('memory head and file head are interchangeable for proofreading', async () 
 
 test('proofreading bridge wrapper: both/syllable views and work-dir retarget', async () => {
   const { tagProofreading } = await import(
-    path.join(REPO, 'Bridge', 'proofreading-tagger.js')
+    path.join(REPO, 'C.Proofreading', 'index.js')
   );
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'proof-work-'));
   try {

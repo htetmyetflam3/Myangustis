@@ -75,6 +75,12 @@ export function GetDocxDir() { return resolveJunkDir("docx"); }
 export function InputFile() { return path.join(INITIAL_DIRS.INPUT_DIR, "input.txt"); }
 export function OutputFile() { return INITIAL_DIRS.OUTPUT_DIR; }
 export function LogFile() { return INITIAL_DIRS.LOG_DIR; }
+export async function getLogen() {
+  const entry = await import('../_index.js');
+  const logen = await entry.getLogen();
+  logen.setEngineLogDirectory(LogFile);
+  return logen;
+}
 export function DataFile() { return path.join(ENGINE_ROOT, "knowledge", "isTreasure"); }
 export function EngineRoot() { return ENGINE_ROOT; }
 export function resolvePath(p) { return path.isAbsolute(p) ? p : path.resolve(ENGINE_ROOT, p); }

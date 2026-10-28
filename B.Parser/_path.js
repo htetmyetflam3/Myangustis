@@ -46,6 +46,10 @@ async function resolveBaseDir() {
 const resolved = await resolveBaseDir();
 export const BASE_DIR = resolved.base;
 export const ENV_RESULT = resolved.env;
+export async function getLogen() {
+  const entry = await import('./_index.js');
+  return entry.getLogen();
+}
 
 export const RUNTIME_ROOT = path.join(BASE_DIR, "Parser");
 const FONT_ROOT = path.join(BASE_DIR, "fonts");

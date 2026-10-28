@@ -24,9 +24,12 @@ import {
 import { createHiddenProcessor } from "./Backend/gateway/api/hidden.js";
 import { createEngineQueueRouter } from "./Backend/gateway/api/engineCollect.js";
 import { createCurlRouter, curlEndpointBanner } from "./Backend/gateway/api/curl.js";
-import { createHttpConsoleLogger } from "./Backend/gateway/proxy/httpLog.js";
-import { installPassiveLog, checksEnabled } from "../Bridge/logen/site.js";
-import { runSelfTests } from "./site_logen/selftest.js";
+import morgan from "morgan";
+import { getLogen } from "./_path.js";
+const siteLogen = await getLogen();
+const { installPassiveLog, checksEnabled } = siteLogen.siteLog;
+const { createHttpConsoleLogger } = siteLogen.httpLog;
+import { runSelfTests } from "./Backend/selftest.js";
 import {
   engineConfig,
   createEngineDispatcher,
@@ -181,7 +184,7 @@ if (checksEnabled()) {
   runSelfTests().catch((error) => console.error("[selftest]", error.message));
 }
 
-app.use(createHttpConsoleLogger());
+app.use(createHttpConsoleLogger(morgan));
 
 app.use(createEdgeGuard());
 app.use(edgeContext);

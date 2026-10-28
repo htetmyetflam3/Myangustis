@@ -10,7 +10,7 @@
 
 import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
-import { BindEngine } from './path.js';
+import { BindEngine } from '../_path.js';
 
 
 
