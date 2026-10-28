@@ -4,10 +4,9 @@
 # ///
 """Read-only rule-aware MT candidate evidence and reference data audit; no API/AI calls.
 
-Tagging is the engine's job, never this process's. Candidate Burmese text is
-handed to mt/quality/tag.py (a black box around BindEngine('proofreading'));
-we wait for it to finish, then open the raw_pos file it produced and walk it
-like any other tagged output. Nothing inside the running tagger is touched.
+Tagging is the engine's job, never this process's. The caller collects the
+streamed raw POS result and passes it back in metadata for analysis. Nothing
+inside the running tagger is touched.
 """
 from __future__ import annotations
 
@@ -367,15 +366,14 @@ def tag_burmese(text, work=WORK):
 
     folder = Path(work)/'.work'/key
     folder.mkdir(parents=True, exist_ok=True)
-    # 1) hand the text to tag.py and wait for the engine run to finish;
+    # The caller-owned metadata contains the streamed engine output.
     tag_text(text, work=folder)
-    # 2) open the output file it produced and walk it like any tagged file.
     stats = json.loads((folder/'result.json').read_text(encoding='utf-8'))
-    raw = Path(stats['raw_pos_path']).read_text(encoding='utf-8')
-    # Contract check on the actual file before trusting the cache.
+    raw = stats['raw_pos']
+    # Contract check on the tagged text before trusting the cache.
     for tokens in read_tagged(raw):
         if not tokens: raise ComparisonError('Empty raw-POS unit from engine output')
-    value = {'key': key, 'raw_pos': raw, 'raw_pos_path': stats['raw_pos_path']}
+    value = {'key': key, 'raw_pos': raw}
     atomic_json(cache, value)
     return value, False
 

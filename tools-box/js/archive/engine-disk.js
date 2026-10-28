@@ -11,12 +11,12 @@
 
 
 import fs from "fs";
-import { TREE_DIR } from "../main/grapheme/cache-integrity.js";
-import { getLogen } from "../../_path.js";
+import { TREE_DIR } from "../../../Architecture/Engine/MonoSyllabism/main/grapheme/cache-integrity.js";
+import { getLogen } from "../../../Architecture/Engine/_path.js";
 const { writerStart, writerEnd, writerWrote, getDateTimeHash, readerStart, readerEnd, readerFail } = (await getLogen()).legacyLog;
-import { OutputFile, joinPath } from "../../_path.js";
-import { toSyllableLine } from "./formatter.js";
-import { toLineStrings } from "../generators/SfomatterForP.js";
+import { OutputFile, joinPath } from "../../../Architecture/Engine/_path.js";
+import { toSyllableLine } from "../../../Architecture/Engine/MonoSyllabism/utilities/formatter.js";
+import { toLineStrings } from "../../../Architecture/Engine/MonoSyllabism/generators/SfomatterForP.js";
 
 
 let _sessionHash = null;
@@ -35,7 +35,7 @@ export function setHash(hash) {
 }
 
 
-export function createStreamWriter(outputDir = OutputFile(), suffix = "", flushLines = 1000) {
+export function createStreamWriter(outputDir = OutputFile(), suffix = "", flushLines = 1000, { exclusive = false } = {}) {
 	const ts = getHash();
 	const suffixPart = suffix ? `_${suffix}` : "";
 	const outputPath = joinPath(outputDir, `segmented_${ts}${suffixPart}.txt`);
@@ -43,7 +43,7 @@ export function createStreamWriter(outputDir = OutputFile(), suffix = "", flushL
 	let buffer = "";
 
 	fs.mkdirSync(outputDir, { recursive: true });
-	fs.writeFileSync(outputPath, "", "utf8");
+	fs.writeFileSync(outputPath, "", { encoding: "utf8", flag: exclusive ? "wx" : "w" });
 	writerStart({ outputDir, lineCount: 0 });
 
 	function flush() {

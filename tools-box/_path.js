@@ -1,1 +1,1 @@
-export { getLogen } from './_index.js';
+export { getLogen, BindEngine } from './_index.js';

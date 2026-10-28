@@ -132,9 +132,8 @@ def tag_text(text: str, work: Path | None = None, timeout: int = 300) -> list[di
     node = shutil.which("node")
     if not node:
         raise EngineError("node not found on PATH")
-    # The shim reaches the engine through its own repo-relative Bridge facade,
-    # so no cwd or external WASM guard is needed: one node process, one
-    # BindEngine('proofreading') call, stats JSON written back.
+    # The Node caller reads the source and collects the engine's streamed
+    # views into the caller-owned metadata file.
     cmd = [node, str(SHIM), str(source), str(work / "engine"), str(result_json)]
     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     if proc.returncode != 0 or not result_json.exists():
@@ -146,8 +145,8 @@ def tag_text(text: str, work: Path | None = None, timeout: int = 300) -> list[di
         )
 
     meta = json.loads(result_json.read_text(encoding="utf-8"))
-    words = _parse_word_view(Path(meta["raw_pos_path"]).read_text(encoding="utf-8"))
-    units = _parse_unit_view(Path(meta["syllable_path"]).read_text(encoding="utf-8"))
+    words = _parse_word_view(meta["raw_pos"])
+    units = _parse_unit_view(meta["syllable"])
     if len(words) != len(units):
         raise EngineError(f"view mismatch: {len(words)} word sentences vs {len(units)} unit sentences")
     _attach_units(words, units)

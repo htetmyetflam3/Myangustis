@@ -1,6 +1,6 @@
 
 export { JUNK_DIR, ENV_RESULT, getLogen } from '../index-path.js';
-export { BindEngine } from './Engine/bridge/bind-engine.js';
+export { BindEngine } from './Engine/init/bridge.js';
 
 
 export async function getEngineData() {

@@ -15,7 +15,7 @@ function fixture(t) {
   fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}');
   for (const file of [
     'index-path.js', 'Architecture/_index.js', 'Architecture/Engine/_path.js',
-    'Architecture/Engine/.data/secure.js', 'Architecture/Engine/bridge/bind-engine.js',
+    'Architecture/Engine/.data/secure.js', 'Architecture/Engine/init/bridge.js',
     'Architecture/host/config.js', 'Architecture/host/job-store.js',
     'Architecture/Engine/MonoSyllabism/main/grapheme/Tree.loaded.js',
     'Architecture/Engine/MonoSyllabism/main/grapheme/cache-integrity.js',

@@ -56,10 +56,9 @@ import tempfile
 from collections import Counter, defaultdict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
+REPO = os.path.dirname(HERE)
 DATA_BRIDGE = os.path.join(os.path.dirname(HERE), "tools-box", "js", "engine-data.js")
-TAGGER = os.path.join(HERE, "tag-both.mjs")
-RUNTIME_GUARD = os.path.join(REPO, "scraper", "wasm", "box", "runtime-guard.mjs")
+TAGGER = os.path.join(HERE, "main", "tools", "Burmese-Pos", "tag.js")
 
 # Colloquial surface forms that mark a block as spoken even with no quote mark
 # and no ငါ. Kept deliberately small: substring matching on Burmese is a trap
@@ -128,7 +127,7 @@ def run_tagger(source, work):
     os.makedirs(work, exist_ok=True)
     result = os.path.join(work, "result.json")
     cmd = [
-        "node", "--import", RUNTIME_GUARD, TAGGER,
+        "node", TAGGER,
         os.path.abspath(source), os.path.abspath(work), result,
     ]
     proc = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True)
@@ -137,7 +136,7 @@ def run_tagger(source, work):
         raise SystemExit(f"tagger failed for {source}")
     with open(result, encoding="utf-8") as fh:
         meta = json.load(fh)
-    return meta["raw_pos_path"], meta
+    return meta["raw_pos"], meta
 
 
 # ------------------------------------------------------------------- parsing
@@ -193,24 +192,22 @@ def canon_with_spans(surfaces):
     return "".join(c for c, _ in out), starts
 
 
-def parse_raw_pos(path):
-    """-> flat ordered list of (surface, tags:set, is_eos) for the whole file.
-
-    raw_pos is one line per OUTPUT UNIT, not per source line, so line numbers
-    in that file cannot be used to place a token. Everything is flattened and
-    aligned by character offset instead."""
+def parse_raw_pos_text(text):
+    """Flatten streamed POS units to (surface, tags, is_eos) tuples."""
     toks = []
-    with open(path, encoding="utf-8") as fh:
-        for raw in fh.read().split("\n"):
-            for chunk in raw.split():
-                if not chunk:
-                    continue
-                eos = chunk.endswith("<eos>")
-                body = chunk[:-5] if eos else chunk
-                m = TOKEN_RE.match(body)
-                toks.append(((m.group(1) if m else body),
-                             set(m.group(2).split(",")) if m else set(), eos))
+    for raw in text.split("\n"):
+        for chunk in raw.split():
+            eos = chunk.endswith("<eos>")
+            body = chunk[:-5] if eos else chunk
+            m = TOKEN_RE.match(body)
+            toks.append(((m.group(1) if m else body),
+                         set(m.group(2).split(",")) if m else set(), eos))
     return toks
+
+
+def parse_raw_pos(path):
+    with open(path, encoding="utf-8") as fh:
+        return parse_raw_pos_text(fh.read())
 
 
 def index_blocks(text):
@@ -265,10 +262,13 @@ def audit(source, raw_pos_path=None, work=None):
     if raw_pos_path is None:
         if work is None:
             work = tempfile.mkdtemp(prefix="register-")
-        raw_pos_path, meta = run_tagger(source, work)
+        raw_pos_text, meta = run_tagger(source, work)
+    else:
+        with open(raw_pos_path, encoding="utf-8") as fh:
+            raw_pos_text = fh.read()
 
     rows, _ = load_master()
-    toks = parse_raw_pos(raw_pos_path)
+    toks = parse_raw_pos_text(raw_pos_text)
     flat, flat_to_src = flat_source(text)
     cflat = canon(flat)
     ctoks, tok_start = canon_with_spans([t[0] for t in toks])

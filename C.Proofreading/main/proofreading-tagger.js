@@ -1,62 +1,32 @@
-
-
-
-
-
-
-
-
-
-
 import fs from 'node:fs';
-import { randomUUID } from 'node:crypto';
 import { BindEngine } from '../_path.js';
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-export async function tagProofreading({ source, sourceText, hash, work, views = 'both' }) {
-  const hasMemoryText = typeof sourceText === 'string' && sourceText.length > 0;
-  if (!hasMemoryText && (typeof source !== 'string' || !source)) {
-    throw new Error('tagProofreading: source path or sourceText string is required');
+// File access stays with the caller; the engine receives only text.
+export async function tagProofreading({ source, sourceText, views = 'both', hash, work }) {
+  if ((hash !== undefined && hash !== null) || (work !== undefined && work !== null)) {
+    throw new Error('tagProofreading: hashes and output paths are not supported; use BindEngine directly for hashed calls');
   }
-  if (!hasMemoryText && !fs.existsSync(source)) {
-    throw new Error(`tagProofreading: source not found: ${source}`);
+  if (typeof sourceText !== 'string') {
+    if (typeof source !== 'string' || !source) {
+      throw new Error('tagProofreading: source path or sourceText string is required');
+    }
+    sourceText = '';
+    for await (const chunk of fs.createReadStream(source, { encoding: 'utf8' })) sourceText += chunk;
   }
-
-  const payload = { work, hash: hash ?? randomUUID() };
-  if (hasMemoryText) payload.sourceText = sourceText;
-  else payload.inputPath = source;
-
-  const result = await BindEngine('proofreading', payload);
-  if (!result.syllablePath) {
-    throw new Error('proofreading engine run produced no syllable output');
+  const syllables = [];
+  const positions = [];
+  if (views === 'syllable') {
+    for await (const line of BindEngine({ flag: 'syllable', sourceText })) syllables.push(line);
+  } else {
+    for await (const unit of BindEngine({ flag: 'pos', sourceText })) {
+      syllables.push(unit.syllable);
+      positions.push(unit.rawPos);
+    }
   }
-
-  const wantBoth = views !== 'syllable';
-  if (wantBoth && !result.rawPosPath) {
-    throw new Error('proofreading engine run produced no raw_pos output');
-  }
-
+  const asText = lines => lines.length ? `${lines.join('\n')}\n` : '';
   return {
-    hash: result.hash,
-    lineCount: result.lineCount,
-    syllablePath: result.syllablePath,
-    rawPosPath: wantBoth ? result.rawPosPath : null,
-    syllable: result.syllable,
-    rawPos: wantBoth ? result.rawPos : null,
+    lineCount: syllables.length,
+    syllable: asText(syllables),
+    rawPos: views === 'syllable' ? null : asText(positions),
   };
 }

@@ -13,7 +13,7 @@
 
 
 import path from 'node:path';
-import { BindEngine } from '../../Engine/bridge/bind-engine.js';
+import { BindEngine } from '../../_index.js';
 
 
 
@@ -42,11 +42,11 @@ export async function runEngineJob({ record, sourceText }) {
 
 
 
-  const result = await BindEngine('site', { hash: record.formId, sourceText });
-  if (!result.rawPosPath) {
-    throw new Error('engine path-A returned no rawPosPath output');
+  const lines = [];
+  for await (const unit of BindEngine({ flag: 'pos', sourceText })) {
+    lines.push(unit.rawPos);
   }
-  const outputText = result.rawPos;
+  const outputText = lines.length ? `${lines.join('\n')}\n` : '';
 
   const bytes = Buffer.from(outputText, 'utf8');
   return {

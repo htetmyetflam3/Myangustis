@@ -50,3 +50,14 @@
 - Consolidate server-side logging implementations and helpers into root `logen.js`, accessed by components through their index/path chains; leave browser-side logging unchanged.
 - Move the proofreading tagger into `C.Proofreading/main` and resolve its engine binding through the proofreading path chain.
 - Preserve shared event-bus behavior and append-only engine logs; add logging-chain and relocated-tagger tests.
+
+## [Unreleased] - 2026-10-29 — Streaming engine bridge
+### Changed / Fixed / Removed
+- Replace signature dispatch with one flag-driven, string-input `BindEngine`: syllables stream per line, POS streams paired syllable and tagged views, and hashed POS returns the guard placeholder.
+- Limit hashed callers to two active slots and preserve the old five-file debug output under `Junk/output`; retain the previous bridge implementations in the tools archive.
+- Migrate the scraper, site, proofreading tools and tools API to the new boundary. Public tokenizer processing now accepts text in POST bodies; the former file-readback GET routes return 405.
+- Update caller, API, debug, workspace and environment-chain tests for the streaming contract.
+### Verification
+- Node: 252 tests, 244 passed, 8 skipped; both frontend builds passed with existing bundle-size warnings.
+- Python: 316 passed, 17 failed, 6 skipped, 8 errors and 35 subtests passed; failures and collection errors match the prior baseline involving unavailable source modules and fixtures.
+- Targeted ESLint and the bridge, caller, public API, tools API and environment-chain tests passed.

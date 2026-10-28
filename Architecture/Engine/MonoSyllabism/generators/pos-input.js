@@ -13,7 +13,13 @@
 
 
 
-export async function* fullstopHolder(seg) {
+import { toLineStrings } from './SfomatterForP.js';
+
+export async function* fullstopHolder(seg, { perLine = false } = {}) {
+	if (perLine) {
+		yield* toLineStrings(seg);
+		return;
+	}
 	let unit = "";
 	let stops = 0;
 	let hasContent = false;

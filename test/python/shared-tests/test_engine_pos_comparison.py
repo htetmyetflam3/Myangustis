@@ -55,7 +55,7 @@ class EnginePosComparisonTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             for name in ('index-path.js', 'Architecture/_index.js', 'Architecture/Engine/_path.js',
-                         'Architecture/Engine/.data/secure.js', 'Architecture/Engine/bridge/bind-engine.js',
+                         'Architecture/Engine/.data/secure.js', 'Architecture/Engine/init/bridge.js',
                          'Architecture/host/config.js', 'Architecture/host/job-store.js',
                          'tools-box/js/engine-data.js'):
                 target = root / name
@@ -116,6 +116,18 @@ class EnginePosComparisonTests(unittest.TestCase):
             subprocess.run(['node', '--input-type=module', '-e', script, key, str(target)], check=True)
             with patch.dict(os.environ, {'MASTER_JSON_KEY': key}):
                 self.assertEqual(scan._read_sealed(str(target)), {'fixture': True})
+
+    def test_register_tagger_consumes_streamed_pos_metadata(self):
+        register_spec = importlib.util.spec_from_file_location('register_for_stream_test', REPO / 'C.Proofreading/register.py')
+        register = importlib.util.module_from_spec(register_spec)
+        register_spec.loader.exec_module(register)
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / 'source.txt'
+            source.write_text('ကောင်းကင်သည် ကြည်လင်သည်။', encoding='utf-8')
+            raw, meta = register.run_tagger(str(source), str(Path(tmp) / 'work'))
+            self.assertEqual(raw, meta['raw_pos'])
+            self.assertTrue(any(tags for _, tags, _ in register.parse_raw_pos_text(raw)))
+            self.assertNotIn('raw_pos_path', meta)
 
     def test_python_tagger_calls_engine_and_preserves_raw_pos(self):
         with tempfile.TemporaryDirectory() as tmp:

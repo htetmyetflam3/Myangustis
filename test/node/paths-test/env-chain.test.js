@@ -62,7 +62,7 @@ test('real engine entry loads the root environment before host configuration', t
   fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}');
   fs.writeFileSync(path.join(root, '.env'), 'PORT=43217\n');
   for (const file of ['index-path.js', 'Architecture/_index.js', 'Architecture/Engine/_path.js',
-    'Architecture/Engine/bridge/bind-engine.js', 'Architecture/host/config.js', 'Architecture/host/job-store.js']) {
+    'Architecture/Engine/init/bridge.js', 'Architecture/host/config.js', 'Architecture/host/job-store.js']) {
     fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
     fs.copyFileSync(path.join(repo, file), path.join(root, file));
   }

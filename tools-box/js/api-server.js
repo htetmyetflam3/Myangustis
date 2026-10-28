@@ -55,16 +55,10 @@ import express from "express";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 import { ENV_RESULT } from "../../index-path.js";
-let configure=()=>{},grammarPipeline=async()=>{throw new Error("local grammar pipeline (cli.js) is not wired");};import("../../Architecture/Engine/init/cli.js").then(m=>{configure=m.configure;grammarPipeline=m.grammarPipeline;}).catch(()=>{});
-import { invokeSyllableWithHash, hashKind } from "../../Architecture/Engine/init/initS.js";
-import { getLogen } from "../_path.js";
-const { getDateTimeHash } = (await getLogen()).legacyLog;
+import { BindEngine } from "../_path.js";
 
-
-const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
-const TMP_DIR = path.join(MODULE_DIR, "File", ".api");
 const PORT = parseInt(process.env.PORT || process.env.API_PORT || "9000", 10);
 const MAX_PAYLOAD = parseInt(process.env.MAX_PAYLOAD_MB || "256", 10) * 1024 * 1024;
 
@@ -221,6 +215,18 @@ function sha256Hex(s) {
 	return crypto.createHash("sha256").update(s, "utf8").digest("hex");
 }
 
+function hashKind(value) {
+	return typeof value === "string" && value !== "." && /^[A-Za-z0-9._-]{1,128}$/.test(value) && !value.includes("..");
+}
+
+function bridgeHash(value) {
+	return hashKind(value) && value.length === 72 ? value : crypto.randomBytes(36).toString("hex");
+}
+
+async function positionsFromText(sourceText, hash) {
+	return Array.fromAsync(BindEngine({ flag: "syllable", hash, sourceText }));
+}
+
 function storePreReceived(record) {
 
 	const now = Date.now();
@@ -295,44 +301,20 @@ async function collectFromPraser(record) {
 
 
 
-		let tmpFile = null;
 		try {
-			fs.mkdirSync(TMP_DIR, { recursive: true });
-			tmpFile = path.join(TMP_DIR, `api_${getDateTimeHash()}.txt`);
-			fs.writeFileSync(tmpFile, content, "utf8");
-			configure({
-				srcPath: tmpFile,
-				writeSyllable: true,
-				segmentedMode: "jsonbody",
-				debugMode: false,
-			});
-			const results = await grammarPipeline({ srcPath: tmpFile, hash: record.submitId });
-			const hash = results[0]?.hash ?? null;
-			const syllable = hash ? await invokeSyllableWithHash(hash) : [];
+			const hash = bridgeHash(record.submitId);
+			const syllable = await positionsFromText(content, hash);
 			COLLECTED.set(record.submitId, {
 				done: true,
 				engineHash: hash,
-				syllableCount: Array.isArray(syllable) ? syllable.length : 0,
+				syllableCount: syllable.length,
 				collectedAt: Date.now(),
 			});
-			console.log(
-				`[api-server] collected ${record.submitId} from praser — hash ${hash} (${syllable.length} syllables)`,
-			);
+			console.log(`[api-server] collected ${record.submitId} from praser — hash ${hash} (${syllable.length} syllables)`);
 		} catch (err) {
-			COLLECTED.set(record.submitId, {
-				done: false,
-				error: err.message,
-				collectedAt: Date.now(),
-			});
+			COLLECTED.set(record.submitId, { done: false, error: err.message, collectedAt: Date.now() });
 			console.error(`[api-server] collect processing failed:`, err.message);
 		} finally {
-			if (tmpFile) {
-				try {
-					fs.unlinkSync(tmpFile);
-				} catch {
-					/* best-effort cleanup */
-				}
-			}
 			PRE_RECEIVED.delete(record.submitId);
 		}
 		return;
@@ -453,45 +435,31 @@ export function createApp() {
 
 
 	app.post("/process", gated, async (req, res) => {
-		const { srcPath, ...rest } = req.body ?? {};
-		if (!srcPath) {
-			return sendJson(res, 400, {
-				error:
-					"srcPath required — body-text pushes were removed; text arrives via the engine-initiated praser handshake",
-			});
+		const { srcPath, hash: requestedHash, debugMode = false } = req.body ?? {};
+		if (typeof srcPath !== "string" || !srcPath) {
+			return sendJson(res, 400, { error: "srcPath required — body-text pushes are not accepted" });
 		}
-
-
-		let input = srcPath;
-		if (!path.isAbsolute(srcPath)) {
-			input = path.resolve(process.cwd(), srcPath);
+		if (requestedHash !== undefined && (!hashKind(requestedHash) || requestedHash.length !== 72)) {
+			return sendJson(res, 400, { error: "hash must be 72 safe characters" });
 		}
+		if (typeof debugMode !== "boolean") {
+			return sendJson(res, 400, { error: "debugMode must be a boolean" });
+		}
+		const input = path.resolve(srcPath);
 		try {
-
-
-
-
-
-
-			const pipeOpts = { srcPath: input };
-			if (rest.hash !== undefined) pipeOpts.hash = rest.hash;
-			configure({
-				srcPath: input,
-				writeSyllable: rest.writeSyllable,
-				segmentedMode: rest.segmentedMode,
-				debugMode: rest.debugMode,
-			});
-			const results = await grammarPipeline(pipeOpts);
-
-
-			const hash = results[0]?.hash ?? null;
-			const syllable = hash ? await invokeSyllableWithHash(hash) : [];
+			let sourceText = "";
+			for await (const chunk of fs.createReadStream(input, { encoding: "utf8" })) sourceText += chunk;
+			const hash = requestedHash ?? crypto.randomBytes(36).toString("hex");
+			if (debugMode) {
+				const debug = await BindEngine({ flag: "syllable", hash, sourceText, debug: true });
+				return sendJson(res, 200, { hash, debug });
+			}
+			const syllable = await positionsFromText(sourceText, hash);
 			return sendJson(res, 200, { hash, syllable });
 		} catch (err) {
-			return sendJson(res, 500, { error: err.message });
+			return sendJson(res, err.code === "ENOENT" ? 404 : 500, { error: err.message });
 		}
 	});
-
 
 
 	app.get("/result/:hash", gated, (req, res) => {
