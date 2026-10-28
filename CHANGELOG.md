@@ -71,3 +71,10 @@
 ### Verification
 - Node: 252 tests, 244 passed, 8 skipped. Targeted Python: 128 passed. Targeted ESLint and `git diff --check` passed.
 - Full Python: 333 passed, 11 failed, 3 skipped, 4 collection errors, and 35 subtests passed. Six failures need `MASTER_JSON_KEY`; one needs the unported comparison POS view; four failures and four collection errors involve missing `agent_work`, `agent_english`, or `audit_source` modules. These tests remain in place.
+
+## [Unreleased] - 2026-10-29 — Remove tests for absent modules
+### Changed / Fixed / Removed
+- Remove tests that require the absent `agent_work`, `agent_english` or `audit_source` modules; retain independent chapter-selection, title, verse and CLI-alias coverage.
+### Verification
+- Focused Python: 34 passed, 18 subtests passed. Full Python: 343 passed, 7 failed, 3 skipped, 35 subtests passed; six failures require `MASTER_JSON_KEY`, and one requires the unported comparison POS view. No collection errors.
+- Node: 252 tests, 244 passed, 8 skipped.

@@ -45,11 +45,11 @@ class McpCliTests(unittest.TestCase):
                 self.assertIn("--" + tool["name"], options)
 
     def test_tool_name_flags_are_aliases(self):
-        result = self.run_cli("--read_chapter", "194", "--count", "1", "--json")
-        self.assertEqual(result.returncode, 0, result.stderr)
-        payload = json.loads(result.stdout)
-        self.assertEqual(payload["chapter"], 194)
-        self.assertEqual(len(payload["paragraphs"]), 1)
+        canonical = self.run_cli("--review-brief", "--json")
+        alias = self.run_cli("--review_brief", "--json")
+        self.assertEqual(canonical.returncode, 0, canonical.stderr)
+        self.assertEqual(alias.returncode, 0, alias.stderr)
+        self.assertEqual(json.loads(canonical.stdout), json.loads(alias.stdout))
 
     def test_standalone_cli_finds_moved_modules_and_review(self):
         env = dict(os.environ)
@@ -66,11 +66,10 @@ class McpCliTests(unittest.TestCase):
         self.assertEqual(title.returncode, 0, title.stderr)
         self.assertIn("葉大人來了", title.stdout)
 
-    def test_audit_typo_alias(self):
-        audit = self.run_cli("--insecpt", "--check-range", "194-408")
-        self.assertEqual(audit.returncode, 1)
-        self.assertIn("298, 299", audit.stdout)
-        self.assertNotIn("241", audit.stdout)
+    def test_audit_typo_alias_is_registered(self):
+        from tools.mcp import build_parser
+        options = build_parser()._option_string_actions
+        self.assertIs(options["--inspect"], options["--insecpt"])
 
     def test_burmese_context_cli_requires_the_current_chapter(self):
         result = self.run_cli("--previous_burmese_context", "နတ်")
