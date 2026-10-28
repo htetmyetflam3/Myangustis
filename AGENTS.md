@@ -41,10 +41,7 @@
 - Ask architecture questions plainly
 - maintain existing dir layout  and place new file appropiately
 - avoid performing task out of the scope however appropiate adjustment is necessary and keeping old logic for backward compability is prohibited and duplicated scripts are policy violation.
-- on PR request
-
-  - must execute all test and update   CHANGELOG.md update  must done before PR
-  - Append** a new dated entry in changelog.md update
+- on PR request : must execute all tests, maintain previous test suit record, Append** a new dated entry in changelog.md update at pr
 
  ```format
   ## [1.4.0] - 2026-09-08
