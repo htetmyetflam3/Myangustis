@@ -121,12 +121,11 @@
         },
         "pathContract": {
           "type": "object",
-          "required": ["path", "shipped", "dropInFor"],
+          "required": ["path", "shipped"],
           "additionalProperties": false,
           "properties": {
             "path": { "const": "engine-plugin.path.js" },
             "shipped": { "const": true },
-            "dropInFor": { "const": "Bridge/path.js" },
             "rootDerivation": { "const": "directory of this module, never process.cwd()" },
             "bridgeDepth": { "const": "one level: <root>/bridge" }
           }

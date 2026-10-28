@@ -78,3 +78,11 @@
 ### Verification
 - Focused Python: 34 passed, 18 subtests passed. Full Python: 343 passed, 7 failed, 3 skipped, 35 subtests passed; six failures require `MASTER_JSON_KEY`, and one requires the unported comparison POS view. No collection errors.
 - Node: 252 tests, 244 passed, 8 skipped.
+
+## [Unreleased] - 2026-10-29 — Remove root Bridge directory
+### Changed / Fixed / Removed
+- Remove the root `Bridge/path.js` re-export and its directory; callers use the shared engine entry instead.
+- Remove the obsolete schema and bootstrap references, and verify the root Bridge directory stays absent.
+### Verification
+- Node: 244 passed, 8 skipped; targeted engine and logging tests: 14 passed. Schema JSON, targeted ESLint, shell syntax and `git diff --check` passed.
+- Python: 343 passed, 7 failed, 3 skipped and 35 subtests passed; the same six sealed-dictionary key failures and one unported comparison POS failure remain.

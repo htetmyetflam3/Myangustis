@@ -10,15 +10,13 @@ import { fileURLToPath } from 'node:url';
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const engineEntry = await import('../../../Architecture/_index.js');
 const { BindEngine } = engineEntry;
-const facade = await import(path.join(REPO, 'Bridge', 'path.js'));
 const SAMPLE = 'ကောင်းကင်သည် ကြည်လင်သည်။\nအင်ဂျင် စမ်းသပ်ချက်။\n';
 const callerHash = () => randomBytes(36).toString('hex');
 
 test('engine entry exposes the single-boundary surface only', () => {
   assert.equal(typeof BindEngine, 'function');
   assert.deepEqual(Object.keys(engineEntry).sort(), ['BindEngine', 'ENV_RESULT', 'JUNK_DIR', 'getEngineData', 'getLogen']);
-  assert.deepEqual(Object.keys(facade), ['BindEngine']);
-  assert.equal(facade.BindEngine, BindEngine);
+  assert.equal(fs.existsSync(path.join(REPO, 'Bridge')), false);
 });
 
 test('hash-free syllable calls stream Burmese lines without POS', async () => {
