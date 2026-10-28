@@ -18,10 +18,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3] / "Proofreading" / "main"
-SCRIPT = ROOT / "Engine/export-comparison-data.mjs"
+ROOT = Path(__file__).resolve().parents[3] / "C.Proofreading" / "main"
+SCRIPT = ROOT / "tools/Burmese-Pos/export-comparison-data.js"
 GUARD = ROOT / "scraper/wasm/box/runtime-guard.mjs"
-RULES = ROOT / "Engine/knowledge/isTreasure/mainrules.js"
+RULES = Path(__file__).resolve().parents[3] / "Architecture/Engine/knowledge/isTreasure/mainrules.js"
 
 # The nine sections of the JSON head that the adapter must carry through.
 SECTIONS = (

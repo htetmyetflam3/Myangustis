@@ -15,8 +15,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import _paths  # noqa: F401 - configure the split proofreading modules
+
 HERE = Path(__file__).resolve().parent
-ROOT = Path(__file__).resolve().parents[3] / "Proofreading" / "main"
+ROOT = Path(__file__).resolve().parents[3] / "C.Proofreading" / "main"
 sys.path.insert(0, str(ROOT / "tools"))
 
 import audit_source  # noqa: E402

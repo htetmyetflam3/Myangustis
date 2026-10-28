@@ -7,15 +7,17 @@ import sys
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3] / "Proofreading" / "main"
-CLI = ROOT / "mcp.py"
+import _paths  # noqa: F401 - configure the split proofreading modules
+
+ROOT = Path(__file__).resolve().parents[3] / "C.Proofreading" / "main"
+CLI = ROOT / "tools" / "mcp.py"
 
 
 class McpCliTests(unittest.TestCase):
     def run_cli(self, *args):
         return subprocess.run(
             [sys.executable, str(CLI), *args], cwd=ROOT,
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, timeout=30, env=_paths.subprocess_env(),
         )
 
     def test_no_flags_prints_help_and_does_not_start_server(self):

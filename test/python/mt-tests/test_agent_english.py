@@ -7,9 +7,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3] / "Proofreading" / "main"
+import _paths  # noqa: F401 - configure the split proofreading modules
+
+ROOT = Path(__file__).resolve().parents[3] / "C.Proofreading" / "main"
 sys.path.insert(0, str(ROOT / "tools"))
-sys.path.insert(0, str(ROOT / "mt"))
+sys.path.insert(0, str(ROOT / "translate"))
 
 import agent_english  # noqa: E402
 import mcp_server  # noqa: E402

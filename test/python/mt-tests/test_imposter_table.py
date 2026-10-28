@@ -20,7 +20,7 @@ import unittest
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-ROOT = REPO / "Proofreading" / "main"
+ROOT = REPO / "C.Proofreading" / "main"
 DATA_REPO = next(p for p in Path(__file__).resolve().parents if (p / "index-path.js").is_file())
 DATA_BRIDGE = DATA_REPO / "tools-box/js/engine-data.js"
 
