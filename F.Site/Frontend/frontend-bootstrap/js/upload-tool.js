@@ -12,9 +12,10 @@ import {
   NOTICE,
 } from "./upload.js";
 import { isTerminal, pollDelivery, readDelivery, stateLabel } from "./delivery.js";
+import { onFileDrop } from "./file-drop.js";
 const CSRF_TIMEOUT_MS = 8000;
-// A file POST is not a small JSON GET: a 7 MB scan on a slow connection needs
-// minutes, not seconds. Give the upload room proportional to its size.
+
+
 const uploadTimeoutMs = (bytes) => Math.min(3_600_000, 60_000 + bytes * 0.08);
 const TOKEN_KEY = "akkhara:visitor";
 const store = () => {
@@ -36,8 +37,8 @@ async function csrfToken() {
   if (!body.csrfToken) throw new Error("CSRF endpoint returned no token");
   return body;
 }
-// fetch does not expose upload progress. XHR lets a slow 16 MB connection show
-// real byte progress instead of an unexplained second spinner.
+
+
 function postUpload(body, csrf, timeout, onProgress) {
   return new Promise((resolve, reject) => {
     const xhr = new window.XMLHttpRequest();
@@ -203,10 +204,10 @@ export function initUploadTool() {
     fileLabel.textContent = `${flow} · pdf / docx`;
     paintQuota();
   }
-  /** A rejected file must leave the widget exactly as it was before the pick:
-      no picked file, no stale input value (or re-choosing the SAME file would
-      not fire a change event and the widget would look stuck), and the notice
-      visible on the default drop state. No reload needed. */
+
+
+
+
   function rejectFile(notice) {
     picked = null;
     input.value = "";
@@ -331,9 +332,9 @@ export function initUploadTool() {
         serverUsed = usedFromRemaining(answer?.remaining) ?? DAILY_LIMIT;
         note = "Your daily limit is used up. The server refused this upload.";
       } else {
-        // The server answered and refused: show ITS reason, never an internal
-        // payload dump. A 400 here means the request itself was rejected --
-        // nothing was processed, and the user can fix or retry.
+
+
+
         failed = true;
         note = answer?.error
           ? `The server refused this upload (${response.status}): ${answer.error}`
@@ -346,15 +347,15 @@ export function initUploadTool() {
         : "The upload could not reach the server. Check the connection and try again.";
     }
     const state = readQuota(store(), visitorToken());
-    // A daily slot is only spent when the server actually took the job (or
-    // refused it for quota). A failed request must not eat one of the three
-    // daily uploads.
+
+
+
     used = serverUsed ?? (failed ? state.used : state.used + 1);
     writeQuota(store(), { ...state, used });
     sendingRow.hidden = true;
     notice.hidden = true;
-    // Successful jobs use the delivery card as the single source of truth.
-    // Do not show a contradictory "Submitted" card beside a later "Failed" state.
+
+
     sent.hidden = Boolean(accepted);
     sent.classList.toggle("is-failed", failed);
     sentTitle.textContent = failed ? "Not submitted" : "Submitted";
@@ -390,20 +391,7 @@ export function initUploadTool() {
   document
     .querySelectorAll("[data-up-confirm]")
     .forEach((button) => button.addEventListener("click", () => send(true)));
-  drop.addEventListener("dragover", (event) => {
-    event.preventDefault();
-    drop.classList.add("is-over");
-  });
-  drop.addEventListener("dragleave", (event) => {
-    event.preventDefault();
-    drop.classList.remove("is-over");
-  });
-  drop.addEventListener("drop", (event) => {
-    event.preventDefault();
-    drop.classList.remove("is-over");
-    const [file] = event.dataTransfer.files;
-    if (file) take(file);
-  });
+  onFileDrop(drop, take);
   input.addEventListener("change", (event) => {
     const [file] = event.target.files;
     if (file) take(file);
@@ -414,7 +402,7 @@ export function initUploadTool() {
     paintFlow();
     reset();
   });
-  
+
   window.addEventListener("akkhara:upload-focus", () => {
     used = readQuota(store(), visitorToken()).used;
     if (!plan) reset();
@@ -424,7 +412,7 @@ export function initUploadTool() {
   used = readQuota(store(), visitorToken()).used;
   paintQuota();
   csrfToken()
-    .then((session) => {
+    .then(() => {
       paintQuota();
     })
     .catch(() => {});

@@ -84,7 +84,7 @@ test('hidden fires for both analysis jobs and sends metadata only', async () => 
     assert.equal(meta.filename, 'stamp__doc.pdf');
     assert.equal(meta.userId, 'user');
     assert.equal(meta.sessionId, 'session');
-    // analysis labels: handling in `method`, mode in `task`.
+
     assert.equal(meta.method, 'extracting');
     assert.equal(meta.task, 'default');
     assert.equal(meta.job, job);
@@ -117,7 +117,7 @@ test('hidden also fires for analysis text metadata, not raw text alone', async (
   assert.equal(calls[0].filename, 'stamp__pasted.txt');
   assert.equal(calls[0].method, 'extracting');
   assert.equal(calls[0].task, 'default');
-  // no `job` under analysis -- that is the converter column's label.
+
   assert.equal(calls[0].job, null);
   await fs.rm(dir, { recursive: true, force: true });
 });

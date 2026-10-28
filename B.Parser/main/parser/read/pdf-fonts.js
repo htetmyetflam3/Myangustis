@@ -96,13 +96,13 @@ export function scanLiteralString(data, i) {
     } else if (c === "\r") {
       if (i < n && data[i] === "\n") i += 1;
       out += "\n";
-    } else { 
+    } else {
       if (i >= n) break;
       const b = data.charCodeAt(i);
       i += 1;
       if (ESCAPES.has(b)) {
         out += ESCAPES.get(b);
-      } else if (b >= 0x30 && b <= 0x37) { 
+      } else if (b >= 0x30 && b <= 0x37) {
         let val = b - 0x30;
         for (let k = 0; k < 2; k += 1) {
           if (i < n && data.charCodeAt(i) >= 0x30 && data.charCodeAt(i) <= 0x37) {
@@ -116,7 +116,7 @@ export function scanLiteralString(data, i) {
       } else if (b === 0x0d) {
         if (i < n && data[i] === "\n") i += 1;
       } else {
-        out += String.fromCharCode(b); 
+        out += String.fromCharCode(b);
       }
     }
   }
@@ -134,7 +134,7 @@ function hexToByteString(text) {
   let out = "";
   for (let i = 0; i < digits.length; i += 2) {
     const v = Number.parseInt(digits.slice(i, i + 2), 16);
-    if (Number.isNaN(v)) return ""; 
+    if (Number.isNaN(v)) return "";
     out += String.fromCharCode(v);
   }
   return out;
@@ -153,7 +153,7 @@ export class Lexer {
     this.pos = pos;
   }
 
-  
+
   nextToken() {
     const { data } = this;
     for (;;) {
@@ -190,8 +190,8 @@ export class Lexer {
       if (g.dclose !== undefined) return ["dclose", null];
       if (g.aopen !== undefined) return ["aopen", null];
       if (g.aclose !== undefined) return ["aclose", null];
-      if (g.popen !== undefined || g.pclose !== undefined) continue; 
-      
+      if (g.popen !== undefined || g.pclose !== undefined) continue;
+
       return ["kw", new PdfKeyword(g.other)];
     }
   }
@@ -218,7 +218,7 @@ const isIntLike = (v) => typeof v === "number" || typeof v === "boolean";
 export function parseObject(data, pos = 0) {
   const lex = new Lexer(data, pos);
   const stack = [];
-  const containers = []; 
+  const containers = [];
   for (;;) {
     const tok = lex.nextToken();
     if (tok === null) break;
@@ -330,7 +330,7 @@ export class CMapEncoding {
     this.identity = identity;
     this.widths = new Set();
     this.single = new Map();
-    this.ranges = []; 
+    this.ranges = [];
   }
 
   codeLengths() {
@@ -351,7 +351,7 @@ export class CMapEncoding {
     return this.widths.has(width);
   }
 
-  
+
   * iterCodes(data) {
     const lengths = this.codeLengths();
     let i = 0;
@@ -461,10 +461,10 @@ export function mapCode(codeToUni, cid) {
   const v = codeToUni.get(cid);
   if (v === undefined) {
     if (codeToUni instanceof CmapIdentityMap) {
-      if (cid === 0) return " "; 
+      if (cid === 0) return " ";
       if (cid >= 0x20 && cid <= 0x10ffff && !isSurrogate(cid)) {
         const ch = pyChr(cid);
-        if (!isCategoryC(ch)) return ch; 
+        if (!isCategoryC(ch)) return ch;
       }
     }
     return null;
@@ -492,10 +492,10 @@ export class DocumentDecoding {
     this.legacyTextFix = kind === "legacy";
     this.legacyCodePage = legacyCodePage;
     this.legacyFontNames = legacyFontNames ? new Set(legacyFontNames) : null;
-    /* Glyph ids the cmap cannot name, recovered from their outlines by
-       codepage/vector-repair.mjs. Consulted ONLY where the decoder would
-       otherwise emit nothing, so it can never displace a glyph that
-       already decoded. */
+
+
+
+
     this.vectorRepair = vectorRepair;
     this.loader = null;
     this._decoders = new Map();
@@ -518,36 +518,36 @@ export function asDocumentDecoding(decoding) {
   return new DocumentDecoding("tounicode", decoding);
 }
 
-/* A shaped variant can be a variant of a variant: ု has a form for ာ and
-   another for the descended consonants, and the second is reached from the
-   first. Eight hops is far past any real Indic chain and stops a font whose
-   tables loop back on themselves from hanging the extraction worker. */
+
+
+
+
 const MAX_SHAPING_DEPTH = 8;
 
-/* Code points that are a blank in every font, used to recognise the one gid a
-   /ToUnicode " " entry may legitimately name. */
+
+
 const SPACE_CODES = new Set([
   0x0009, 0x0020, 0x00a0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004,
   0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200a, 0x2028, 0x2029, 0x202f,
   0x205f, 0x3000,
 ]);
 
-/**
- * Fill in the glyph ids the cmap cannot name.
- *
- * `table` is gid -> code point, built from the cmap. Every entry the reverse
- * GSUB table can explain is added as a STRING (one variant may stand for a
- * ligature of two code points), while the cmap's own entries stay numbers --
- * FontDecoder._docLookup accepts either.
- */
+
+
+
+
+
+
+
+
 function resolveShapedGlyphs(fontBytes, table) {
   const reverse = parseTtfGsubReverse(fontBytes);
   if (!reverse.size) return table;
   const walking = new Set();
   const resolve = (gid, depth) => {
     const direct = table.get(gid);
-    // A number is a cmap entry; a string is a variant this pass already
-    // resolved (one shaped glyph can stand for a two-code-point ligature).
+
+
     if (direct !== undefined) {
       return typeof direct === "number" ? String.fromCodePoint(direct) : direct;
     }
@@ -570,12 +570,12 @@ function resolveShapedGlyphs(fontBytes, table) {
     if (text) table.set(gid, text);
   }
 
-  /* Third pass: the positional forms neither the cmap nor a substitution can
-     name. A family like {238, 240, 242, 246} is four interchangeable forms of
-     the medial ra -- only one of which (238) has a Unicode to give -- so once
-     any member is known the rest inherit it. Three rounds, because naming one
-     family can name the next: the same table holds a parallel set for the
-     medial ya that no member of resolves on its own. */
+
+
+
+
+
+
   const slots = parseTtfVariantSlots(fontBytes);
   for (let round = 0; round < 3; round += 1) {
     let added = false;
@@ -589,9 +589,9 @@ function resolveShapedGlyphs(fontBytes, table) {
         if (value === undefined) continue;
         const text = typeof value === "number" ? String.fromCodePoint(value) : value;
         if (!text) continue;
-        // Direct cmap entries outrank anything GSUB had to derive, and a
-        // single code point outranks a ligature: ြ names the family, ြွ does
-        // not -- it is ြ with something else attached.
+
+
+
         const rank = (reverse.has(gid) ? 10 : 0) + (text.length > 1 ? 1 : 0);
         if (rank < bestRank) { bestRank = rank; best = value; }
       }
@@ -637,7 +637,7 @@ export class FontResourceLoader {
     return this._getStream(this.objects, ref.num, ref.gen);
   }
 
-  
+
   reversedFontCmap(descriptor) {
     descriptor = this.resolve(descriptor);
     if (!(descriptor instanceof Map)) return new Map();
@@ -650,22 +650,22 @@ export class FontResourceLoader {
       const table = new Map();
       if (data) {
         const cmap = this._parseTtfCmap(data) || new Map();
-        // Several code points can share one glyph: AnonymousPro maps both
-        // U+0020 and U+00F6 to gid 3. Reversing the cmap first-wins let
-        // whichever the cmap happened to list first claim the glyph, so every
-        // space in a document came back as a diaeresis. Take the lowest code
-        // point, which keeps ASCII ahead of the Latin-1 supplement.
+
+
+
+
+
         for (const [uni, gid] of cmap) {
           if (!gid) continue;
           const prev = table.get(gid);
           if (prev === undefined || uni < prev) table.set(gid, uni);
         }
-        /* Second pass: the vowel signs, medials and tone marks are not in
-           the cmap at all -- shaping replaced them with positional variants
-           whose glyph ids belong to no code point. Walk GSUB backwards so
-           each variant is traced to the code point it was drawn instead of.
-           Without this the identity fallback publishes the raw gid, and
-           Myanmar text comes out as Latin-1 (`စပàဘငé`). */
+
+
+
+
+
+
         resolveShapedGlyphs(data, table);
       }
       this._gidCache.set(cacheKey, table);
@@ -674,7 +674,7 @@ export class FontResourceLoader {
     return new Map();
   }
 
-  
+
   tounicodeOf(fontDict) {
     const ref = fontDict.get("ToUnicode");
     if (!(ref instanceof PdfRef)) return null;
@@ -686,7 +686,7 @@ export class FontResourceLoader {
     return mapping;
   }
 
-  
+
   cidToGid(descendant) {
     const entry = descendant.get("CIDToGIDMap");
     if (entry instanceof PdfRef) {
@@ -701,7 +701,7 @@ export class FontResourceLoader {
     return null;
   }
 
-  
+
   pageFontResources(pageNum, pageGen = 0) {
     let page = this.resolve(new PdfRef(pageNum, pageGen));
     const fonts = new Map();
@@ -777,13 +777,13 @@ export function detectLegacyLayoutFonts(objects, getStreamFn, parseToUnicodeFn) 
   return found;
 }
 
-/**
- * The legacy-layout fonts' own faces: /BaseFont plus the /FontDescriptor
- * metrics, for every font detectLegacyLayoutFonts flagged. A PDF.js font id
- * (which never exposes the /BaseFont) carries the same ascent/descent, so a
- * pixel-identified face can be matched back to its real name by metrics --
- * the name the decode-time font gate is keyed on.
- */
+
+
+
+
+
+
+
 export function legacyFontFaces(objects, getStreamFn, parseToUnicodeFn) {
   const faces = [];
   for (const ref of detectLegacyLayoutFonts(objects, getStreamFn, parseToUnicodeFn)) {
@@ -841,15 +841,15 @@ export class FontDecoder {
   get _trustedToUnicode() {
     if (!this.toUnicode) return null;
     if (this.doc.trustFontToUnicode) return this.toUnicode;
-    // A vector-built layout identifies the actual Myanmar face by rendered
-    // shape. Other simple fonts on the same page (DejaVu/Times headings in the
-    // bg-mlc fixture) keep their own valid /ToUnicode instead of being pushed
-    // through the document's Myanmar keyboard map.
+
+
+
+
     if (this.doc.kind === "legacy" && !this._isSelectedLegacyFont) return this.toUnicode;
     return null;
   }
 
-  
+
   _legacyLookup(code) {
     const page = this.doc.legacyCodePage;
     if (!page) return null;
@@ -870,51 +870,51 @@ export class FontDecoder {
     return out;
   }
 
-  
-  /* `cid` is the code as the content stream wrote it; `key` is that code after
-     CIDToGIDMap. They differ only for fonts that carry an explicit map. */
+
+
+
   _docLookup(key, cid = null) {
     if (this.doc.map === IDENTITY) return mapCode(IDENTITY, key);
     if (this.doc.keyKind === "gid" && this.ownGids.size) {
       const hit = this.ownGids.get(key);
       if (hit !== undefined) return typeof hit === "number" ? pyChr(hit) : hit;
-      /* Where the font program is silent, ask the font's own /ToUnicode.
 
-         A cmap is written from the font's point of view: it names a glyph
-         only if some code point reaches it directly. Conjuncts and positional
-         variants are reached by shaping, never by a code point, so they are
-         absent from it -- and a subset that keeps no GSUB (this book's
-         MyanmarText subsets keep none) then has NO path from those glyphs to
-         text. They come out as their own glyph ids: U+01F6 printed as L·, the
-         ဉ္ƒ conjunct of စဉ္ƒ.
 
-         /ToUnicode is written from the page's point of view instead -- it says
-         what each drawn code stands for -- so it does list them, often as
-         several code points at once (`<1009103A>` for ဉ္ƒ). It is consulted
-         only where the cmap has nothing, so a bad entry can never displace a
-         good one. */
+
+
+
+
+
+
+
+
+
+
+
+
+
       const own = cid !== null && this.toUnicode ? this.toUnicode.get(cid) : undefined;
       if (own) {
-        /* Not every glyph in that table is named correctly. The author has to
-           account for every code the page draws, and for the ones whose
-           meaning is not obvious -- a conjunct, a medial ra, a stacked pair --
-           the filler of choice is a space. Left alone, နှင့် prints as
-           "န င့်": the word is split where the unnamed glyph stood.
 
-           So a space is believed only for a glyph the font's own cmap already
-           reaches from a space code point; that is the font's real blank.
-           Anywhere else the entry is that filler, and the honest reading is to
-           draw nothing rather than to split the word or to publish a glyph id
-           as a character. */
+
+
+
+
+
+
+
+
+
+
         if (own.trim() !== "" || this._isSpaceGid(cid)) return own;
-        /* Nothing to draw, so the glyph would vanish. Ask the shape
-           corpus first: the outline is still in the file even though its
-           name is not. This is where the medials were being lost -- the
-           reader saw အကီးအကဲ where the page said အကြီးအကဲ. */
+
+
+
+
         const repaired = this._vectorRepairLookup(key, cid);
         if (repaired !== null) return repaired;
-        /* Set by the pipeline's probe pass, which walks a few pages first
-           to learn which ids are unnameable before voting on them. */
+
+
         if (this.doc && this.doc.recordBlind) this.doc.recordBlind.add(key);
         return "";
       }
@@ -922,7 +922,7 @@ export class FontDecoder {
     return mapCode(this.doc.map, key);
   }
 
-  /* The gids this font reaches from a space code point, per its own cmap. */
+
   _isSpaceGid(gid) {
     if (this._spaceGids === undefined) {
       const set = new Set();
@@ -931,17 +931,17 @@ export class FontDecoder {
       }
       this._spaceGids = set;
     }
-    /* A cmap that knows no space at all cannot contradict the table, so the
-       table's spaces stand. */
+
+
     return this._spaceGids.size === 0 || this._spaceGids.has(gid);
   }
 
-  /**
-   * A glyph id the cmap cannot name, read from its outline instead.
-   *
-   * Returns null when there is no repair table or this id is not in it,
-   * so the caller keeps its existing behaviour.
-   */
+
+
+
+
+
+
   _vectorRepairLookup(key, cid = null) {
     const repair = this.doc ? this.doc.vectorRepair : null;
     if (!repair || !repair.byGid || !repair.byGid.size) return null;
@@ -958,7 +958,7 @@ export class FontDecoder {
     return this._cidToGid(cid);
   }
 
-  
+
   decodeCode(code, cid = null) {
     const tu = this._trustedToUnicode;
     if (tu !== null) {
@@ -979,7 +979,7 @@ export class FontDecoder {
     return this._docLookup(key, cid);
   }
 
-  
+
   decode(data) {
     if (!data) return "";
     let out = "";
@@ -1003,29 +1003,29 @@ export class FontDecoder {
   }
 }
 
-/**
- * The decoder used when a `Tf` names a font this page's resources do not hold
- * (or when text is drawn before any `Tf`). It has no /Encoding of its own, so
- * it falls back to the document-level decoding.
- *
- * One important asymmetry, and the reason this class is commented at length:
- * when the document decoding is the embedded-font cmap, its keys are GLYPH
- * IDS. A hex string under Identity-H really does carry glyph ids, so that
- * branch is right. A one-byte literal string does not: it carries character
- * codes for a simple font, and pushing those through a gid table silently
- * renumbers every character by the font's glyph order.
- *
- * That is not hypothetical. In the 100-page Zawgyi-One sample, Zawgyi-One
- * lays glyphs out at gid = ascii - 29, so byte 0x28 "(" resolved to gid 40,
- * whose cmap entry is "E"; ")" became "F", "G" became "d", '"' became "?".
- * The published sample output still shows "Eရှီယန်F" and "dod of plaughter"
- * from a build that took this path. Byte codes therefore go through
- * WinAnsiEncoding — the standard reading for a simple font — and only reach
- * the gid table when WinAnsi has nothing to say.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export class UnsetFontDecoder extends FontDecoder {
-  
-  
+
+
   static _hasNulByte(s) {
     for (let i = 0; i < s.length; i += 1) if (s.charCodeAt(i) === 0) return true;
     return false;
@@ -1043,8 +1043,8 @@ export class UnsetFontDecoder extends FontDecoder {
       }
       return out;
     }
-    
-    
+
+
     const byteCodes = this.doc.keyKind === "gid" && !UnsetFontDecoder._hasNulByte(data);
     const winAnsi = byteCodes ? BASE_ENCODINGS.get("WinAnsiEncoding") : null;
     let out = "";

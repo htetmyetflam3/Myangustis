@@ -1,4 +1,4 @@
-/* --- main/grapheme/traverser.js --- */
+
 import { getStepKey, findEntry, getTree, getRtlTree, getPosTree } from './Tree.loaded.js';
 import { walkReverse } from './reverse.js';
 import {

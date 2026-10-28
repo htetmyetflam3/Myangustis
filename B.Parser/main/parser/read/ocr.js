@@ -77,13 +77,13 @@ export async function initOcr({ langs = DEFAULT_LANGS, log = () => {} } = {}) {
       const options = {
         cacheMethod: "none",
         logger: () => {},
-        
-        
+
+
         workerPath: path.join(path.dirname(fileURLToPath(import.meta.url)), "ocr-no-relaxedsimd.cjs"),
       };
       if (found) {
         options.langPath = found.path;
-        options.gzip = found.gzip; 
+        options.gzip = found.gzip;
       } else {
         fs.mkdirSync(OCR_CACHE_DIR, { recursive: true });
         options.cachePath = OCR_CACHE_DIR;
@@ -118,7 +118,7 @@ function flattenOcrRegions(blocks) {
   return regions;
 }
 
-/** OCR text plus pixel geometry for localizing scanner/unknown regions. */
+
 export async function ocrImageDetailed(source, { log = () => {} } = {}) {
   const bytes = Buffer.isBuffer(source) ? source : Buffer.from(source);
   const worker = await initOcr({ log });
@@ -149,8 +149,8 @@ export async function ocrPdfPage(source, pageNumber, { scale = 3, log = () => {}
   if (!Number.isFinite(scale) || scale <= 0 || scale > 4) {
     throw new Error("OCR scale must be greater than zero and at most 4");
   }
-  // Lossless in and out: tesseract thresholds the page itself, so a lossy
-  // encode here only adds ringing around the marks it is asked to read.
+
+
   const rendered = await renderPdfPagePng(source, pageNumber, { scale, maxPixels: MAX_OCR_PIXELS });
   const pixels = rendered.width * rendered.height;
   if (!Number.isSafeInteger(pixels) || pixels > MAX_OCR_PIXELS) {

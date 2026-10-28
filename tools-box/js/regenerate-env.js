@@ -24,7 +24,7 @@ const SECRET_KEYS = [
 ];
 
 function randomSecret() {
-  // 32 random bytes = 256 bits, represented by 64 hexadecimal characters.
+
   return crypto.randomBytes(32).toString('hex');
 }
 
@@ -86,7 +86,7 @@ function replaceManagedValues(content, values) {
 
     const key = match[2];
 
-    // Remove duplicate managed assignments so a stale duplicate cannot win.
+
     if (seen.has(key)) {
       continue;
     }
@@ -172,12 +172,12 @@ export async function regenerateEnv({
   const original = await fs.readFile(target, 'utf8');
   const existing = readAssignments(original);
 
-  // TRUST_PROXY is topology configuration, not a random secret.
-  // Preserve its existing value.
+
+
   const currentTrustProxy = existing.get('TRUST_PROXY') ?? '';
 
-  // A blank EDGE_SECRET keeps direct-hosted operation enabled.
-  // An existing nonblank value is rotated.
+
+
   const currentEdgeSecret = semanticValue(existing.get('EDGE_SECRET'));
   const edgeEnabled = enableEdge || currentEdgeSecret.length > 0;
 
@@ -192,7 +192,7 @@ export async function regenerateEnv({
     values.set(key, randomSecret());
   }
 
-  // Ensure cookie encryption and session signing never share a key.
+
   if (values.get('COOKIE_SECRET') === values.get('SESSION_SECRET')) {
     values.set('SESSION_SECRET', randomSecret());
   }
@@ -211,7 +211,7 @@ export async function regenerateEnv({
       mode: 0o600,
     });
 
-    // Atomic replacement on the same filesystem.
+
     await fs.rename(temporary, target);
     await fs.chmod(target, 0o600);
   } catch (error) {

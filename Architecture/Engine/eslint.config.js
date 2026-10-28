@@ -53,7 +53,7 @@ export default [
       'ENGINE/Part/Engine/_knowledge/mainrules.js',
       'ENGINE/Part/Engine/_knowledge/template.js',
       'jsconfig.js',
-      // generated build artifacts (obfuscated / compiled) — never lint them
+
       'MonoSyllabism/map/loader.js',
       'MonoSyllabism/mapbuilder/.build/**',
     ],

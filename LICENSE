@@ -151,9 +151,6 @@ pyarrow (Apache-2.0), pypdf (BSD), requests (Apache-2.0), selenium
 (Apache-2.0), tenacity (Apache-2.0), trio (MIT/Apache-2.0), trio-websocket
 (MIT), typing_extensions (PSF/MIT), urllib3 (MIT), websocket-client (Apache-2.0).
 
-The github-cli package was removed after audit because its license field
-was a non-SPDX custom URL and it was not imported anywhere in the codebase.
-
 Nothing in this Agreement modifies or restricts your rights in those
 third-party components under their own upstream licenses; this proprietary
 license applies only to the Licensor's own code and materials.

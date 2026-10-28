@@ -21,8 +21,8 @@ function execute(args) {
       { cause },
     )));
     child.once("close", (code, signal) => {
-      // qpdf exit 3 means warnings with a valid output; all other nonzero
-      // statuses are fatal.
+
+
       if (code === 0 || code === 3) resolve({ warnings: stderr.trim() });
       else reject(new Error(`qpdf exited with ${signal ? `signal ${signal}` : `status ${code}`}${stderr.trim() ? `: ${stderr.trim()}` : ""}`));
     });
@@ -38,7 +38,7 @@ export async function qpdfAvailable() {
   }
 }
 
-/** Run qpdf against private temporary files and return the rewritten bytes. */
+
 export async function runQpdf(bytes, args = []) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "linga-qpdf-"));
   const input = path.join(dir, "input.pdf");

@@ -19,3 +19,13 @@
 - Six sealed-dictionary tests require `MASTER_JSON_KEY`, which is unavailable in this environment; they remain enabled automatically when that key is supplied.
 - Two existing skips require unavailable PDF/OCR fixtures.
 - This result covers the complete Node suite invoked by `npm test`, not an unexecuted Python or deployed-service suite.
+
+## [Unreleased] - 2026-10-28 — Engine data and cleanup
+### Added
+- Add a JavaScript bridge for Python callers to access the engine-owned sealed data.
+- Add a JavaScript comment cleaner that preserves ESLint directives and meaningful empty-block comments.
+### Changed / Fixed / Removed
+- Move sealed engine data to `Architecture/Engine/.data`, with lazy access through the shared path chain and no root `.data` fallback.
+- Route Python POS comparison and tagging through the engine instead of maintaining a separate Python POS code map.
+- Remove the obsolete scraper run-end text flush; per-file upload processing continues to segment and write Parquet rows.
+- Remove ordinary JavaScript comments while retaining ESLint and tool directives, and remove the obsolete package-removal explanation from the license.

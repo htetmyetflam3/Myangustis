@@ -1,21 +1,21 @@
 #!/usr/bin/env node
-// standalone-web — self-contained express front for the native Engine/main.
-//
-// Gen2 job contract (Site/Backend/gateway/generator/engine.js dispatcher):
-//
-//   POST /job   x-api-key: SITE_TO_ENGINE_KEY (32 hex)
-//               JSON: jobToken, formId, submitId, userId, sessionId, filename,
-//                     extension, method, task, job
-//               -> fast 2xx accept (Site's accept timeout is 3 s); the actual
-//                  work happens on a background worker.
-//   GET /health open liveness probe.
-//
-// Worker per accepted job (engine-initiated, Site queue is the authority):
-//   pullSource -> native pipeline -> pushResult, see site-client.mjs.
-//
-// Run:  node Engine/host/server.mjs
-// express resolves from the workspace root node_modules (root package.json
-// already declares express; Engine/main/package.json does too).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import express from 'express';
 import { config, keyShape, timingSafeEq } from './config.js';
 import { JobStore, SlotLimiter, JOB_STATES } from './job-store.js';
@@ -23,18 +23,18 @@ import { pullSource, pushResult, SiteClientError } from './site-client.js';
 import { runEngineJob } from './runner/engine-runner.js';
 
 const DISPATCH_FIELDS = ['jobToken', 'formId', 'submitId', 'userId', 'sessionId', 'filename', 'extension', 'method', 'task', 'job'];
-// The 7 fields the Site queue re-validates as non-empty strings on pull/push.
+
 const META_FIELDS = ['jobToken', 'formId', 'submitId', 'userId', 'sessionId', 'filename', 'extension'];
 
 const store = new JobStore({ max: config.jobStoreMax, ttlMs: config.jobTimeoutMs });
 const slots = new SlotLimiter(config.maxConcurrent);
 
-// ── validating layer (ported from the staging api-server.js gate) ──
-// Three checks, fail closed: (1) a usable inbound key exists and the
-// presented x-api-key matches it timing-safely; (2) the caller's socket IP
-// is on config.allowedIps; (3) when the caller sends Origin/Referer its
-// host must be on config.allowedOrigins — server-to-server fetches send
-// neither, so key + IP alone gate them. /health stays open.
+
+
+
+
+
+
 function originHost(req) {
   const raw = req.headers.origin || req.headers.referer || '';
   if (!raw) return null;
@@ -79,9 +79,9 @@ function validateJobBody(body) {
   );
   if (badMeta.length) return { error: `missing or invalid job metadata: ${badMeta.join(', ')}` };
   if (store.get(metadata.jobToken)) return { error: 'jobToken already accepted', status: 409 };
-  // One active engine round per file: refuse when a preceding request for the
-  // same formId is still PENDING/RUNNING. Terminal rounds allow a fresh round
-  // (the Site mints a new jobToken for it).
+
+
+
   const predecessor = store.activeByFormId(metadata.formId);
   if (predecessor) {
     return {
@@ -124,14 +124,14 @@ export function createApp() {
     res.status(200).json({ ok: true, service: 'engine-standalone-web', port: config.port }),
   );
 
-  // Fail closed: a gate that cannot validate must never open.
+
   app.post('/job', gated, (req, res) => {
     const { metadata, error, status } = validateJobBody(req.body);
     if (error) return res.status(status ?? 400).json({ error });
 
     const record = store.accept(metadata);
-    // Fire-and-forget: the dispatcher only waits for this accept, never for
-    // the pipeline. Results come back through the Site queue's /result route.
+
+
     processJob(record).catch((err) => {
       console.error('[standalone-web] worker crashed:', err);
       store.update(record.jobToken, { state: JOB_STATES.FAILED, error: err.message, terminal: true });
@@ -139,7 +139,7 @@ export function createApp() {
     return res.status(202).json({ accepted: true, jobToken: record.jobToken, state: record.state });
   });
 
-  // Diagnostics for the operator (same gate as /job); never exposed to the Site.
+
   app.get('/jobs', gated, (_req, res) => res.status(200).json({ jobs: store.snapshot() }));
 
   app.use((err, _req, res, _next) => res.status(err.status ?? 400).json({ error: err.message }));

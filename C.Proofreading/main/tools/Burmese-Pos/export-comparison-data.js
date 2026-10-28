@@ -1,29 +1,30 @@
-// Comparison DATA adapter only. Does not call the engine segmentation
-// pipeline (no BindEngine here): it packages master/rules evidence for the MT
-// comparison side.
-//
-// New-engine-shape status:
-//   * mapperNormalize/toBurmeseStr used to be deep-imported from the engine
-//     map loader. The engine now exposes only its single boundary
-//     (Engine/index.js -> BindEngine); normalizer access for this adapter must
-//     be re-added as an explicit Engine/index.js export when the WASM box that
-//     hosts the guarded normalizer is wired into this plugin again.
-//   * POS_MAP came from MonoSyllabism/graph/disassembler.js, which was removed
-//     with the graph build step — the engine loads the prebuilt .cache-tree and
-//     has no POS-code lookup table anymore. The comparison pos_codes view is
-//     therefore UNPORTED, not silently nulled: the run refuses below until a
-//     replacement table is supplied by the owner.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { getBox, assertMapData } from '../../../../Engine/architecture/MonoSyllabism/map/host.mjs';
-import { readMasterJson, MASTER_ENC } from '../../../secure.js';
+import { getEngineData } from '../../../../index-path.js';
+const { readMasterJson, MASTER_ENC } = await getEngineData();
 
-// Removed with the graph/build.js era. See header: populate from the owner's
-// new POS-code source to re-enable the comparison export.
+
+
 const POS_MAP = null;
-const ENGINE_NORMALIZER = null; // was { mapperNormalize, toBurmeseStr }
+const ENGINE_NORMALIZER = null;
 const { mapperNormalize, toBurmeseStr } = ENGINE_NORMALIZER ?? {};
 
 if (globalThis[Symbol.for('proofreading.scraper.wasm-only')] !== true) {
@@ -32,7 +33,7 @@ if (globalThis[Symbol.for('proofreading.scraper.wasm-only')] !== true) {
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const [destination, extraFormsFile] = process.argv.slice(2);
 if (!destination) throw new Error('usage: export-comparison-data.mjs OUTPUT_JSON [EXTRA_FORMS_JSON]');
-// Loud, documented block — never emit pos_codes/normalizations as nulls.
+
 if (POS_MAP === null || ENGINE_NORMALIZER === null) {
   throw new Error(
     'export-comparison-data: comparison POS view is unported after the graph/build.js ' +
@@ -42,18 +43,18 @@ if (POS_MAP === null || ENGINE_NORMALIZER === null) {
 }
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const read = relative => fs.readFileSync(path.join(ROOT, relative));
-// Single sealed master at the repo root: its bytes are fingerprinted directly,
-// its content comes through secure.js (root .env key + sealed cache).
+
+
 const masterPath = 'master.json.enc';
 const rulesPath = 'Engine/knowledge/isTreasure/mainrules.js';
 const masterBytes = fs.readFileSync(MASTER_ENC), rulesBytes = read(rulesPath);
 
-// mainrules.js is a JSON object followed by a JavaScript block —
-// `const MYANMAR_GRAMMAR_SEQUENCES = [...]`, single-quoted and commented. It is
-// not a JSON document end to end, so parse the JSON head only; the sequence
-// array is the engine's business and `mt/mt_compare.py` reads it as text. No
-// JavaScript is evaluated here. Trailing commas in the head (the owner's hand
-// edits leave one) are dropped outside string literals.
+
+
+
+
+
+
 function parseRules(bytes) {
   const text = bytes.toString('utf8');
   const marker = text.search(/\bconst\s+MYANMAR_GRAMMAR_SEQUENCES\s*=/);
@@ -108,7 +109,7 @@ function walkArrays(value, parts, source, family) {
   if (Array.isArray(value)) {
     const seen = new Set();
     for (const form of value) {
-      if (seen.has(form)) continue; // duplicate evidence is not counted twice
+      if (seen.has(form)) continue;
       seen.add(form);
       add(form, {source, data_path: parts.join('.'), role_path: parts,
         family, pos_code: POS_MAP[families[family]],
@@ -140,7 +141,7 @@ for (const [base, entry] of Object.entries(master.resolution.single)) {
     }
   }
 }
-// Keep the owner's literal "tonkens" key; do not silently rename the schema.
+
 for (const [variant, forms] of Object.entries(master.resolution.group?.tonkens ?? {})) {
   for (const form of forms) add(form, {source:'resolution_group',
     data_path:`resolution.group.tonkens.${variant}`, variant});

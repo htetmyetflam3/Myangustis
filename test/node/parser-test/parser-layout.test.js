@@ -33,7 +33,7 @@ test("relocated parser has every boot-critical sidecar", () => {
   const files = validatePraserAssets();
   assert.ok(files.length >= 10);
   assert.ok(files.every(isFile));
-  // Constant paths point into the B.Parser tree (restructured layout).
+
   assert.ok(PARSED_ROOT.endsWith("B.Parser/main"), `PARSED_ROOT=${PARSED_ROOT}`);
   assert.ok(PARSER_DIR.endsWith("B.Parser/main/parser"), `PARSER_DIR=${PARSER_DIR}`);
   assert.ok(PRASER_JS.endsWith("B.Parser/main/parser/manager.js"), `PRASER_JS=${PRASER_JS}`);

@@ -1,13 +1,13 @@
-// Quality tagger shim — the JS side tag.py drives as a node child process.
-//
-// One job: run the engine's path-A tagger over one source file and write a
-// stats JSON whose raw_pos_path / syllable_path point at the two views the
-// Python quality layer parses. No WASM guard, no bundle layout, no engine
-// internals on this side — the single engine entry (BindEngine) is reached
-// through the repo-root Bridge facade, and the engine verifies its own
-// prebuilt tree internally before anything is segmented.
-//
-// usage: node tag-both.mjs SOURCE_TEXT WORK_DIR RESULT_JSON
+
+
+
+
+
+
+
+
+
+
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -17,7 +17,7 @@ const hash = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 
 const [sourceArg, workArg, resultArg] = process.argv.slice(2);
 if (!sourceArg || !workArg || !resultArg) {
-  console.error('usage: node tag-both.mjs SOURCE_TEXT WORK_DIR RESULT_JSON');
+  console.error('usage: node tag.js SOURCE_TEXT WORK_DIR RESULT_JSON');
   process.exit(2);
 }
 
@@ -42,7 +42,7 @@ const stats = {
   raw_pos_path: result.rawPosPath,
   syllable_path: result.syllablePath,
   output_units: result.lineCount,
-  // No external POS builder runs on this path, so this count is always 0.
+
   rejected_dictionary_entries: 0,
   tag_occurrences: [...raw.matchAll(/\{[^{}]+\}/g)].length,
   unknown_tag_occurrences: [...raw.matchAll(/\{\?\}/g)].length,

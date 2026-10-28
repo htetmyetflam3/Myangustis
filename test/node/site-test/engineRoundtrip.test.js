@@ -49,7 +49,7 @@ function uploadIntent(uploadName, overrides = {}) {
   };
 }
 
-/* The analysis column has no `job`: handling is `method`, mode is `task`. */
+
 function analysisIntent(uploadName, handling = 'extracting') {
   const { job, method, ...rest } = uploadIntent(uploadName);
   return { ...rest, source: 'analysis', method: handling, task: method };
@@ -169,8 +169,8 @@ test('Site round: one analysis upload, hidden fires once, Engine queue round tri
   const convRes = await submit(uploadIntent(convName));
   assert.equal(convRes.status, 202);
   const convBody = await convRes.json();
-  // The upload is accepted immediately (the parse continues in the
-  // background), so the response carries the pollable submitId.
+
+
   assert.match(convBody.submitId, /^[0-9a-f-]{36}$/);
   const status = (submitId) =>
     fetch(`${base}/api/submit/status/${encodeURIComponent(submitId)}`).then((r) => r.json());
@@ -196,9 +196,9 @@ test('Site round: one analysis upload, hidden fires once, Engine queue round tri
   const anaDone = await waitFor(
     async () => {
       const s = await status(anaBody.submitId);
-      // The hidden processor flips FINISHED -> ENGINE_ACCEPTED within
-      // milliseconds of the site finishing, so the poller must accept any
-      // "site is done" state, not just the FINISHED instant.
+
+
+
       return ['FINISHED', 'ENGINE_ACCEPTED', 'ANALYSING', 'FAILED', 'EXPIRED'].includes(s.state);
     },
     30000,
@@ -222,9 +222,9 @@ test('Site round: one analysis upload, hidden fires once, Engine queue round tri
   assert.equal(dispatch.body.sessionId, 'round-session');
   assert.equal(dispatch.body.filename, anaName);
   assert.equal(dispatch.body.extension, 'txt');
-  // The label is the signal: a payload carrying `task` is analysis. Nothing
-  // has to be told that separately.
-  // analysis: handling is `method`, mode is `task`.
+
+
+
   assert.equal(dispatch.body.task, 'default');
   let state = (await status(anaBody.submitId)).state;
   assert.equal(state, 'ENGINE_ACCEPTED');

@@ -8,9 +8,9 @@ import { migrate } from '../../../F.Site/Backend/db/migrate.js';
 
 const SCHEMA_FILE = path.resolve(import.meta.dirname, '../../../F.Site/Backend/db/schema.sql');
 
-// createOrUpdateCookie binds to the shared singleton db at import time, so the
-// behaviour under test is reproduced against a throwaway database here. The
-// statements mirror backend/db/cookie.js exactly.
+
+
+
 function makeUpsert(db) {
   const SQL_NOW = "strftime('%Y-%m-%dT%H:%M:%fZ','now')";
   let writes = 0;
@@ -90,8 +90,8 @@ test('an unchanged identity does not rewrite the row on every request', (t) => {
   const id = upsert(identity());
   assert.equal(writes(), 1, 'the insert');
 
-  // cookieGenerator runs on EVERY /api request, including read-only GETs and
-  // the status poll loop. Twenty identical requests used to mean twenty writes.
+
+
   for (let i = 0; i < 20; i++) assert.equal(upsert(identity()), id);
   assert.equal(writes(), 1, 'no further writes for an identical identity');
 });

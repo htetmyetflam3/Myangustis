@@ -1,42 +1,42 @@
 #!/usr/bin/env node
-// Scraper -> Parser integration plugin.
-//
-// This is the scraper-side half of the bridge. The Parser Manager is the
-// other half and owns the ONLY policy decision (parser/caller-policy.mjs):
-//
-//     scraper caller  ->  Unicode / ZawCode parse, OCR, or old-font SKIP.
-//
-// This file holds none of that logic. It is the process/IO adapter the
-// Python crawler shells (the same transport as support/segment_bridge.mjs):
-// one Node process for a batch, cross-module dynamic import, JSON verdict out.
-// It translates the Manager's generic result into the three-category
-// vocabulary the scraper pipeline already understands (pdf_classify.py):
-//
-//     convertable  Unicode or Zawgyi-One text; outputFile holds the .txt
-//     scanned      image-only document, no text layer; PDF preserved as-is
-//     old          pre-standard/legacy font the scraper must not parse;
-//                  the Manager returned { skipped:true }, PDF preserved as-is
-//
-// Usage:
-//   node parse-bridge.mjs --out RESULT.json [--ocr] PDF [PDF ...]
-//
-//   --out FILE  REQUIRED. The JSON verdict array is written here. Results go
-//               to a FILE, never stdout: the Parser logs through console.log
-//               (Bridge/logen), including from worker threads, so stdout is
-//               reserved for diagnostics — the same contract segment_bridge.mjs
-//               established. The crawler reads FILE after a clean exit.
-//   --ocr       route a scanned document through the Manager's OCR lane
-//               instead of reporting it as 'scanned'. Off by default: the
-//               crawler's standing behaviour is to preserve scans as PDFs.
-//
-// Exit codes: 0 every input reached a terminal verdict (old/scanned included);
-//             2 bad usage; 1 the Parser could not be loaded at all. A single
-//             document failing never aborts the batch — it becomes an
-//             { category:'error' } verdict so the crawler can keep going.
-//
-// Runtime: Node 22+. The Parser's heavy libraries (pdfjs, canvas, tesseract)
-// resolve from Parser/main/parser and are loaded lazily by the Manager; this
-// adapter itself has no dependencies.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
@@ -50,12 +50,12 @@ if (NODE_MAJOR < 22) {
 }
 
 const HERE = path.dirname(url.fileURLToPath(import.meta.url));
-const REPO = path.resolve(HERE, "..", ".."); // Scraper/plugin -> repository root
+const REPO = path.resolve(HERE, "..", "..");
 const PARSER_FRONT_DOOR = url.pathToFileURL(
   path.join(REPO, "D.Parser", "main", "parser", "index.js"),
 ).href;
 
-// Manager encoding path -> the scraper's historical encoding label.
+
 const ENCODING_LABEL = { unicode: "unicode", zawcode: "zawgyi-one" };
 
 function parseArgs(argv) {
@@ -98,7 +98,7 @@ function baseVerdict(input) {
   };
 }
 
-// One Manager result -> one scraper verdict. Pure mapping; no re-decision.
+
 function mapResult(input, result, startedAt) {
   const v = baseVerdict(input);
   v.ms = Date.now() - startedAt;
@@ -111,20 +111,20 @@ function mapResult(input, result, startedAt) {
   v.counts = result.counts ?? null;
 
   if (result.skipped === true) {
-    // The Manager's scraper policy refused an old-font document. This is a
-    // normal terminal verdict, not an error: the crawler keeps the PDF.
+
+
     v.category = "old";
     v.reason = result.reason ?? "legacy-font-not-convertible";
     return v;
   }
   if (result.lane === "ocr") {
-    v.category = "convertable"; // OCR produced text for a scan
+    v.category = "convertable";
     v.outputFile = result.file ?? null;
     v.reason = "ocr";
     return v;
   }
   if (!result.file || !v.textChars) {
-    // Extraction ran but yielded no readable text: image-only -> preserve.
+
     v.category = "scanned";
     v.reason = "no-text-layer";
     return v;
@@ -150,7 +150,7 @@ async function classifyOne(manager, input, { ocr }) {
     const result = await manager.dispatch(job, "scraper");
     const verdict = mapResult(input, result, startedAt);
 
-    // Optional OCR round for an otherwise scanned document.
+
     if (ocr && verdict.category === "scanned") {
       const ocrStarted = Date.now();
       try {
@@ -159,11 +159,11 @@ async function classifyOne(manager, input, { ocr }) {
           "scraper",
         );
         const ocrVerdict = mapResult(input, ocrResult, ocrStarted);
-        ocrVerdict.encoding = null; // OCR output is Unicode by construction
+        ocrVerdict.encoding = null;
         ocrVerdict.reason = "ocr";
         return ocrVerdict;
       } catch (error) {
-        // A missing tesseract model must degrade to the scan verdict, not fail.
+
         verdict.reason = `scanned (ocr unavailable: ${error?.message ?? error})`;
       }
     }
@@ -200,8 +200,8 @@ async function main() {
     for (const file of args.files) {
       verdicts.push(await classifyOne(manager, file, { ocr: args.ocr }));
     }
-    // Result JSON always lands in a file: stdout/stderr stay diagnostic because
-    // the Parser's logger (and its worker threads) write through console.log.
+
+
     fs.writeFileSync(args.outFile, JSON.stringify(verdicts, null, 2), {
       encoding: "utf8",
       mode: 0o600,
@@ -209,7 +209,7 @@ async function main() {
     for (const v of verdicts) {
       console.error(`[parse-bridge] ${v.filename} -> ${v.category} (${v.reason ?? ""})`);
     }
-    // old/scanned are successful terminal classifications: always exit 0.
+
     process.exit(0);
   } finally {
     await manager.close().catch(() => {});

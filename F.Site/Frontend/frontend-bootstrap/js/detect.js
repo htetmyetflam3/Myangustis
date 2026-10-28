@@ -4,9 +4,9 @@ export const PAGE_TEXT_MIN_CHARS = 12;
 export const DOCX_IMAGE_DOMINANCE = 3;
 export const PDF_IMAGE_DOMINANCE = 20;
 export const PDF_TEXT_BYTES_PER_PAGE = 120;
-// Browser inspection is a routing probe, not the conversion itself. Walking
-// every page made large books pay the full PDF parsing cost twice (once here
-// and again on the server). Sample pages spread across the document instead.
+
+
+
 export const PDF_INSPECTION_MAX_PAGES = 32;
 
 const IMG_MARK = [0x2f, 0x53, 0x75, 0x62, 0x74, 0x79, 0x70, 0x65];
@@ -54,8 +54,8 @@ async function loadPdfjs() {
     pdfjsPromise = (async () => {
       const [pdfjs, worker] = await Promise.all([
         import("pdfjs-dist/legacy/build/pdf.mjs"),
-        // Vite embeds the PDF.js worker in a Blob-backed Worker, avoiding a
-        // separate .mjs request that production static hosts may mis-serve.
+
+
         import("pdfjs-dist/legacy/build/pdf.worker.min.mjs?worker&inline"),
       ]);
       return { pdfjs, Worker: worker.default };
@@ -108,8 +108,8 @@ export async function detectPdf(file) {
     const scale = pages / sampleCount;
     const textPages = Math.min(pages, Math.round(sampledTextPages * scale));
     const imagePages = Math.min(pages - textPages, Math.round(sampledImagePages * scale));
-    // Keep bytes comparable with the whole-document image count. Routing uses
-    // bytes per page, so extrapolate sampled text rather than under-reporting it.
+
+
     const sampledTextBytes = utf8(text);
     const textBytes = Math.round(sampledTextBytes * scale);
     return {
@@ -126,7 +126,7 @@ export async function detectPdf(file) {
       textBytes,
     };
   } finally {
-    // getDocument does not own a PDFWorker supplied by the caller.
+
     await task.destroy().catch(() => {});
     pdfWorker.destroy();
   }

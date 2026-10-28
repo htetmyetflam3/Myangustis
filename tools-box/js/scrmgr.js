@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-/**
- * scrmgr.js
- * Category: util
- * Script manager: save, execute, edit, export, import JS utilities in SQLite database.
- * Reads: .js / .mjs files from filesystem or SQLite DB (scripts.db).
- * Processes: parses headers for Category/DESC, manages categories, runs scripts from temp files.
- * Outputs: console logs, DB updates, exported files to cwd.
- * Migrated to better-sqlite3 for synchronous, high-performance SQLite.
- */
+
+
+
+
+
+
+
+
+
 
 import fs from 'fs';
 import path from 'path';
@@ -21,7 +21,7 @@ const __dirname = path.dirname(__filename);
 const DB_PATH = path.join(__dirname, 'scripts.db');
 const db = new Database(DB_PATH);
 
-// Synchronous DB wrappers (better-sqlite3)
+
 function dbRun(sql, params = []) {
   const result = db.prepare(sql).run(...params);
   return { lastID: result.lastInsertRowid, changes: result.changes };
@@ -122,26 +122,26 @@ Examples:
 `);
 }
 
-// HEADER EXTRACTION: Parse category & description from file comments
 
-/**
- * Extract metadata from JS file header comments.
- * Supports formats:
- *   // Category: segment
- *   // category: segment
- *   // CAT: segment
- *   // DESC: description text
- *   // desc: description text
- *   // Description: description text
- *   /**
- *    * Category: segment
- *    * Description: ...
- *    *\/
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function extractHeaderMeta(content) {
   const result = { category: null, description: null };
 
-  // Try block comments first (/** ... */)
+
   const blockMatch = content.match(/\/\*\*[\s\S]*?\*\//);
   if (blockMatch) {
     const block = blockMatch[0];
@@ -156,12 +156,12 @@ function extractHeaderMeta(content) {
     if (descMatch) result.description = descMatch[1].trim();
   }
 
-  // Also check first 20 lines for inline patterns
+
   const lines = content.split('\n').slice(0, 20);
   for (const line of lines) {
     const trimmed = line.trim();
 
-    // Category patterns
+
     if (!result.category) {
       const catPatterns = [
         /^\/\/\s*Category\s*[:-]\s*(.+)$/i,
@@ -178,7 +178,7 @@ function extractHeaderMeta(content) {
       }
     }
 
-    // Description patterns
+
     if (!result.description) {
       const descPatterns = [
         /^\/\/\s*(?:Description|DESC)\s*[:-]\s*(.+)$/i,
@@ -255,7 +255,7 @@ async function initDb() {
     description TEXT
   )`);
 
-  // Migrate old schema: add description column if missing
+
   try {
     await dbRun(`ALTER TABLE scripts ADD COLUMN description TEXT`);
   } catch {
@@ -268,7 +268,7 @@ async function initDb() {
     // Column already exists; ignore
   }
 
-  // Load persisted categories and descriptions
+
   const rows = await dbAll(`SELECT name, description FROM categories`);
   for (const row of rows) {
     if (!CATEGORIES.includes(row.name)) {
@@ -279,7 +279,7 @@ async function initDb() {
     }
   }
 
-  // Ensure default categories exist in DB
+
   for (const cat of CATEGORIES) {
     const desc = DESCRIPTIONS[cat] || 'no description given';
     await dbRun(
@@ -397,7 +397,7 @@ async function listScripts() {
   console.log(`Total: ${rows.length} script(s)`);
 }
 
-// INFO: category summary, category description, or script header
+
 
 async function showInfo(target) {
   if (!target) {
@@ -444,7 +444,7 @@ async function showInfo(target) {
   console.log(getScriptHeader(row.content));
 }
 
-// SAVE: Auto-extract category & description from file header
+
 
 async function saveScript(filePath, category, description) {
   const resolved = path.resolve(filePath);
@@ -456,10 +456,10 @@ async function saveScript(filePath, category, description) {
   const content = fs.readFileSync(resolved, 'utf-8');
   const filename = path.basename(resolved);
 
-  // Auto-extract metadata from file header
+
   const meta = extractHeaderMeta(content);
 
-  // Resolve category: CLI arg > header only. No filename fallback.
+
   let finalCategory = category;
   if (!finalCategory) {
     if (meta.category && CATEGORIES.includes(meta.category)) {
@@ -481,7 +481,7 @@ async function saveScript(filePath, category, description) {
     process.exit(1);
   }
 
-  // Resolve description: CLI arg > header > "default description"
+
   let finalDescription = description;
   if (!finalDescription) {
     if (meta.description) {
@@ -504,7 +504,7 @@ async function saveScript(filePath, category, description) {
   console.log(`Description: ${finalDescription}`);
 }
 
-// SAVE ALL: Bulk save all .js files from a directory
+
 
 async function saveAllScripts(dirPath, category, description) {
   const resolved = path.resolve(dirPath);
@@ -534,7 +534,7 @@ async function saveAllScripts(dirPath, category, description) {
   for (const filePath of jsFiles) {
     const filename = path.basename(filePath);
 
-    // Skip if already exists in DB (collision check)
+
     const existing = await dbGet(`SELECT 1 FROM scripts WHERE filename = ?`, [
       filename,
     ]);
@@ -547,7 +547,7 @@ async function saveAllScripts(dirPath, category, description) {
     const content = fs.readFileSync(filePath, 'utf-8');
     const meta = extractHeaderMeta(content);
 
-    // Resolve category: CLI arg > header only
+
     let finalCategory = category;
     if (!finalCategory) {
       if (meta.category && CATEGORIES.includes(meta.category)) {
@@ -571,7 +571,7 @@ async function saveAllScripts(dirPath, category, description) {
       continue;
     }
 
-    // Resolve description: CLI arg > header > "default description"
+
     let finalDescription = description;
     if (!finalDescription) {
       if (meta.description) {
@@ -673,7 +673,7 @@ async function editScript(filename) {
     if (newContent === row.content) {
       console.log('No changes detected. DB not updated.');
     } else {
-      // Re-extract metadata from edited content
+
       const newMeta = extractHeaderMeta(newContent);
       const updates = { content: newContent };
 
@@ -716,7 +716,7 @@ async function exportScript(filename) {
 
     let exported = 0;
     for (const row of rows) {
-      const outName = row.filename; // strip prefix
+      const outName = row.filename;
       const outPath = path.join(process.cwd(), outName);
       fs.writeFileSync(outPath, row.content, 'utf-8');
       console.log(`  Exported "${row.filename}" → ${outPath}`);
@@ -733,7 +733,7 @@ async function exportScript(filename) {
     console.error(`Script not found in DB: ${filename}`);
     process.exit(1);
   }
-  const outName = row.filename; // strip prefix
+  const outName = row.filename;
   const outPath = path.join(process.cwd(), outName);
   fs.writeFileSync(outPath, row.content, 'utf-8');
   console.log(`Exported "${filename}" → ${outPath}`);
@@ -757,7 +757,7 @@ async function importDirectory(directory) {
 
   for (const row of rows) {
     const filename = row.filename;
-    // Try exact filename first, then fallback to old script.* prefix
+
     let filePath = path.join(dirPath, filename);
     if (!fs.existsSync(filePath)) {
       const prefixedPath = path.join(dirPath, `script.${filename}`);
@@ -863,21 +863,21 @@ async function showScriptHeader(filename) {
         process.exit(1);
       }
 
-      // Handle 'sav all' — bulk save all .js files from directory
+
       if (args[1].toLowerCase() === 'all') {
         const dirPath = args[2] || '.';
-        // Check if arg[2] is a directory or a category
+
         // eslint-disable-next-line no-useless-assignment -- redundant null init before conditional reassignment
         let description = null;
         let actualDir = dirPath;
 
-        // If dirPath is actually a category, use current dir
+
         if (CATEGORIES.includes(dirPath.toLowerCase())) {
           category = dirPath.toLowerCase();
           actualDir = '.';
           description = args.slice(3).join(' ') || null;
         } else {
-          // dirPath is a real path — check if next arg is category
+
           if (args.length >= 4 && CATEGORIES.includes(args[3].toLowerCase())) {
             category = args[3].toLowerCase();
             description = args.slice(4).join(' ') || null;
@@ -890,7 +890,7 @@ async function showScriptHeader(filename) {
         break;
       }
 
-      // Single file save
+
       const filePath = args[1];
       let category = null;
       let description = null;

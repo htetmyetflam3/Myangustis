@@ -20,16 +20,16 @@ function freshDb(t) {
   return db;
 }
 
-/*
-  The cookie-counted quota is gone with the dev bypass flags.
 
-  `t` existed so a caller with NO users row -- which only ever happened behind
-  DEV_BYPASS_SESSION / ALLOW_AGENT_UPLOAD -- could still be counted, from the
-  cookie. With the flags removed there is no such caller: every request now
-  reaches the database. The four fallback tests, the `quotaDisabled` test and
-  the cookie-mirror assertions went with the feature. What is left is the
-  behaviour that is actually reachable.
-*/
+
+
+
+
+
+
+
+
+
 
 test('no users row is refused outright, never counted from a cookie', (t) => {
   const db = freshDb(t);
@@ -75,7 +75,7 @@ test('DAILY_UPLOAD_LIMIT configures the limit, and 0 switches it off', (t) => {
     else process.env.DAILY_UPLOAD_LIMIT = v; };
   t.after(() => set(saved));
 
-  // A configured ceiling of 5 is honoured by the atomic UPDATE.
+
   set('5');
   const seen = [];
   for (let i = 0; i < 6; i++) {
@@ -85,7 +85,7 @@ test('DAILY_UPLOAD_LIMIT configures the limit, and 0 switches it off', (t) => {
   assert.deepEqual(seen, [4, 3, 2, 1, 0, 'refused']);
   assert.equal(db.prepare('SELECT daily_quota_used u FROM users WHERE id = ?').get(userId).u, 5);
 
-  // 0 turns the per-visitor cap off entirely — no flag involved.
+
   set('0');
   for (let i = 0; i < 10; i++) {
     const r = request.consumeQuota({ userId });
@@ -93,7 +93,7 @@ test('DAILY_UPLOAD_LIMIT configures the limit, and 0 switches it off', (t) => {
     assert.equal(r.remaining, QUOTA_OFF_SENTINEL);
     assert.equal(r.limit, 0);
   }
-  // and nothing was counted against the row
+
   assert.equal(db.prepare('SELECT daily_quota_used u FROM users WHERE id = ?').get(userId).u, 5);
 
   set(undefined);

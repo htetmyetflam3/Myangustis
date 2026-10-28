@@ -1,25 +1,25 @@
 
 
-/* Site mirrors (HTTrack, WebCopy, SiteSucker, wget -m, "save all resources"
-   extensions) are not browsers. They cannot read anything the server does not
-   hand to an anonymous GET, so this is not about protecting source — it is
-   about refusing to be the free origin for somebody else's copy, and about
-   not paying the bandwidth for a recursive sweep of every asset.
 
-   Three independent layers, cheapest first:
-     1. the agent names the tool outright                → ban
-     2. the agent walks a link no human can see          → ban
-     3. a document request arrives without Sec-Fetch-*   → suspicious
 
-   Layer 3 is the strongest signal and the most dangerous one to enforce:
-   Safari only started sending Sec-Fetch-* in 16.4 (March 2023), and search
-   crawlers never send it. So it reports by default and only blocks when
-   MIRROR_GUARD_STRICT=true. Layers 1 and 2 have no such cost. */
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const DOWNLOADER_AGENT =
   /(httrack|webcopier|cyotek|webcopy|teleport\s*pro|offline\s*explorer|webzip|sitesucker|website\s*downloader|webreaper|webstripper|getleft|pavuk|wpull|grab-site|httrack|wget|curl\/|libwww-perl|lwp::simple|python-requests|python-urllib|scrapy|go-http-client|okhttp|apache-httpclient|java\/\d|node-fetch|axios\/)/i;
 
-/* Search and social crawlers send no Sec-Fetch-* either, and we want them. */
+
 const FRIENDLY_AGENT =
   /(googlebot|google-inspectiontool|bingbot|adidxbot|slurp|duckduckbot|baiduspider|yandexbot|applebot|facebookexternalhit|twitterbot|linkedinbot|discordbot|telegrambot|whatsapp|pinterestbot|ia_archiver|uptimerobot|pingdom)/i;
 
@@ -46,15 +46,15 @@ function envInt(name, fallback, max) {
   return Math.min(parsed, max);
 }
 
-/* A ban is a cheap in-memory TTL set. It is deliberately not in the database:
-   a mirror run is over in minutes, the process can forget it afterwards, and
-   a restart must never lock anybody out permanently. */
+
+
+
 export function createBanStore({ ttlMs = 3_600_000, max = 5_000 } = {}) {
   const bans = new Map();
   function prune(now) {
     for (const [ip, expiry] of bans) {
       if (expiry <= now) bans.delete(ip);
-      else break; // Map keeps insertion order and every ban shares one ttl
+      else break;
     }
   }
   return {
@@ -92,8 +92,8 @@ export function isFriendlyAgent(userAgent) {
   return FRIENDLY_AGENT.test(String(userAgent || ''));
 }
 
-/* Only top-level HTML navigations are judged on Sec-Fetch-*. Assets are not:
-   a cached stylesheet can be revalidated by intermediaries that strip it. */
+
+
 export function isDocumentRequest(req) {
   const dest = String(req.headers?.['sec-fetch-dest'] || '').toLowerCase();
   if (dest) return dest === 'document';
@@ -153,10 +153,10 @@ export function createMirrorGuard({
 
     if (store.banned(ip)) return deny(res);
 
-    /* The honeypot is checked before the open-path list so it can never be
-       opened by accident, and it bans even a well-behaved-looking agent: the
-       link is invisible to a person and Disallow-ed to a crawler, so there is
-       no innocent way to arrive here. */
+
+
+
+
     if (path === honeypot) {
       store.ban(ip);
       report({ reason: 'honeypot', ip, userAgent, path });

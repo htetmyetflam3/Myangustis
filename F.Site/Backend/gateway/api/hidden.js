@@ -27,7 +27,7 @@ export function createHiddenProcessor({ queue, dispatcher, jobTimeoutMs }) {
       filename: record.uploadName,
       extension: record.requestedExtension,
       method: record.method,
-      // the analysis column's mode, not the queue's circle
+
       task: record.mode,
       job: record.job,
     });

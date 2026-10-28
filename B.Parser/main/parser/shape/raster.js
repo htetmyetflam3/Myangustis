@@ -1,30 +1,30 @@
-/**
- * FILE: Parsed/parser/shape/raster.mjs
- *
- * Raster -> vector, so the shape vote can be fed from scanned ink rather
- * than from a font's own outline.
- *
- * Two halves:
- *   rasteriseContours()  outline -> bitmap. Only needed to SIMULATE a scan
- *                        for measurement: render a glyph at scan resolution,
- *                        trace it back, and the gap between that and the
- *                        clean outline is the cost of tracing.
- *   traceBitmap()        bitmap -> closed contours, by boundary following.
- *                        This is the real path a cropped error region takes.
- *
- * Contours come back as pixel coordinates; `cloudFromContours` converts to
- * em units given a baseline row and a px-per-em scale, which the fiducial
- * ladder recovers. Nothing here bbox-normalises -- vertical position relative
- * to the baseline carries
- * real information and must survive.
- */
 
-/** Flatten a quadratic bezier run into line points. */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function flattenContour(contour, steps = 4) {
   const pts = [];
   const n = contour.length;
   if (!n) return pts;
-  // Build an on-curve start.
+
   let startIdx = contour.findIndex((p) => p.onCurve);
   if (startIdx < 0) startIdx = 0;
   const at = (i) => contour[(i % n + n) % n];
@@ -52,10 +52,10 @@ function flattenContour(contour, steps = 4) {
   return pts;
 }
 
-/**
- * Scan-convert font-unit contours to a bitmap at `pxPerEm`, non-zero-ish
- * even-odd fill. Returns { bits, w, h, baselineRow, originX }.
- */
+
+
+
+
 export function rasteriseContours(contours, unitsPerEm, pxPerEm, pad = 2) {
   const polys = contours.map((c) => flattenContour(c));
   let minX = Infinity; let maxX = -Infinity; let minY = Infinity; let maxY = -Infinity;
@@ -70,7 +70,7 @@ export function rasteriseContours(contours, unitsPerEm, pxPerEm, pad = 2) {
   const w = Math.max(1, Math.ceil((maxX - minX) * k) + pad * 2);
   const h = Math.max(1, Math.ceil((maxY - minY) * k) + pad * 2);
   const bits = new Uint8Array(w * h);
-  // y is flipped: font y grows up, raster rows grow down.
+
   const toPx = ([x, y]) => [(x - minX) * k + pad, (maxY - y) * k + pad];
   const edges = [];
   for (const poly of polys) {
@@ -95,12 +95,12 @@ export function rasteriseContours(contours, unitsPerEm, pxPerEm, pad = 2) {
       for (let x = from; x <= to; x += 1) bits[row * w + x] = 1;
     }
   }
-  // Baseline (font y=0) in raster rows.
+
   const baselineRow = (maxY - 0) * k + pad;
   return { bits, w, h, baselineRow, originX: pad - minX * k };
 }
 
-/** Otsu threshold on an 8-bit grayscale buffer. Returns a 0/1 bitmap (1=ink). */
+
 export function binarise(gray, w, h) {
   const hist = new Uint32Array(256);
   for (let i = 0; i < w * h; i += 1) hist[gray[i]] += 1;
@@ -120,24 +120,24 @@ export function binarise(gray, w, h) {
     if (between > best) { best = between; threshold = t; }
   }
   const bits = new Uint8Array(w * h);
-  for (let i = 0; i < w * h; i += 1) bits[i] = gray[i] <= threshold ? 1 : 0; // dark = ink
+  for (let i = 0; i < w * h; i += 1) bits[i] = gray[i] <= threshold ? 1 : 0;
   return bits;
 }
 
-/**
- * Closed boundaries of every ink blob, by Moore-neighbour tracing.
- * Returns an array of contours, each an array of [x, y] pixel coordinates.
- */
+
+
+
+
 export function traceBitmap(bits, w, h, { minLength = 8 } = {}) {
   const at = (x, y) => (x < 0 || y < 0 || x >= w || y >= h ? 0 : bits[y * w + x]);
   const seen = new Uint8Array(w * h);
   const contours = [];
-  // 8-neighbourhood, clockwise from west.
+
   const NB = [[-1, 0], [-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1]];
   for (let y = 0; y < h; y += 1) {
     for (let x = 0; x < w; x += 1) {
       if (!at(x, y) || seen[y * w + x]) continue;
-      if (at(x, y - 1)) continue;                   // not a top edge: inside a blob
+      if (at(x, y - 1)) continue;
       const contour = [];
       let cx = x; let cy = y; let dir = 0;
       const startX = x; const startY = y;
@@ -147,7 +147,7 @@ export function traceBitmap(bits, w, h, { minLength = 8 } = {}) {
         seen[cy * w + cx] = 1;
         let found = false;
         for (let k = 0; k < 8; k += 1) {
-          const d = (dir + 6 + k) % 8;              // back up, then sweep
+          const d = (dir + 6 + k) % 8;
           const nx = cx + NB[d][0]; const ny = cy + NB[d][1];
           if (at(nx, ny)) { cx = nx; cy = ny; dir = d; found = true; break; }
         }
@@ -160,11 +160,11 @@ export function traceBitmap(bits, w, h, { minLength = 8 } = {}) {
   return contours;
 }
 
-/**
- * Pixel contours -> point cloud in em units, baseline at y=0.
- * `baselineRow` is the raster row the baseline falls on; `pxPerEm` the scale
- * the fiducial ladder recovered.
- */
+
+
+
+
+
 export function cloudFromContours(contours, { baselineRow, pxPerEm, originX = 0 }) {
   const pts = [];
   for (const c of contours) {

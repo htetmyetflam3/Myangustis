@@ -1,14 +1,14 @@
-/**
- * FILE: Parsed/parser/shape/svg.mjs
- *
- * Minimal SVG path reader for externally traced pages, plus line
- * segmentation. No dependency, and deliberately no rasterisation -- the
- * whole value of an external trace is that it keeps sub-glyph topology, so
- * everything downstream works on closed contours, never pixels.
- */
+
+
+
+
+
+
+
+
 import fs from "node:fs";
 
-/** Flatten one `d` attribute into closed contours of [x, y] points. */
+
 export function parsePathData(d, steps = 8) {
   const toks = d.match(/[MCLZmclzHhVvSsQqTtAa]|-?\d*\.?\d+(?:e-?\d+)?/g) || [];
   const subs = [];
@@ -54,7 +54,7 @@ export function parsePathData(d, steps = 8) {
     else if (c === "V" || c === "v") { i += 1; const a = num(); y = c === "V" ? a : y + a; if (cur) cur.push([x, y]); }
     else if (c === "Z" || c === "z") { i += 1; if (cur) cur.push([sx, sy]); x = sx; y = sy; }
     else if (!Number.isNaN(+c)) {
-      // Implicit repeat of the previous command; Grafika emits runs of C.
+
       const a = num(); const b = num(); const cc = num(); const dd = num(); const e = num(); const f = num();
       if ([a, b, cc, dd, e, f].some(Number.isNaN)) break;
       cubic(x, y, a, b, cc, dd, e, f); x = e; y = f;
@@ -78,7 +78,7 @@ export function bboxOf(contour) {
   return { x0, y0, x1, y1, w: x1 - x0, h: y1 - y0, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 };
 }
 
-/** Shoelace area; sign ignored so holes count as positive. */
+
 export function areaOf(contour) {
   let a = 0;
   for (let i = 0; i < contour.length; i += 1) {
@@ -89,17 +89,17 @@ export function areaOf(contour) {
   return Math.abs(a) / 2;
 }
 
-/**
- * Split contours into text lines.
- *
- * Burmese ascenders and descenders overlap between lines, so a plain ink
- * histogram merges them. Instead cluster on the CENTRE of each contour, which
- * stays inside its own line, then grow the line's extent from its members.
- */
+
+
+
+
+
+
+
 export function segmentLines(shapes, { gapFactor = 0.6 } = {}) {
   if (!shapes.length) return [];
   const med = (xs) => { const s = [...xs].sort((a, b) => a - b); return s[Math.floor(s.length / 2)] || 0; };
-  // Typical glyph height drives the clustering gap.
+
   const typical = med(shapes.filter((s) => s.area > 20).map((s) => s.box.h)) || med(shapes.map((s) => s.box.h));
   const gap = Math.max(1, typical * gapFactor);
 
@@ -134,12 +134,12 @@ export function loadShapes(file, steps = 8) {
   return loadSvgContours(file, steps).map((c) => ({ contour: c, box: bboxOf(c), area: areaOf(c) }));
 }
 
-/**
- * Ink contours only: drops counters (holes) by nesting depth, and drops page
- * furniture -- rules, borders, edge marks -- by absolute height. On page 3
- * that is 893 contours -> 587 ink, of which 2 are furniture at the right
- * margin (h 473 and h 225 against a median glyph height of 14).
- */
+
+
+
+
+
+
 export function inkContours(shapes, { furnitureFactor = 6 } = {}) {
   const inside = (pt, poly) => {
     let c = false;
@@ -157,7 +157,7 @@ export function inkContours(shapes, { furnitureFactor = 6 } = {}) {
   return ink.filter((s2) => s2.box.h <= medH * furnitureFactor);
 }
 
-/** Least-squares y = a*x + b. */
+
 function lsq(pairs) {
   const n = pairs.length;
   const sx = pairs.reduce((s, [x]) => s + x, 0);
@@ -168,20 +168,20 @@ function lsq(pairs) {
   return [a, (sy - a * sx) / n];
 }
 
-/**
- * Fit SVG coordinates onto the OCR raster, by pairing traced lines with OCR
- * lines in reading order and least-squaring their edges.
- *
- * The scale is NOT uniform. The owner traced onto an A4 canvas and zoomed the
- * text to fill it, but the novel page is not A4-proportioned, so the fit
- * stretches one axis: page 3 comes out at x 1.5661, y 1.7637, an ANISOTROPY
- * of 0.8879. Glyphs in the trace are therefore ~11% out of aspect, and any
- * comparison against font outlines must undo that first or every distance is
- * wrong by construction.
- *
- * Verified on page 3: the ကြုံ cluster maps to raster x 468-537 y 1566-1626
- * against OCR line 9 at x 469-1462 y 1563-1626 -- 1 px on the left edge.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export function fitTraceToRaster(traceLines, ocrLines) {
   const n = Math.min(traceLines.length, ocrLines.length);
   const ys = []; const xs = [];
@@ -204,19 +204,19 @@ export function fitTraceToRaster(traceLines, ocrLines) {
     anisotropy: ax / ay,
     worstResidual: worst,
     toRaster: ([x, y]) => [ax * x + bx, ay * y + by],
-    /** Undo the anisotropic stretch so a traced glyph is comparable to a font outline. */
+
     deskew: ([x, y]) => [x * (ax / ay), y],
   };
 }
 
-/**
- * Read a generated specimen sheet back, resolving <defs>/<use>.
- *
- * The sheet stores each distinct glyph once in <defs> and places it with
- * <use x= y=>, which is what keeps a 2541-entry A4 sheet at ~730 KB instead
- * of 7 MB. Returns one record per inventory entry, with its contours already
- * positioned on the page.
- */
+
+
+
+
+
+
+
+
 export function loadSheet(file, steps = 8) {
   const svg = fs.readFileSync(file, "utf8");
   const defs = new Map();

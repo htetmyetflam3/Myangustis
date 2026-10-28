@@ -33,19 +33,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 REPO = ROOT.parents[1]
-MASTER_ENC = REPO / "master.json.enc"
-SECURE_JS = REPO / "secure.js"
+DATA_REPO = next(p for p in Path(__file__).resolve().parents if (p / "index-path.js").is_file())
+DATA_BRIDGE = DATA_REPO / "tools-box/js/engine-data.js"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(ROOT / "mt"))
 
 
 def _load_master() -> dict:
-    """Sealed repo-root master through secure.js (node door; secure.js owns
-    the .env key and the sealed cache — Python holds neither)."""
-    script = ("import {readMasterJson} from %s;"
-              "process.stdout.write(JSON.stringify(readMasterJson()));"
-              % json.dumps(str(SECURE_JS)))
-    out = subprocess.run(["node", "--input-type=module", "-e", script],
+    """Read the engine's sealed master through the shared Node bridge."""
+    out = subprocess.run(["node", str(DATA_BRIDGE), "master"],
                          capture_output=True, check=True, text=True).stdout
     return json.loads(out)
 

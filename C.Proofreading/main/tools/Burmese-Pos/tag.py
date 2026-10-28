@@ -1,9 +1,7 @@
 """Read-only access to the Engine tagger, both views at once.
 
-Engine/tag-text.mjs publishes only the word view (`{syllable:false,
-rawPos:true}`). Quality work needs the smallest-unit view too, so this module
-drives mt/quality/tag-both.mjs, which is the same pipeline with both writers
-enabled. Nothing under Engine/ is written; each run gets a scratch WORK dir.
+This module drives tag.js, which calls BindEngine for the word and smallest-
+unit views. Each run gets a scratch work directory.
 
 Word view vs unit view (this is the whole model, in one place):
 
@@ -42,7 +40,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SHIM = Path(__file__).resolve().with_name("tag-both.mjs")
+SHIM = Path(__file__).resolve().with_name("tag.js")
 
 TOKEN_RE = re.compile(r"^(?P<surface>.*?)\{(?P<tags>[^{}]*)\}$")
 EOS = "<eos>"

@@ -15,7 +15,7 @@ for (const owner of ['Architecture/Engine/_path.js', 'Architecture/host/path.js'
   test(`${owner}: setup creates directories and preserves earlier runs`, async t => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'workspace-retain-'));
     t.after(() => fs.rmSync(root, { recursive: true, force: true }));
-    // Import the real module in a detached component, without other app code.
+
     const component = path.join(root, 'component');
     fs.mkdirSync(component);
     fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}');
@@ -78,7 +78,7 @@ for (const options of [{ max: 1 }, { ttlMs: -1 }]) {
     await queue.ready('first', { file: files[1], mimeType: 'text/plain' });
     await queue.enqueue(request('second'));
     assert.equal(queue.getByFormId('first'), null);
-    // An unlink syscall would have happened before discard returned.
+
     for (const file of files) assert.equal(fs.readFileSync(file, 'utf8'), 'keep');
   });
 }

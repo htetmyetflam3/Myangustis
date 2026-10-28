@@ -23,9 +23,9 @@ import {
   taskComplete,
 } from '../queue/processingQueue.js';
 
-/** Bounds how many parses (text extraction or OCR) run at once. The upload
- *  endpoint accepts and answers immediately, so the parse work is bounded
- *  here instead of by the request-concurrency middleware. */
+
+
+
 export function createSlotLimiter(max) {
   const limit = Number.isSafeInteger(max) && max >= 1 ? max : 2;
   let active = 0;
@@ -41,7 +41,7 @@ export function createSlotLimiter(max) {
       }),
     release: () => {
       const next = waiting.shift();
-      if (next) return next(); // the slot is handed over, occupancy unchanged
+      if (next) return next();
       active = Math.max(0, active - 1);
     },
   };
@@ -122,7 +122,7 @@ export function createIncomingRouter({
     analysisPdfParser: createPdfAnalysisParser().parse,
     analysisDocxParser: createDocxAnalysisParser().parse,
   });
-  // The queue is the one that calls the manager; it needs the composed parser.
+
   processingQueue.useParser?.(parser);
   const inputHandler = createInputHandler({
     textHolder: createTextHolder(),
@@ -173,8 +173,8 @@ export function createIncomingRouter({
       if (!consumed.allowed) {
         throw new ClientError(429, 'Quota exceeded');
       }
-      
-      
+
+
 
       const formId = await request.createUploadSession({
         userId: req.userId,
@@ -183,13 +183,13 @@ export function createIncomingRouter({
       });
       queueFormId = formId;
       if (req.file) {
-        // ------------------------------------------------------------------
-        // ACCEPT: save the original, enqueue the job under a submitId the
-        // visitor can already poll, and answer NOW. Parsing a scanned
-        // document can take minutes (OCR); no proxy or browser tolerates a
-        // POST held open that long, so the heavy work continues detached
-        // and the status endpoint tells the story.
-        // ------------------------------------------------------------------
+
+
+
+
+
+
+
         const submitId = crypto.randomUUID();
         const savedPath = await saveOriginal(req.file);
         quarantinePath = savedPath;
@@ -213,11 +213,11 @@ export function createIncomingRouter({
           status: publicProcessing?.state ?? 'RECEIVED',
           ...(publicProcessing ? { processing: publicProcessing } : {}),
         });
-        quarantinePath = null; // ownership moves to the detached task below
-        // ------------------------------------------------------------------
-        // PROCESS: detached. Every failure lands on the queue record the
-        // visitor is already polling -- the upload itself was accepted.
-        // ------------------------------------------------------------------
+        quarantinePath = null;
+
+
+
+
         (async () => {
           const praserJob = {};
           let artifactPath = null;
@@ -225,8 +225,8 @@ export function createIncomingRouter({
           let pendingQuarantine = savedPath;
           await parseSlots.acquire();
           try {
-            // The queue calls the manager. This route no longer parses and
-            // then reports; it asks the owner of the record to do both.
+
+
             let parsed;
             try {
               parsed = await processingQueue.runManager(formId, {
@@ -247,7 +247,7 @@ export function createIncomingRouter({
               quarantinePath: parsed.savedPath,
               submitId,
             });
-            pendingQuarantine = null; // rawSaver moved it into ORIGINAL_DIR
+            pendingQuarantine = null;
             await processingQueue.bindSavedResult(formId, {
               submitId: raw.submitId,
               filename: raw.filename,
@@ -289,10 +289,10 @@ export function createIncomingRouter({
         })().catch((error) => console.error('[incoming] parse task crashed', error));
         return;
       }
-      // Text submissions have no Praser round, but they still enter the same
-      // metadata-backed queue record. The hidden Engine contract only accepts
-      // jobs it can bind to queue metadata; a raw text body without metadata is
-      // deliberately refused above.
+
+
+
+
       rawResult = await inputHandler({
         req,
         formId,
@@ -385,7 +385,7 @@ export function createIncomingRouter({
     if (record.userId !== String(req.userId) || record.sessionId !== req.visitorHash) {
       return res.status(403).json({ error: 'Processing job metadata mismatch' });
     }
-    // A full circle reaches FINISHED twice; only the closed one is the answer.
+
     if (!taskComplete(record)) {
       return res.status(409).json({ error: 'Processing file is not ready', state: record.state });
     }

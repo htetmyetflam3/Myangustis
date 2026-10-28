@@ -8,7 +8,7 @@ if (NODE_MAJOR < 22) {
   process.exit(1);
 }
 
-const SEP = "\u001d"; // GROUP SEPARATOR between documents, both directions
+const SEP = "\u001d";
 
 function readStdin() {
   return new Promise((resolve, reject) => {
@@ -19,7 +19,7 @@ function readStdin() {
   });
 }
 
-// The caller supplies the output identifier; the bridge returns the result.
+
 async function segmentDocument(text) {
   const result = await BindEngine("scraper", { hash: randomUUID(), sourceText: text });
   if (!result.syllablePath) {

@@ -128,8 +128,7 @@ _IMPOSTER_REPS = sorted([
     ('\u1025\u1037\u103a', '\u1009\u1037\u103a'),
 
     # ---- lookalikes, from the engine's own sealed map -----------------
-    # repo-root master.json.enc -> mapData.IMPOSTER, read through the
-    # repo-root secure.js loader (the one .env key, the one sealed cache).
+    # Engine's sealed master -> mapData.IMPOSTER through the Node bridge.
     # A DIFFERENT kind of entry from the
     # Zawgyi code points above: these are multi-character spellings that
     # RENDER identically to the correct form, which is why the matcher

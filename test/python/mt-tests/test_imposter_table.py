@@ -21,17 +21,13 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
 ROOT = REPO / "Proofreading" / "main"
-MASTER_ENC = REPO / "master.json.enc"
-SECURE_JS = REPO / "secure.js"
+DATA_REPO = next(p for p in Path(__file__).resolve().parents if (p / "index-path.js").is_file())
+DATA_BRIDGE = DATA_REPO / "tools-box/js/engine-data.js"
 
 
 def _load_master():
-    # Node door into repo-root secure.js: it owns the .env key and the sealed
-    # cache; Python never holds the key or writes a readable copy.
-    script = ("import {readMasterJson} from %s;"
-              "process.stdout.write(JSON.stringify(readMasterJson()));"
-              % json.dumps(str(SECURE_JS)))
-    out = subprocess.run(["node", "--input-type=module", "-e", script],
+    # Read the engine's sealed master through the shared Node bridge.
+    out = subprocess.run(["node", str(DATA_BRIDGE), "master"],
                          capture_output=True, check=True, text=True).stdout
     return json.loads(out)
 

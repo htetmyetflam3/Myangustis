@@ -6,11 +6,11 @@ export function createParser({
   analysisPdfParser = null,
   analysisDocxParser = null,
 } = {}) {
-  
+
   return async function parseFile(file, out = null, options = {}) {
-    // When the caller already saved the original (the upload endpoint saves
-    // and enqueues BEFORE responding, then parses in the background), the
-    // pre-saved path is used and onSaved is not fired again.
+
+
+
     const savedPath = options.savedPath ?? (await saveOriginal(file));
     if (!options.savedPath && options.onSaved) await options.onSaved(savedPath);
     const ext = file.originalname.split('.').pop().toLowerCase();

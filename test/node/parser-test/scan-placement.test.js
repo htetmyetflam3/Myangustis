@@ -5,10 +5,10 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-/* Scan placement: the verdict runs after parsing on the chosen byte-table
-   paths (wininnwa / ayar / vector auto-build) and nowhere else — never on
-   zawgyi, never on pure unicode. Placement after the choice (not
-   per-candidate) was measured with .bin/node/path-scan.mjs. */
+
+
+
+
 
 process.env.PRASER_REGISTER = "0";
 

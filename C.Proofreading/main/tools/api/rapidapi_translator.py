@@ -61,7 +61,7 @@ if str(_REPO_ROOT) not in sys.path:
 from secretloader import load_secrets as _sl_load, parse_dotenv as _sl_parse  # noqa: E402
 
 # Auto-load the standard secret chain (process.env → caller .env → repo root
-# → .data/.env) once at import. `--env-file` can still add extra keys via
+# → Engine/.data/.env) once at import. `--env-file` can still add extra keys via
 # load_env_file() below.
 _sl_load(__file__)
 
@@ -137,7 +137,7 @@ def load_env_file(path: Path | str | None = None, *,
     """Load an explicit dotenv file into os.environ and return the set names.
 
     With no argument: re-run the standard secretloader chain (process.env →
-    caller .env → repo root .env → .data/.env) — useful for scripts that
+    caller .env → repo root .env → Engine/.data/.env) — useful for scripts that
     import this module early and want to guarantee the environment is fully
     populated before reading RAPIDAPI_KEY.
 

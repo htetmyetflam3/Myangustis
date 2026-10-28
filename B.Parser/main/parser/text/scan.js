@@ -1,20 +1,21 @@
 import fs from "node:fs";
 import path from "node:path";
-import { readSecureJson, readMasterJson } from "../../../../.data/secure.js";
+import { getEngineData } from "../../../../index-path.js";
+const { readSecureJson, readMasterJson } = await getEngineData();
 import { MAP_DIR } from "../../../_path.js";
 import { MARKS as MM_MARKS } from "./mm-score.js";
 
-/**
- * DATA: scan.json is generated from scan.py by
- * ../tools/gen-parser-data.mjs.
- *
- * The character predicates below are Python's own lambdas MATERIALISED over
- * the Myanmar block, not a JS restatement of them. The restatement is exactly
- * what drifted: it had dropped U+102B and U+102C -- the two aa vowels, among
- * the most common characters in Burmese -- plus five independent vowels,
- * while wrongly admitting U+1033-U+1035 and U+103F. The impossible-pair table
- * had lost a rule the same way.
- */
+
+
+
+
+
+
+
+
+
+
+
 const DATA = JSON.parse(fs.readFileSync(path.join(MAP_DIR, "scan.json"), "utf8"));
 
 const SPLIT = /[\s\u104a\u104b()\x5b\x5d"‘’“”,\x2e:;?!/=+_—-]+/u;
@@ -26,16 +27,16 @@ const BASES = new Set(DATA.base);
 const EXTRA_BASES = new Set(DATA.extraBases);
 const PLACEHOLDER_BASES = new Set(DATA.placeholderBases);
 
-/**
- * Two different mark sets, as in scan.py. The orphan rule tests `is_mark`,
- * the sixteen dependent marks. The stray rule tests `is_mark(c) or c ==
- * U+1039`, so the virama counts there and only there -- a token of nothing
- * but marks and viramas is shadow-collapse debris.
- */
+
+
+
+
+
+
 const MARKS = new Set(Array.from(MM_MARKS, (cp) => String.fromCodePoint(cp)));
 const STRAY_MARKS = new Set(DATA.strayMarks);
 
-/** [regex, title, why] -- patterns copied verbatim out of scan.py. */
+
 const IMPOSSIBLE = DATA.impossible.map(([pattern, title, why]) => [new RegExp(pattern, "gu"), title, why]);
 
 function isBase(ch) {
@@ -148,17 +149,17 @@ function dictionaryWords(data) {
 
 let scanDictionaryCache = undefined;
 
-/**
- * The one sealed dictionary the scan verdict, the dictionary repairs and
- * the ZawCode guard all arbitrate over. Loading it in three places would
- * let the guard split a document on one word list and the mend repair it
- * on another. `PRASER_SCAN_DICTIONARY` keeps the worker's override.
- */
+
+
+
+
+
+
 function loadScanDictionary() {
   if (scanDictionaryCache !== undefined) return scanDictionaryCache;
-  // Default: the single repo-root master through the root secure.js cache.
-  // PRASER_SCAN_DICTIONARY keeps the worker's explicit override (any sealed
-  // .enc or plain JSON the generic loader can read).
+
+
+
   const override = process.env.PRASER_SCAN_DICTIONARY;
   try {
     scanDictionaryCache = override ? (loadMap(path.resolve(override)) ?? {}) : readMasterJson();
@@ -181,11 +182,11 @@ function segmentable(token, dictionary, memo, longest) {
   return false;
 }
 
-/* The longest dictionary word bounds the segmentation walk. It is a
-   property of the dictionary, not of the text, and the behind-scan mend
-   re-scans every candidate it tries -- recomputing it per call walked the
-   whole word set thousands of times per page. Cached per dictionary
-   object, invalidated by size; the scan results are unchanged. */
+
+
+
+
+
 const longestCache = new WeakMap();
 function longestWordLength(dictionary) {
   const hit = longestCache.get(dictionary);
@@ -256,8 +257,8 @@ export function scanText(text, { dictionary = null, standalone = [], perRule = 2
   return report;
 }
 
-/* clusterAt's boundary walk without the display cap: the full token span
-   [start, end) around an index, bounded by the same SPLIT separators. */
+
+
 function tokenSpanAt(text, index) {
   let start = index;
   while (start > 0 && !SPLIT.test(text[start - 1])) start -= 1;
@@ -266,18 +267,18 @@ function tokenSpanAt(text, index) {
   return [start, end];
 }
 
-/**
- * Coordinates for repair: every token span the named rules flag, as
- * [{ start, end, token, rules }] sorted by start, indices in UTF-16 code
- * units against the scanned string (the same indices the finders return).
- *
- * scanText's report is a verdict — totals and a capped sample of clusters
- * for display. A repair that must touch ONLY what the scan found needs
- * positions, all of them, so it can splice those spans and leave every
- * other byte alone. Hits are expanded to their whole token (the unit a
- * repair rewrites) and deduplicated across rules; a token flagged by two
- * rules appears once with both names.
- */
+
+
+
+
+
+
+
+
+
+
+
+
 export function scanBrokenSpans(text, {
   dictionary = null,
   standalone = [],
@@ -321,14 +322,14 @@ export function formatScanReport(report, { source = "", totalChars = 0 } = {}) {
   return `${out.join("\n")}\n`;
 }
 
-/**
- * Mirror of scan.py's `clause_model`: which forms stand alone as their own
- * word. U+104D U+104C U+104F U+1024 U+102A and the like are words, not
- * affixes -- gluing them onto a neighbour is the tokeniser's own error, and
- * it surfaces as a long unknown compound rather than as damage in the text.
- *
- * Returns [standalone, stick].
- */
+
+
+
+
+
+
+
+
 export function clauseModel(filePath) {
   const mapData = (loadMap(filePath) || {}).mapData || {};
   const newClause = mapData.newClause || {};

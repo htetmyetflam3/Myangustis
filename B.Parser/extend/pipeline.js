@@ -35,16 +35,16 @@ import { pyTruthy, pyRound, RuntimeError, baseName } from "../main/parser/core/p
 
 export const DETECT_PROBE_PAGES = 20;
 
-/** Pages walked to find glyph ids the cmap cannot name, before voting on them. */
+
 const VECTOR_REPAIR_PROBE_PAGES = 12;
 
-/**
- * Whether outline repair is worth attempting.
- *
- * Only a decoding that reads glyph ids from a font program can have a
- * glyph whose name is missing from that program; the legacy and
- * ToUnicode routes name every code they draw or none.
- */
+
+
+
+
+
+
+
 function vectorRepairEnabled(decoding) {
   if (!decoding) return false;
   if (process.env.PRASER_VECTOR_REPAIR === "0") return false;
@@ -104,10 +104,10 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
 
   const objects = parsePdfObjects(raw);
   log(`[+] Objects found: ${objects.size}`);
-  /* extractMetadata() existed in read/pdf-extract.mjs and had never been
-     called once: this was a hardcoded {} threaded through three return
-     tuples into a header loop that iterated nothing. The /Info dictionary is
-     what identifies a broken document later, so it is read for real now. */
+
+
+
+
   const metadata = extractMetadata(objects, raw);
   note(provenance, { metadata });
 
@@ -125,14 +125,14 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
 
   const page = (idx, codeToUni) => {
     const [pnum, pgen] = allPages[idx];
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
     const hasImg = pageHasImages(objects, pnum, pgen);
     const [lines, w, h] = extractPageLines(objects, pnum, pgen, codeToUni);
     return {
@@ -141,18 +141,18 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
       wh: [w, h],
       text: lines.map((l) => l[3]).join("\n"),
       hasImg,
-      /* How the glyph ids became characters. Carried to the per-page report
-         because it settles a question the detector cannot: see
-         processPageRecord. */
+
+
+
       decodeKind: codeToUni && typeof codeToUni === "object" ? codeToUni.kind : null,
     };
   };
 
   function* generate() {
-    
-    
-    
-    
+
+
+
+
     const direct = new DocumentDecoding("identity");
     if (detector !== null) {
       const probeN = Math.min(DETECT_PROBE_PAGES, npages);
@@ -173,16 +173,16 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
       }
       log("[i] No Myanmar found via direct decode; trying ToUnicode/font cmap");
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
+
+
     const probeN2 = Math.min(DETECT_PROBE_PAGES, npages);
     const decodesMyanmar = (strategy) => {
       for (let i = 0; i < probeN2; i += 1) {
@@ -199,14 +199,14 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
     const fontRefs = findFontStreams(objects);
     if (pyTruthy(fontRefs)) {
       log(`[+] Embedded font-stream candidates: ${fontRefs.length}`);
-      
-      
-      
-      
-      
-      
-      
-      
+
+
+
+
+
+
+
+
       const [ffRef, ttf0, cmap0] = pickEmbeddedFont(objects, fontRefs);
       const ordered = [];
       if (ffRef) ordered.push(ffRef);
@@ -237,10 +237,10 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
         + (conflicts ? `; ${conflicts} gid conflict(s) (first font wins)` : ""));
     }
 
-    
-    
-    
-    
+
+
+
+
     const legacyFonts = detectLegacyLayoutFonts(objects, getStream, parseToUnicodeStream);
     if (legacyFonts.length) {
       note(provenance, { fonts: legacyFontFaces(objects, getStream, parseToUnicodeStream) });
@@ -254,11 +254,11 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
         + (sidecar.size ? ` (+${tuMap.size - ownTu} from sidecar cipher map)` : ""));
     }
 
-    /* The document's own reading of itself, built before the codepage
-       decision so it can COMPETE in it rather than only inherit the leavings.
-       The embedded cmap is preferred over /ToUnicode for the same reason it
-       is preferred below: it is the glyph list the font actually draws,
-       whereas /ToUnicode is a claim the font makes about itself. */
+
+
+
+
+
     const unicodeStrategy = pyTruthy(cmapMap)
       ? new DocumentDecoding("cmap", new CmapIdentityMap(cmapMap))
       : (pyTruthy(tuMap) ? new DocumentDecoding("tounicode", tuMap) : null);
@@ -269,47 +269,47 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
     let legacyPage = null;
     let legacyPageName = null;
     let legacyFontNames = null;
-    /* THE TEXT PATH IS CHOSEN, NOT FALLEN INTO.
 
-       Every path that can read this document stands as a named candidate
-       and one score decides between them. The Unicode path is always one
-       of them: it is a path on exactly the same footing as ayar and
-       wininnwa, not a fallthrough that only gets tried once the legacy
-       tables have already failed.
 
-       That is what this used to be. The whole block sat behind
-       `if (legacyMap.size)`, and legacyMap is only non-empty when the
-       document carries legacy-layout fonts -- so on a plain Unicode PDF
-       no path was ever chosen at all. The decode happened anyway, via a
-       bare if/else chain further down that nobody logged and nothing
-       scored. Reading the document as itself was the invisible default.
 
-       The legacy tables only stand as candidates when there are legacy
-       fonts to apply them to; scoring ayar and wininnwa against a
-       document with no legacy font measures nothing. */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     if (legacyMap.size) log(`[+] Legacy-layout fonts: ${legacyFonts.length}`);
     {
-      // Put the document-built vector layout first. When it intentionally
-      // equals its selected registered base, stable sorting keeps the
-      // outline-built result as the default while the normal text-quality
-      // score still has the final say.
+
+
+
+
       const codePages = legacyMap.size
         ? (vectorLayout
             ? new Map([[vectorLayout.name, vectorLayout.table], ...LEGACY_CODE_PAGES])
             : new Map(LEGACY_CODE_PAGES))
         : new Map();
       let [table, name, quality, ranking, candidateSamples] = chooseCodePage(objects, allPages, legacyMap, codePages, vectorLayout, unicodeStrategy);
-      /* THE ZAWCODE SPLIT. ZawCode-stored text is Unicode code points in
-         keyboard order, so it arrives through this same cmap/ToUnicode
-         win -- no byte table and no font name can identify it. The
-         readable result can: re-read the winning sample through the
-         ZawCode stored-order rule and let the scan gate judge which
-         reading is real Burmese (text/repair.mjs `zawCodeGuard`). A
-         detector-ZAWGYI reading is vetoed outright -- that is the
-         Zawgyi-cmap fork's text, whatever the guard's arithmetic says.
-         Splitting to the separate `zawcode` path changes no decode; it
-         routes the finished pages to the scan verdict and the
-         behind-scan mend in the worker. */
+
+
+
+
+
+
+
+
+
+
+
       let zawGuard = null;
       if (name === UNICODE_PATH && unicodeStrategy) {
         const chunks = [];
@@ -357,11 +357,11 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
             : {}),
         },
       });
-      /* Winning as "unicode" is a real result, not a fallback: the font's
-         own maps outscored every foundry table, so no legacy table is
-         applied and the decode below takes the cmap/ToUnicode branch. The
-         score still has to clear the floor -- a document whose own maps
-         score badly is not made better by them just being its own. */
+
+
+
+
+
       if (name === UNICODE_PATH || name === ZawCODE_PATH) {
         log(`[+] Unicode path won the code page score (${quality.toFixed(3)}) `
           + `-- using the font's own maps, no legacy table`);
@@ -372,11 +372,11 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
         ? [vectorLayout.fontName, ...(vectorLayout.sourceBaseFonts || [])]
         : null;
       if (name === UNICODE_PATH || name === ZawCODE_PATH) {
-        /* Winning as "unicode" is a result, not a failure, and it must not
-           be reported as one. The old message said "no registered legacy
-           layout fits" and quoted the floor -- which fired even at 0.895
-           against a floor of 0.85, telling the operator a threshold had
-           been missed when it had been cleared. */
+
+
+
+
+
         log(`[+] Text path: ${name} -- the document read as itself, from the `
           + `font's own ${unicodeStrategy ? unicodeStrategy.kind : "unicode"} `
           + `table (score ${quality.toFixed(3)}). No legacy table applied.`
@@ -402,9 +402,9 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
       }
     }
 
-    
-    
-    
+
+
+
     let decoding = null;
     if (detector !== null) {
       const legacyOptions = { legacyFontNames };
@@ -412,9 +412,9 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
         decoding = new DocumentDecoding("legacy", legacyMap, legacyPage, legacyOptions);
         log(`[+] Decoding via ${legacyPageName ? JSON.stringify(legacyPageName) : "legacy"} character map`);
       } else if (pyTruthy(cmapMap) && decodesMyanmar(new DocumentDecoding("cmap", new CmapIdentityMap(cmapMap)))) {
-        
-        
-        
+
+
+
         decoding = new DocumentDecoding("cmap", new CmapIdentityMap(cmapMap));
         log("[+] Decoding via embedded font cmap (glyph truth) "
           + "+ identity fallback for exact-Unicode fonts");
@@ -435,16 +435,16 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
         + "unmapped codes will appear as [XXXX] placeholders");
     }
 
-    /* VECTOR REPAIR. Some subsets leave a few glyphs unnamed -- the
-       Burmese medials prominently -- and the decoder then emits nothing
-       for them, so အကြီး reaches the reader as အကီး. The outlines are
-       still in the file, so recover them by shape.
 
-       Two passes. First a short probe with `recordBlind` set, which
-       collects the ids that decode to nothing; then vote on just those,
-       which is a handful of shapes rather than the whole font. The
-       repair is consulted only where the decoder produced the empty
-       string, so nothing that already decodes can be displaced. */
+
+
+
+
+
+
+
+
+
     if (vectorRepairEnabled(decoding)) {
       const blind = new Set();
       decoding.recordBlind = blind;
@@ -487,7 +487,7 @@ export function cleanupFor(cat, text) {
 
 
 function convertLine(t, cat, applyCleanup) {
-  if (cat === "ZAWGYI") return orderText(Rabbit.zg2uni(t)); 
+  if (cat === "ZAWGYI") return orderText(Rabbit.zg2uni(t));
   if (cat === "UNICODE" && applyCleanup) return cleanupText(t);
   return orderText(t);
 }
@@ -514,29 +514,29 @@ export function processPageRecord(pg, detector, applyCleanup, log = () => {}, wa
   const [category, prob] = detector.detect(raw);
   let cat = normCategory(category);
 
-  /* The cmap fork. A page decoded through the font's OWN tables -- its cmap,
-     or its /ToUnicode -- is one of two different books, and the decode kind
-     alone cannot say which:
 
-     - "unicode" path: a Unicode font in a shaped PDF stores syllables in
-       DRAWING order -- ေ and ြ ahead of their consonant -- which is also
-       how Zawgyi is stored, so the detector calls it Zawgyi. Rewriting it
-       through Rabbit is the known disaster (ယဲ့နင် became ယဲ့နင၏, 829 pages
-       of a 4,414-page book came out as Latin Extended-B).
-     - "zawgyi-cmap" path: a Zawgyi font (Zawgyi-One and kin) whose own
-       cmap names ZAWGYI slots. Decoded "from the font's own table" it is
-       still Zawgyi text wearing Unicode shapes (သတ္ျဖတ္သူ for သတ်ဖြတ်သူ) and
-       only Rabbit makes it real Burmese. sample.pdf/test.pdf are this book.
 
-     A blanket veto either way breaks one of them, so the two readings
-     compete on the text itself: both are reordered and structurally scored
-     (mm-score: marks attached to a base, in legal order). Measured on the
-     suite books, zawgyi-cmap pages read 0.76-0.93 as Unicode and 1.000
-     through Rabbit; true Unicode pages read ~1.000 as themselves and Rabbit
-     only dents them. Rabbit therefore has to win by a clear margin on
-     enough marks, else the page stays on the unicode path -- never rewrite
-     on thin evidence. Identity and legacy decodes never reach this fork and
-     still follow the detector straight to Rabbit. */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   if (cat === "ZAWGYI" && (pg.decodeKind === "cmap" || pg.decodeKind === "tounicode")) {
     const asUnicode = scoreText(orderText(raw));
     const asZawgyi = scoreText(orderText(Rabbit.zg2uni(raw)));
@@ -554,9 +554,9 @@ export function processPageRecord(pg, detector, applyCleanup, log = () => {}, wa
   }
 
   if (cat === "UNKNOWN") {
-    
-    
-    
+
+
+
     const base = orderText(raw);
     const rep = {
       page: idx + 1, category: cat, prob: safeProb(prob), text: base, nChanges: 0,
@@ -682,12 +682,12 @@ export function processPdfBytes(data, detector, filename = "upload.pdf", log = (
   let textChars = 0;
   for (const rep of reportsIter) {
     const cat = rep.category;
-    const base = rep.text; 
+    const base = rep.text;
     textChars += base.length;
     if (textChars > MAX_TEXT_CHARS) {
       throw new RuntimeError(`Extracted text exceeds the ${MAX_TEXT_CHARS} character cap`);
     }
-    const clean = cleanupFor(cat, base); 
+    const clean = cleanupFor(cat, base);
     reports.push({ page: rep.page, category: cat, prob: rep.prob, base, clean });
     pages.push({ text: base, lines: rep.lines, wh: rep.wh, hasImg: rep.hasImg });
     counts[cat] = (counts[cat] ?? 0) + 1;
@@ -704,7 +704,7 @@ export function processPdfBytes(data, detector, filename = "upload.pdf", log = (
 export const DOCX_CHUNK_PARAGRAPHS = 80;
 
 export function chunkParagraphs(paragraphs, perChunk = DOCX_CHUNK_PARAGRAPHS) {
-  if (!paragraphs.length) return [""]; 
+  if (!paragraphs.length) return [""];
   const out = [];
   for (let i = 0; i < paragraphs.length; i += perChunk) {
     out.push(paragraphs.slice(i, i + perChunk).join("\n"));
@@ -731,10 +731,10 @@ function buildDocxJob(paragraphs, filename, detector, log) {
   chunks.forEach((chunk, idx) => {
     const [category, prob] = detector.detect(chunk);
     const cat = normCategory(category);
-    
-    
+
+
     const base = cat === "ZAWGYI" ? orderText(Rabbit.zg2uni(chunk)) : orderText(chunk);
-    const clean = cleanupFor(cat, base); 
+    const clean = cleanupFor(cat, base);
     reports.push({ page: idx + 1, category: cat, prob: safeProb(prob), base, clean });
     pages.push({ text: base });
     counts[cat] = (counts[cat] ?? 0) + 1;
@@ -779,8 +779,8 @@ export async function processBytesDefault(data, kind, detector, filename = null,
   const k = (kind || "").toLowerCase();
   if (k === "pdf") return processPdfBytes(data, detector, filename || "upload.pdf", log, options);
   if (k === "docx") {
-    
-    
+
+
     const probe = await processDocxBytesExternal(data, detector, filename || "upload.docx", log);
     log(externalQualityOk(probe.counts)
       ? "    mammoth probe passed; handing the original DOCX to PRASER"
@@ -849,19 +849,19 @@ export function buildFinalPages(job, applyCleanup) {
 
 export { pyRound, baseName };
 
-/**
- * The PDF half of the "null" handling: a document that has a text layer AND
- * image areas worth reading.
- *
- * A scanned novel is the case that matters. It often does carry a text
- * layer, but it is noise -- whatever the scanning tool emitted -- while the
- * real content is in the page images. Extraction alone returns the noise;
- * OCR alone throws away a text layer that may be partly good. So both run:
- * the text core keeps what it found, every page carrying an image is
- * rendered and marked, and the manager sends those renders to the OCR lane
- * and stitches the result back over the markers -- the same contract DOCX
- * already uses, which is why the marker is no longer named after DOCX.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
 export async function markPdfImagePages(bytes, job, imageDir, log = () => {}) {
   const files = [];
   const reports = Array.isArray(job?.reports) ? job.reports : [];

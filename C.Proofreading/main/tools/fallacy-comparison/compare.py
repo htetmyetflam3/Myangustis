@@ -25,38 +25,21 @@ from difflib import SequenceMatcher
 
 import json5
 
-ROOT = Path(__file__).resolve().parent.parent          # Proofreading/main
-REPO = ROOT.parents[1]                                 # repository root
-QUALITY_DIR = Path(__file__).resolve().parent / "quality"
+ROOT = Path(__file__).resolve().parents[2]             # C.Proofreading/main
+REPO = Path(__file__).resolve().parents[4]             # repository root
+QUALITY_DIR = ROOT / "tools" / "Burmese-Pos"
 sys.path.insert(0, str(QUALITY_DIR))
-from tag import tag_text  # noqa: E402  (black box: spawns tag-both.mjs -> BindEngine)
+from tag import tag_text  # noqa: E402  (Node shim calls BindEngine)
 
-VERSION = 3
+VERSION = 4
 REFERENCE = ROOT/'content/kmt-pos/ယဲ့နင်.raw_pos.txt'
 WORK = ROOT/'content/mtranslate/comparison'
 PROFILE = ROOT/'content/analysis/reference-data-audit.json'
 
-# Current in-repo data sources (data, not engine code): the single sealed
-# master lives at the repo root and is read through the root secure.js node
-# door — secure.js owns the .env key and the sealed cache, so this audit gets
-# the full master (including mapData) without ever holding the key or writing
-# a readable JSON copy. The engine's rule notes and the runtime box are
-# fingerprinted directly. Normalization is NOT reimplemented here — bindings
-# keep their literal surface, so Evidence walks the exact strings the tagger
-# emitted.
-MASTER_ENC = REPO/'master.json.enc'
-SECURE_JS = REPO/'secure.js'
-RULES = REPO/'Engine/architecture/knowledge/isTreasure/mainrules.js'
-BOX_WASM = REPO/'Engine/architecture/MonoSyllabism/map/box.wasm'
-
-# Family -> tagger code, owner-confirmed vocabulary (rbvn is a kernel override).
-POS_CODES = {
-    'ADJECTIVE': 'aj', 'ADVERB': 'av', 'CONJUNCTION': 'cn', 'INTERJECTION': 'in',
-    'NOUN': 'n', 'PRONOUN': 'pn', 'VERB': 'v', 'PARTICLE': 'p',
-    'WIBAT': 'w', 'RBNV': 'rbvn',
-}
-FAMILIES = {'wibat': 'WIBAT', 'conjunction': 'CONJUNCTION', 'particle': 'PARTICLE',
-            'thanbanda': 'CONJUNCTION', 'paccaya': 'PARTICLE'}
+# The engine owns POS tagging and ID mapping; this process reads its output.
+DATA_BRIDGE = REPO / 'tools-box/js/engine-data.js'
+RULES = REPO / 'Architecture/Engine/knowledge/isTreasure/mainrules.js'
+BOX_WASM = REPO / 'Architecture/Engine/MonoSyllabism/map/box.wasm'
 
 POLICY = {
     'phase': 'MT comparison only', 'pos_overrides': False, 'automatic_replacements': False,
@@ -157,23 +140,16 @@ def _classify_form(form):
     return 'literal'
 
 
-def load_master() -> dict:
-    """Read the sealed repo-root master through secure.js (node door).
-
-    secure.js owns the .env key and the sealed cache; Python never holds the
-    key and never writes a plaintext copy. Returns the full master including
-    mapData, so the annotation hash below covers the same data as the engine.
-    """
-    if not SECURE_JS.is_file() or not MASTER_ENC.is_file():
-        raise ComparisonError(f'sealed master door is missing: {SECURE_JS}')
-    script = ("import {readMasterJson} from %s;"
-              "process.stdout.write(JSON.stringify(readMasterJson()));"
-              % json.dumps(str(SECURE_JS)))
-    proc = subprocess.run(['node', '--input-type=module', '-e', script],
-                          capture_output=True, text=True)
+def engine_data(operation: str) -> dict:
+    """Ask the engine's Node bridge for its data or source paths."""
+    proc = subprocess.run(['node', str(DATA_BRIDGE), operation], capture_output=True, text=True)
     if proc.returncode:
-        raise ComparisonError(f'secure.js master load failed: {proc.stderr.strip()}')
-    master = json.loads(proc.stdout)
+        raise ComparisonError(f'engine data load failed: {proc.stderr.strip()}')
+    return json.loads(proc.stdout)
+
+
+def load_master() -> dict:
+    master = engine_data('master')
     for section in ('top', 'resolution', 'dictionary'):
         if section not in master:
             raise ComparisonError(f'sealed master is missing {section}')
@@ -182,6 +158,7 @@ def load_master() -> dict:
 
 def knowledge(work=WORK):
     master = load_master()
+    master_path = Path(engine_data('paths')['master'])
     if not master.get('top') or not master.get('resolution'):
         raise ComparisonError('Master top/resolution sections are required for comparison')
     rules = _rules_document()
@@ -211,7 +188,7 @@ def knowledge(work=WORK):
                 if form in seen: continue
                 seen.add(form)
                 add(form, {'source': source, 'data_path': '.'.join(parts), 'role_path': parts,
-                           'family': family, 'pos_code': POS_CODES[FAMILIES[family]],
+                           'family': family,
                            'requires_disambiguation': 'disambiguate' in parts})
         elif isinstance(value, dict):
             for key, child in value.items():
@@ -220,7 +197,6 @@ def knowledge(work=WORK):
             raise ComparisonError(f"Unexpected role-data shape at {'.'.join(parts)}")
 
     for family, value in master['top'].items():
-        if family not in FAMILIES: raise ComparisonError(f'Unmapped top family: {family}')
         walk_arrays(value, ['top', family], 'top', family)
     for family in ('wibat', 'thanbanda', 'paccaya'):
         if family in rules:
@@ -269,14 +245,14 @@ def knowledge(work=WORK):
     comparison_data = {'top': master['top'], 'resolution': master['resolution'], 'rules': rules}
     annotation_data = {'dictionary': master['dictionary'], 'mapData': master['mapData']}
     obj = {
-        'schema_version': 1,
-        'sources': {'master': str(MASTER_ENC.relative_to(REPO)), 'master_sha256': file_hash(MASTER_ENC),
+        'schema_version': 2,
+        'sources': {'master': str(master_path.relative_to(REPO)), 'master_sha256': file_hash(master_path),
                     'rules': str(RULES.relative_to(REPO)), 'rules_sha256': file_hash(RULES),
                     'box_wasm_sha256': file_hash(BOX_WASM)},
         'comparison_data_sha256': identity(comparison_data),
         'tag_data_sha256': identity(annotation_data),
         'wasm_sha256': file_hash(BOX_WASM),
-        'pos_codes': POS_CODES, 'bindings': bindings, 'unresolved': unresolved,
+        'bindings': bindings, 'unresolved': unresolved,
         'normalizations': normalizations, 'grammar_rules': grammar_rules,
         'grammar_section_sizes': {key: len(value) for key, value in rules.items()},
         'resolution': master['resolution'], 'policy': POLICY,
@@ -284,7 +260,7 @@ def knowledge(work=WORK):
     }
     obj['knowledge_fingerprint'] = identity({
         'version': VERSION, 'data': obj['comparison_data_sha256'], 'sequences': sequence_rules,
-        'wasm': obj['wasm_sha256'], 'policy': obj['policy'], 'pos_codes': obj['pos_codes'],
+        'wasm': obj['wasm_sha256'], 'policy': obj['policy'],
         'evaluator': file_hash(Path(__file__))})
     return obj
 
@@ -341,10 +317,9 @@ class Evidence:
                 surface += value
                 for index in node.get(None, []):
                     binding = self.bindings[index]
-                    code = binding.get('pos_code')
                     lexical.append({'unit_index': unit_index, 'token_start': start, 'token_end': end+1,
                                     'surface': surface, 'binding': binding,
-                                    'raw_pos_support': None if code is None else code in tokens[end]['raw_pos']})
+                                    'engine_raw_pos': [item['raw_pos'] for item in tokens[start:end+1]]})
         return lexical
 
     def analyze(self, raw, *, samples=2, retain=0):
@@ -364,7 +339,7 @@ class Evidence:
                 if len(examples[key]) < samples:
                     examples[key].append({'unit_index': unit_index, 'token_start': hit['token_start'],
                                           'token_end': hit['token_end'], 'surface': hit['surface'],
-                                          'raw_pos_support': hit['raw_pos_support']})
+                                          'engine_raw_pos': hit['engine_raw_pos']})
                 if len(retained) < retain: retained.append(hit)
             totals['lexical_binding_hits'] += len(hits)
         entries = [{'source': source, 'data_path': data_path, 'normalized_form': form,
@@ -509,7 +484,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     temporary = None
     try:
-        protected = {MASTER_ENC.resolve(), RULES.resolve(), args.reference.resolve()}
+        protected = {Path(engine_data('paths')['master']).resolve(), RULES.resolve(), args.reference.resolve()}
         protected.update(p.resolve() for p in (ROOT/'input').glob('*') if p.is_file())
         if args.input: protected.add(args.input.resolve())
         proposed = (args.output or args.reference_profile) if args.profile \

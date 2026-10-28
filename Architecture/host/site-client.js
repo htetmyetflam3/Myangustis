@@ -1,14 +1,14 @@
-// Outbound half of the Gen2 contract: the ENGINE initiates both calls.
-//
-//   pullSource()  POST {SITE_QUEUE_URL}        -> text/plain stream + X-* headers
-//   pushResult()  POST {SITE_QUEUE_URL}/result -> raw body + X-* headers
-//
-// Site status semantics (engineCollect.js):
-//   200  source streamed (404 while the bound job is still being prepared)
-//   403  key refused / binding burned        — terminal, do not retry
-//   410  jobToken expired                     — terminal
-//   409  illegal job state for this call      — terminal
-//   200 + { ok:true, state:'FINISHED' }       — result accepted
+
+
+
+
+
+
+
+
+
+
+
 import { config, sha256Hex } from './config.js';
 
 export class SiteClientError extends Error {
@@ -19,7 +19,7 @@ export class SiteClientError extends Error {
   }
 }
 
-// The 7 JOB_META_FIELDS the Site queue validates as non-empty strings <=512 chars.
+
 export function metaHeaders(record) {
   return {
     'X-Job-Token': record.jobToken,
@@ -44,11 +44,11 @@ function metaBody(record) {
   };
 }
 
-/**
- * Pull the raw source text. Retries only on 404 (not ready yet) until the
- * jobToken TTL deadline. Verifies the bytes against the Site's X-Content-*
- * expectations when they were supplied.
- */
+
+
+
+
+
 export async function pullSource(record, { fetchImpl = fetch, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
   if (!config.siteQueueUrl) throw new SiteClientError('SITE_QUEUE_URL is not configured', { terminal: true });
   const deadline = Date.now() + config.jobTimeoutMs;
@@ -97,12 +97,12 @@ export async function pullSource(record, { fetchImpl = fetch, sleep = (ms) => ne
   }
 }
 
-/**
- * Push the finished artifact as a raw body with the X-* metadata headers.
- * The engine's natural artifact is checked text: extension txt / text/plain,
- * which the Site accepts directly (and renders to docx/pdf itself when it
- * staged a docx source — acceptsAnalysisResultExtension).
- */
+
+
+
+
+
+
 export async function pushResult(record, artifact, { fetchImpl = fetch } = {}) {
   if (!config.resultUrl) throw new SiteClientError('SITE_QUEUE_URL is not configured', { terminal: true });
   const res = await fetchImpl(config.resultUrl, {

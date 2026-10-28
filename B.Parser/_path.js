@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
+import { parseEnv } from "node:util";
 
 const COMPONENT_ROOT = path.dirname(fileURLToPath(import.meta.url));
 export const PARSED_ROOT = path.join(COMPONENT_ROOT, "main");
@@ -13,20 +14,39 @@ async function resolveBaseDir() {
   const componentExporter = path.join(COMPONENT_ROOT, "_index.js");
   if (fs.existsSync(rootExporter) && fs.existsSync(componentExporter)) {
     try {
-      const { JUNK_DIR } = await import("./_index.js");
-      if (typeof JUNK_DIR !== "string" || !path.isAbsolute(JUNK_DIR)) {
+      const { JUNK_DIR, ENV_RESULT } = await import("./_index.js");
+      if (typeof JUNK_DIR !== "string" || !path.isAbsolute(JUNK_DIR) ||
+          !ENV_RESULT || !Array.isArray(ENV_RESULT.sources)) {
         throw new TypeError("Expected an absolute workspace path");
       }
-      return JUNK_DIR;
+      return { base: JUNK_DIR, env: ENV_RESULT };
     } catch {
       // Missing or unloadable upstream exporters use this file's location.
     }
   }
-  return COMPONENT_ROOT;
+  const file = path.join(COMPONENT_ROOT, '.env');
+  const sources = [];
+  const applied = [];
+  try {
+    const values = parseEnv(fs.readFileSync(file, 'utf8'));
+    sources.push(file);
+    for (const [key, value] of Object.entries(values)) {
+      if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) &&
+          (process.env[key] === undefined || process.env[key] === '')) {
+        process.env[key] = value;
+        applied.push(key);
+      }
+    }
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+  return { base: COMPONENT_ROOT, env: { sources, applied } };
 }
 
-export const BASE_DIR = await resolveBaseDir();
-// Only the base changes between layouts; suffixes stay identical.
+const resolved = await resolveBaseDir();
+export const BASE_DIR = resolved.base;
+export const ENV_RESULT = resolved.env;
+
 export const RUNTIME_ROOT = path.join(BASE_DIR, "Parser");
 const FONT_ROOT = path.join(BASE_DIR, "fonts");
 
@@ -45,8 +65,8 @@ export const DEFAULT_MYANMAR_FONT = path.join(OUTPUT_FONT_DIR, "MyanmarSagar.ttf
 
 export const DEFAULT_OUTPUT_DIR = path.join(RUNTIME_ROOT, ".output");
 
-/* Append-only provenance register (core/provenance.mjs). Authoring equipment:
-   remove this line when the register goes. */
+
+
 export const REGISTER_LOG = path.join(DEFAULT_OUTPUT_DIR, "praser-register.log");
 
 const LATIN_FONT_CANDIDATES = [

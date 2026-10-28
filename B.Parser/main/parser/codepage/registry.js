@@ -76,35 +76,35 @@ export const LEGACY_CODE_PAGES = new Map([
   ['wininnwa', WININNWA_LEGACY_CODE_PAGE],
 ]);
 
-/* The ZawCode Keymagic layout table (zawcode-layout.mjs) is deliberately
-   NOT in this blanket competition and NOT gated in by a font name either:
-   identification is by the readable result. ZawCode-stored text arrives
-   through the document's own Unicode cmap (see ZawCODE_PATH below), so
-   it is split out of the Unicode reading after that reading wins -- a
-   byte-table candidate would only re-litigate a decode that already
-   produced correct Unicode code points in stored order. */
 
-/* The name the UNICODE path runs under when it competes in chooseCodePage().
 
-   It is deliberately NOT in LEGACY_CODE_PAGES: it is not a byte->letter
-   table from a foundry, it is the document's own font maps (the embedded
-   cmap, else /ToUnicode). Keeping it out of that Map is what stops the
-   generic "decode with each registered table" loop from treating it like
-   one -- it needs no table, and passing it a null one would decode nothing.
 
-   It earns its place by scoring, on exactly the same scoreText() the
-   legacy tables are judged by. Before it existed the only way to reach a
-   font's own Unicode maps was to have every legacy table score below
-   LEGACY_QUALITY_FLOOR -- a rejection, not a choice. A document whose font
-   simply names its own glyphs correctly had to wait for the legacy tables
-   to fail before it could be read as what it already was. */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export const UNICODE_PATH = 'unicode';
 
-/* The ZawCode split of that same Unicode/cmap reading. It is a separate
-   named path, not a legacy table: the decode stays the font's own cmap /
-   /ToUnicode (so cmap blind-gid vector repair still applies), but the
-   pipeline relabels the win when the readable-result guard
-   (text/repair.mjs `zawCodeGuard`) shows the stored order is ZawCode's.
-   The separate name is what routes the document to the scan verdict and
-   the behind-scan mend in the worker; pure `unicode` is never scanned. */
+
+
+
+
+
+
+
 export const ZawCODE_PATH = 'zawcode';

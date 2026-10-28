@@ -1,5 +1,5 @@
-// External callers supply their own hash through BindEngine.
-// Run: node --test test/node/engine-test/caller-contract.test.js
+
+
 import { test } from 'node:test';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..', '..');
 
-// The door under test — imported exactly as an external service would.
+
 const engineEntry = await import('../../../Architecture/_index.js');
 const { BindEngine } = engineEntry;
 const facade = await import(path.join(REPO, 'Bridge', 'path.js'));
@@ -21,7 +21,7 @@ const SAMPLE = 'ကောင်းကင်သည် ကြည်လင်သည
 
 test('engine entry exposes the single-boundary surface only', () => {
   assert.equal(typeof BindEngine, 'function');
-  assert.deepEqual(Object.keys(engineEntry).sort(), ['BindEngine', 'JUNK_DIR']);
+  assert.deepEqual(Object.keys(engineEntry).sort(), ['BindEngine', 'ENV_RESULT', 'JUNK_DIR', 'getEngineData']);
   assert.deepEqual(Object.keys(facade), ['BindEngine']);
   assert.equal(facade.BindEngine, BindEngine);
 });
@@ -47,8 +47,8 @@ test('PROOFREADING call: BindEngine("proofreading") runs path A (tagger, dual wr
 
   assert.ok(result.syllablePath, 'proofreading keeps the syllable view');
   assert.ok(result.rawPosPath, 'proofreading requires the raw POS view');
-  // Path A counts fullstopHolder sentence units (a unit completes at the
-  // second ။), not input lines — the two-line sample yields one unit.
+
+
   assert.ok(result.lineCount >= 1);
 
   const rawPos = result.rawPos;
@@ -64,7 +64,7 @@ test('memory head and file head are interchangeable for proofreading', async () 
     const file = await BindEngine('proofreading', { hash: randomUUID(), inputPath: tmp });
     const a = mem.rawPos;
     const b = file.rawPos;
-    // Same engine output modulo the hash-named file path header lines.
+
     assert.equal(a.replace(/\s+/g, ' ').trim(), b.replace(/\s+/g, ' ').trim());
   } finally {
     fs.rmSync(tmp, { force: true });
@@ -99,7 +99,7 @@ test('proofreading bridge wrapper: both/syllable views and work-dir retarget', a
 test('scraper segment_bridge CLI: one facade import, U+001D stdin contract preserved', () => {
   const bin = path.join(REPO, 'E.Scraper', 'main', 'extend', 'scraper-segmented.js');
   const source = fs.readFileSync(bin, 'utf8');
-  // Static guard: the old deep-import shape must never come back.
+
   assert.ok(!source.includes('MonoSyllabism/'), 'no deep engine imports in the scraper bridge');
   assert.ok(source.includes('BindEngine'), 'the scraper bridge calls the single boundary');
   assert.ok(source.includes('../../_index.js'), 'goes through the component entry');

@@ -1,36 +1,31 @@
-// secure.js — the ONLY loader for the sealed master.
-//
-// Two concerns live here:
-//   1. key      secretloader resolves MASTER_JSON_KEY: process.env first,
-//               then caller .env (none here), then repo root .env, then
-//               .data/.env (the sealed-key companion next to master.json.enc).
-//   2. source   master.json.enc beside this file — MGR1 container,
-//               [4-byte magic][12-byte IV][16-byte GCM tag][AES-256-GCM body].
-//   3. cache    master.json.cache beside this file. It is a SEALED cache
-//               (MGC1 container, same key), never a readable plain JSON.
-//               On load the cache is reused when the source .enc is unchanged
-//               (sha256 envelope); a rotated key or a changed source fails
-//               verification and transparently rebuilds it.
-//
-// Python callers reach this same file through `node --input-type=module`,
-// so JS and Python share one on-disk cache.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadSecrets, requireSecret } from "../secretloader.js";
+import { ENV_RESULT } from "../_path.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-// Ensure secrets are loaded before reading the key. loadSecrets is idempotent;
-// calling it here means even a standalone `node .data/secure.js`-style probe
-// finds MASTER_JSON_KEY without the caller having to remember.
-loadSecrets(import.meta.url);
 
 export const MASTER_ENC = path.join(HERE, "master.json.enc");
 const CACHE_FILE = path.join(HERE, "master.json.cache");
 
-const MAGIC = "MGR1"; // sealed source
-const CACHE_MAGIC = "MGC1"; // sealed cache
+const MAGIC = "MGR1";
+const CACHE_MAGIC = "MGC1";
 const IV_BYTES = 12;
 const TAG_BYTES = 16;
 
@@ -41,8 +36,12 @@ function checkKey(hex) {
 }
 
 function loadKey() {
-  // requireSecret throws a clear error naming where we searched if missing.
-  return checkKey(requireSecret("MASTER_JSON_KEY", import.meta.url));
+  const key = process.env.MASTER_JSON_KEY;
+  if (!key) {
+    const searched = ENV_RESULT.sources.length ? ENV_RESULT.sources.join(", ") : "no .env files found";
+    throw new Error(`Missing required secret "MASTER_JSON_KEY". Checked process.env and ${searched}.`);
+  }
+  return checkKey(key);
 }
 
 function seal(magic, key, plaintext) {
@@ -72,7 +71,7 @@ function sha256(file) {
   return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
 }
 
-let memoizedText; // in-process memo on top of the on-disk cache
+let memoizedText;
 
 function writeCache(key, sourceHash, text) {
   const tmp = `${CACHE_FILE}.${process.pid}.tmp`;
@@ -96,7 +95,7 @@ export function readMasterText() {
     }
   }
   const text = openContainer(MAGIC, key, MASTER_ENC);
-  JSON.parse(text); // sanity: the source must hold valid JSON
+  JSON.parse(text);
   writeCache(key, sourceHash, text);
   memoizedText = text;
   return memoizedText;
@@ -106,8 +105,8 @@ export function readMasterJson() {
   return JSON.parse(readMasterText());
 }
 
-// Generic sealed-file reader for explicit dictionary overrides and build
-// tooling: a plain file is read as-is, and an encrypted twin wins when present.
+
+
 export function readSecureText(file) {
   const enc = file.endsWith(".enc") ? file : `${file}.enc`;
   if (fs.existsSync(enc)) return openContainer(MAGIC, loadKey(), enc);

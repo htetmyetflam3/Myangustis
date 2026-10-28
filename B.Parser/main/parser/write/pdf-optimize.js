@@ -1,10 +1,10 @@
-/**
- * qpdf second pass for every generated PDF.
- *
- * qpdf is Apache-2.0 licensed and provides deterministic stream compression,
- * object cleanup, and standards-compliant Fast Web View linearization without
- * loading a PDF rendering engine. Opt out with PRASER_PDF_OPTIMIZE=0.
- */
+
+
+
+
+
+
+
 import fs from "node:fs";
 import { runQpdf } from "../core/qpdf.js";
 
@@ -16,11 +16,11 @@ export const pdfOptimizeEnabled = () =>
 let linearizeSupported = null;
 export const linearizeAvailable = () => linearizeSupported;
 
-/**
- * Re-write and optionally linearize PDF bytes with qpdf.
- *
- * @returns {Promise<{bytes: Buffer, linearized: boolean, before: number, after: number}>}
- */
+
+
+
+
+
 export async function optimizePdfBytes(input, { linearize = true } = {}) {
   const before = Buffer.isBuffer(input) ? input : Buffer.from(input);
   const args = [
@@ -46,7 +46,7 @@ export async function optimizePdfBytes(input, { linearize = true } = {}) {
   }
 }
 
-/** Write the qpdf second pass, retaining a readable first-pass file on error. */
+
 export async function writeOptimizedPdf(outPath, bytes, log = () => {}) {
   if (!pdfOptimizeEnabled()) {
     fs.writeFileSync(outPath, bytes);

@@ -1,13 +1,13 @@
 """secretloader.py — single .env / environment loader for the Python side.
 
-Mirrors secretloader.js semantics so JS and Python resolve secrets identically:
+Loads Python secrets independently of the JavaScript workspace environment:
 
     Priority per key (first win):
       1. os.environ already set (shell, CI, systemd, Docker).
       2. .env next to the caller's file (the directory of __file__).
       3. .env at the repo root (walk up from the caller until pyproject.toml
          or package.json is found).
-      4. .data/.env at the repo root (sealed-key companion).
+      4. Architecture/Engine/.data/.env (sealed-key companion).
 
     If no .env is found anywhere, os.environ is the sole source. Only
     require_secret / require_all throw on miss.
@@ -78,7 +78,7 @@ def find_repo_root(start_dir: str | Path) -> Path | None:
 
 
 def candidate_env_files(caller_file: str | Path) -> list[Path]:
-    """Return existing .env paths, priority-ordered (caller → root → .data/)."""
+    """Return existing .env paths, priority-ordered (caller → root → engine data)."""
     caller_dir = Path(caller_file).resolve().parent
     cands: list[Path] = []
     local = caller_dir / ".env"
@@ -89,9 +89,9 @@ def candidate_env_files(caller_file: str | Path) -> list[Path]:
         root_env = root / ".env"
         if root_env.is_file() and root_env != local:
             cands.append(root_env)
-        data_env = root / ".data" / ".env"
-        if data_env.is_file():
-            cands.append(data_env)
+    data_env = Path(__file__).resolve().parent / "Architecture" / "Engine" / ".data" / ".env"
+    if data_env.is_file() and data_env not in cands:
+        cands.append(data_env)
     return cands
 
 

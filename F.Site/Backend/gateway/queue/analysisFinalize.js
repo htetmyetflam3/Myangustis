@@ -46,9 +46,9 @@ async function synthesizeFromText({ text, requested, filename, submitId, outputD
 
 export function acceptsAnalysisResultExtension({ returned, requested, staged }) {
   if (returned === requested) return true;
-  // For analysis, the Site stages an editable DOCX source and the Engine may
-  // return checked text. The Site then owns final DOCX/PDF rendering from the
-  // queue's requestedExtension.
+
+
+
   return staged === 'docx' && returned === 'txt' && (requested === 'docx' || requested === 'pdf');
 }
 

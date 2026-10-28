@@ -70,26 +70,14 @@ _IMPOSSIBLE = [
 
 # ── optional: judge the words against a real dictionary ──────────────────
 def _read_sealed(path):
-    """Decrypt ``master.json.enc`` with the project's OWN loader.
-
-    The container is [4-byte "MGR1"][12-byte IV][16-byte GCM tag][AES-256-GCM]
-    and the single loader now lives at the repo root (``secure.js``), next to
-    the single ``master.json.enc`` and the ``.env`` holding the key; it also
-    owns the sealed cache. We call it through node rather than lifting the key
-    into Python: the key stays where its author put it, and this stays a
-    reader that reuses the same on-disk cache as every JavaScript caller.
-    """
+    """Read sealed JSON through the Node bridge and the engine's loader."""
     import subprocess
-    here = os.path.dirname(os.path.abspath(__file__))
-    # modules/ -> Python/ -> main/ -> Parser/ -> repository root
-    loader = os.path.abspath(os.path.join(
-        here, "..", "..", "..", "..", "secure.js"))
-    if not os.path.exists(loader):
-        raise RuntimeError(f"sealed map needs {loader}, which is not in this tree")
-    script = ("import {readSecureJson} from %s;"
-              "process.stdout.write(JSON.stringify(readSecureJson(%s)));"
-              % (json.dumps(loader), json.dumps(os.path.abspath(path))))
-    out = subprocess.run(["node", "--input-type=module", "-e", script],
+    from pathlib import Path
+    repo = next((p for p in Path(__file__).resolve().parents if (p / "index-path.js").is_file()), None)
+    if repo is None:
+        raise RuntimeError("sealed map requires the repository's index-path.js")
+    bridge = repo / "tools-box/js/engine-data.js"
+    out = subprocess.run(["node", str(bridge), "file", os.path.abspath(path)],
                          capture_output=True, check=True).stdout
     return json.loads(out)
 

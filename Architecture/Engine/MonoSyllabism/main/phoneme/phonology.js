@@ -41,10 +41,10 @@ function isEnglishBlock(tok) {
 
 function isTreeId(id) {
 	if (!id || id.length !== 4) return false;
-	/* No /^\d{4}$/ branch: ids were 4 numeric digits in the old scheme
-	   (1500/1000 were literal standalones). They are prefix + 3 digits
-	   now, standalones have π, so a bare 4-digit id cannot occur — the
-	   branch could only ever collide with a caller's own number. */
+
+
+
+
 	if (/^[A-Z¶£¥¦§¨©ª«¬®¯°±²³]\d{3}$/.test(id)) return true;
 	if (/^π\d{3}$/.test(id)) return true;
 	return false;
@@ -66,9 +66,9 @@ function* walkLine(burmeseTokens, idTokens) {
 		const burmeseTok = burmeseTokens[pos];
 		const idTok = idTokens[pos];
 
-		/* Fullstop never walks the tree — skip it, keep the surface,
-		   and suffix <eos> directly behind (the way the segmentor
-		   suffixes √ behind each syllable). No tag, ever. */
+
+
+
 		if (burmeseTok === BURMESE_FULLSTOP) {
 			yield {
 				syllables: [asEos(BURMESE_FULLSTOP)],

@@ -99,7 +99,7 @@ def _load_dotenv() -> None:
     Resolution order (process.env wins always):
       1. caller .env  (next to hfinit.py — tools-box/python/.env, rarely used)
       2. repo root .env
-      3. <repo>/.data/.env
+      3. <repo>/Architecture/Engine/.data/.env
     Idempotent.
     """
     load_secrets(__file__)

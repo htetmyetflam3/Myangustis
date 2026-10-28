@@ -1,5 +1,4 @@
-import { loadSecrets } from '../secretloader.js';
-await loadSecrets(import.meta.url);
+import '../index-path.js';
 import crypto from "node:crypto";
 import express from "express";
 import cookieParser from "cookie-parser";
@@ -99,7 +98,7 @@ if (cookieSecret === sessionSecret) {
 }
 validatePraserAssets();
 ensurePraserDirs();
-// Startup creates directories above; existing artifacts are retained.
+
 
 const frontendIndex = path.join(FRONTEND, "index.html");
 const reactIndex = path.join(REACT_FRONTEND, "index.html");
@@ -149,8 +148,8 @@ const request = createRequest({ db });
 const processingQueue = createProcessingQueue({
   metadataStore: request,
   ttlMs: ARTIFACT_TTL_MS,
-  // Until an Engine is configured, analysis closes on the site artifact.
-  // The queue records that choice as engineRound:'unwired'.
+
+
   engineWired: () => engineDispatcher.configured,
 });
 const hiddenProcessor = createHiddenProcessor({
@@ -159,25 +158,25 @@ const hiddenProcessor = createHiddenProcessor({
   jobTimeoutMs: engineCfg.jobTimeoutMs,
 });
 
-/* HTTP logging. createHttpConsoleLogger() has existed in
-   backend/gateway/proxy/httpLog.js since it was written and was never
-   mounted -- index.js imported morgan and then never called it, so every
-   request went unlogged while a finished colour formatter sat unused. It is
-   mounted first so a request is logged even when a guard rejects it. */
-/* The passive half of the log: one listener for every stage that emits,
-   installed once. Stages emit counts; this decides console and disk. */
+
+
+
+
+
+
+
 installPassiveLog({
   file: process.env.LOG_FILE || "",
-  // LOG_CHECKS=1 runs the chain invariants against real traffic, in this
-  // process. Off by default: no check subscriber is attached at all.
+
+
   checks: /^(1|true|on|yes)$/i.test(String(process.env.LOG_CHECKS ?? "")),
 });
 
-/* With checks on, the pure half of the suite runs here, before the first
-   request, so `npm test` is not a separate step for day-to-day work. It is
-   deliberately not awaited: a self-test must not delay the port opening,
-   and must never take the server down. The database and server suites are
-   NOT run -- see logen/selftest.js for why. */
+
+
+
+
+
 if (checksEnabled()) {
   runSelfTests().catch((error) => console.error("[selftest]", error.message));
 }
@@ -204,10 +203,10 @@ app.use(
       : false,
   }),
 );
-/* The off-path. Mounted here, ahead of every gate, because it is not an
-   exemption inside the gate -- it is a different door. See
-   backend/gateway/api/curl.js. Unset CURL_ENDPOINT/CURL_KEY and nothing
-   below happens at all. */
+
+
+
+
 const curlOffPath = createCurlRouter();
 if (curlOffPath) app.use(curlOffPath.path, curlOffPath.router);
 
@@ -230,9 +229,9 @@ app.use(
     maxAge: 24 * 60 * 60 * 1000,
   }),
 );
-/* Refuse to be the origin for somebody else's mirror. Sits ahead of the
-   static mount so a recursive sweep is cut off before it costs us a file
-   read, and behind edgeContext so it bans the real client IP. */
+
+
+
 const mirrorGuard = createMirrorGuard();
 app.get("/robots.txt", (_req, res) => {
   res.set("Cache-Control", "public, max-age=86400");

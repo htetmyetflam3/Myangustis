@@ -17,10 +17,10 @@ export function joinPath(...segments) {
   return path.join(...segments);
 }
 export const WEB = path.basename(PROJECT_ROOT);
-// Modular layout. PROJECT_ROOT resolves to Site/ (two levels up from this
-// file). Backend and Frontend stay inside it; the parser moved OUT to a
-// sibling top-level module, hence the leading ../. Every constant below
-// derives from these three roots.
+
+
+
+
 export const BACKEND_DIR = "Backend";
 export const FILE_DIR = `${BACKEND_DIR}/file`;
 export const SITE_ENTRY = "index.js";
@@ -32,11 +32,11 @@ export const PARSER_MAP_DIR = `${PARSER_DIR}/jason-map`;
 export const PARSER_MODEL_DIR = `${PARSER_DIR}/model`;
 export const PARSER_FONT_DIR = path.dirname(OUTPUT_FONT_DIR);
 export const PRASER_WEB = PARSED_ROOT;
-/* The parser is reached through its manager, which owns the worker
-   threads and lanes. There is no CLI entry any more: the API route is the
-   only way in. */
+
+
+
 export const PRASER_MANAGER = `${PARSER_DIR}/manager.js`;
-// Legacy alias for old test assertions expecting the CLI entry path.
+
 export const PRASER_JS = `${PARSER_DIR}/manager.js`;
 export const PARSER_RUNTIME_DIR =
   String(process.env.PARSER_RUNTIME_DIR || '').trim() || PARSED_ROOT;

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { scanText, formatScanReport, loadMap, dictionaryWords, scanBrokenSpans } from "../../../B.Parser/main/parser/text/scan.js";
+import { scanText, formatScanReport, loadMap, dictionaryWords } from "../../../B.Parser/main/parser/text/scan.js";
 
 test("JavaScript scanner mirrors the structural scan rules", () => {
   const report = scanText("ကိ ိ သွားသွားသွား", { dictionary: new Set(["ကိ"]) });
@@ -14,9 +14,9 @@ test("JavaScript scanner mirrors the structural scan rules", () => {
 });
 
 test("sealed master map is loaded only by an explicit scanner dictionary request", { skip: process.env.MASTER_JSON_KEY ? false : "MASTER_JSON_KEY required for sealed dictionary" }, () => {
-  // Derived from this file, not the cwd: the old cwd-relative
-  // "Parsed/parser/model/..." only resolved from the site repo root.
-  const data = loadMap(fileURLToPath(new URL("../../../.data/master.json.enc", import.meta.url)));
+
+
+  const data = loadMap(fileURLToPath(new URL("../../../Architecture/Engine/.data/master.json.enc", import.meta.url)));
   const words = dictionaryWords(data);
   assert.deepEqual(Object.keys(data), ["dictionary", "top", "resolution", "syllables", "mapData"]);
   assert.ok(words.size > 1000);

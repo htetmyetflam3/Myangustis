@@ -5,20 +5,20 @@ import fs from "node:fs";
 import path from "node:path";
 import { MAP_DIR } from "../../../_path.js";
 
-/**
- * DATA: mm-score.json is generated from mm_score.py by
- * ../tools/gen-parser-data.mjs. Never hand-edit it, and never retype a
- * Python table here -- these two tables previously existed twice, hardcoded
- * below AND inside normalize.json, with nothing keeping the copies in step.
- */
+
+
+
+
+
+
 const DATA = JSON.parse(fs.readFileSync(path.join(MAP_DIR, "mm-score.json"), "utf8"));
 
 export const MARKS = new Set(DATA.marks.map((c) => c.codePointAt(0)));
 
-/**
- * The single copy of the mark priority table. cleanup.mjs imports it from
- * here, exactly as cleanup.py does `from mm_score import MARK_ORDER`.
- */
+
+
+
+
 export const MARK_ORDER = new Map(Object.entries(DATA.priority));
 
 export function isIndex(ch) {
@@ -135,32 +135,32 @@ export function scoreText(text) {
 }
 
 
-/**
- * The ONE-SIDED English detector, sibling of the Burmese check above.
- *
- * A legacy Myanmar layout pushed through its vague Latin /ToUnicode decodes
- * to ASCII salad ("abdegajdl"), while real Latin faces in the same book carry
- * real English. In a Burmese book English appears as words and short labels
- * ("Update:", "Myanmar Grammar: MLC") -- never as the sentence structure the
- * Burmese scorer relies on -- so this check judges WORDS, not sentences:
- *
- *   - SPACE is the confidence signal: salad from a ToUnicode without a space
- *     code arrives as one unbroken run; real English arrives as many short
- *     separated words.
- *   - WORD LENGTH: ordinary English words stay under ~15 letters; runs longer
- *     than 16 are rare, longer than 20 are effectively absent from books, and
- *     the dictionary freak maximum is 45 (pneumonoultramicroscopicsilicano-
- *     volcanoconiosis). A longer unbroken run is salad.
- *   - IMPOSSIBLE SEQUENCES, the English counterpart of ိ+ံ: a Q not followed
- *     by U, the doubles qq/yy, four identical letters in a row, vowel-less
- *     words of 3+ letters, and consonant pairs English never writes (jq, vq,
- *     xz, bz, ...).
- *   - COMMON WORDS: the/of/and/... cover a large share of any real snippet.
- *
- * The verdict is one-sided on purpose: "english" excludes a font from the
- * Myanmar face vote; "not-english" keeps it as a legacy candidate; null means
- * too little signal to judge -- the pixels decide.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const COMMON_ENGLISH = new Set(("the of and a to in is you that it he was for on are as with his they i at be this "
   + "have from or one had by word but not what all were we when your can said there use an each which she do how "
   + "their if will up other about out many then them these so some her would make like him into time has look two "
@@ -179,8 +179,8 @@ const isAsciiLetter = (ch) => (ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z
 
 export function englishLikeness(text) {
   const sample = String(text || "");
-  // Letter runs: maximal unbroken ASCII-letter sequences (everything else,
-  // including Burmese code points and Latin-1 symbols, acts as a separator).
+
+
   const runs = [];
   let cur = "";
   for (const ch of sample) {
@@ -200,16 +200,16 @@ export function englishLikeness(text) {
   let violations = 0;
   for (const w of runs) {
     const lower = w.toLowerCase();
-    const acronym = w.length <= 6 && w === w.toUpperCase(); // MLC, TIL, AM -- real English too
-    if (!acronym && lower.length >= 3 && !VOWELLESS_OK.has(lower) && !/[aeiouy]/.test(lower)) violations += 1; // vowel-less word
-    if (/(.)\1\1\1/.test(lower)) violations += 2;                                               // aaaa
+    const acronym = w.length <= 6 && w === w.toUpperCase();
+    if (!acronym && lower.length >= 3 && !VOWELLESS_OK.has(lower) && !/[aeiouy]/.test(lower)) violations += 1;
+    if (/(.)\1\1\1/.test(lower)) violations += 2;
     for (let i = 0; i + 1 < lower.length; i += 1) {
       if (IMPOSSIBLE_PAIRS.has(lower.slice(i, i + 2))) violations += 1;
-      if (lower[i] === "q" && lower[i + 1] !== "u") violations += 1;                            // q without u
+      if (lower[i] === "q" && lower[i + 1] !== "u") violations += 1;
     }
-    if (lower.length > 16) violations += 1;                                                     // rare-long word
-    if (lower.length > 20) violations += 1;                                                     // not a book word
-    if (lower.length > 45) violations += 2;                                                     // past the dictionary freak
+    if (lower.length > 16) violations += 1;
+    if (lower.length > 20) violations += 1;
+    if (lower.length > 45) violations += 2;
   }
   const violationRate = letters ? violations / letters : 1;
 

@@ -41,13 +41,13 @@ while _REPO_ROOT.parent != _REPO_ROOT and not (_REPO_ROOT / "secretloader.py").i
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from secretloader import load_secrets, secret  # noqa: E402
+from secretloader import find_repo_root, load_secrets, secret  # noqa: E402
 
 # Ensure .env is loaded for this caller (E.Scraper → repo root resolution).
 load_secrets(__file__)
 
 # DOTENV_PATH kept for backward compatibility with code that references it.
-REPO_ROOT = _REPO_ROOT
+REPO_ROOT = find_repo_root(_THIS_DIR) or _REPO_ROOT
 DOTENV_PATH = REPO_ROOT / ".env"
 LOGIN_TIMEOUT = 20.0
 
@@ -83,7 +83,7 @@ def load_dotenv_values(path: Path | None = None) -> dict[str, str]:
     """Backward-compatible .env reader.
 
     Secret resolution now goes through secretloader (process.env → caller .env
-    → repo root .env → .data/.env). When an explicit path is given we parse
+    → repo root .env → Engine/.data/.env). When an explicit path is given we parse
     that file directly (matching the old single-file behaviour for callers
     that pass `--env-file` style arguments).
     """
