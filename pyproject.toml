@@ -31,7 +31,7 @@ package = false
 [tool.uv.workspace]
 members = [
     "C.Proofreading",
-    "D.Parser",
+    "B.Parser",
     "E.Scraper",
     "tools-box",
 ]

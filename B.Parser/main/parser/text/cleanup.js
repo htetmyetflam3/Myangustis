@@ -32,12 +32,10 @@
 
 
 
-import fs from "node:fs";
-import path from "node:path";
-import { MAP_DIR } from "../../../_path.js";
+import { loadMapJson } from "../core/json-map.js";
 import { MARK_ORDER as PRIORITY, isIndex } from "./mm-score.js";
 
-const DATA = JSON.parse(fs.readFileSync(path.join(MAP_DIR, "cleanup.json"), "utf8"));
+const DATA = loadMapJson("cleanup.json");
 
 
 
@@ -211,7 +209,7 @@ let INVENTORY = null;
 function inventory() {
   if (INVENTORY === null) {
     try {
-      const d = JSON.parse(fs.readFileSync(path.join(MAP_DIR, "burmese-inventory.json"), "utf8"));
+      const d = loadMapJson("burmese-inventory.json");
       INVENTORY = new Set(d.syllables || []);
     } catch {
       INVENTORY = new Set();

@@ -1,14 +1,14 @@
 
 import fs from 'node:fs';
 import readline from 'node:readline';
-import { openPdf, renderPageCanvas, cropCanvasRgba } from '../../../../D.Parser/main/parser/read/pdf-render.js';
-import { initOcr, ocrImageDetailed, closeOcr } from '../../../../D.Parser/main/parser/read/ocr.js';
-import { getDefaultVectorIndex } from '../../../../D.Parser/main/parser/shape/match.js';
-import { matchPixelsToVector } from '../../../../D.Parser/main/parser/codepage/vote.js';
-import { loadScanDictionary, dictionaryWords, scanBrokenSpans } from '../../../../D.Parser/main/parser/text/scan.js';
-import { repairText, HOMOGLYPH_PAIRS } from '../../../../D.Parser/main/parser/text/repair.js';
-import { normalizeText } from '../../../../D.Parser/main/parser/text/normalize.js';
-import { MAX_OCR_PIXELS } from '../../../../D.Parser/main/parser/core/limits.js';
+import { openPdf, renderPageCanvas, cropCanvasRgba } from '../../../../B.Parser/main/parser/read/pdf-render.js';
+import { initOcr, ocrImageDetailed, closeOcr } from '../../../../B.Parser/main/parser/read/ocr.js';
+import { getDefaultVectorIndex } from '../../../../B.Parser/main/parser/shape/match.js';
+import { matchPixelsToVector } from '../../../../B.Parser/main/parser/codepage/vote.js';
+import { loadScanDictionary, dictionaryWords, scanBrokenSpans } from '../../../../B.Parser/main/parser/text/scan.js';
+import { repairText, HOMOGLYPH_PAIRS } from '../../../../B.Parser/main/parser/text/repair.js';
+import { normalizeText } from '../../../../B.Parser/main/parser/text/normalize.js';
+import { MAX_OCR_PIXELS } from '../../../../B.Parser/main/parser/core/limits.js';
 
 const reply = (v) => process.stdout.write('OCR_RESULT ' + JSON.stringify(v) + '\n');
 const data = loadScanDictionary();

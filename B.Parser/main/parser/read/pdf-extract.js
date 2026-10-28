@@ -1,9 +1,8 @@
 import { parseTtfCmap } from "../core/ttf-cmap.js";
 import fs from "node:fs";
-import path from "node:path";
 import zlib from "node:zlib";
 import { ValueError, pyTruthy, pyInt, pyFloat, fromHexStrict, pyStripBytes } from "../core/pylib.js";
-import { MAP_DIR } from "../../../_path.js";
+import { loadMapJson, mapNameForPath } from "../core/json-map.js";
 import { MAX_PAGES, positiveLimit } from "../core/limits.js";
 import {
   Lexer, PdfName, PdfHexBytes, isNumeric, toNumber,
@@ -457,15 +456,9 @@ export function findToUnicodeMaps(objects) {
 
 
 export function loadSidecarMap(p = null) {
-  const file = p ?? path.join(MAP_DIR, "cipher-map.json");
-  let text;
   try {
-    text = fs.readFileSync(file, "utf8");
-  } catch {
-    return new Map();
-  }
-  try {
-    const json = JSON.parse(text);
+    const name = p ? mapNameForPath(p) : "cipher-map.json";
+    const json = name ? loadMapJson(name) : JSON.parse(fs.readFileSync(p, "utf8"));
     const out = new Map();
     for (const [k, v] of Object.entries(json)) {
       let key = k.trim();

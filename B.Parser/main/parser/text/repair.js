@@ -24,9 +24,7 @@
 
 
 
-import fs from "node:fs";
-import path from "node:path";
-import { MAP_DIR } from "../../../_path.js";
+import { loadMapJson } from "../core/json-map.js";
 import { scanText, scanBrokenSpans } from "./scan.js";
 import {
   orderText, unmixZawCodeMarks, retraceZawCodeMarks, settleZawCodeAhE,
@@ -34,7 +32,7 @@ import {
 } from "./cleanup.js";
 import { scoreText, isIndex } from "./mm-score.js";
 
-const DATA = JSON.parse(fs.readFileSync(path.join(MAP_DIR, "homoglyphs.json"), "utf8"));
+const DATA = loadMapJson("homoglyphs.json");
 
 
 export const HOMOGLYPH_PAIRS = DATA.pairs.map(([a, b]) => [a, b]);

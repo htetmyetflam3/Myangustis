@@ -4,6 +4,8 @@ import fs from "node:fs";
 import fsp from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 import {
   abs,
@@ -28,6 +30,7 @@ import { ZipStreamWriter } from "../../../B.Parser/main/parser/core/zip.js";
 import { validateDocxArchive } from "../../../B.Parser/main/parser/read/docx-extract.js";
 
 const isFile = (file) => fs.statSync(file).isFile();
+const repo = fileURLToPath(new URL("../../../", import.meta.url));
 
 test("relocated parser has every boot-critical sidecar", () => {
   const files = validatePraserAssets();
@@ -37,6 +40,28 @@ test("relocated parser has every boot-critical sidecar", () => {
   assert.ok(PARSED_ROOT.endsWith("B.Parser/main"), `PARSED_ROOT=${PARSED_ROOT}`);
   assert.ok(PARSER_DIR.endsWith("B.Parser/main/parser"), `PARSER_DIR=${PARSER_DIR}`);
   assert.ok(PRASER_JS.endsWith("B.Parser/main/parser/manager.js"), `PRASER_JS=${PRASER_JS}`);
+});
+
+test("scraper parser bridge resolves the current parser entry", async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "parser-bridge-"));
+  try {
+    const result = path.join(dir, "result.json");
+    const missing = path.join(dir, "missing.pdf");
+    execFileSync(process.execPath, [path.join(repo, "B.Parser/extend/parse-bridge.js"), "--out", result, missing], { stdio: "pipe" });
+    const verdict = JSON.parse(await fsp.readFile(result, "utf8"));
+    assert.equal(verdict[0].category, "error");
+    assert.match(verdict[0].reason, /ENOENT/);
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("scraper OCR worker points to existing parser modules", () => {
+  const worker = path.join(repo, "E.Scraper/main/deploy/continuous-ocr/worker.js");
+  const code = fs.readFileSync(worker, "utf8");
+  const imports = [...code.matchAll(/from '([^']*\.Parser\/[^']+)'/g)];
+  assert.ok(imports.length > 0);
+  for (const [, file] of imports) assert.ok(isFile(path.resolve(path.dirname(worker), file)));
 });
 
 test("parser maps and models resolve outside the executable module directory", () => {

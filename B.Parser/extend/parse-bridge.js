@@ -52,7 +52,7 @@ if (NODE_MAJOR < 22) {
 const HERE = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..");
 const PARSER_FRONT_DOOR = url.pathToFileURL(
-  path.join(REPO, "D.Parser", "main", "parser", "index.js"),
+  path.join(REPO, "B.Parser", "main", "parser", "index.js"),
 ).href;
 
 

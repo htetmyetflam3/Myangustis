@@ -39,3 +39,8 @@
 ### Changed / Fixed / Removed
 - Load the Python workspace environment through `index-path.py`, using the same root and engine-data sources and precedence as the Node workspace entry.
 - Migrate the Python tools from `secretloader.py` and remove that obsolete loader; add Python/Node environment parity tests.
+
+## [Unreleased] - 2026-10-28 — Parser JSON maps
+### Changed / Fixed / Removed
+- Load parser JSON maps on demand through one source-aware in-memory cache, with isolated return values and regression tests.
+- Correct parser workspace and scraper integration paths to `B.Parser`; retain the existing `E.Scraper` workspace.

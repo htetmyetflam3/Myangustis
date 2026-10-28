@@ -1,9 +1,7 @@
 
 
 
-import fs from "node:fs";
-import path from "node:path";
-import { MAP_DIR } from "../../../_path.js";
+import { loadMapJson } from "../core/json-map.js";
 
 
 
@@ -11,7 +9,7 @@ import { MAP_DIR } from "../../../_path.js";
 
 
 
-const DATA = JSON.parse(fs.readFileSync(path.join(MAP_DIR, "mm-score.json"), "utf8"));
+const DATA = loadMapJson("mm-score.json");
 
 export const MARKS = new Set(DATA.marks.map((c) => c.codePointAt(0)));
 

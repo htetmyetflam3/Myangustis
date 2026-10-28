@@ -23,7 +23,7 @@ must be brought into compliance with this Agreement or destroyed.
 "Software" means the Myangustis program, including all source code, object
 code, scripts, syllable/cache trees, codepage registries, shape/vector maps,
 models, data files, configuration, tooling (tools-box/), Architecture/
-Engine, Bridge, C.Proofreading, D.Parser, E.Scraper, F.Site (both Backend
+Engine, Bridge, B.Parser, C.Proofreading, E.Scraper, F.Site (both Backend
 and Frontend), test fixtures, documentation, and any updates, modifications,
 or derivative works thereof contained in this repository.
 

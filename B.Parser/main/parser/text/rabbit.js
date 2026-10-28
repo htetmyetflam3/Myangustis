@@ -1,8 +1,4 @@
-import fs from "node:fs";
-import path from "node:path";
-import { MAP_DIR } from "../../../_path.js";
-
-const RULES_PATH = path.join(MAP_DIR, "zg2uni-rules.json");
+import { loadMapJson } from "../core/json-map.js";
 
 function pyReplToJs(to) {
   
@@ -16,7 +12,7 @@ function adaptSource(src) {
 }
 
 function compileLocal() {
-  const rules = JSON.parse(fs.readFileSync(RULES_PATH, "utf8"));
+  const rules = loadMapJson("zg2uni-rules.json");
   return rules.map((r) => [new RegExp(adaptSource(r.from), "u"), pyReplToJs(r.to)]);
 }
 

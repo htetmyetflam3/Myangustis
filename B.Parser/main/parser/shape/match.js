@@ -17,6 +17,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { VECTOR_MAP_DIR } from "../../../_path.js";
+import { loadMapJson } from "../core/json-map.js";
 
 
 
@@ -33,9 +34,8 @@ import { VECTOR_MAP_DIR } from "../../../_path.js";
 let _bars = null;
 function bars() {
   if (_bars) return _bars;
-  const file = path.join(VECTOR_MAP_DIR, "shape-thresholds.json");
   try {
-    const raw = JSON.parse(fs.readFileSync(file, "utf8"));
+    const raw = loadMapJson("vector/shape-thresholds.json");
     _bars = {
       byLabel: new Map(Object.entries(raw.byLabel || {})),
 
@@ -66,8 +66,7 @@ let _alias = null;
 function aliasTable() {
   if (_alias !== null) return _alias;
   try {
-    const file = path.join(VECTOR_MAP_DIR, "shape-alias.json");
-    const raw = JSON.parse(fs.readFileSync(file, "utf8"));
+    const raw = loadMapJson("vector/shape-alias.json");
     _alias = new Set((raw.pairs || []).map(([a, b]) => `${a}\u0000${b}`));
   } catch {
     _alias = new Set();

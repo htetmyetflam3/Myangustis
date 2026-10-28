@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { getEngineData } from "../../../../index-path.js";
 const { readSecureJson, readMasterJson } = await getEngineData();
-import { MAP_DIR } from "../../../_path.js";
+import { loadMapJson, mapNameForPath } from "../core/json-map.js";
 import { MARKS as MM_MARKS } from "./mm-score.js";
 
 
@@ -16,7 +16,7 @@ import { MARKS as MM_MARKS } from "./mm-score.js";
 
 
 
-const DATA = JSON.parse(fs.readFileSync(path.join(MAP_DIR, "scan.json"), "utf8"));
+const DATA = loadMapJson("scan.json");
 
 const SPLIT = /[\s\u104a\u104b()\x5b\x5d"‘’“”,\x2e:;?!/=+_—-]+/u;
 const DIGIT = /^[\u1040-\u1049]$/u;
@@ -120,7 +120,8 @@ function loadMap(filePath) {
   if (absolute.endsWith(".db") || absolute.endsWith(".sqlite") || absolute.endsWith(".sqlite3")) {
     throw new Error("SQLite dictionary scanning is not available in the JavaScript scanner; export the master_json table to JSON or .enc first");
   }
-  return JSON.parse(fs.readFileSync(absolute, "utf8"));
+  const mapName = mapNameForPath(absolute);
+  return mapName ? loadMapJson(mapName) : JSON.parse(fs.readFileSync(absolute, "utf8"));
 }
 
 function dictionaryWords(data) {

@@ -13,7 +13,7 @@
     "Architecture/Engine",
     "Architecture/host",
     "C.Proofreading",
-    "D.Parser",
+    "B.Parser",
     "E.Scraper",
     "F.Site",
     "F.Site/Frontend/frontend-bootstrap",

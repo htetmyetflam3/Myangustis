@@ -39,6 +39,9 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { loadMapJson, mapNameForPath } from "../core/json-map.js";
+import { VECTOR_MAP_DIR } from "../../../_path.js";
+
 import { TtfFont, glyphContours } from "../read/glyf.js";
 import { glyphSignature } from "../shape/contour.js";
 import { parseTtfCmap } from "../core/ttf-cmap.js";
@@ -55,10 +58,7 @@ import { crowdVote, loadWitnesses } from "./outline-vote.js";
 import { WININNWA_LEGACY_CODE_PAGE } from "./registry.js";
 import { emitEvent } from "../../../../Bridge/logen/core.js";
 
-const WITNESS_FILE = path.join(
-  path.dirname(new URL(import.meta.url).pathname),
-  "..", "jason-map", "vector", "font-witnesses.json",
-);
+const WITNESS_FILE = path.join(VECTOR_MAP_DIR, "font-witnesses.json");
 
 
 const MEDIALS = "\u103C\u103B\u103D\u103E";
@@ -76,7 +76,13 @@ let witnessCache = null;
 
 export function witnessesFor(file = WITNESS_FILE) {
   if (!witnessCache) {
-    witnessCache = loadWitnesses(file, { readFile: (p) => fs.readFileSync(p) });
+    witnessCache = loadWitnesses(file, {
+      readFile: (p) => fs.readFileSync(p),
+      readJson: (p) => {
+        const name = mapNameForPath(p);
+        return name ? loadMapJson(name) : JSON.parse(fs.readFileSync(p, "utf8"));
+      },
+    });
   }
   return witnessCache;
 }
