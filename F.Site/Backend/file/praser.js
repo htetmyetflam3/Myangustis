@@ -38,7 +38,7 @@ function createPraserParser(label) {
     async parse(filePath, out = null, options = {}) {
       const intent = options.intent;
       if (!intent) throw new Error(`${label} upload intent is required`);
-      const routing = managerPayload(intent);
+      const routing = managerPayload(intent, { executionTask: options.executionTask });
       const filename = intent.uploadName;
       const outPath = abs(path.join(
         RAW_TXT_DIR,

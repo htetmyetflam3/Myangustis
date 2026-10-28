@@ -122,3 +122,17 @@
 ### Verification
 - Node: 266 tests, 258 passed, 8 skipped; targeted private host and Site curl tests passed, as did ESLint and `git diff --check`.
 - Python: 343 passed, 7 failed, 3 skipped and 35 subtests passed; six failures need `MASTER_JSON_KEY` and one needs the unported comparison POS view.
+
+## [Unreleased] - 2026-10-29 — Frontend analysis lane follow-up
+### Verification / Follow-up
+- Check the actual browser UI selectors and event flow for both Bootstrap and React: code contains analysis-flow listeners, but no matching Bootstrap `data-open-analysis` control or React `akkhara:open-analysis` event emitter was found in the frontend source. A real browser click-through has not been verified.
+- A local real Site-to-engine upload reached the queue as `analysis` and returned an engine result when configured; it was submitted by script using the frontend payload builder, not through the browser UI. The queue can fall back to the Site artifact when the engine is unwired or dispatch is refused.
+
+## [Unreleased] - 2026-10-29 — Pre-production analysis conversion override
+### Changed / Fixed / Removed
+- Keep second-lane analysis metadata intact, but deliberately run its document uploads as conversion-only Site tasks until the Site/Engine integration is ready; add explicit do-not-correct comments beside the override and keep the future Engine handoff wired.
+- Stop analysis-lane text immediately after raw saving, finalize its record and return the text without queuing or dispatching it. The saved text is unchanged.
+- Prevent a conversion task from entering the Engine dispatcher and use the requested conversion format for the Site parser; retain future Engine-path coverage separately.
+### Verification
+- Live isolated Site and real Engine host: analysis PDF completed as conversion, analysis text returned HTTP 200 after saving, and the Engine job list remained empty. This was an HTTP check, not a frontend browser click-through.
+- Node: 267 tests, 259 passed, 8 skipped; targeted ESLint and `git diff --check` passed. Python: 343 passed, 7 failed, 3 skipped, 35 subtests passed; six failures require `MASTER_JSON_KEY` and one needs the unported comparison POS view.

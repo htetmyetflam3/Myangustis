@@ -3,7 +3,9 @@ export function createHiddenProcessor({ queue, dispatcher, jobTimeoutMs }) {
   return async function processAnalysisJob({ submitId, formId }) {
     const record = formId ? queue.getByFormId(formId) : queue.getBySubmitId(submitId);
     if (!record) return { fired: false, reason: 'unknown' };
-    if (!isAnalysisRecord(record)) {
+    // The source may be analysis while its pre-production task is conversion.
+    // Preserve the wired dispatcher, but never dispatch that deliberate override.
+    if (!isAnalysisRecord(record) || record.task !== 'analysis') {
       return { fired: false, reason: 'not-an-analysis-job', submitId: record.submitId };
     }
     if (!dispatcher.configured) {

@@ -142,6 +142,7 @@ test('Site round: one analysis upload, hidden fires once, Engine queue round tri
       artifactTtlMs: 15 * 60 * 1000,
       queue,
       hiddenProcessor,
+      analysisTask: 'analysis', // Exercise the retained future Engine handoff.
     }),
   );
   app.use((error, _req, res, _next) => {

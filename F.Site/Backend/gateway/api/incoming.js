@@ -106,7 +106,17 @@ export function createIncomingRouter({
   queue = null,
   hiddenProcessor = null,
   parseCapacity = null,
+  // PRE-PRODUCTION OVERRIDE — INTENTIONAL, NOT INCORRECT METADATA.
+  // Keep the second upload lane identified as analysis and keep its parser,
+  // queue and Engine handoff wired for future integration. The Engine is not
+  // ready for this Site yet: run analysis-lane documents as conversion only.
+  // Do NOT "fix" this to analysis just because the source is analysis; change
+  // it only when the end-to-end Engine integration is ready for production.
+  analysisTask = 'conversion',
 }) {
+  if (analysisTask !== 'conversion' && analysisTask !== 'analysis') {
+    throw new Error('Unsupported analysis task');
+  }
   const processingQueue =
     queue ||
     createProcessingQueue({
@@ -199,6 +209,10 @@ export function createIncomingRouter({
           sessionId: req.visitorHash,
           clientIp: req.edge?.ip || req.ip || req.socket?.remoteAddress,
           intent: uploadMetadata,
+          // INTENTIONAL PRE-PRODUCTION OVERRIDE: analysis-source documents
+          // currently run as conversion, not Engine analysis. Do not 'correct'
+          // this to match metadata; enable it only when Site/Engine is ready.
+          taskOverride: uploadMetadata.source === 'analysis' ? analysisTask : undefined,
           file: req.file,
           inputPath: savedPath,
         });
@@ -259,7 +273,7 @@ export function createIncomingRouter({
               filename: `${path.parse(uploadMetadata.uploadName).name}.${praserJob.manager.output}`,
               mimeType: praserJob.manager.mimeType,
             });
-            if (hiddenProcessor && uploadMetadata?.source === 'analysis') {
+            if (hiddenProcessor && processingQueue.getByFormId(formId)?.task === 'analysis') {
               Promise.resolve(hiddenProcessor({ formId })).catch((error) =>
                 console.error('[incoming] hidden analysis invocation failed', error),
               );
@@ -299,6 +313,28 @@ export function createIncomingRouter({
         parsedText: null,
         quarantinePath: null,
       });
+      // PRE-PRODUCTION: analysis-lane text stops after raw saving. It is
+      // already text: do not enqueue, parse or dispatch it to the Engine.
+      // Keep this deliberate stop until the Site's future text integration is ready.
+      if (uploadMetadata.source === 'analysis') {
+        await request.finalizeUpload({
+          userId: req.userId,
+          visitorHash: req.visitorHash,
+          formId,
+          submitId: rawResult.submitId,
+          filename: rawResult.filename,
+          bridgePath: rawResult.rawPath,
+          originalName: uploadMetadata.originalName,
+        });
+        return res.status(200).json({
+          formId,
+          submitId: rawResult.submitId,
+          text: req.body.text,
+          remaining: consumed.remaining,
+          ...(Number.isInteger(consumed.limit) ? { limit: consumed.limit } : {}),
+          status: 'SAVED',
+        });
+      }
       await processingQueue.enqueue({
         formId,
         userId: req.userId,
@@ -330,7 +366,7 @@ export function createIncomingRouter({
         filename: rawResult.filename,
         mimeType: 'text/plain; charset=utf-8',
       });
-      if (hiddenProcessor && uploadMetadata?.source === 'analysis') {
+      if (hiddenProcessor && processingQueue.getByFormId(formId)?.task === 'analysis') {
         Promise.resolve(hiddenProcessor({ formId })).catch((error) =>
           console.error('[incoming] hidden analysis invocation failed', error),
         );
