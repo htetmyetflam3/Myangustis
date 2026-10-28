@@ -43,8 +43,7 @@ chose -- rather than falling back to pyarrow's default.
 Environment
 -----------
     HG_TOKEN   Hugging Face access token (the "hg_full" one). Read from the
-               process environment OR from a local .env file (cwd first, then
-               next to this script). If still unset, login prompts and the
+               process environment OR from the shared root/engine .env files. If still unset, login prompts and the
                token is written to the HF cache, so later runs need nothing.
 """
 
@@ -53,6 +52,7 @@ from __future__ import annotations
 import argparse
 import getpass
 import hashlib
+import importlib
 import os
 import shutil
 import sys
@@ -60,18 +60,11 @@ import tempfile
 from pathlib import Path
 from typing import Sequence
 
-# Bring the repo root onto sys.path so we can import secretloader without
-# packaging. Walk up from this file until a directory containing
-# secretloader.py is found — works when tools-box/ sits at the repo root
-# (whole-repo checkout) OR when tools-box/ is uploaded standalone with
-# secretloader.py copied alongside pyproject.toml.
-_THIS_DIR = Path(__file__).resolve().parent
-_REPO_ROOT = _THIS_DIR
-while _REPO_ROOT.parent != _REPO_ROOT and not (_REPO_ROOT / "secretloader.py").is_file():
-    _REPO_ROOT = _REPO_ROOT.parent
+# Use the shared Python workspace entry, which loads the same sources as Node.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
-from secretloader import load_secrets  # noqa: E402
+_workspace = importlib.import_module("index-path")
 
 # ------------------------------------------------------------------ edit these lines
 HF_USER = "htetmyetflam3"  # your Hugging Face user name (same as your git user name)
@@ -94,15 +87,9 @@ def _fail(message: str) -> "NoReturn":  # noqa: F821 - NoReturn only needed for 
 
 
 def _load_dotenv() -> None:
-    """Fill missing env vars from .env using the centralized secretloader.
+    """Fill missing environment variables from the shared workspace sources."""
+    _workspace.load_root_env()
 
-    Resolution order (process.env wins always):
-      1. caller .env  (next to hfinit.py — tools-box/python/.env, rarely used)
-      2. repo root .env
-      3. <repo>/Architecture/Engine/.data/.env
-    Idempotent.
-    """
-    load_secrets(__file__)
 
 
 def _token_shape_ok(token: str) -> bool:

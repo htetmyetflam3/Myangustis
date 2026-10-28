@@ -34,3 +34,8 @@
 - Route master-data consumers and fingerprint requests through the shared engine data entry, including the proofreading register tool.
 - Cache parsed master data in memory with caller isolation and source/key invalidation; retain the encrypted disk cache and existing verified tree caches.
 - Add synthetic encrypted-master and tree-cache regression tests.
+
+## [Unreleased] - 2026-10-28 — Python workspace environment
+### Changed / Fixed / Removed
+- Load the Python workspace environment through `index-path.py`, using the same root and engine-data sources and precedence as the Node workspace entry.
+- Migrate the Python tools from `secretloader.py` and remove that obsolete loader; add Python/Node environment parity tests.
