@@ -106,3 +106,11 @@
 ### Verification
 - Node: 258 tests, 250 passed, 8 skipped; targeted ESLint and `git diff --check` passed.
 - Python: 343 passed, 7 failed, 3 skipped and 35 subtests passed; six failures need `MASTER_JSON_KEY`, and one needs the unported comparison POS view.
+
+## [Unreleased] - 2026-10-29 — Bound entry-holder buffer
+### Changed / Fixed / Removed
+- Limit the shared entry holder's pending line to 5 MiB of UTF-8 text. If an input item crosses the limit before a line boundary, discard the buffered text and that item without yielding, then continue collecting the same line.
+- Preserve normal blank lines, avoid an empty emission for a wholly discarded line, and apply the same entry guard to syllable and POS lanes.
+### Verification
+- Node: 264 tests, 256 passed, 8 skipped; targeted ESLint and `git diff --check` passed. Tests cover exact threshold, Unicode byte counts, repeated overflow and POS integration.
+- Python: 343 passed, 7 failed, 3 skipped and 35 subtests passed; six failures need `MASTER_JSON_KEY`, and one needs the unported comparison POS view.
