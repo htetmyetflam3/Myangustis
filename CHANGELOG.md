@@ -114,3 +114,11 @@
 ### Verification
 - Node: 264 tests, 256 passed, 8 skipped; targeted ESLint and `git diff --check` passed. Tests cover exact threshold, Unicode byte counts, repeated overflow and POS integration.
 - Python: 343 passed, 7 failed, 3 skipped and 35 subtests passed; six failures need `MASTER_JSON_KEY`, and one needs the unported comparison POS view.
+## [Unreleased] - 2026-10-29 — Private host engine endpoint
+### Changed / Fixed / Removed
+- Remove unused disk-backed `initS.js`; current engine syllable positions remain streamed by the tokenizer wrapper.
+- Add the private host `POST /UchihaItachiIsMyFavChar` route for hash-free syllable or POS processing. It bypasses session and rate gates and authenticates via the same `CURL_KEY_SHA256` / `CURL_KEY` as the Site conversion route, with shared timing-safe verification; accept the `x-curl-key` or Bearer header.
+- Keep the optional `CURL_MAX_MB` size limit, return 404 for failed authentication, and reject caller hashes and debug mode on this route.
+### Verification
+- Node: 266 tests, 258 passed, 8 skipped; targeted private host and Site curl tests passed, as did ESLint and `git diff --check`.
+- Python: 343 passed, 7 failed, 3 skipped and 35 subtests passed; six failures need `MASTER_JSON_KEY` and one needs the unported comparison POS view.

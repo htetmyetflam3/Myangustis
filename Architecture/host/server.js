@@ -21,6 +21,7 @@ import { config, keyShape, timingSafeEq } from './config.js';
 import { JobStore, SlotLimiter, JOB_STATES } from './job-store.js';
 import { pullSource, pushResult, SiteClientError } from './site-client.js';
 import { runEngineJob } from './runner/engine-runner.js';
+import { createDirectEngineRouter } from './api/direct-engine.js';
 
 const DISPATCH_FIELDS = ['jobToken', 'formId', 'submitId', 'userId', 'sessionId', 'filename', 'extension', 'method', 'task', 'job'];
 
@@ -118,6 +119,7 @@ async function processJob(record) {
 export function createApp() {
   const app = express();
   app.disable('x-powered-by');
+  app.use(createDirectEngineRouter());
   app.use(express.json({ limit: '16kb', strict: true }));
 
   app.get('/health', (_req, res) =>

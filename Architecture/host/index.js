@@ -23,11 +23,13 @@ const [{ config, keyShape }, { createApp: createSiteApp }, { publicRouter }] = a
   import('./server.js'),
   import('./api/public-api.js'),
 ]);
+const { createDirectEngineRouter } = await import('./api/direct-engine.js');
 
 export function createServer() {
   const app = express();
   app.disable('x-powered-by');
   if (config.trustProxy) app.set('trust proxy', 1);
+  app.use(createDirectEngineRouter());
 
 
   app.use(helmet());
