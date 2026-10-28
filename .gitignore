@@ -166,3 +166,7 @@ vite.config.ts.timestamp-*
 *pycache*
 *uv*.envvars
 .venv
+
+# Site runtime uploads and generated workspace data (not tracked font assets).
+/Junk/Site/
+/F.Site/upload/

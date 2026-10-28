@@ -1,7 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
-import { parseEnv } from "node:util";
 
 const COMPONENT_ROOT = path.dirname(fileURLToPath(import.meta.url));
 export const PARSED_ROOT = path.join(COMPONENT_ROOT, "main");
@@ -10,52 +9,26 @@ export const CORE_DIR = path.join(PARSER_DIR, "core");
 export const REPO_ROOT = path.dirname(COMPONENT_ROOT);
 
 async function resolveBaseDir() {
-  const rootExporter = path.join(REPO_ROOT, "index-path.js");
-  const componentExporter = path.join(COMPONENT_ROOT, "_index.js");
-  if (fs.existsSync(rootExporter) && fs.existsSync(componentExporter)) {
-    try {
-      const { JUNK_DIR, ENV_RESULT } = await import("./_index.js");
-      if (typeof JUNK_DIR !== "string" || !path.isAbsolute(JUNK_DIR) ||
-          !ENV_RESULT || !Array.isArray(ENV_RESULT.sources)) {
-        throw new TypeError("Expected an absolute workspace path");
-      }
-      return { base: JUNK_DIR, env: ENV_RESULT };
-    } catch {
-      // Missing or unloadable upstream exporters use this file's location.
-    }
-  }
-  const file = path.join(COMPONENT_ROOT, '.env');
-  const sources = [];
-  const applied = [];
   try {
-    const values = parseEnv(fs.readFileSync(file, 'utf8'));
-    sources.push(file);
-    for (const [key, value] of Object.entries(values)) {
-      if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) &&
-          (process.env[key] === undefined || process.env[key] === '')) {
-        process.env[key] = value;
-        applied.push(key);
-      }
+    const { JUNK_DIR } = await import("./_index.js");
+    if (typeof JUNK_DIR !== "string" || !path.isAbsolute(JUNK_DIR)) {
+      throw new TypeError("Expected an absolute workspace path");
     }
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error;
+    return { base: JUNK_DIR, shared: true };
+  } catch {
+    return { base: COMPONENT_ROOT, shared: false };
   }
-  return { base: COMPONENT_ROOT, env: { sources, applied } };
 }
 
 const resolved = await resolveBaseDir();
 export const BASE_DIR = resolved.base;
-export const ENV_RESULT = resolved.env;
 export async function getLogen() {
   const entry = await import('./_index.js');
   return entry.getLogen();
 }
 
-export const RUNTIME_ROOT = path.join(BASE_DIR, "Parser");
+export const RUNTIME_ROOT = resolved.shared ? path.join(BASE_DIR, "Parser") : COMPONENT_ROOT;
 const FONT_ROOT = path.join(BASE_DIR, "fonts");
-
-export const UPLOAD_DIR = path.join(RUNTIME_ROOT, "upload");
-export const INPUT_DIR = path.join(UPLOAD_DIR, "input");
 
 export const MAP_DIR = path.join(PARSER_DIR, "jason-map");
 export const VECTOR_MAP_DIR = path.join(MAP_DIR, "vector");
@@ -134,15 +107,7 @@ export function findLatinFont() {
 }
 
 export function ensureDirs() {
-  for (const dir of [
-    UPLOAD_DIR, INPUT_DIR,
-    ...["txt", "pdf", "docx"].map(kind => path.join(INPUT_DIR, kind)),
-    path.join(UPLOAD_DIR, "pdf"), path.join(UPLOAD_DIR, "docx"),
-    path.join(UPLOAD_DIR, "quarantine"),
-    DEFAULT_OUTPUT_DIR,
-    ...["txt", "original", "docx", ".tree"].map(kind => path.join(DEFAULT_OUTPUT_DIR, kind)),
-    FONT_DIR, OUTPUT_FONT_DIR,
-  ]) fs.mkdirSync(dir, { recursive: true });
+  fs.mkdirSync(DEFAULT_OUTPUT_DIR, { recursive: true, mode: 0o700 });
 }
 
 ensureDirs();

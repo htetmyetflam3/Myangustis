@@ -8,9 +8,8 @@ import express from 'express';
 import multer from 'multer';
 const runtime = await fs.mkdtemp(path.join(os.tmpdir(), 'linga-roundtrip-'));
 process.env.PARSER_RUNTIME_DIR = runtime;
-const { abs, inputDirFor, OUTPUT_DIR, RAW_TXT_DIR, ORIGINAL_DIR, ensurePraserDirs } =
+const { abs, ensureUploadDir, OUTPUT_DIR, RAW_TXT_DIR, ORIGINAL_DIR } =
   await import('../../../F.Site/Backend/file/paths.js');
-ensurePraserDirs();
 const { createProcessingQueue } = await import('../../../F.Site/Backend/gateway/queue/processingQueue.js');
 const { closePraserManager } = await import('../../../F.Site/Backend/file/praser.js');
 const { createIncomingRouter } = await import('../../../F.Site/Backend/gateway/api/incoming.js');
@@ -111,7 +110,9 @@ test('Site round: one analysis upload, hidden fires once, Engine queue round tri
   });
   const upload = multer({
     storage: multer.diskStorage({
-      destination: (_req, file, cb) => cb(null, abs(inputDirFor(file.originalname))),
+      destination: (_req, file, cb) => {
+        ensureUploadDir(file.originalname).then(dir => cb(null, dir), cb);
+      },
       filename: (_req, file, cb) =>
         cb(null, `${crypto.randomUUID()}${path.extname(file.originalname).toLowerCase()}`),
     }),

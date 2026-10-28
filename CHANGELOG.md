@@ -86,3 +86,14 @@
 ### Verification
 - Node: 244 passed, 8 skipped; targeted engine and logging tests: 14 passed. Schema JSON, targeted ESLint, shell syntax and `git diff --check` passed.
 - Python: 343 passed, 7 failed, 3 skipped and 35 subtests passed; the same six sealed-dictionary key failures and one unported comparison POS failure remain.
+
+## [Unreleased] - 2026-10-29 — Site and Parser workspaces
+### Changed / Fixed / Removed
+- Route Site runtime output and uploads through `index-path.js` → Site `_index.js` → `_path.js`, using `Junk/Site` or the Site directory when the chain fails; load the Site-local `.env` on fallback. Existing database and frontend build locations remain unchanged.
+- Create Site upload, original and other subdirectories only as needed; preserve previous outputs, private directory modes and the existing runtime override.
+- Route Parser outputs through its root chain to `Junk/Parser`, or `B.Parser/.output` on fallback. The Parser no longer reads a component-local `.env` or creates unrelated upload and font directories; the shared root still loads its own environment normally.
+- Ignore generated Site runtime uploads and test real Parser output, Site upload round trips, local fallbacks and existing-file preservation.
+### Verification
+- Node: 255 tests, 247 passed, 8 skipped. Both frontend builds passed with existing bundle-size warnings; targeted ESLint and `git diff --check` passed.
+- Python: 343 passed, 7 failed, 3 skipped and 35 subtests passed; six failures require `MASTER_JSON_KEY` and one requires the unported comparison POS view.
+- Site backend started using a temporary database and returned HTTP 200 from `/healthz`. Fallback path/output behavior was tested separately; complete standalone operation still requires the shared logger and other service dependencies.

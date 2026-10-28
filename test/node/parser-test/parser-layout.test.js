@@ -16,6 +16,7 @@ import {
 } from "../../../F.Site/Backend/file/paths.js";
 import {
   MAP_DIR,
+  DEFAULT_OUTPUT_DIR,
   MODEL_DIR,
   OCR_MODEL_DIR,
   OUTPUT_FONT_DIR,
@@ -26,6 +27,7 @@ import {
 import { ruleCount } from "../../../B.Parser/main/parser/text/rabbit.js";
 import { loadSidecarMap } from "../../../B.Parser/main/parser/read/pdf-extract.js";
 import { Manager } from "../../../B.Parser/main/parser/manager.js";
+import { writeDocxPlain } from "../../../B.Parser/main/parser/index.js";
 import { ZipStreamWriter } from "../../../B.Parser/main/parser/core/zip.js";
 import { validateDocxArchive } from "../../../B.Parser/main/parser/read/docx-extract.js";
 
@@ -114,5 +116,27 @@ test("manager parses the shipped 100-page PDF through a worker", async () => {
   } finally {
     await manager.close();
     await fsp.rm(outputDir, { recursive: true, force: true });
+  }
+});
+
+
+test("manager writes its default output under the parser workspace", async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "parser-default-output-"));
+  const manager = new Manager();
+  let output;
+  try {
+    const input = path.join(dir, "input.docx");
+    await writeDocxPlain(input, "မြန်မာစာ စမ်းသပ်ချက်");
+    const result = await manager.dispatch({
+      job: "extracting", method: "default", output: "txt", inputKind: "docx",
+      inPath: input, filename: "input.docx",
+    });
+    output = result.file;
+    assert.equal(path.dirname(output), DEFAULT_OUTPUT_DIR);
+    assert.match(await fsp.readFile(output, "utf8"), /မြန်မာစာ/);
+  } finally {
+    await manager.close();
+    if (output) await fsp.unlink(output).catch(() => {});
+    await fsp.rm(dir, { recursive: true, force: true });
   }
 });

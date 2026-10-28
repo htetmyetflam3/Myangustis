@@ -14,8 +14,7 @@ export function createRawSaver() {
     });
     const rawPath = path.join(abs(RAW_TXT_DIR), `${finalId}.txt`);
     let originalPath = null;
-    await fs.mkdir(abs(RAW_TXT_DIR), { recursive: true });
-    await fs.mkdir(abs(ORIGINAL_DIR), { recursive: true });
+    await fs.mkdir(abs(RAW_TXT_DIR), { recursive: true, mode: 0o700 });
     try {
       await fs.writeFile(rawPath, textContent, {
         encoding: 'utf8',

@@ -8,52 +8,50 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const repo = fileURLToPath(new URL('../../../', import.meta.url));
 
-for (const component of ['parser', 'engine']) {
-  for (const scenario of ['shared', 'missing-root', 'missing-entry', 'broken-entry', 'invalid-result']) {
-    test(`${component} environment chain: ${scenario}`, t => {
-      const root = fs.mkdtempSync(path.join(os.tmpdir(), 'myangustis-env-'));
-      t.after(() => fs.rmSync(root, { recursive: true, force: true }));
-      fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}');
-      fs.mkdirSync(path.join(root, '.data'));
-      fs.writeFileSync(path.join(root, '.data/.env'), 'CHAIN_OLD=forbidden\n');
-      fs.mkdirSync(path.join(root, 'Architecture/Engine/.data'), { recursive: true });
-      fs.writeFileSync(path.join(root, '.env'), 'CHAIN_VALUE=root\nCHAIN_SHELL=file\nCHAIN_EMPTY=filled\n');
-      fs.writeFileSync(path.join(root, 'Architecture/Engine/.data/.env'), 'CHAIN_VALUE=data\nCHAIN_DATA=data\n');
-      const part = component === 'parser' ? path.join(root, 'B.Parser') : path.join(root, 'Architecture/Engine');
-      const entry = component === 'parser' ? path.join(part, '_index.js') : path.join(root, 'Architecture/_index.js');
-      const source = component === 'parser' ? 'B.Parser/_path.js' : 'Architecture/Engine/_path.js';
-      fs.mkdirSync(part, { recursive: true });
-      fs.copyFileSync(path.join(repo, source), path.join(part, '_path.js'));
-      fs.writeFileSync(path.join(part, '.env'), 'CHAIN_VALUE=local\nCHAIN_SHELL=local\nCHAIN_EMPTY=local-filled\n');
-      if (scenario !== 'missing-root') fs.copyFileSync(path.join(repo, 'index-path.js'), path.join(root, 'index-path.js'));
-      if (scenario !== 'missing-entry') {
-        const relative = '../index-path.js';
-        const code = scenario === 'broken-entry' ? 'throw new Error("unavailable");' :
-          scenario === 'invalid-result' ? 'export const JUNK_DIR = "/valid"; export const ENV_RESULT = null;' :
-            `export { JUNK_DIR, ENV_RESULT } from '${relative}';`;
-        fs.writeFileSync(entry, code);
-      }
-      const env = { ...process.env, CHAIN_SHELL: 'shell', CHAIN_EMPTY: '' };
-      delete env.CHAIN_VALUE;
-      delete env.CHAIN_DATA;
-      delete env.CHAIN_OLD;
-      const result = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', `
-        const p = await import(${JSON.stringify(pathToFileURL(path.join(part, '_path.js')).href)});
-        console.log(JSON.stringify({base:p.BASE_DIR, env:p.ENV_RESULT, value:process.env.CHAIN_VALUE,
-          shell:process.env.CHAIN_SHELL, empty:process.env.CHAIN_EMPTY, data:process.env.CHAIN_DATA ?? null, old:process.env.CHAIN_OLD ?? null}));
-      `], { cwd: os.tmpdir(), env, encoding: 'utf8' }));
-      const shared = scenario === 'shared';
-      assert.equal(result.base, shared ? path.join(root, 'Junk') : part);
-      assert.equal(result.value, shared ? 'root' : 'local');
-      assert.equal(result.shell, 'shell');
-      assert.equal(result.empty, shared ? 'filled' : 'local-filled');
-      assert.equal(result.data, shared ? 'data' : null);
-      assert.equal(result.old, null);
-      assert.deepEqual(result.env.sources, shared ? [path.join(root, '.env'), path.join(root, 'Architecture/Engine/.data/.env')] : [path.join(part, '.env')]);
-      assert.ok(result.env.applied.includes('CHAIN_VALUE'));
-      assert.ok(!result.env.applied.includes('CHAIN_SHELL'));
-    });
-  }
+for (const scenario of ['shared', 'missing-root', 'missing-entry', 'broken-entry', 'invalid-result']) {
+  test(`engine environment chain: ${scenario}`, t => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'myangustis-env-'));
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+    fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}');
+    fs.mkdirSync(path.join(root, '.data'));
+    fs.writeFileSync(path.join(root, '.data/.env'), 'CHAIN_OLD=forbidden\n');
+    fs.mkdirSync(path.join(root, 'Architecture/Engine/.data'), { recursive: true });
+    fs.writeFileSync(path.join(root, '.env'), 'CHAIN_VALUE=root\nCHAIN_SHELL=file\nCHAIN_EMPTY=filled\n');
+    fs.writeFileSync(path.join(root, 'Architecture/Engine/.data/.env'), 'CHAIN_VALUE=data\nCHAIN_DATA=data\n');
+    const part = path.join(root, 'Architecture/Engine');
+    const entry = path.join(root, 'Architecture/_index.js');
+    const source = 'Architecture/Engine/_path.js';
+    fs.mkdirSync(part, { recursive: true });
+    fs.copyFileSync(path.join(repo, source), path.join(part, '_path.js'));
+    fs.writeFileSync(path.join(part, '.env'), 'CHAIN_VALUE=local\nCHAIN_SHELL=local\nCHAIN_EMPTY=local-filled\n');
+    if (scenario !== 'missing-root') fs.copyFileSync(path.join(repo, 'index-path.js'), path.join(root, 'index-path.js'));
+    if (scenario !== 'missing-entry') {
+      const relative = '../index-path.js';
+      const code = scenario === 'broken-entry' ? 'throw new Error("unavailable");' :
+        scenario === 'invalid-result' ? 'export const JUNK_DIR = "/valid"; export const ENV_RESULT = null;' :
+          `export { JUNK_DIR, ENV_RESULT } from '${relative}';`;
+      fs.writeFileSync(entry, code);
+    }
+    const env = { ...process.env, CHAIN_SHELL: 'shell', CHAIN_EMPTY: '' };
+    delete env.CHAIN_VALUE;
+    delete env.CHAIN_DATA;
+    delete env.CHAIN_OLD;
+    const result = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', `
+      const p = await import(${JSON.stringify(pathToFileURL(path.join(part, '_path.js')).href)});
+      console.log(JSON.stringify({base:p.BASE_DIR, env:p.ENV_RESULT, value:process.env.CHAIN_VALUE,
+        shell:process.env.CHAIN_SHELL, empty:process.env.CHAIN_EMPTY, data:process.env.CHAIN_DATA ?? null, old:process.env.CHAIN_OLD ?? null}));
+    `], { cwd: os.tmpdir(), env, encoding: 'utf8' }));
+    const shared = scenario === 'shared';
+    assert.equal(result.base, shared ? path.join(root, 'Junk') : part);
+    assert.equal(result.value, shared ? 'root' : 'local');
+    assert.equal(result.shell, 'shell');
+    assert.equal(result.empty, shared ? 'filled' : 'local-filled');
+    assert.equal(result.data, shared ? 'data' : null);
+    assert.equal(result.old, null);
+    assert.deepEqual(result.env.sources, shared ? [path.join(root, '.env'), path.join(root, 'Architecture/Engine/.data/.env')] : [path.join(part, '.env')]);
+    assert.ok(result.env.applied.includes('CHAIN_VALUE'));
+    assert.ok(!result.env.applied.includes('CHAIN_SHELL'));
+  });
 }
 
 test('real engine entry loads the root environment before host configuration', t => {

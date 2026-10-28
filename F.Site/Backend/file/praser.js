@@ -44,7 +44,7 @@ function createPraserParser(label) {
         RAW_TXT_DIR,
         `${crypto.randomUUID()}.${routing.output}`,
       ));
-      await fs.mkdir(path.dirname(outPath), { recursive: true });
+      await fs.mkdir(path.dirname(outPath), { recursive: true, mode: 0o700 });
       let jobManager;
       try {
         jobManager = await loadManager();

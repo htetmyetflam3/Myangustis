@@ -1,4 +1,4 @@
-import '../index-path.js';
+import './_path.js';
 import crypto from "node:crypto";
 import express from "express";
 import cookieParser from "cookie-parser";
@@ -41,8 +41,7 @@ import {
   FRONTEND_DIR,
   FRONTEND_REACT_DIR,
   abs,
-  inputDirFor,
-  ensurePraserDirs,
+  ensureUploadDir,
   validatePraserAssets,
 } from "./Backend/file/paths.js";
 import {
@@ -100,7 +99,6 @@ if (cookieSecret === sessionSecret) {
   throw new Error("COOKIE_SECRET and SESSION_SECRET must be different values");
 }
 validatePraserAssets();
-ensurePraserDirs();
 
 
 const frontendIndex = path.join(FRONTEND, "index.html");
@@ -297,7 +295,9 @@ app.use(
 const UPLOAD_MAX_MB = positiveInteger("UPLOAD_MAX_MB", 64, 2048);
 const upload = multer({
   storage: multer.diskStorage({
-    destination: (_req, file, cb) => cb(null, abs(inputDirFor(file.originalname))),
+    destination: (_req, file, cb) => {
+      ensureUploadDir(file.originalname).then(dir => cb(null, dir), cb);
+    },
     filename: (_req, file, cb) =>
       cb(null, `${crypto.randomUUID()}${path.extname(file.originalname).toLowerCase()}`),
   }),
