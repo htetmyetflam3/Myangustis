@@ -13,13 +13,13 @@ WHAT IT ANSWERS
 The two halves of the answer come from two different places, and that is the
 whole point of the tool:
 
-  * the register a form belongs to  ->  Engine/knowledge/isTreasure/master.json
-                                        resolution.single  (42 rows)
+  * the register a form belongs to  ->  engine-owned master data,
+                                        resolution.single
   * the register a sentence is in   ->  the text itself, classified per block
 
-master.json is READ ONLY. Nothing here writes to Engine/, master.json, the
-POS tree or any cache. The only writes are inside --work and the optional
---json report.
+The engine owns the sealed master and its cache. This tool requests its data
+through the shared engine bridge; its own writes are inside --work and the
+optional --json report.
 
 REGISTER RULE (mt/quality/MT.md:206-207)
     LSE  literary     default prose / narration
@@ -56,10 +56,9 @@ import tempfile
 from collections import Counter, defaultdict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
-MASTER = os.path.join(REPO, "Engine", "knowledge", "isTreasure", "master.json")
-TAGGER = os.path.join(HERE, "tag-both.mjs")
-RUNTIME_GUARD = os.path.join(REPO, "scraper", "wasm", "box", "runtime-guard.mjs")
+REPO = os.path.dirname(HERE)
+DATA_BRIDGE = os.path.join(os.path.dirname(HERE), "tools-box", "js", "engine-data.js")
+TAGGER = os.path.join(HERE, "main", "tools", "Burmese-Pos", "tag.js")
 
 # Colloquial surface forms that mark a block as spoken even with no quote mark
 # and no ငါ. Kept deliberately small: substring matching on Burmese is a trap
@@ -76,9 +75,16 @@ MYANMAR_RE = re.compile(r"[\u1000-\u1049\u1050-\u109F]")
 
 
 # --------------------------------------------------------------------- master
-def load_master(path=MASTER):
-    with open(path, encoding="utf-8") as fh:
-        data = json.load(fh)
+def engine_data(operation, path=None):
+    command = ["node", DATA_BRIDGE, operation]
+    if path is not None:
+        command.append(os.path.abspath(path))
+    result = subprocess.run(command, capture_output=True, text=True, check=True)
+    return json.loads(result.stdout)
+
+
+def load_master(path=None):
+    data = engine_data("file", path) if path is not None else engine_data("master")
     single = data["resolution"]["single"]
     wibat = data["top"]["wibat"]
 
@@ -121,7 +127,7 @@ def run_tagger(source, work):
     os.makedirs(work, exist_ok=True)
     result = os.path.join(work, "result.json")
     cmd = [
-        "node", "--import", RUNTIME_GUARD, TAGGER,
+        "node", TAGGER,
         os.path.abspath(source), os.path.abspath(work), result,
     ]
     proc = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True)
@@ -130,7 +136,7 @@ def run_tagger(source, work):
         raise SystemExit(f"tagger failed for {source}")
     with open(result, encoding="utf-8") as fh:
         meta = json.load(fh)
-    return meta["raw_pos_path"], meta
+    return meta["raw_pos"], meta
 
 
 # ------------------------------------------------------------------- parsing
@@ -186,24 +192,22 @@ def canon_with_spans(surfaces):
     return "".join(c for c, _ in out), starts
 
 
-def parse_raw_pos(path):
-    """-> flat ordered list of (surface, tags:set, is_eos) for the whole file.
-
-    raw_pos is one line per OUTPUT UNIT, not per source line, so line numbers
-    in that file cannot be used to place a token. Everything is flattened and
-    aligned by character offset instead."""
+def parse_raw_pos_text(text):
+    """Flatten streamed POS units to (surface, tags, is_eos) tuples."""
     toks = []
-    with open(path, encoding="utf-8") as fh:
-        for raw in fh.read().split("\n"):
-            for chunk in raw.split():
-                if not chunk:
-                    continue
-                eos = chunk.endswith("<eos>")
-                body = chunk[:-5] if eos else chunk
-                m = TOKEN_RE.match(body)
-                toks.append(((m.group(1) if m else body),
-                             set(m.group(2).split(",")) if m else set(), eos))
+    for raw in text.split("\n"):
+        for chunk in raw.split():
+            eos = chunk.endswith("<eos>")
+            body = chunk[:-5] if eos else chunk
+            m = TOKEN_RE.match(body)
+            toks.append(((m.group(1) if m else body),
+                         set(m.group(2).split(",")) if m else set(), eos))
     return toks
+
+
+def parse_raw_pos(path):
+    with open(path, encoding="utf-8") as fh:
+        return parse_raw_pos_text(fh.read())
 
 
 def index_blocks(text):
@@ -258,10 +262,13 @@ def audit(source, raw_pos_path=None, work=None):
     if raw_pos_path is None:
         if work is None:
             work = tempfile.mkdtemp(prefix="register-")
-        raw_pos_path, meta = run_tagger(source, work)
+        raw_pos_text, meta = run_tagger(source, work)
+    else:
+        with open(raw_pos_path, encoding="utf-8") as fh:
+            raw_pos_text = fh.read()
 
     rows, _ = load_master()
-    toks = parse_raw_pos(raw_pos_path)
+    toks = parse_raw_pos_text(raw_pos_text)
     flat, flat_to_src = flat_source(text)
     cflat = canon(flat)
     ctoks, tok_start = canon_with_spans([t[0] for t in toks])
@@ -357,7 +364,7 @@ def audit(source, raw_pos_path=None, work=None):
     return {
         "source": source,
         "raw_pos": raw_pos_path,
-        "master": MASTER,
+        "master": engine_data("paths")["master"],
         "tagger_meta": meta,
         "token_stream_aligned": aligned,
         "tokens": len(toks),

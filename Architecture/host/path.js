@@ -1,23 +1,23 @@
-// i rename this as path and this file here never define layout and resolve it own path by treating it own location as path and anything it need  reach to engine it will.import from path from helper 
 
 
-// FILE: standalone-web/engine-plugin.path.js
-//
-// Local, self-contained workspace path contract for the removable plugin.
-// Distinct name (not plain path.js) so it never collides with Bridge/path.js
-// or the other engine path copies when viewed from the repo root.
-// It ASSUMES the engine modules (MonoSyllabism, knowledge, init, ...) and the
-// bridge/ entry live inside THIS directory, so every path resolves against the
-// directory of this file — never against process.cwd() and never at a
-// placeholderFor-* location.
-//
-// Drop-in replacement for the engine's Bridge/path.js: identical export names.
-// When the plugin is merged into Engine/main/Bridge/, only the engine-root
-// derivation below changes (one line); the call sites stay untouched.
-//
-//   ENGINE_ROOT = this directory            (engine modules assumed in here)
-//   BRIDGE_DIR  = ENGINE_ROOT/bridge        (one level deep)
-//   workspace   = ENGINE_ROOT/workspace/... (all mutable runtime dirs)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,14 +26,14 @@ const ENGINE_ROOT = path.dirname(fileURLToPath(import.meta.url));
 const BRIDGE_DIR = path.join(ENGINE_ROOT, "bridge");
 const WORKSPACE = path.join(ENGINE_ROOT, "workspace");
 
-// Mutable dirs — configureWorkspace() can retarget each one per run.
+
 let TREE_DIR = path.join(WORKSPACE, "tree");
 let LOG_DIR = path.join(WORKSPACE, "log");
 let OUTPUT_DIR = path.join(WORKSPACE, "output");
 let DATA_DIR = path.join(WORKSPACE, "data");
 const INPUT_DIR = path.join(WORKSPACE, "input") + path.sep;
 
-// Called before running the pipeline when a run needs non-default locations.
+
 export function configureWorkspace({ treeDir, logDir, outputDir, dataDir } = {}) {
   if (treeDir !== undefined) TREE_DIR = path.resolve(treeDir);
   if (logDir !== undefined) LOG_DIR = path.resolve(logDir);
@@ -41,16 +41,15 @@ export function configureWorkspace({ treeDir, logDir, outputDir, dataDir } = {})
   if (dataDir !== undefined) DATA_DIR = path.resolve(dataDir);
 }
 
-// ── Map build layout (MonoSyllabism/map) — relative to ENGINE_ROOT ──
-// Four artifacts land there, consumed by the runtime through these names:
-//   payload.jsc, loader.js, secure.js, master.json(.enc)
+
+
+
 const MAP_DIR = "MonoSyllabism/map";
 const MAP_BINARY_FILE = MAP_DIR + "/payload.jsc";
 const MAP_LOADER_FILE = MAP_DIR + "/loader.js";
-// secure.js and master.json(.enc) now live in .data/ at the repo root, two
-// levels above this directory (Engine/host): one loader, one .env, one sealed source.
-const MAP_SECURE_FILE = "../../.data/secure.js";
-const MAP_MASTER_FILE = "../../.data/master.json";
+
+const MAP_SECURE_FILE = "../Engine/.data/secure.js";
+const MAP_MASTER_FILE = "../Engine/.data/master.json";
 const MAP_SOURCE_DIR = "MonoSyllabism/mapbuilder/base";
 const JSON_SOURCE_FILE = "knowledge/isTreasure/master.json";
 const JSC_FILE = MAP_BINARY_FILE;
@@ -89,7 +88,7 @@ export function MasterFile() {
   return path.join(ENGINE_ROOT, MAP_MASTER_FILE);
 }
 
-// ── Map build paths (string form; build scripts resolve them themselves) ──
+
 export function MapDir() {
   return MAP_DIR;
 }
@@ -122,7 +121,7 @@ export function JscFile() {
   return JSC_FILE;
 }
 
-// ── Path utility functions ──
+
 export function resolvePath(p) {
   return path.isAbsolute(p) ? p : path.resolve(ENGINE_ROOT, p);
 }
@@ -139,7 +138,7 @@ export function getBasename(p, ext) {
   return ext ? path.basename(p, ext) : path.basename(p);
 }
 
-// ── For modules writing files (relative strings) ──
+
 export function DataFile() {
   return DATA_DIR;
 }
@@ -156,7 +155,7 @@ export function TreeFile() {
   return TREE_DIR;
 }
 
-// ── For deletion/reset (resolved absolute paths) ──
+
 export function GetDataDir() {
   return resolvePath(DATA_DIR);
 }
@@ -209,7 +208,7 @@ export function GetJsonSourceFile() {
   return resolvePath(JSON_SOURCE_FILE);
 }
 
-// Workspace setup is create-only, including repeated startup calls.
+
 export function onPathEnsure(dirPath) {
   const resolved = resolvePath(dirPath);
   fs.mkdirSync(resolved, { recursive: true });

@@ -16,6 +16,7 @@ for (const scenario of ['shared', 'nested', 'standalone', 'missing-component-ent
     const component = path.join(root, 'B.Parser');
     fs.mkdirSync(component, { recursive: true });
     fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}');
+    fs.writeFileSync(path.join(component, '.env'), 'PARSER_LOCAL_ONLY=must-not-load\n');
     fs.copyFileSync(path.join(repo, 'B.Parser/_path.js'), path.join(component, '_path.js'));
     if (scenario !== 'missing-component-entry') {
       fs.copyFileSync(path.join(repo, 'B.Parser/_index.js'), path.join(component, '_index.js'));
@@ -30,18 +31,40 @@ for (const scenario of ['shared', 'nested', 'standalone', 'missing-component-ent
       fs.writeFileSync(path.join(root, 'index-path.js'), 'export const JUNK_DIR = undefined;');
     }
     const url = pathToFileURL(path.join(component, '_path.js')).href;
+    const env = { ...process.env };
+    delete env.PARSER_LOCAL_ONLY;
     const result = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', `
       const p = await import(${JSON.stringify(url)});
       console.log(JSON.stringify({runtime:p.RUNTIME_ROOT, fonts:p.FONT_DIR,
-        input:p.INPUT_DIR, output:p.DEFAULT_OUTPUT_DIR, source:p.PARSER_DIR}));
-    `], { cwd: os.tmpdir(), encoding: 'utf8' }));
+        output:p.DEFAULT_OUTPUT_DIR, source:p.PARSER_DIR, local:process.env.PARSER_LOCAL_ONLY ?? null}));
+    `], { cwd: os.tmpdir(), env, encoding: 'utf8' }));
     const shared = ['shared', 'nested'].includes(scenario);
-    assert.equal(result.runtime, shared ? path.join(root, 'Junk/Parser') : path.join(component, 'Parser'));
+    assert.equal(result.runtime, shared ? path.join(root, 'Junk/Parser') : component);
     assert.equal(result.fonts, path.join(shared ? path.join(root, 'Junk') : component, 'fonts/Unicode'));
     assert.equal(result.source, path.join(component, 'main/parser'));
-    for (const dir of [result.fonts, result.input, result.output]) {
+    for (const dir of [result.output]) {
       assert.ok(fs.statSync(dir).isDirectory(), dir);
     }
+    assert.equal(result.local, null);
+    assert.equal(fs.existsSync(result.fonts), false);
+    assert.equal(fs.existsSync(path.join(result.runtime, 'upload')), false);
+    assert.equal(fs.existsSync(path.join(result.output, 'txt')), false);
     if (!shared) assert.equal(fs.existsSync(path.join(root, 'Junk')), false);
   });
 }
+
+test('Parser setup preserves existing output', t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'parser-preserve-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const component = path.join(root, 'B.Parser');
+  const output = path.join(component, '.output');
+  fs.mkdirSync(output, { recursive: true });
+  fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}');
+  fs.copyFileSync(path.join(repo, 'B.Parser/_path.js'), path.join(component, '_path.js'));
+  fs.writeFileSync(path.join(output, 'keep.txt'), 'previous');
+  execFileSync(process.execPath, ['--input-type=module', '-e', `
+    const p = await import(${JSON.stringify(pathToFileURL(path.join(component, '_path.js')).href)});
+    p.ensureDirs();
+  `], { cwd: os.tmpdir() });
+  assert.equal(fs.readFileSync(path.join(output, 'keep.txt'), 'utf8'), 'previous');
+});

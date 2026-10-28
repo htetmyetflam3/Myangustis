@@ -5,7 +5,7 @@ requires-python = ">=3.10"
 dependencies = [
     "beautifulsoup4>=4.12.0",
     "cryptography>=42.0",
-    "docx>=0.2.4",
+    "python-docx>=1.1.0",
     "flask>=3.0.0",
     "fpdf2>=2.8.8",
     "httpx>=0.27",
@@ -31,7 +31,7 @@ package = false
 [tool.uv.workspace]
 members = [
     "C.Proofreading",
-    "D.Parser",
+    "B.Parser",
     "E.Scraper",
     "tools-box",
 ]

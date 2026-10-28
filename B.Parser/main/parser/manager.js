@@ -19,9 +19,9 @@ const OUTPUT_TYPES = new Set(["txt", "docx", "pdf"]);
 const JOBS = new Set(["extracting", "ocr", "null"]);
 const METHODS = new Set(["default", "manual", "null"]);
 
-// Identity/contract fields the wider API chain (Site queue, engine plugin)
-// attaches to a job. The parser does not interpret them; it must echo every
-// one back on BOTH normal and skip results so the caller can reconcile.
+
+
+
 const IDENTITY_FIELDS = [
   "jobToken", "formId", "submitId", "userId", "sessionId", "extension", "task",
 ];
@@ -40,9 +40,9 @@ function errorFromWorker(lane, payload) {
   }
   const error = new Error(payload.message || `${lane} worker failed`);
   if (payload.name) error.name = String(payload.name);
-  // Worker errors used to be reduced to only their message. The replacement
-  // Error was then born here, so every parser failure misleadingly pointed at
-  // manager.mjs even when the actual fault was deep in PDF decoding.
+
+
+
   if (payload.stack) error.stack = String(payload.stack);
   return error;
 }
@@ -81,11 +81,11 @@ export function readManagerPayload(job) {
     throw new Error(`Unsupported output type: ${JSON.stringify(job?.output)} (use txt/docx/pdf)`);
   }
   if (jobField === "ocr" && method !== "default") {
-    
+
     throw new Error(`job:"ocr" only accepts method:"default" (got ${JSON.stringify(method)})`);
   }
   if (method === "null" && inferInputKind(job) !== "docx") {
-    
+
     throw new Error('method:"null" is DOCX-only (no PDF path emits it)');
   }
 
@@ -93,9 +93,9 @@ export function readManagerPayload(job) {
 }
 
 
-/* The lane is the route. It used to also depend on the fused
-   "conversion-analysis" value; the site now sends the route unfused, and the
-   caller asks for docx output when it wants an Engine source. */
+
+
+
 export function route(job) {
   return readManagerPayload(job).job === "ocr" ? "ocr" : "extract";
 }
@@ -149,16 +149,16 @@ export class Manager {
     return w;
   }
 
-  
+
   _outPathFor(job, out) {
     if (job.outPath) return job.outPath;
-    
-    
-    
+
+
+
     return path.join(this.outputDir, `${crypto.randomUUID()}.${out}`);
   }
 
-  
+
   async dispatch(job, caller = "site") {
     const who = normalizeCaller(caller);
     const { job: jobField, method } = readManagerPayload(job);
@@ -174,9 +174,9 @@ export class Manager {
       lane,
     };
 
-    // Scraper early gate: skip an old-font PDF BEFORE paying for a worker parse.
-    // OCR lane and DOCX are never gated. Site never enters this branch (its
-    // policy is parse-all). A skip returns the same contract fields as a parse.
+
+
+
     if (who === "scraper" && lane === "extract" && inputKind === "pdf") {
       const source = job.data ?? (job.inPath ? job.inPath : null);
       if (source) {
@@ -189,7 +189,7 @@ export class Manager {
             caller: who,
             reason: decision.reason,
             encodingPath: decision.encodingPath ?? verdict.encodingPath ?? null,
-            // file/contract echo — never dropped, even on a skip
+
             file: null,
             pages: 0,
             counts: null,
@@ -220,17 +220,17 @@ export class Manager {
           : {
               id,
               op: "extract",
-              method, 
-              kind: job.inputKind, 
+              method,
+              kind: job.inputKind,
               filename: job.filename,
               inPath: job.inPath,
               data: job.data,
               outPath,
             };
 
-      // default and manual both begin in the Praser extraction lane. Manual's
-      // image pages are sent through dispatchImages afterward, where they get
-      // their own OCR budget instead of extending the extraction timeout.
+
+
+
       let budget = WORKER_TIMEOUT_MS;
       if (lane === "ocr") {
         const pages = await countOcrPages(job);
@@ -260,11 +260,11 @@ export class Manager {
         }
       });
 
-      /* handling "null" is the mixed case: the text core reads the text and
-         leaves a marker per image box, and the SECOND worker group (the OCR
-         lane) reads the boxes. The manager owns that hand-off because it owns
-         both lanes. It used to be gated on method "manual" + txt output,
-         which is now exactly the case that has no images to read. */
+
+
+
+
+
       if (jobField === "null" && Array.isArray(reply.imageFiles) && reply.imageFiles.length) {
         try {
           const ocr = await this.dispatchImages(reply.imageFiles);
@@ -288,7 +288,7 @@ export class Manager {
         output: out,
         method,
         lane,
-        // The measured six-path verdict, surfaced straight from the worker.
+
         encodingPath: reply.encodingPath ?? reply.scanPath ?? null,
         pages: reply.pages,
         counts: reply.counts,
@@ -299,7 +299,7 @@ export class Manager {
         ...(reply.scanLog ? { scanLog: reply.scanLog } : {}),
         ...(reply.scanPath ? { scanPath: reply.scanPath } : {}),
         ...(reply.scanSummary?.length ? { scanSummary: reply.scanSummary } : {}),
-        // identity/contract fields echoed last so they can never be lost
+
         ...meta,
       };
       if (out === "docx" && "text" in reply) result.text = reply.text;
@@ -337,7 +337,7 @@ export class Manager {
       releaseLane();
     }
   }
-  
+
   async run(jobs, caller = "site") {
     const out = [];
     for (const job of jobs) out.push(await this.dispatch(job, caller));

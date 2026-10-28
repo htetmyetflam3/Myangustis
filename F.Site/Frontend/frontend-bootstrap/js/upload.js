@@ -7,8 +7,8 @@ import {
 } from "./detect.js";
 export const OUTPUT_FORMATS = ["txt", "docx", "pdf"];
 export const MAX_OCR_PAGES = 50;
-// Must match PRASER_MAX_PAGES in the deployed server configuration. Rejecting
-// locally prevents a multi-minute upload that the parser is guaranteed to refuse.
+
+
 export const MAX_PARSER_PAGES = 300000;
 import { probeScript } from "./script.js";
 export { DOCX_IMAGE_DOMINANCE, PDF_TEXT_MIN_CHARS };
@@ -113,11 +113,11 @@ export async function inspectUpload(file, flow = "conversion") {
     const textBased =
       !imageDominant && detection.text.replace(/\s/g, "").length >= PDF_TEXT_MIN_CHARS;
     if (textBased) {
-      /* A text layer AND substantial image bytes. The scanned-novel case:
-         the text layer exists but may be noise from the scanning tool,
-         while the real content sits in the page images. Only the user can
-         say whether the images are worth reading, so it gets the same
-         prompt an image-heavy DOCX gets. */
+
+
+
+
+
       if (detection.imageBytes > detection.textBytes) {
         return { ...common, kind: "pdf-images", gate: "choose-docx", notice: NOTICE.pdfText };
       }
@@ -165,23 +165,23 @@ export function gateFor(plan, flow) {
   return plan.readable ? "none" : "confirm-zawgyi";
 }
 
-/* The mode is a statement about the OUTPUT, not about the file:
 
-     txt out        images cannot be carried -> default (boxes skipped)
-     docx|pdf out   images can be carried    -> manual  (boxes re-embedded)
 
-   `plan.readable` is deliberately NOT consulted here. Readability is the
-   second source's question -- it is what the backend's code-page recovery
-   exists to answer. Using it to pick the mode made "the text layer was
-   garbled" mean "re-embed the images", which are unrelated facts. */
+
+
+
+
+
+
+
 export function route(plan, flow, choice = "default", outputFormat = "txt") {
   void flow;
   const method = outputFormat === "txt" ? "default" : "manual";
   if (plan.kind === "pdf-scan") return { content: "image", job: "ocr", method };
-  /* An image-heavy DOCX is the only case with a real choice, and only the
-     user can make it: the text layer is fine, but the image boxes may hold
-     more text. Saying yes makes it mixed, which sends the boxes to the
-     second worker group. Saying no treats it as a plain text document. */
+
+
+
+
   if ((plan.kind === "docx-images" || plan.kind === "pdf-images") && choice === "manual") {
     return { content: "mixed", job: "null", method };
   }
@@ -206,10 +206,10 @@ export function buildPayload({
     v: 1,
     source: analysis ? "analysis" : "converter",
     content,
-    /* One label per column, and only that one:
-         converter   job = handling, method = mode
-         analysis    method = handling, task = mode
-       Sending the other column's labels is rejected by the server. */
+
+
+
+
     ...(analysis
       ? { method: handling, task: mode }
       : { job: handling, method: mode }),
@@ -243,11 +243,11 @@ export function normalizeName(originalName, inputFormat, at) {
   let safe = base
     .replace(/[\\/]+/g, " ")
     .replace(/[\u0000-\u001F\u007F<>:"|?*]/g, "")
-    // The upload name is a protocol token the server validates as
-    // /^\d{8}T\d{6}Z__[a-zA-Z0-9._-]+\.(pdf|docx)$/ -- a Burmese original
-    // name ("ဘဝထိုထို-part_1") must not survive into it or the server
-    // refuses the whole upload as invalid multipart. The user's real name
-    // travels in metadata.originalName instead.
+
+
+
+
+
     .replace(/[^a-zA-Z0-9._\s-]/g, "")
     .replace(/\s+/g, "-")
     .replace(/-{2,}/g, "-")

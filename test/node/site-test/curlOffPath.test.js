@@ -47,7 +47,7 @@ test('the suffix is normalised, and the domain is never part of it', async () =>
       assert.equal(curlEndpointPath(), '/uchihaItachiismyfavcharcter', `from ${JSON.stringify(raw)}`);
     });
   }
-  // A bare slash is not an endpoint: it would mount on the site root.
+
   withEnv({ CURL_ENDPOINT: '/' }, async () => {
     assert.equal(curlEndpointPath(), null);
   });
@@ -59,7 +59,7 @@ test('the suffix is normalised, and the domain is never part of it', async () =>
 test('no host, scheme or port is ever read from configuration', async () => {
   const source = await (await import('node:fs/promises'))
     .readFile(new URL('../../../F.Site/Backend/gateway/api/curlGate.js', import.meta.url), 'utf8');
-  // The host must come from the request. Anything else is a hardcoded domain.
+
   assert.match(source, /req\.get\('host'\)/u);
   assert.equal(/process\.env\.(?:HOST|PORT|DOMAIN|SITE_URL)/u.test(source), false);
 });
@@ -117,8 +117,8 @@ test('the key is accepted from a header, a bearer token, or ?key=', { skip: !has
       const res = {
         statusCode: 200,
         status(code) { this.statusCode = code; return this; },
-        // Past the gate, the catch-all 404 answers. A gate rejection logs
-        // first; both are 404, so distinguish by whether multer ran at all.
+
+
         json() { resolve(true); return this; },
         set() { return this; }, type() { return this; }, send() { return this; },
       };

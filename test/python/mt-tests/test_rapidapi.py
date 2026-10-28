@@ -20,8 +20,10 @@ from pathlib import Path
 from unittest import mock
 from urllib.parse import parse_qsl, urlsplit
 
+import _paths  # noqa: F401 - configure the split proofreading modules
+
 HERE = Path(__file__).resolve().parent
-MT = Path(__file__).resolve().parents[3] / "Proofreading" / "main" / "mt"
+MT = Path(__file__).resolve().parents[3] / "C.Proofreading" / "main" / "translate"
 ROOT = MT.parent
 sys.path.insert(0, str(MT))
 
@@ -555,7 +557,7 @@ class ChapterTests(ApiTestCase):
 # ---------------------------------------------------------------- MCP
 
 
-SERVER = ROOT / "mcp.py"
+SERVER = ROOT / "tools" / "mcp.py"
 
 
 class McpProcess:
@@ -563,7 +565,7 @@ class McpProcess:
         self.proc = subprocess.Popen(
             [sys.executable, str(SERVER), "--serve", *args],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            text=True, cwd=str(ROOT), env=env)
+            text=True, cwd=str(ROOT), env=_paths.subprocess_env(env))
         self.next_id = 0
 
     def request(self, method, params=None, timeout=20):
@@ -734,7 +736,7 @@ class ConfigTests(unittest.TestCase):
     def run_server(self, *args, env=None):
         return subprocess.run([sys.executable, str(SERVER), *args],
                               capture_output=True, text=True, timeout=30,
-                              env=env)
+                              env=_paths.subprocess_env(env))
 
     def test_client_snippets(self):
         for client in ("json", "claude", "kilo", "codex", "gemini"):
@@ -760,12 +762,12 @@ class ConfigTests(unittest.TestCase):
             data = json.loads(body)
             table = (data.get("mcp") or data.get("mcpServers"))["rapidapi-translator"]
             if client == "kilo":
-                self.assertTrue(table["command"][0].endswith("python3"))
+                self.assertEqual(table["command"][0], sys.executable)
                 self.assertIn("mcp.py", table["command"][1])
                 self.assertEqual(table["environment"]["RAPIDAPI_KEY"],
                                  "{env:RAPIDAPI_KEY}")
             else:
-                self.assertTrue(table["command"].endswith("python3"))
+                self.assertEqual(table["command"], sys.executable)
                 self.assertTrue(table["args"][0].endswith("mcp.py"))
         unknown = self.run_server("--print-config", "--client", "nope")
         self.assertNotEqual(unknown.returncode, 0)
@@ -883,7 +885,8 @@ class ConfigTests(unittest.TestCase):
 
     def test_print_config_is_valid_json(self):
         output = subprocess.run([sys.executable, str(SERVER), "--print-config"],
-                                capture_output=True, text=True, timeout=20)
+                                capture_output=True, text=True, timeout=20,
+                                env=_paths.subprocess_env())
         self.assertEqual(output.returncode, 0, output.stderr)
         payload = json.loads(output.stdout)
         server = payload["mcpServers"]["rapidapi-translator"]
@@ -894,7 +897,7 @@ class ConfigTests(unittest.TestCase):
         environment = dict(os.environ, RAPIDAPI_KEY=KEY)
         output = subprocess.run([sys.executable, str(SERVER), "--check"],
                                 capture_output=True, text=True, timeout=20,
-                                env=environment)
+                                env=_paths.subprocess_env(environment))
         self.assertEqual(output.returncode, 0, output.stderr)
         self.assertNotIn(KEY, output.stdout)
         self.assertEqual(json.loads(output.stdout)["key"], "set")

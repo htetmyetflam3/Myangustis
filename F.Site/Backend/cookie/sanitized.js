@@ -1,4 +1,5 @@
-import logger from '../../../Bridge/logen/site.js';
+import { getLogen } from "../../_path.js";
+const logger = (await getLogen()).siteLog.default;
 import { db } from '../db/db.js';
 import { decodeCookie } from './codec.js';
 export async function cookieDBCheck(req, res, next) {

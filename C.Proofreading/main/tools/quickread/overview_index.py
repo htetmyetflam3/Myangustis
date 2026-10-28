@@ -35,7 +35,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SOURCE = ROOT / "content" / "review" / "burmese-overview.md"
 DEFAULT_INDEX = ROOT / "content" / "review" / "overview.yaml"
 

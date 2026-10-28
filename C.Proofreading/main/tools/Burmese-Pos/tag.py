@@ -1,9 +1,7 @@
 """Read-only access to the Engine tagger, both views at once.
 
-Engine/tag-text.mjs publishes only the word view (`{syllable:false,
-rawPos:true}`). Quality work needs the smallest-unit view too, so this module
-drives mt/quality/tag-both.mjs, which is the same pipeline with both writers
-enabled. Nothing under Engine/ is written; each run gets a scratch WORK dir.
+This module drives tag.js, which calls BindEngine for the word and smallest-
+unit views. Each run gets a scratch work directory.
 
 Word view vs unit view (this is the whole model, in one place):
 
@@ -42,7 +40,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SHIM = Path(__file__).resolve().with_name("tag-both.mjs")
+SHIM = Path(__file__).resolve().with_name("tag.js")
 
 TOKEN_RE = re.compile(r"^(?P<surface>.*?)\{(?P<tags>[^{}]*)\}$")
 EOS = "<eos>"
@@ -134,9 +132,8 @@ def tag_text(text: str, work: Path | None = None, timeout: int = 300) -> list[di
     node = shutil.which("node")
     if not node:
         raise EngineError("node not found on PATH")
-    # The shim reaches the engine through its own repo-relative Bridge facade,
-    # so no cwd or external WASM guard is needed: one node process, one
-    # BindEngine('proofreading') call, stats JSON written back.
+    # The Node caller reads the source and collects the engine's streamed
+    # views into the caller-owned metadata file.
     cmd = [node, str(SHIM), str(source), str(work / "engine"), str(result_json)]
     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     if proc.returncode != 0 or not result_json.exists():
@@ -148,8 +145,8 @@ def tag_text(text: str, work: Path | None = None, timeout: int = 300) -> list[di
         )
 
     meta = json.loads(result_json.read_text(encoding="utf-8"))
-    words = _parse_word_view(Path(meta["raw_pos_path"]).read_text(encoding="utf-8"))
-    units = _parse_unit_view(Path(meta["syllable_path"]).read_text(encoding="utf-8"))
+    words = _parse_word_view(meta["raw_pos"])
+    units = _parse_unit_view(meta["syllable"])
     if len(words) != len(units):
         raise EngineError(f"view mismatch: {len(words)} word sentences vs {len(units)} unit sentences")
     _attach_units(words, units)

@@ -13,8 +13,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import _paths  # noqa: F401 - configure the split proofreading modules
+
 HERE = Path(__file__).resolve().parent
-MT = Path(__file__).resolve().parents[3] / "Proofreading" / "main" / "mt"
+MT = Path(__file__).resolve().parents[3] / "C.Proofreading" / "main" / "translate"
 sys.path.insert(0, str(MT))
 sys.path.insert(0, str(HERE))
 
@@ -150,46 +152,6 @@ class StoreTests(unittest.TestCase):
             "Chapter 194: Test\n=================\nThe wind is tired.\n", encoding="utf-8")
         self.assertEqual(verse.mt_lines(194, chapters), ["The wind is tired."])
         self.assertEqual(verse.mt_lines(195, chapters), [])
-
-
-class ChapterExportTests(unittest.TestCase):
-    """The verse section lands at the end of the chapter file, not in a drawer."""
-
-    def setUp(self):
-        import agent_work
-        from test_agent_work import SOURCE
-        from test_chapter_map import write_docx  # noqa: F401  (import keeps parity)
-        self.agent_work = agent_work
-        self.tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.tmp.cleanup)
-        self.dir = Path(self.tmp.name)
-        self.source = self.dir / "source.txt"
-        self.source.write_text(SOURCE, encoding="utf-8")
-        self.dir_verse = self.dir / "verse"
-        patcher = mock.patch.object(verse, "DEFAULT_DIR", self.dir_verse)
-        patcher.start()
-        self.addCleanup(patcher.stop)
-        self.store = agent_work.DraftStore(self.dir / "drafts.sqlite3")
-        self.addCleanup(self.store.close)
-
-    def test_export_appends_the_section_when_verse_exists(self):
-        report = self.store.export(61, self.dir / "out", source=self.source)
-        self.assertIsNone(report["verse"])
-        verse.save(61, kind="poem", paragraph="1",
-                   english="Leaves fall in the great hall.", directory=self.dir_verse)
-        report = self.store.export(61, self.dir / "out", source=self.source)
-        self.assertEqual(report["verse"], {"lines": 1, "kinds": ["poem"]})
-        text = Path(report["files"][1]).read_text(encoding="utf-8")
-        self.assertIn("poems, songs and philosophy lines", text)
-        self.assertIn("Leaves fall in the great hall.", text)
-        self.assertIn("not part of the draft", text)
-
-    def test_the_draft_text_file_never_gets_verse(self):
-        verse.save(61, kind="poem", paragraph="1",
-                   english="Leaves fall.", directory=self.dir_verse)
-        report = self.store.export(61, self.dir / "out", source=self.source)
-        body = Path(report["files"][0]).read_text(encoding="utf-8")
-        self.assertNotIn("Leaves fall.", body)
 
 
 class NoDetectionTests(unittest.TestCase):

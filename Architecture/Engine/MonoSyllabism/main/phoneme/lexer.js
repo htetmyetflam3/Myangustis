@@ -1,7 +1,8 @@
 import { walk } from "../grapheme/traverser.js";
 import { isTail, isBase, isLowercaseAZ } from "../../map/loader.js";
 import { toSyllableToken, SPACE_TOKEN } from "../../utilities/formatter.js";
-import { segmentStart } from "../../../bridge/logen.js";
+import { getLogen } from "../../../_path.js";
+const { segmentStart } = (await getLogen()).legacyLog;
 
 function isBaseAsat(tok) {
 	return isLowercaseAZ(tok);
@@ -10,8 +11,8 @@ function isMasked(tok) {
 	return tok === "{";
 }
 
-/* Data pieces leave here √-suffixed (bridge handoff); bare "\n"
-   stays the control signal. Assemblers concat — no array, no join. */
+
+
 export async function* runSegmentor(normalizedStream) {
 	let lineCount = 0;
 	const startTime = Date.now();
@@ -38,7 +39,7 @@ export async function* runSegmentor(normalizedStream) {
 				continue;
 			}
 
-			// EMIT ORIGINAL TEXT SPACE AS EXPLICIT TOKEN
+
 			if (ch === " ") {
 				yield SPACE_TOKEN;
 				pos++;

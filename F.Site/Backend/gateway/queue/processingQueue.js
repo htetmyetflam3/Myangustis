@@ -1,5 +1,7 @@
+/* global structuredClone */
 import crypto from 'node:crypto';
-import { emitEvent } from '../../../../Bridge/logen/site.js';
+import { getLogen } from "../../../_path.js";
+const { emitEvent } = (await getLogen()).siteLog;
 import { createReadStream } from 'node:fs';
 const now = () => new Date().toISOString();
 async function snapshot(filePath) {
@@ -161,10 +163,14 @@ export function createProcessingQueue({
     delete snapshotFields.engineTimer;
     return structuredClone(snapshotFields);
   }
-  async function enqueue({ formId, userId, sessionId, clientIp, intent, file, inputPath }) {
+  async function enqueue({ formId, userId, sessionId, clientIp, intent, file, inputPath, taskOverride }) {
     prune();
     if (records.has(formId)) throw new Error('Processing queue already contains this formId');
+    if (taskOverride !== undefined && !TASK_LEGS.has(taskOverride)) {
+      throw new Error('Unsupported processing task override');
+    }
     const measured = await snapshot(inputPath);
+    const task = taskOverride ?? (intent.source === 'analysis' ? 'analysis' : 'conversion');
     const record = {
       formId,
       submitId: null,
@@ -176,9 +182,9 @@ export function createProcessingQueue({
            task  the CIRCLE this queue tracks -- conversion or analysis
            mode  the analysis column's own label for default|manual, which
                  is what the client sent and what the Engine is told */
-      task: intent.source === 'analysis' ? 'analysis' : 'conversion',
+      task,
       mode: intent.source === 'analysis' ? (intent.task ?? null) : (intent.method ?? null),
-      engineRound: intent.source === 'analysis' ? 'owed' : null,
+      engineRound: task === 'analysis' ? 'owed' : null,
       job: intent.job ?? null,
       method: intent.method ?? null,
       route: intent.source === 'analysis' ? intent.task : intent.job,
@@ -283,7 +289,7 @@ export function createProcessingQueue({
       api.managerStarted(formId);
       const handoff = {};
       try {
-        const parsed = await parseFile(file, handoff, { intent, savedPath });
+        const parsed = await parseFile(file, handoff, { intent, savedPath, executionTask: recordFor(formId).task });
         if (!handoff.manager?.file) throw new Error('Parser completed without an artifact');
         await api.managerFinished(formId, handoff.manager);
         return { ...parsed, manager: handoff.manager };
@@ -405,8 +411,8 @@ export function createProcessingQueue({
     
     mintAnalysisToken(formId, { ttlMs }) {
       const record = recordFor(formId);
-      if (!isAnalysisRecord(record)) {
-        throw new QueueRejection('state', 'Submission is not an analysis submission');
+      if (!isAnalysisRecord(record) || record.task !== 'analysis') {
+        throw new QueueRejection('state', 'Submission is not an analysis task');
       }
       if (record.state !== 'FINISHED') {
         throw new QueueRejection(

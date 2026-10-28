@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib
 import json
 import os
 import re
@@ -50,22 +51,13 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# Repo root (holds secretloader.py) — rapidapi_translator.py is at
-# <repo>/C.Proofreading/main/tools/api/, walk up 5 parents.
-_THIS_DIR = Path(__file__).resolve().parent
-_REPO_ROOT = _THIS_DIR
-while _REPO_ROOT.parent != _REPO_ROOT and not (_REPO_ROOT / "secretloader.py").is_file():
-    _REPO_ROOT = _REPO_ROOT.parent
+# Share the root workspace environment with the JavaScript entry.
+_REPO_ROOT = Path(__file__).resolve().parents[4]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
-from secretloader import load_secrets as _sl_load, parse_dotenv as _sl_parse  # noqa: E402
+_workspace = importlib.import_module("index-path")
 
-# Auto-load the standard secret chain (process.env → caller .env → repo root
-# → .data/.env) once at import. `--env-file` can still add extra keys via
-# load_env_file() below.
-_sl_load(__file__)
-
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 
 HOST = "multi-format-ai-translator-the-most-complete.p.rapidapi.com"
 BASE_URL = "https://" + HOST
@@ -124,22 +116,16 @@ class BatchResult:
 # ---------------------------------------------------------------- .env
 
 def parse_env_file(path: Path | str) -> dict[str, str]:
-    """Parse a dotenv file into {key: value}. Delegates to secretloader.parse_dotenv.
+    """Parse a dotenv file using the shared workspace parser."""
+    return _workspace.parse_dotenv(Path(path).read_text(encoding="utf-8"))
 
-    Kept as a thin wrapper so existing callers (tests, mcp.py, apicaller.py)
-    don't break.
-    """
-    return _sl_parse(Path(path).read_text(encoding="utf-8"))
 
 
 def load_env_file(path: Path | str | None = None, *,
                   override: bool = False) -> list[str]:
     """Load an explicit dotenv file into os.environ and return the set names.
 
-    With no argument: re-run the standard secretloader chain (process.env →
-    caller .env → repo root .env → .data/.env) — useful for scripts that
-    import this module early and want to guarantee the environment is fully
-    populated before reading RAPIDAPI_KEY.
+    With no argument: refresh the shared root and engine data environment.
 
     With an explicit path: parse that file (raises TranslatorError if missing
     or unreadable) and apply its values. The shell environment wins unless
@@ -150,19 +136,12 @@ def load_env_file(path: Path | str | None = None, *,
         if target:
             path = target
     if path is None:
-        # No explicit file: refresh the standard chain. load_secrets is
-        # idempotent — calling again is a cheap no-op if already loaded.
-        _sl_load(__file__)
+        _workspace.load_root_env()
         return []
     file = Path(path).expanduser()
     if not file.is_file():
         raise TranslatorError(f"no env file at {file}")
-    loaded: list[str] = []
-    for name, value in parse_env_file(file).items():
-        if override or not os.environ.get(name):
-            os.environ[name] = value
-            loaded.append(name)
-    return loaded
+    return _workspace.load_env_file(file, override=override)
 
 
 # ---------------------------------------------------------------- helpers

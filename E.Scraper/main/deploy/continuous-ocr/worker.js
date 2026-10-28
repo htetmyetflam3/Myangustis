@@ -1,14 +1,14 @@
-// Persistent OCR/model/reference assets. No overall/book/page timeout.
+
 import fs from 'node:fs';
 import readline from 'node:readline';
-import { openPdf, renderPageCanvas, cropCanvasRgba } from '../../../../D.Parser/main/parser/read/pdf-render.js';
-import { initOcr, ocrImageDetailed, closeOcr } from '../../../../D.Parser/main/parser/read/ocr.js';
-import { getDefaultVectorIndex } from '../../../../D.Parser/main/parser/shape/match.js';
-import { matchPixelsToVector } from '../../../../D.Parser/main/parser/codepage/vote.js';
-import { loadScanDictionary, dictionaryWords, scanBrokenSpans } from '../../../../D.Parser/main/parser/text/scan.js';
-import { repairText, HOMOGLYPH_PAIRS } from '../../../../D.Parser/main/parser/text/repair.js';
-import { normalizeText } from '../../../../D.Parser/main/parser/text/normalize.js';
-import { MAX_OCR_PIXELS } from '../../../../D.Parser/main/parser/core/limits.js';
+import { openPdf, renderPageCanvas, cropCanvasRgba } from '../../../../B.Parser/main/parser/read/pdf-render.js';
+import { initOcr, ocrImageDetailed, closeOcr } from '../../../../B.Parser/main/parser/read/ocr.js';
+import { getDefaultVectorIndex } from '../../../../B.Parser/main/parser/shape/match.js';
+import { matchPixelsToVector } from '../../../../B.Parser/main/parser/codepage/vote.js';
+import { loadScanDictionary, dictionaryWords, scanBrokenSpans } from '../../../../B.Parser/main/parser/text/scan.js';
+import { repairText, HOMOGLYPH_PAIRS } from '../../../../B.Parser/main/parser/text/repair.js';
+import { normalizeText } from '../../../../B.Parser/main/parser/text/normalize.js';
+import { MAX_OCR_PIXELS } from '../../../../B.Parser/main/parser/core/limits.js';
 
 const reply = (v) => process.stdout.write('OCR_RESULT ' + JSON.stringify(v) + '\n');
 const data = loadScanDictionary();
@@ -16,7 +16,7 @@ const words = dictionaryWords(data);
 if (!words?.size) throw new Error('OCR scan dictionary is empty; refusing unguarded repair');
 const standalone = data?.mapData?.newClause?.standalone || [];
 const index = getDefaultVectorIndex();
-await initOcr(); // The trained model stays in one worker across all books.
+await initOcr();
 reply({ ready: true, vectorEntries: index.entries.length, dictionaryWords: words.size });
 
 function isHomoglyphOnly(a, b) {
@@ -37,7 +37,7 @@ async function run(request) {
         const ocr = await ocrImageDetailed(rendered.canvas.toBuffer('image/png'));
         let text = ocr.text;
         const spans = scanBrokenSpans(text, { dictionary: words, standalone });
-        // Work from original Tesseract geometry/text. Whole index is reused.
+
         const edits = [];
         let cursor = 0;
         for (const region of ocr.regions) {
@@ -45,7 +45,7 @@ async function run(request) {
           if (at < 0 || !region.text) continue;
           cursor = at + region.text.length;
           if (!region.bbox || !spans.some((s) => s.start < cursor && s.end > at)) continue;
-          // Numeric/letter homoglyphs are dictionary-only, never shape guesses.
+
           if (/^[\u1040-\u1049]+$/u.test(region.text)) continue;
           const crop = cropCanvasRgba(rendered.canvas, region.bbox, { scale: 1, pad: 2 });
           const match = matchPixelsToVector(crop, { index });

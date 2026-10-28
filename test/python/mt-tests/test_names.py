@@ -8,8 +8,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import _paths  # noqa: F401 - configure the split proofreading modules
+
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "Proofreading" / "main" / "mt"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "C.Proofreading" / "main" / "translate"))
 
 import names  # noqa: E402
 

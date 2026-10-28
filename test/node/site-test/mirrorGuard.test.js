@@ -53,8 +53,8 @@ test('agents that name themselves are refused and remembered', () => {
   assert.equal(httrack.res.statusCode, 403);
   assert.deepEqual(seen, ['downloader-agent']);
 
-  // the ban outlives the user agent: the same IP is refused even once it
-  // starts claiming to be Chrome, which is what a cloner does next
+
+
   const retry = run(guard, browserGet());
   assert.equal(retry.passed, false);
   assert.equal(retry.res.statusCode, 403);

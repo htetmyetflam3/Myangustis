@@ -73,7 +73,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent
+ROOT = HERE.parent.parent
 CHINESE = ROOT / "content" / "source" / "chinese-0511241012-from-8011_1.txt"
 BURMESE = ROOT / "content" / "source" / "ယဲ့နင်.txt"
 OUTPUT = ROOT / "content" / "merged"

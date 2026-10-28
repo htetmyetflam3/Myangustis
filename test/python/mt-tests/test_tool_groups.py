@@ -11,8 +11,10 @@ import sys
 import unittest
 from pathlib import Path
 
+import _paths  # noqa: F401 - configure the split proofreading modules
+
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "Proofreading" / "main" / "tools"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "C.Proofreading" / "main" / "tools"))
 
 import mcp_server  # noqa: E402
 

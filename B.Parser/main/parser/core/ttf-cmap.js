@@ -1,22 +1,22 @@
 import { ValueError } from "./pylib.js";
 
-/**
- * FILE: Parsed/parser/core/ttf-cmap.mjs
- *
- * TrueType `cmap` table reader: font bytes -> Map<codepoint, glyphId>.
- *
- * Foundation, not a stage. Both sides of the parser need it -- `read/`
- * decodes an embedded font program, `write/` subsets an output font -- so it
- * lives below both. It previously sat in read/pdf-extract.mjs, which made the
- * writer import the extractor: the only backwards edge in the whole graph.
- * Logic is unchanged; only its address moved.
- */
 
-/* Reads two bytes the way Python's struct.unpack does on a slice: a short
-   buffer is an error, not a silent zero. Moved here with parseTtfCmap, its
-   only caller -- it was left behind in read/pdf-extract.mjs when the function
-   moved, which broke every PDF write with "readU16PythonSlice is not
-   defined". */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function readU16PythonSlice(buf, a) {
   let start = a < 0 ? buf.length + a : a;
   let stop = a + 2;
@@ -27,41 +27,41 @@ function readU16PythonSlice(buf, a) {
   return buf.readUInt16BE(start);
 }
 
-/**
- * Which cmap subtable speaks Unicode.
- *
- * A font carries several -- a Windows BMP table, a Unicode full-repertoire
- * table, and very often a Macintosh table -- and they are NOT different views
- * of the same codes. Platform 1 encoding 0 is Mac Roman, where 0x8E is an
- * e-acute, not U+008E. Every subtable used to be read into one Map, so the
- * Mac table overwrote the Unicode one for each code it also defined, and the
- * result was a single table in which the ASCII range came from one encoding
- * and the rest from another.
- *
- * That is not a rounding error for Myanmar: the whole script lives above
- * U+1000, i.e. entirely inside the range the Mac table clobbers. On an
- * Identity-H Myanmar3 subset the gid for U+1004 (င) and the gid for
- * Mac-Roman 0x1004 (which does not exist) are different questions, and the
- * blended table answered the wrong one -- half the glyph ids resolved to
- * nothing, fell through to the identity fallback, and came out of the
- * extractor as Latin-1 (`စပàဘငé`).
- *
- * So: rank the subtables, read the best one, and never blend. A lower-ranked
- * subtable is read only when every better one yields nothing, which is the
- * one case the old code got right by accident -- a Type 42 legacy subset
- * whose only subtable is Mac format 0.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const SUBTABLE_RANK = [
-  [3, 10, 100], // Windows, UCS-4
-  [0, 4, 95],   // Unicode, full repertoire
-  [0, 6, 90],   // Unicode, full repertoire (BMP + planes)
-  [3, 1, 85],   // Windows, BMP
-  [0, 3, 80],   // Unicode, BMP (deprecated but common)
-  [0, 0, 70],   // Unicode, version 1.0 semantics
+  [3, 10, 100],
+  [0, 4, 95],
+  [0, 6, 90],
+  [3, 1, 85],
+  [0, 3, 80],
+  [0, 0, 70],
   [0, 1, 70],
   [0, 2, 70],
-  [3, 0, 60],   // Windows Symbol: codes are 0xF000-0xF0FF, not Unicode
-  [1, 0, 30],   // Macintosh Roman
+  [3, 0, 60],
+  [1, 0, 30],
 ];
 
 function subtableRank(plat, enc) {
@@ -71,7 +71,7 @@ function subtableRank(plat, enc) {
   return 10;
 }
 
-/** Reads one subtable into `out`. Returns the number of entries added. */
+
 function readSubtable(sub, out) {
   if (sub.length < 2) return 0;
   const fmt = sub.readUInt16BE(0);
@@ -97,23 +97,23 @@ function readSubtable(sub, out) {
         if (ranges[j] === 0) {
           gid = (c + deltas[j]) & 0xffff;
         } else {
-          /* The spec's index into glyphIdArray, in uint16 units:
-             idRangeOffset[j]/2 + (c - startCode[j]) + j.
 
-             The `+ j` is the segment's own position in idRangeOffset -- the
-             offset is measured from that element, not from the start of the
-             array. This read `+ j - segCount` for a long time, which silently
-             shifted every lookup in an idRangeOffset segment by one whole
-             segment table. Delta-only segments (idRangeOffset 0) never touch
-             this branch, so most fonts were unaffected; the ones that use
-             glyphIdArray resolved to the wrong gid, and a gid of 0 is
-             dropped below, so the segment simply lost its entries.
 
-             On this book's MyanmarText subsets that hid U+103A, U+103B,
-             U+103C, U+103D, U+1040-U+1049 and more: 82 real entries read as
-             62. Every one of those gids then fell through to the identity
-             fallback and printed as its own number -- ် came out ၏, ၁ came
-             out Ɣ -- which is the mojibake on 829 of the 4,414 pages. */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
           const idx = ((ranges[j] / 2) | 0) + (c - starts[j]) + j;
           const addr = ro + idx * 2;
           if (addr + 2 > sub.length) continue;
@@ -124,11 +124,11 @@ function readSubtable(sub, out) {
       }
     }
   } else if (fmt === 0) {
-    /* Format 0 -- the byte encoding table: 256 one-byte glyph ids, no code
-       points above 0xFF. This is the ONLY subtable a Type 42 legacy Myanmar
-       subset carries, so before this branch every lookup on such a font came
-       back empty and the whole outline layer was blind to a real PDF's
-       embedded glyphs. */
+
+
+
+
+
     const count = Math.min(256, sub.length - 6);
     if (count < 8) return 0;
     for (let c = 0; c < count; c += 1) {
@@ -160,8 +160,8 @@ function readSubtable(sub, out) {
   return out.size;
 }
 
-/** The sfnt table directory: tag -> [offset, length]. Shared with the GSUB
- *  reader next door, which needs the same walk. */
+
+
 export function ttfTables(data) {
   const out = new Map();
   if (!data || data.length < 12) return out;
@@ -196,8 +196,8 @@ export function parseTtfCmap(data) {
     if (subOff + 2 > cmap.length) continue;
     subs.push({ plat, enc, subOff, rank: subtableRank(plat, enc), order: s });
   }
-  // Rank descending; the table's own order breaks ties, so the choice is
-  // the same on every run regardless of how the font lists its subtables.
+
+
   subs.sort((a, b) => (b.rank - a.rank) || (a.order - b.order));
 
   for (const entry of subs) {

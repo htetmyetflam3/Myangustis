@@ -1,4 +1,5 @@
-import logger from '../../../Bridge/logen/site.js';
+import { getLogen } from "../../_path.js";
+const logger = (await getLogen()).siteLog.default;
 import session from 'express-session';
 import { db } from './db.js';
 import { SqliteSessionStore } from './sessionStore.js';

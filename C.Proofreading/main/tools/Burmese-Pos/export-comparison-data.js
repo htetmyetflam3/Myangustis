@@ -1,84 +1,57 @@
-// Comparison DATA adapter only. Does not call the engine segmentation
-// pipeline (no BindEngine here): it packages master/rules evidence for the MT
-// comparison side.
-//
-// New-engine-shape status:
-//   * mapperNormalize/toBurmeseStr used to be deep-imported from the engine
-//     map loader. The engine now exposes only its single boundary
-//     (Engine/index.js -> BindEngine); normalizer access for this adapter must
-//     be re-added as an explicit Engine/index.js export when the WASM box that
-//     hosts the guarded normalizer is wired into this plugin again.
-//   * POS_MAP came from MonoSyllabism/graph/disassembler.js, which was removed
-//     with the graph build step — the engine loads the prebuilt .cache-tree and
-//     has no POS-code lookup table anymore. The comparison pos_codes view is
-//     therefore UNPORTED, not silently nulled: the run refuses below until a
-//     replacement table is supplied by the owner.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { getBox, assertMapData } from '../../../../Engine/architecture/MonoSyllabism/map/host.mjs';
-import { readMasterJson, MASTER_ENC } from '../../../secure.js';
+import { getBox, assertMapData } from '../../../../Architecture/Engine/MonoSyllabism/map/host.js';
+import { mapperNormalize, toBurmeseStr } from '../../../../Architecture/Engine/MonoSyllabism/map/loader.js';
+import { getEngineData } from '../../../../index-path.js';
+const { readMasterJson, masterFingerprint } = await getEngineData();
 
-// Removed with the graph/build.js era. See header: populate from the owner's
-// new POS-code source to re-enable the comparison export.
+
+
 const POS_MAP = null;
-const ENGINE_NORMALIZER = null; // was { mapperNormalize, toBurmeseStr }
-const { mapperNormalize, toBurmeseStr } = ENGINE_NORMALIZER ?? {};
 
-if (globalThis[Symbol.for('proofreading.scraper.wasm-only')] !== true) {
-  throw new Error('Comparison metadata requires the shared WASM-only runtime guard');
-}
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const [destination, extraFormsFile] = process.argv.slice(2);
-if (!destination) throw new Error('usage: export-comparison-data.mjs OUTPUT_JSON [EXTRA_FORMS_JSON]');
-// Loud, documented block — never emit pos_codes/normalizations as nulls.
-if (POS_MAP === null || ENGINE_NORMALIZER === null) {
+if (!destination) throw new Error('usage: export-comparison-data.js OUTPUT_JSON [EXTRA_FORMS_JSON]');
+
+if (POS_MAP === null) {
   throw new Error(
     'export-comparison-data: comparison POS view is unported after the graph/build.js ' +
-      'removal (no disassembler POS_MAP, no guarded normalizer binding). Re-supply both via ' +
-      'the Engine/index.js surface before running this adapter.',
+      'removal (no disassembler POS_MAP). Re-supply it via the engine surface before running this adapter.',
   );
 }
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const read = relative => fs.readFileSync(path.join(ROOT, relative));
-// Single sealed master at the repo root: its bytes are fingerprinted directly,
-// its content comes through secure.js (root .env key + sealed cache).
-const masterPath = 'master.json.enc';
-const rulesPath = 'Engine/knowledge/isTreasure/mainrules.js';
-const masterBytes = fs.readFileSync(MASTER_ENC), rulesBytes = read(rulesPath);
 
-// mainrules.js is a JSON object followed by a JavaScript block —
-// `const MYANMAR_GRAMMAR_SEQUENCES = [...]`, single-quoted and commented. It is
-// not a JSON document end to end, so parse the JSON head only; the sequence
-// array is the engine's business and `mt/mt_compare.py` reads it as text. No
-// JavaScript is evaluated here. Trailing commas in the head (the owner's hand
-// edits leave one) are dropped outside string literals.
+
+const masterPath = 'master.json.enc';
+const rulesPath = 'Architecture/Engine/knowledge/isTreasure/mainrules.js';
+const masterSha256 = masterFingerprint(), rulesBytes = read(rulesPath);
+
+
+
+
+
+
+
 function parseRules(bytes) {
-  const text = bytes.toString('utf8');
-  const marker = text.search(/\bconst\s+MYANMAR_GRAMMAR_SEQUENCES\s*=/);
-  const head = marker >= 0 ? text.slice(0, marker) : text;
-  let out = '', inString = false, escaped = false;
-  for (let i = 0; i < head.length; i++) {
-    const ch = head[i];
-    if (inString) {
-      out += ch;
-      if (escaped) escaped = false;
-      else if (ch === '\\') escaped = true;
-      else if (ch === '"') inString = false;
-      continue;
-    }
-    if (ch === '"') { inString = true; out += ch; continue; }
-    if (ch === ',') {
-      let j = i + 1;
-      while (j < head.length && /\s/.test(head[j])) j++;
-      if (head[j] === '}' || head[j] === ']') continue;
-    }
-    out += ch;
-  }
-  out = out.replace(/\s+$/, '');
-  if (!out.endsWith('}')) throw new Error('mainrules.js JSON head does not close with }');
-  return JSON.parse(out);
+  return JSON.parse(bytes.toString('utf8'));
 }
 
 const master = readMasterJson(), rules = parseRules(rulesBytes);
@@ -108,7 +81,7 @@ function walkArrays(value, parts, source, family) {
   if (Array.isArray(value)) {
     const seen = new Set();
     for (const form of value) {
-      if (seen.has(form)) continue; // duplicate evidence is not counted twice
+      if (seen.has(form)) continue;
       seen.add(form);
       add(form, {source, data_path: parts.join('.'), role_path: parts,
         family, pos_code: POS_MAP[families[family]],
@@ -140,7 +113,7 @@ for (const [base, entry] of Object.entries(master.resolution.single)) {
     }
   }
 }
-// Keep the owner's literal "tonkens" key; do not silently rename the schema.
+
 for (const [variant, forms] of Object.entries(master.resolution.group?.tonkens ?? {})) {
   for (const form of forms) add(form, {source:'resolution_group',
     data_path:`resolution.group.tonkens.${variant}`, variant});
@@ -174,7 +147,7 @@ const comparisonData = {top:master.top, resolution:master.resolution, rules};
 const annotationData = {dictionary:master.dictionary, mapData:master.mapData};
 const result = {
   schema_version:1,
-  sources:{master:masterPath, master_sha256:sha(masterBytes), rules:rulesPath, rules_sha256:sha(rulesBytes)},
+  sources:{master:masterPath, master_sha256:masterSha256, rules:rulesPath, rules_sha256:sha(rulesBytes)},
   comparison_data_sha256:sha(JSON.stringify(comparisonData)),
   tag_data_sha256:sha(JSON.stringify(annotationData)), wasm_sha256:build.box_sha256,
   pos_codes:POS_MAP, bindings, unresolved, normalizations,

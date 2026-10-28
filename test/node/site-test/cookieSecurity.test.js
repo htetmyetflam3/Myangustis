@@ -21,8 +21,8 @@ function withEnv(vars, fn) {
 
 test('COOKIE_SECURE=false is announced, not silently honoured', () => {
   withEnv({ COOKIE_SECURE: 'false', COOKIE_SAMESITE: 'strict' }, () => {
-    // The override still applies — forcing it closed would break the
-    // documented plain-HTTP preproduction run.
+
+
     assert.equal(cookieSecureEnabled(), false);
     const banner = cookieSecurityBanner();
     assert.match(banner, /COOKIE_SECURE=false/);
@@ -39,15 +39,15 @@ test('Secure cookies say nothing', () => {
 });
 
 test('COOKIE_SECURE=false is flagged for every caller, with no posture to hide behind', () => {
-  // MODE is gone: there is no 'development' in which this warning is skipped.
+
   withEnv({ COOKIE_SECURE: 'false', COOKIE_SAMESITE: 'strict' }, () => {
     assert.match(cookieSecurityBanner(), /COOKIE_SECURE=false/);
   });
 });
 
 test('unset COOKIE_SECURE defaults to Secure, with or without a trusted proxy', () => {
-  // Previously this depended on MODE: unset meant insecure in development.
-  // With MODE gone the safe answer is the only answer.
+
+
   for (const trustProxy of [undefined, 'loopback', '']) {
     withEnv({ COOKIE_SECURE: undefined, TRUST_PROXY: trustProxy }, () => {
       assert.equal(cookieSecureEnabled(), true, `TRUST_PROXY=${JSON.stringify(trustProxy)}`);

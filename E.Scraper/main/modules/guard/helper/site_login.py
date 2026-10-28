@@ -22,6 +22,7 @@ Host dots/dashes become underscores and everything is uppercased, e.g.
 
 from __future__ import annotations
 
+import importlib
 import os
 import re
 import sys
@@ -32,22 +33,11 @@ from pathlib import Path
 import httpx
 from bs4 import BeautifulSoup, Tag
 
-# Walk up to the repo root (holds secretloader.py) and add to sys.path so we
-# can import it without making E.Scraper a pip-installed package.
-_THIS_DIR = Path(__file__).resolve().parent
-_REPO_ROOT = _THIS_DIR
-while _REPO_ROOT.parent != _REPO_ROOT and not (_REPO_ROOT / "secretloader.py").is_file():
-    _REPO_ROOT = _REPO_ROOT.parent
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
-
-from secretloader import load_secrets, secret  # noqa: E402
-
-# Ensure .env is loaded for this caller (E.Scraper → repo root resolution).
-load_secrets(__file__)
-
-# DOTENV_PATH kept for backward compatibility with code that references it.
-REPO_ROOT = _REPO_ROOT
+# Share the root workspace environment with the JavaScript entry.
+REPO_ROOT = Path(__file__).resolve().parents[5]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+_workspace = importlib.import_module("index-path")
 DOTENV_PATH = REPO_ROOT / ".env"
 LOGIN_TIMEOUT = 20.0
 
@@ -80,24 +70,14 @@ _NON_SUBMIT_TYPES = frozenset({"submit", "button", "image", "reset", "file"})
 
 
 def load_dotenv_values(path: Path | None = None) -> dict[str, str]:
-    """Backward-compatible .env reader.
-
-    Secret resolution now goes through secretloader (process.env → caller .env
-    → repo root .env → .data/.env). When an explicit path is given we parse
-    that file directly (matching the old single-file behaviour for callers
-    that pass `--env-file` style arguments).
-    """
+    """Read an explicit dotenv file or return the shared environment."""
     if path is not None:
-        # Explicit file — parse and return without touching os.environ.
-        from secretloader import parse_dotenv
         try:
-            return parse_dotenv(Path(path).read_text(encoding="utf-8"))
+            return _workspace.parse_dotenv(Path(path).read_text(encoding="utf-8"))
         except OSError:
             return {}
-    # No path: return the effective environment for keys we can see. Build a
-    # dict from the current os.environ snapshot (which load_secrets already
-    # populated) so existing callers that do `dotenv.get(name, "")` keep working.
     return {k: os.environ[k] for k in os.environ if _VALID_KEY.match(k)}
+
 
 
 _VALID_KEY = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")

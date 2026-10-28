@@ -9,13 +9,12 @@ import { createProcessingQueue } from '../../../F.Site/Backend/gateway/queue/pro
 
 const repo = fileURLToPath(new URL('../../../', import.meta.url));
 const read = relative => fs.readFileSync(path.join(repo, relative), 'utf8');
-const moduleUrl = source => `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
 
 for (const owner of ['Architecture/Engine/_path.js', 'Architecture/host/path.js']) {
   test(`${owner}: setup creates directories and preserves earlier runs`, async t => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'workspace-retain-'));
     t.after(() => fs.rmSync(root, { recursive: true, force: true }));
-    // Import the real module in a detached component, without other app code.
+
     const component = path.join(root, 'component');
     fs.mkdirSync(component);
     fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}');
@@ -41,18 +40,18 @@ for (const owner of ['Architecture/Engine/_path.js', 'Architecture/host/path.js'
   });
 }
 
-for (const owner of ['Architecture/Engine/bridge/logen.js', 'Bridge/logen/logen.js']) {
+for (const owner of ['logen.js']) {
   test(`${owner}: startup and debug initialization append instead of wiping`, t => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'log-retain-'));
     t.after(() => fs.rmSync(root, { recursive: true, force: true }));
     fs.writeFileSync(path.join(root, 'writer.log'), 'previous writer log\n');
     fs.writeFileSync(path.join(root, 'normalize-debug.log'), 'previous debug log\n');
-    const source = read(owner).replace(/import \{ LogFile \} from [^;]+;/,
-      `const LogFile = () => ${JSON.stringify(root)};`);
+    const logger = pathToFileURL(path.join(repo, owner)).href;
     for (let run = 0; run < 2; run++) {
       execFileSync(process.execPath, ['--input-type=module', '-e', `
-        const l = await import(${JSON.stringify(moduleUrl(source))});
-        l.init({ DEBUG: true }); l.debugLogInit();
+        const l = await import(${JSON.stringify(logger)});
+        l.setEngineLogDirectory(() => ${JSON.stringify(root)});
+        l.legacyLog.init({ DEBUG: true }); l.legacyLog.debugLogInit();
       `], { stdio: 'pipe' });
     }
     assert.equal(fs.readFileSync(path.join(root, 'writer.log'), 'utf8'), 'previous writer log\n');
@@ -78,7 +77,7 @@ for (const options of [{ max: 1 }, { ttlMs: -1 }]) {
     await queue.ready('first', { file: files[1], mimeType: 'text/plain' });
     await queue.enqueue(request('second'));
     assert.equal(queue.getByFormId('first'), null);
-    // An unlink syscall would have happened before discard returned.
+
     for (const file of files) assert.equal(fs.readFileSync(file, 'utf8'), 'keep');
   });
 }

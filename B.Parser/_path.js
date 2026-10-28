@@ -9,29 +9,26 @@ export const CORE_DIR = path.join(PARSER_DIR, "core");
 export const REPO_ROOT = path.dirname(COMPONENT_ROOT);
 
 async function resolveBaseDir() {
-  const rootExporter = path.join(REPO_ROOT, "index-path.js");
-  const componentExporter = path.join(COMPONENT_ROOT, "_index.js");
-  if (fs.existsSync(rootExporter) && fs.existsSync(componentExporter)) {
-    try {
-      const { JUNK_DIR } = await import("./_index.js");
-      if (typeof JUNK_DIR !== "string" || !path.isAbsolute(JUNK_DIR)) {
-        throw new TypeError("Expected an absolute workspace path");
-      }
-      return JUNK_DIR;
-    } catch {
-      // Missing or unloadable upstream exporters use this file's location.
+  try {
+    const { JUNK_DIR } = await import("./_index.js");
+    if (typeof JUNK_DIR !== "string" || !path.isAbsolute(JUNK_DIR)) {
+      throw new TypeError("Expected an absolute workspace path");
     }
+    return { base: JUNK_DIR, shared: true };
+  } catch {
+    return { base: COMPONENT_ROOT, shared: false };
   }
-  return COMPONENT_ROOT;
 }
 
-export const BASE_DIR = await resolveBaseDir();
-// Only the base changes between layouts; suffixes stay identical.
-export const RUNTIME_ROOT = path.join(BASE_DIR, "Parser");
-const FONT_ROOT = path.join(BASE_DIR, "fonts");
+const resolved = await resolveBaseDir();
+export const BASE_DIR = resolved.base;
+export async function getLogen() {
+  const entry = await import('./_index.js');
+  return entry.getLogen();
+}
 
-export const UPLOAD_DIR = path.join(RUNTIME_ROOT, "upload");
-export const INPUT_DIR = path.join(UPLOAD_DIR, "input");
+export const RUNTIME_ROOT = resolved.shared ? path.join(BASE_DIR, "Parser") : COMPONENT_ROOT;
+const FONT_ROOT = path.join(BASE_DIR, "fonts");
 
 export const MAP_DIR = path.join(PARSER_DIR, "jason-map");
 export const VECTOR_MAP_DIR = path.join(MAP_DIR, "vector");
@@ -45,8 +42,8 @@ export const DEFAULT_MYANMAR_FONT = path.join(OUTPUT_FONT_DIR, "MyanmarSagar.ttf
 
 export const DEFAULT_OUTPUT_DIR = path.join(RUNTIME_ROOT, ".output");
 
-/* Append-only provenance register (core/provenance.mjs). Authoring equipment:
-   remove this line when the register goes. */
+
+
 export const REGISTER_LOG = path.join(DEFAULT_OUTPUT_DIR, "praser-register.log");
 
 const LATIN_FONT_CANDIDATES = [
@@ -110,15 +107,7 @@ export function findLatinFont() {
 }
 
 export function ensureDirs() {
-  for (const dir of [
-    UPLOAD_DIR, INPUT_DIR,
-    ...["txt", "pdf", "docx"].map(kind => path.join(INPUT_DIR, kind)),
-    path.join(UPLOAD_DIR, "pdf"), path.join(UPLOAD_DIR, "docx"),
-    path.join(UPLOAD_DIR, "quarantine"),
-    DEFAULT_OUTPUT_DIR,
-    ...["txt", "original", "docx", ".tree"].map(kind => path.join(DEFAULT_OUTPUT_DIR, kind)),
-    FONT_DIR, OUTPUT_FONT_DIR,
-  ]) fs.mkdirSync(dir, { recursive: true });
+  fs.mkdirSync(DEFAULT_OUTPUT_DIR, { recursive: true, mode: 0o700 });
 }
 
 ensureDirs();

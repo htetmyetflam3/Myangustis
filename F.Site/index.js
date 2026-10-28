@@ -1,5 +1,4 @@
-import { loadSecrets } from '../secretloader.js';
-await loadSecrets(import.meta.url);
+import './_path.js';
 import crypto from "node:crypto";
 import express from "express";
 import cookieParser from "cookie-parser";
@@ -25,9 +24,12 @@ import {
 import { createHiddenProcessor } from "./Backend/gateway/api/hidden.js";
 import { createEngineQueueRouter } from "./Backend/gateway/api/engineCollect.js";
 import { createCurlRouter, curlEndpointBanner } from "./Backend/gateway/api/curl.js";
-import { createHttpConsoleLogger } from "./Backend/gateway/proxy/httpLog.js";
-import { installPassiveLog, checksEnabled } from "../Bridge/logen/site.js";
-import { runSelfTests } from "./site_logen/selftest.js";
+import morgan from "morgan";
+import { getLogen } from "./_path.js";
+const siteLogen = await getLogen();
+const { installPassiveLog, checksEnabled } = siteLogen.siteLog;
+const { createHttpConsoleLogger } = siteLogen.httpLog;
+import { runSelfTests } from "./Backend/selftest.js";
 import {
   engineConfig,
   createEngineDispatcher,
@@ -39,8 +41,7 @@ import {
   FRONTEND_DIR,
   FRONTEND_REACT_DIR,
   abs,
-  inputDirFor,
-  ensurePraserDirs,
+  ensureUploadDir,
   validatePraserAssets,
 } from "./Backend/file/paths.js";
 import {
@@ -98,8 +99,7 @@ if (cookieSecret === sessionSecret) {
   throw new Error("COOKIE_SECRET and SESSION_SECRET must be different values");
 }
 validatePraserAssets();
-ensurePraserDirs();
-// Startup creates directories above; existing artifacts are retained.
+
 
 const frontendIndex = path.join(FRONTEND, "index.html");
 const reactIndex = path.join(REACT_FRONTEND, "index.html");
@@ -149,8 +149,8 @@ const request = createRequest({ db });
 const processingQueue = createProcessingQueue({
   metadataStore: request,
   ttlMs: ARTIFACT_TTL_MS,
-  // Until an Engine is configured, analysis closes on the site artifact.
-  // The queue records that choice as engineRound:'unwired'.
+
+
   engineWired: () => engineDispatcher.configured,
 });
 const hiddenProcessor = createHiddenProcessor({
@@ -159,30 +159,30 @@ const hiddenProcessor = createHiddenProcessor({
   jobTimeoutMs: engineCfg.jobTimeoutMs,
 });
 
-/* HTTP logging. createHttpConsoleLogger() has existed in
-   backend/gateway/proxy/httpLog.js since it was written and was never
-   mounted -- index.js imported morgan and then never called it, so every
-   request went unlogged while a finished colour formatter sat unused. It is
-   mounted first so a request is logged even when a guard rejects it. */
-/* The passive half of the log: one listener for every stage that emits,
-   installed once. Stages emit counts; this decides console and disk. */
+
+
+
+
+
+
+
 installPassiveLog({
   file: process.env.LOG_FILE || "",
-  // LOG_CHECKS=1 runs the chain invariants against real traffic, in this
-  // process. Off by default: no check subscriber is attached at all.
+
+
   checks: /^(1|true|on|yes)$/i.test(String(process.env.LOG_CHECKS ?? "")),
 });
 
-/* With checks on, the pure half of the suite runs here, before the first
-   request, so `npm test` is not a separate step for day-to-day work. It is
-   deliberately not awaited: a self-test must not delay the port opening,
-   and must never take the server down. The database and server suites are
-   NOT run -- see logen/selftest.js for why. */
+
+
+
+
+
 if (checksEnabled()) {
   runSelfTests().catch((error) => console.error("[selftest]", error.message));
 }
 
-app.use(createHttpConsoleLogger());
+app.use(createHttpConsoleLogger(morgan));
 
 app.use(createEdgeGuard());
 app.use(edgeContext);
@@ -204,10 +204,10 @@ app.use(
       : false,
   }),
 );
-/* The off-path. Mounted here, ahead of every gate, because it is not an
-   exemption inside the gate -- it is a different door. See
-   backend/gateway/api/curl.js. Unset CURL_ENDPOINT/CURL_KEY and nothing
-   below happens at all. */
+
+
+
+
 const curlOffPath = createCurlRouter();
 if (curlOffPath) app.use(curlOffPath.path, curlOffPath.router);
 
@@ -230,9 +230,9 @@ app.use(
     maxAge: 24 * 60 * 60 * 1000,
   }),
 );
-/* Refuse to be the origin for somebody else's mirror. Sits ahead of the
-   static mount so a recursive sweep is cut off before it costs us a file
-   read, and behind edgeContext so it bans the real client IP. */
+
+
+
 const mirrorGuard = createMirrorGuard();
 app.get("/robots.txt", (_req, res) => {
   res.set("Cache-Control", "public, max-age=86400");
@@ -295,7 +295,9 @@ app.use(
 const UPLOAD_MAX_MB = positiveInteger("UPLOAD_MAX_MB", 64, 2048);
 const upload = multer({
   storage: multer.diskStorage({
-    destination: (_req, file, cb) => cb(null, abs(inputDirFor(file.originalname))),
+    destination: (_req, file, cb) => {
+      ensureUploadDir(file.originalname).then(dir => cb(null, dir), cb);
+    },
     filename: (_req, file, cb) =>
       cb(null, `${crypto.randomUUID()}${path.extname(file.originalname).toLowerCase()}`),
   }),

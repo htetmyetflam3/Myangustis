@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import { randomUUID } from "node:crypto";
 import { BindEngine } from "../../_index.js";
 
 const NODE_MAJOR = Number(process.versions.node.split(".", 1)[0]);
@@ -8,7 +7,7 @@ if (NODE_MAJOR < 22) {
   process.exit(1);
 }
 
-const SEP = "\u001d"; // GROUP SEPARATOR between documents, both directions
+const SEP = "\u001d";
 
 function readStdin() {
   return new Promise((resolve, reject) => {
@@ -19,13 +18,11 @@ function readStdin() {
   });
 }
 
-// The caller supplies the output identifier; the bridge returns the result.
+
 async function segmentDocument(text) {
-  const result = await BindEngine("scraper", { hash: randomUUID(), sourceText: text });
-  if (!result.syllablePath) {
-    throw new Error("engine scraper run produced no syllable output");
-  }
-  return result.syllable;
+  const lines = [];
+  for await (const line of BindEngine({ flag: "syllable", sourceText: text })) lines.push(line);
+  return lines.length ? `${lines.join("\n")}\n` : "";
 }
 
 const input = await readStdin();

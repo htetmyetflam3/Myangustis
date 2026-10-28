@@ -1,41 +1,41 @@
-/**
- * FILE: Parsed/parser/shape/contour.mjs
- *
- * CONTOUR-NATIVE MATCHING. No raster, no grid, no threshold, at any point.
- *
- * WHY THIS EXISTS. The matcher it replaced painted both sides into a
- * 48x48 binary mask, which throws away the two things an outline knows
- * exactly:
- *
- *   how many closed contours there are
- *   how big each one is relative to the others
- *
- * Measured on the sheet, those two facts separate six of the nine pairs
- * that were being treated as confusable, outright and for free:
- *
- *   တ 2 contours  vs  က 1         ဂ 1  vs  ဝ 2
- *   တ 2           vs  ထ 3         ဓ 3  vs  မ 2
- *   ပ 1           vs  ဖ 2         ဝ areas 66/34  vs  ၀ areas 51/49
- *
- * A mask cannot express any of that -- it is 2,304 bits of ink coverage.
- * So the matcher was being asked to resolve, by ink overlap, differences
- * that were exactly known before it rasterised them.
- *
- * SCALE INVARIANCE. The specimen sheet is drawn to A4. A traced page is
- * whatever size the scanner produced. Everything here normalises to the
- * glyph's own bounding box first, so the comparison is of shape only and
- * the two sides never need to agree on units.
- *
- * COST. Topology is an integer and a few floats: it filters the candidate
- * list down to a handful before any geometry runs. Only the survivors pay
- * for point matching. That ordering is what keeps this out of the hot
- * loop's way -- the expensive comparison runs on candidates that already
- * agree about their structure.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const SAMPLES = 64;
 
-/* ── geometry helpers ────────────────────────────────────────────────── */
+
 
 function polygonArea(points) {
   let sum = 0;
@@ -58,12 +58,12 @@ function bounds(points) {
   return { x0, y0, x1, y1, w: x1 - x0, h: y1 - y0 };
 }
 
-/**
- * Resample a closed contour to a fixed number of points, evenly spaced by
- * arc length. This is what makes the comparison independent of how the
- * tracer chose to place its vertices: a scanner trace and a font outline
- * describe the same curve with completely different vertex counts.
- */
+
+
+
+
+
+
 function resample(points, count) {
   const n = points.length;
   if (n < 2) return new Array(count).fill(points[0] ?? [0, 0]);
@@ -93,15 +93,15 @@ function resample(points, count) {
   return out;
 }
 
-/* ── signature ───────────────────────────────────────────────────────── */
 
-/**
- * Reduce a glyph's contours to what identifies it, scale-free.
- *
- * `count` and `areas` are the exact facts a mask would have destroyed;
- * `points` is the geometry, normalised into a unit box so an A4 specimen
- * and a scanned page compare directly.
- */
+
+
+
+
+
+
+
+
 export function glyphSignature(contours, { samples = SAMPLES } = {}) {
   const usable = (contours || []).filter((c) => Array.isArray(c) && c.length >= 3);
   if (!usable.length) return null;
@@ -111,8 +111,8 @@ export function glyphSignature(contours, { samples = SAMPLES } = {}) {
   const areas = usable.map(polygonArea);
   const total = areas.reduce((a, b) => a + b, 0) || 1;
 
-  /* Largest contour first, so two drawings of the same glyph line their
-     parts up even when the tracer emitted them in a different order. */
+
+
   const order = usable
     .map((c, i) => ({ c, area: areas[i] }))
     .sort((a, b) => b.area - a.area);
@@ -127,9 +127,9 @@ export function glyphSignature(contours, { samples = SAMPLES } = {}) {
   };
 }
 
-/* ── distance ────────────────────────────────────────────────────────── */
 
-/** Symmetric mean nearest-neighbour distance between two point sets. */
+
+
 function cloudDistance(a, b, stride = 1) {
   let sum = 0;
   let n = 0;
@@ -154,14 +154,14 @@ function cloudDistance(a, b, stride = 1) {
   return n ? sum / n : Infinity;
 }
 
-/**
- * Do these two signatures agree about their STRUCTURE? Cheap, exact, and
- * decided before any geometry runs. A different number of closed contours
- * is a different letter -- not a near miss.
- */
+
+
+
+
+
 export function topologyMatches(a, b, { areaTolerance = 0.08, aspectTolerance = 0.22 } = {}) {
   if (!a || !b) return false;
-  // Cheapest first: an integer, then one float, then the area profile.
+
   if (a.count !== b.count) return false;
   if (Math.abs(a.aspect - b.aspect) > aspectTolerance * Math.max(a.aspect, b.aspect)) return false;
   for (let i = 0; i < a.areas.length; i += 1) {
@@ -170,28 +170,28 @@ export function topologyMatches(a, b, { areaTolerance = 0.08, aspectTolerance = 
   return true;
 }
 
-/**
- * Shape distance between two glyphs, on contours.
- *
- * Returns Infinity when the topology disagrees: that is a refusal, not a
- * large number, and it is the whole point -- တ has two contours and က has
- * one, so no amount of ink overlap should ever make them compete.
- */
-/**
- * Shape distance between two glyphs, on contours.
- *
- * Topology is a VETO by default: တ has two closed contours and က has one,
- * so within a typeface they should never compete. Across typefaces it must
- * be a penalty instead -- a decorative face can draw the same letter with a
- * different number of loops, and refusing those outright scores every
- * candidate at zero. Pass `topologyPenalty` for the cross-font case.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export function contourDistance(a, b, options = {}) {
   const penalty = options.topologyPenalty ?? null;
   if (!topologyMatches(a, b, options)) {
     if (penalty === null) return Infinity;
-    // Compare the largest contour of each: the letter's body, whatever
-    // decoration the face hangs off it.
+
+
     const d = cloudDistance(a.points[0], b.points[0], options.stride ?? 1);
     return d + penalty * Math.abs(a.count - b.count);
   }
@@ -203,12 +203,12 @@ export function contourDistance(a, b, options = {}) {
   return sum / a.points.length;
 }
 
-/**
- * Best match for a glyph among labelled signatures.
- *
- * `index` is [{ text, signature }]. Topology filters first, so the point
- * matching only runs against candidates that already share the structure.
- */
+
+
+
+
+
+
 export function matchContours(signature, index, { maxDistance = 0.08, minMargin = 0.004 } = {}) {
   if (!signature) return { accepted: false, reason: 'empty glyph', matches: [] };
 
@@ -221,10 +221,10 @@ export function matchContours(signature, index, { maxDistance = 0.08, minMargin 
     return { accepted: false, reason: `no candidate with ${signature.count} contour(s)`, matches: [], considered: 0 };
   }
 
-  /* Coarse pass on every sixteenth point, then the full comparison on the
-     best few. Same answer, a fraction of the work: the point matching is
-     quadratic, so shrinking the candidate list matters far more than
-     shrinking the constant. */
+
+
+
+
   const coarse = viable
     .map((entry) => ({ entry, d: contourDistance(signature, entry.signature, { stride: 4 }) }))
     .sort((x, y) => x.d - y.d)
@@ -249,7 +249,7 @@ export function matchContours(signature, index, { maxDistance = 0.08, minMargin 
   };
 }
 
-/** Build the labelled index once, from sheet entries. */
+
 export function buildContourIndex(entries, options = {}) {
   const index = [];
   for (const entry of entries) {
@@ -259,25 +259,25 @@ export function buildContourIndex(entries, options = {}) {
   return index;
 }
 
-/* ── runtime font swap ───────────────────────────────────────────────
-   ONE SYLLABLE INDEX, ANY FONT.
 
-   The specimen sheet is drawn from a single typeface. There are 400+
-   Myanmar legacy fonts, and a sheet per font is 400 files to generate,
-   store and keep in step -- which is why the sheet was designed to be
-   swappable rather than multiplied.
 
-   It has to be per-font, not one sheet for all, because TOPOLOGY ITSELF
-   CHANGES BETWEEN TYPEFACES: တ is two closed contours in Pyidaungsu and
-   three in Ayar. A structure signature is only meaningful against the
-   font that drew it.
 
-   So the index is built from the font's own outlines at load time. No SVG
-   is involved and nothing is rasterised: TrueType already stores closed
-   contours, which is exactly what this module compares.
 
-   Pass `glyphContours` and `loadFont` in rather than importing them --
-   they live in tools/, which is beside this layer, not below it. */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export function buildFontIndex(fontFile, texts, { loadFont, glyphContours, samples = SAMPLES, codePage = null } = {}) {
   if (typeof loadFont !== 'function' || typeof glyphContours !== 'function') {
     throw new TypeError('buildFontIndex needs loadFont and glyphContours');
@@ -287,12 +287,12 @@ export function buildFontIndex(fontFile, texts, { loadFont, glyphContours, sampl
   const index = [];
   const missing = [];
 
-  /* A LEGACY font does not map Unicode at all -- it maps the byte values of
-     its own code page, which is the entire reason LEGACY_CODE_PAGES exists.
-     Asking MAHURA.TTF for U+1000 returns nothing; asking it for byte 0x6B
-     returns the glyph, and the code page says that byte means က. So when a
-     code page is supplied, the glyph is looked up by BYTE and labelled with
-     the text that byte decodes to. */
+
+
+
+
+
+
   if (codePage) {
     for (const [code, text] of codePage) {
       const gid = font.glyphId(code);
@@ -309,8 +309,8 @@ export function buildFontIndex(fontFile, texts, { loadFont, glyphContours, sampl
   }
 
   for (const text of texts) {
-    // Single code points only: a cluster needs shaping, which belongs to
-    // the sheet generator, not here.
+
+
     const cps = [...text];
     if (cps.length !== 1) continue;
     const gid = font.glyphId(cps[0].codePointAt(0));

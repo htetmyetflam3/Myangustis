@@ -11,9 +11,9 @@ const DISPATCH_FIELDS = [
   "sessionId",
   "filename",
   "extension",
-  /* Both work fields, under the labels the analysis column uses: `method`
-     is the handling (extracting | ocr | null), `task` is the mode. The
-     fused "extracting-analysis" job carried the handling before. */
+
+
+
   "method",
   "task",
   "job",
@@ -75,7 +75,7 @@ export function createEngineDispatcher({
     }
     return body;
   }
-  
+
   async function dispatch(metadata) {
     if (!configured) {
       return { accepted: false, reason: "engine-not-configured" };

@@ -1,10 +1,9 @@
-/* --- main/grapheme/traverser.js --- */
+
 import { getStepKey, findEntry, getTree, getRtlTree, getPosTree } from './Tree.loaded.js';
 import { walkReverse } from './reverse.js';
-import {
-  walkerStart,
-  walkStepHit, walkStepEmpty, walkQuit, walkFail, walkOutputSyllables,
-} from '../../../bridge/logen.js';
+import { getLogen } from "../../../_path.js";
+const { walkerStart,
+  walkStepHit, walkStepEmpty, walkQuit, walkFail, walkOutputSyllables, } = (await getLogen()).legacyLog;
 
 export function walk(block, startPos) {
   const tree = getTree();

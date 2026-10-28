@@ -1,40 +1,40 @@
 #!/usr/bin/env node
-/**
- * fix-import.js — canonical copy, lives in the .bin toolbox.
- * Category: fix
- * Auto-detect and fix broken import paths across ESM .js/.mjs files. Interactive confirmation.
- * self-scan-exclusion: 7f3a91c0
- *
- * Usage:
- *   node .bin/node/fix-import.js [start-dir] [climb-ceiling]
- *
- *   start-dir      the directory to scan (default ".", resolved from cwd).
- *   climb-ceiling  OPTIONAL. Resolved RELATIVE TO start-dir — never from cwd
- *                  and never from where this script lives. When given, the
- *                  upward ancestor walks (project-root discovery and the
- *                  candidate climb) must not index the ceiling's parent:
- *                  every file this tool reads or rewrites a path to stays at
- *                  or below the ceiling. Omit it and the original unrestricted
- *                  upward climb is fully intact.
- *
- *   node .bin/node/fix-import.js              # scan ".", climb freely upward
- *   node .bin/node/fix-import.js host         # scan ./host, climb freely upward
- *   node .bin/node/fix-import.js ./ ../../    # scan ".", never claw above ./../..
- *
- * Unused-export mode (pure downscan, never climbs, never rewrites anything):
- *   node .bin/node/fix-import.js --unused ./
- *   The given dir is both start and ceiling: it reuses the normal indexing
- *   phase unchanged, then reports every exported name no scanned file imports.
- *   Over 50 unused exports and the report is also written to disk beside the
- *   scanned dir as unused-exports.json.
- *
- * Import coverage: static import/export variants, generators (function*),
- * renamed brace exports, `const { a, b: local } = await import('x')` and the
- * positional `const [{..},{..}] = await Promise.all([import('x'), ...])` form.
- * Computed specifiers (import(varName)), namespace imports without member
- * analysis, and .then()-chained dynamic imports stay conservative: they never
- * produce a candidate or an unused verdict, only a skip.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import fs from 'fs';
 import path from 'path';
@@ -42,8 +42,8 @@ import { fileURLToPath } from 'url';
 import readline from 'readline';
 
 const __filename = path.resolve(fileURLToPath(import.meta.url));
-// This exact marker line makes every copy of this script skip itself,
-// so its regex/comment text can never pollute the export map.
+
+
 const SELF_MARKER = 'self-scan-exclusion: 7f3a91c0';
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -55,20 +55,20 @@ let importsFixed = 0;
 let importsVerified = 0;
 let importsBroken = 0;
 
-// ---------------------------------------------------------------------------
-// Project root: taken from the CLI arg (default "."), then climbed up to the
-// nearest ancestor containing package.json / .git / node_modules.
-//
-// Optional second positional arg is the climb ceiling. It is resolved against
-// the resolved start dir itself, so "../../" means two parents above the
-// scanned dir regardless of cwd or this script's own location.
-// ---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
 const argv = process.argv.slice(2);
 const UNUSED_MODE = argv.includes('--unused');
 const positionals = argv.filter(a => !a.startsWith('--'));
 const START_DIR = path.resolve(positionals[0] || '.');
-// --unused is a pure downscan: the start dir itself is the ceiling, so the
-// second positional ceiling is irrelevant in that mode.
+
+
 const CLIMB_CEILING = UNUSED_MODE ? START_DIR
   : (positionals[1] ? path.resolve(START_DIR, positionals[1]) : null);
 const ROOT_MARKERS = ['package.json', '.git', 'node_modules'];
@@ -91,22 +91,22 @@ function findProjectRoot(startDir) {
     if (ROOT_MARKERS.some(m => fs.existsSync(path.join(dir, m)))) return dir;
     const parent = path.dirname(dir);
     if (parent === dir) break;
-    // Guard: never discover a project root above the supplied ceiling.
+
     if (CLIMB_CEILING && !isWithin(parent, CLIMB_CEILING)) break;
     dir = parent;
   }
   return startDir;
 }
 
-// Unused mode never discovers a root above the scanned dir: it walks down only.
+
 const PROJECT_ROOT = UNUSED_MODE ? START_DIR : findProjectRoot(START_DIR);
 
-// ---------------------------------------------------------------------------
-// Indexes
-// ---------------------------------------------------------------------------
-const fileExports = new Map(); // absPath -> Set<exportedName>
-const exportMap   = new Map(); // exportedName -> Set<absPath>
-const basenameMap = new Map(); // basename -> Set<absPath>
+
+
+
+const fileExports = new Map();
+const exportMap   = new Map();
+const basenameMap = new Map();
 const indexed     = new Set();
 const selfFiles   = new Set();
 
@@ -117,7 +117,7 @@ function addExport(filePath, name) {
   exportMap.get(name).add(filePath);
 }
 
-// Strip comments before regexing exports, so examples in comments don't count.
+
 function stripComments(src) {
   return src
     .replace(/\/\*[\s\S]*?\*\//g, '')
@@ -127,25 +127,25 @@ function stripComments(src) {
 function indexExports(filePath, content) {
   const src = stripComments(content);
 
-  // function\s*\*? also covers `export function* g` and `export async function* g`
-  // — generators were the one named-export form this regex did not index, so an
-  // importer of a generator behind a wrong/moved filename looked unresolvable.
-  // Keyword-gated so a stray '*' elsewhere can never overmatch: the star is
-  // only consumed directly after `function`, and `function*g` (no space) is
-  // accepted too. Covers function, async function, function*/async function*
-  // generators and class — nothing else can start these tokens.
+
+
+
+
+
+
+
   const declRe = /export\s+(?:async\s+)?(?:function\s*\*\s*|function\s+|class\s+)([A-Za-z_$][\w$]*)/g;
   const varRe = /export\s+(?:const|let|var)\s+([A-Za-z_$][\w$]*)/g;
-  // Braces renamed wholesale (`export { x } as default/ns`) expose ONLY the
-  // rename, never the local brace names — exclude them from the plain list re.
+
+
   const listRe = /export\s*\{([^}]+)\}(?!\s*as\b)/g;
   const renamedBraceRe = /export\s*\{[^}]*\}\s*as\s+([A-Za-z_$][\w$]*)\b/g;
   const starRe = /export\s+\*\s+from\s+['"][^'"]+['"]/g;
   const nsRe = /export\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\s+['"][^'"]+['"]/g;
-  // No named regex for `export default function/class X`: the external name is
-  // always just `default` (X is the local binding), already added by the generic
-  // default test below. Indexing X here overmatched and produced phantom
-  // unused-export reports and wrong fix candidates.
+
+
+
+
 
   let m;
   while ((m = declRe.exec(src)) !== null) addExport(filePath, m[1]);
@@ -158,7 +158,7 @@ function indexExports(filePath, content) {
       if (name && /^[A-Za-z_$][\w$]*$/.test(name)) addExport(filePath, name);
     });
   }
-  // `export * from '...'` -> wildcard marker ("re-exports unknown names")
+
   while ((m = starRe.exec(src)) !== null) addExport(filePath, '*');
   while ((m = nsRe.exec(src)) !== null) addExport(filePath, m[1]);
   if (/export\s+default\b/.test(src)) addExport(filePath, 'default');
@@ -183,9 +183,9 @@ function ensureIndexed(filePath) {
 }
 
 function isDotFile(name) { return name.startsWith('.'); }
-// dist holds built/bundled output (minified vendor bundles included): never
-// authored source, so its single-letter re-exports are noise for both the
-// import fixer and the unused-export report.
+
+
+
 function shouldSkipDir(name) {
   return name === 'node_modules' || name === '.git' || name === 'dist' || isDotFile(name);
 }
@@ -217,21 +217,21 @@ if (CLIMB_CEILING) console.log(`Climb ceiling: ${CLIMB_CEILING} (upward walk sto
 console.log(`Indexed ${realCount} .js/.mjs files (skipped ${selfFiles.size} copy/copies of this script).`);
 console.log(`Indexed exports from ${realCount} files.\n`);
 
-// ---------------------------------------------------------------------------
-// Import parsing
-// ---------------------------------------------------------------------------
+
+
+
 const IMPORT_RE = /import\s+(?:type\s+)?(?:(?:\{[^}]*\}|[A-Za-z_$][\w$]*(?:\s*,\s*\{[^}]*\})?|\*\s+as\s+\w+)\s+from\s+)?['"]([^'"]+)['"]|import\s*\(['"]([^'"]+)['"]\)/g;
-// Direct destructured dynamic import: `const { a, b: local } = await import('x')`.
-// A bare `const m = await import('x')` namespace import is deliberately excluded:
-// without data-flow analysis its consumed members cannot be named, so it keeps
-// the conservative no-names treatment. The Promise.all([import(...)]) array form
-// is likewise unmatchable without pairing logic and stays a known limitation.
+
+
+
+
+
 const DYNAMIC_DESTRUCTURED_RE = /(?:const|let|var)\s*\{([^}]+)\}\s*=\s*await\s*import\(\s*['"]([^'"]+)['"]\s*\)/g;
-// Positional Promise.all form:
-//   const [{ a }, { b: local }] = await Promise.all([import('x'), import('y')]);
-// Strict shape only: flat array of plain object patterns paired 1:1 with
-// string-literal import() calls. Anything nested/spread/non-literal makes the
-// match skip itself, so no other code shape can be misread by this extension.
+
+
+
+
+
 const PROMISE_ALL_RE = /(?:const|let|var)\s*(\[[\s\S]*?\])\s*=\s*await\s*Promise\.all\(\s*\[([\s\S]*?)\]\s*\)/g;
 
 function braceRemoteNames(group) {
@@ -254,8 +254,8 @@ function parseImports(content) {
     const p = m[2];
     const full = m[0];
     const pIdx = m.index + full.indexOf(p);
-    // Destructuring renames with a colon (`{ remote: local }`); the exporter
-    // must provide the name on the LEFT, the local binding is never rewritten.
+
+
     const names = braceRemoteNames(m[1]);
     out.push({ path: p, pIdx, pEnd: pIdx + p.length, names, defaultBinding: null, isStar: false });
   }
@@ -264,8 +264,8 @@ function parseImports(content) {
     const full = m[0];
     const groups = [...m[1].matchAll(/\{([^{}]*)\}/g)].map(g => g[1]);
     const paths = [...m[2].matchAll(/import\(\s*['"]([^'"]+)['"]\s*\)/g)].map(g => g[1]);
-    // Strict bail-outs: flat object patterns only, positional 1:1 pairing,
-    // no spread/default/nesting, and the RHS must be nothing but import() calls.
+
+
     const strictLhs = /^\s*\[\s*(?:\{[^{}]*\}\s*,\s*)*\{[^{}]*\}\s*\]\s*$/.test(m[1]);
     const strictRhs = m[2].replace(/import\(\s*['"][^'"]+['"]\s*\)/g, '').replace(/[\s,]/g, '') === '';
     if (!strictLhs || !strictRhs || groups.length !== paths.length || groups.length === 0) continue;
@@ -277,8 +277,8 @@ function parseImports(content) {
       });
     });
   }
-  // A destructured dynamic import also matches the bare dynamic alternative;
-  // collapse the duplicate span, keeping the record that actually carries names.
+
+
   const bySpan = new Map();
   for (const record of out) {
     const key = `${record.pIdx}:${record.pEnd}`;
@@ -293,17 +293,17 @@ function extractImportInfo(fullImport, importPath) {
   let defaultBinding = null;
   let isStar = false;
 
-  // indexOf points just past the opening quote, so beforePath carries that
-  // quote; strip it together with `from` or a bare quote-only statement
-  // (side-effect / dynamic import) is treated as having no bindings.
+
+
+
   const beforePath = fullImport.slice(0, fullImport.indexOf(importPath));
   let stmt = beforePath.replace(/^import\s*/, '').replace(/\s+from\s*['"]?$/, '').trim();
 
-  if (!stmt || stmt === "'" || stmt === '"') return { names, defaultBinding, isStar }; // side-effect import
+  if (!stmt || stmt === "'" || stmt === '"') return { names, defaultBinding, isStar };
   if (stmt.startsWith('type ')) stmt = stmt.slice(5).trim();
 
   if (stmt.startsWith('*')) {
-    // `import * as ns` needs NO named exports — never treat it as requiring '*'
+
     return { names, defaultBinding, isStar: true };
   }
 
@@ -319,10 +319,10 @@ function extractImportInfo(fullImport, importPath) {
     if (braceMatch) {
       for (const part of braceMatch[1].split(',')) {
         const segs = part.trim().split(/\s+as\s+/);
-        // The candidate must export the REMOTE name (segment before `as`);
-        // the local alias after `as` is only a binding in the importing file,
-        // which this tool never rewrites. Searching by alias used to make
-        // `import { Three as T }` unresolvable whenever T != Three.
+
+
+
+
         const remote = segs[0].trim();
         if (remote && /^[A-Za-z_$][\w$]*$/.test(remote)) names.push(remote);
       }
@@ -335,9 +335,9 @@ function extractImportInfo(fullImport, importPath) {
   return { names, defaultBinding, isStar };
 }
 
-// ---------------------------------------------------------------------------
-// Resolution & search
-// ---------------------------------------------------------------------------
+
+
+
 function isBareModule(p) { return !p.startsWith('.') && !path.isAbsolute(p); }
 
 function relPath(fromFile, toFile) {
@@ -370,7 +370,7 @@ function fileProvidesAll(filePath, names) {
   if (!names || names.length === 0) return true;
   const pExports = fileExports.get(filePath);
   if (!pExports) return false;
-  if (pExports.has('*')) return true; // wildcard re-exporter, assume it provides it
+  if (pExports.has('*')) return true;
   return names.every(n => pExports.has(n));
 }
 
@@ -409,10 +409,10 @@ function findCandidates(imp) {
   return cands;
 }
 
-// If nothing is found, climb UP through ancestor directories and index them,
-// so files living above the start dir (e.g. ../Bridge, ../Engine) are found.
-// With a climb ceiling the walk indexes the ceiling itself at most and never
-// its parent; without one the original unrestricted climb is unchanged.
+
+
+
+
 const MAX_SEARCH_CLIMB = 6;
 let climbed = false;
 
@@ -421,18 +421,18 @@ function findCandidatesWithClimb(imp) {
   if (cands.length > 0 || climbed) return cands;
   let dir = path.dirname(PROJECT_ROOT);
   for (let level = 0; level < MAX_SEARCH_CLIMB && dir !== path.dirname(dir); level++) {
-    // Guard: an ancestor above the ceiling can never be indexed.
+
     if (CLIMB_CEILING && !isWithin(dir, CLIMB_CEILING)) break;
     for (const f of scanTree(dir, new Set([PROJECT_ROOT]))) ensureIndexed(f);
     cands = findCandidates(imp);
     if (cands.length > 0) break;
-    // Guard: the ceiling itself was just indexed; do not claw above it.
+
     if (CLIMB_CEILING && path.resolve(dir) === path.resolve(CLIMB_CEILING)) break;
     dir = path.dirname(dir);
   }
   climbed = true;
-  // Guard: even files indexed incidentally (e.g. an import the broken path
-  // already resolved to) can never become a rewrite target above the ceiling.
+
+
   if (CLIMB_CEILING) cands = cands.filter(c => isWithin(c, CLIMB_CEILING));
   return cands;
 }
@@ -449,9 +449,9 @@ function scoreDefaultMatch(filePath, defaultBinding) {
   return score;
 }
 
-// ---------------------------------------------------------------------------
-// Fixing
-// ---------------------------------------------------------------------------
+
+
+
 async function fixFile(filePath) {
   const content = fs.readFileSync(filePath, 'utf-8');
   const imports = parseImports(content);
@@ -469,7 +469,7 @@ async function fixFile(filePath) {
     const actualPath = resolveImportPath(filePath, raw);
 
     if (actualPath) {
-      ensureIndexed(actualPath); // may live OUTSIDE the project root — index it too
+      ensureIndexed(actualPath);
       if (fileProvidesAll(actualPath, imp.names)) {
         importsVerified++;
         continue;
@@ -487,7 +487,7 @@ async function fixFile(filePath) {
     }
 
     let candidates = findCandidatesWithClimb(imp);
-    candidates = candidates.filter(c => c !== actualPath); // don't "fix" onto itself
+    candidates = candidates.filter(c => c !== actualPath);
 
     if (candidates.length > 1 && imp.defaultBinding) {
       const scored = candidates
@@ -537,18 +537,18 @@ async function fixFile(filePath) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// --unused: final-stage differentiation over the EXISTING scan/index phase.
-// No new indexer, no upward walk, no source rewrites. It only asks the index
-// built above which exported names are never named by any scanned import.
-// ---------------------------------------------------------------------------
+
+
+
+
+
 function reportUnusedExports() {
-  // Resolved imports give per-file precision; an import whose path does not
-  // resolve falls back to a global name set, so a broken tree can never make a
-  // genuinely-used export look unused (the conservative error for this report).
-  const usedByFile = new Map(); // absPath -> Set<imported name>
+
+
+
+  const usedByFile = new Map();
   const usedNamesGlobal = new Set();
-  const starImportedFiles = new Set(); // `import * as ns` consumes the whole module
+  const starImportedFiles = new Set();
 
   for (const file of allFiles) {
     if (selfFiles.has(file)) continue;
@@ -559,7 +559,7 @@ function reportUnusedExports() {
         if (target) starImportedFiles.add(target);
         continue;
       }
-      if (!imp.names.length) continue; // side-effect / dynamic import: no named use
+      if (!imp.names.length) continue;
       const target = resolveImportPath(file, imp.path);
       if (target) {
         if (!usedByFile.has(target)) usedByFile.set(target, new Set());

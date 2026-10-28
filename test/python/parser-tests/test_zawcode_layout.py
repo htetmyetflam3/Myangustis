@@ -7,7 +7,7 @@ carries the same 92-slot table and the same keying -- as a layout
 artifact, not as a routed candidate: ZawCode is identified by the
 readable Unicode/cmap result (JS worker today), never by a font name.
 
-Run:  python3 -m unittest discover -s .bin/python/parser-tests -v
+Run:  python3 -m unittest discover -s test/python/parser-tests -v
 """
 
 import os
@@ -15,7 +15,7 @@ import sys
 import unittest
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "Parser", "main", "Python", "modules"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "B.Parser", "main", "Python", "modules"))
 sys.path.insert(0, _HERE)
 
 from pdf_fonts import LEGACY_CODE_PAGES, ZAWCODE_LEGACY_CODE_PAGE  # noqa: E402

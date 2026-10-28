@@ -328,8 +328,8 @@ export function crowdVote(observed, witnesses, { claimLimit = CLAIM_LIMIT, topol
  * the 339 faces once, offline, and this is what it found. Reading the TTFs
  * at boot instead costs about fourteen seconds.
  */
-export function loadWitnesses(file, { readFile }) {
-  const raw = JSON.parse(readFile(file, 'utf8'));
+export function loadWitnesses(file, { readFile, readJson }) {
+  const raw = readJson ? readJson(file) : JSON.parse(readFile(file, 'utf8'));
   const samples = raw.samples ?? 8;
   const witnesses = [];
   for (const face of raw.faces) {

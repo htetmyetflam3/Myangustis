@@ -16,9 +16,7 @@
  * same reason. It used to be read from normalize.json while mm-score.mjs kept
  * a second hand-written copy; there is now one source.
  */
-import fs from "node:fs";
-import path from "node:path";
-import { MAP_DIR } from "../../../_path.js";
+import { loadMapJson } from "../core/json-map.js";
 import { MARKS } from "./mm-score.js";
 import {
   cleanImposters,
@@ -59,7 +57,7 @@ export const isExternalNormalize = () => external !== null;
 
 
 
-const MAPDATA = JSON.parse(fs.readFileSync(path.join(MAP_DIR, "normalize-map.json"), "utf8"));
+const MAPDATA = loadMapJson("normalize-map.json");
 
 const PRIORITY2 = MAPDATA.priority;                                    
 const GLUE = new Set(MAPDATA.glue);

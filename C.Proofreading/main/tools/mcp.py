@@ -19,8 +19,9 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
-MT = ROOT / "mt"
-for _path in (HERE, MT):
+for _path in (HERE, ROOT / "translate", HERE / "api", HERE / "quickread",
+              HERE / "dictionary" / "Burmese", HERE / "formatting",
+              HERE / "utility", HERE / "installer"):
     if str(_path) not in sys.path:
         sys.path.insert(0, str(_path))
 

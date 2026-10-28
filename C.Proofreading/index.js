@@ -1,2 +1,2 @@
-export { BindEngine } from '../Bridge/path.js';
-export { tagProofreading } from '../Bridge/proofreading-tagger.js';
+export { BindEngine } from './_path.js';
+export { tagProofreading } from './main/proofreading-tagger.js';

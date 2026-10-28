@@ -1,273 +1,99 @@
-// NATIVE engine bridge — the terminal pipeline routines, cut out of
-// Bridge/bridge.js and embedded beside their only native caller (init/cli.js).
-//
-//   bridge()          POS tagger path: fullstopHolder -> runTagger ->
-//                     runRuleEngine, dual syllable/raw_pos stream writers.
-//   bridgeDebug()     the Staging_architecture five-output debug form,
-//                     preserved as a rare-event safety net: the SAME chain
-//                     as bridge() including the pass-through runRuleEngine
-//                     kernel, plus the runIdMapper observability stage that
-//                     taps three extra id views. All five files are always
-//                     written — hardcoded, no write flags (the old flags were
-//                     only a convenience while the mapping was unstable).
-//   bridgeSyllable()  syllable-only segmenting path: the writer consumes the
-//                     segmentor generator directly; tagger and rule engine
-//                     are never constructed.
-//
-// MonoSyllabism imports are real (intra-engine, move with this file).
-// The merged-Bridge modules resolved here permanently: the engine owns its
-// whole bridge under architecture/bridge/ — logen.js (report-first logger +
-// getDateTimeHash), Ginit.js (pass-through rule kernel) and path.js (the
-// workspace contract) are real siblings, not top-level Bridge placeholders.
+// INPUT FLAG: callers pass text, not file paths. File callers should prefer a
+// read stream on their side. The engine preserves its internal streaming
+// pipeline when processing the received string; normal output is not written.
+import { randomUUID } from 'node:crypto';
+import { SlotLimiter } from '../../host/job-store.js';
 
-// Engine bridge path contract (architecture/bridge/path.js).
-import { OutputFile } from "../_path.js";
-// Report-first logger + the internal datetime hash minter.
-import { bridgeStart, bridgeEnd, bridgeLineCount, getDateTimeHash } from "../bridge/logen.js";
-// Rule-engine kernel — pass-through today (architecture/bridge/Ginit.js).
-import { runRuleEngine } from "../bridge/Ginit.js";
+const webSlots = new SlotLimiter(2);
 
-import { createStreamWriter, setHash } from "../MonoSyllabism/utilities/disk.js";
-import { getFlushLines } from "../MonoSyllabism/utilities/buffer.js";
-import {
-	toBurmeseLine,
-	toBurmeseLineWithPos,
-	toIdsLineWithPos,
-	toIdMapperLine,
-	toIdMergedLine,
-} from "../MonoSyllabism/utilities/formatter.js";
-import { burmeseToId } from "../MonoSyllabism/generators/idmap.js";
-import { fullstopHolder } from "../MonoSyllabism/generators/pos-input.js";
-import { toLineStrings } from "../MonoSyllabism/generators/SfomatterForP.js";
-import { runTagger } from "../MonoSyllabism/main/phoneme/phonology.js";
+// Every lane shares text collection, normalization, segmentation and the
+// per-line entry holder. POS adds the two-full-stop holder after that stage.
+async function* Engine({ sourceText, flag }, hash, positional) {
+  const [{ readFromApi }, { runSegmentor }, { toLineStrings }, formatter] = await Promise.all([
+    import('../MonoSyllabism/generators/input.js'),
+    import('../MonoSyllabism/main/phoneme/lexer.js'),
+    import('../MonoSyllabism/generators/SfomatterForP.js'),
+    import('../MonoSyllabism/utilities/formatter.js'),
+  ]);
+  const lines = toLineStrings(runSegmentor(readFromApi(sourceText)));
+  if (flag === 'syllable') {
+    if (positional) {
+      const { positionalSyllableLines } = await import('./tokenizer.js');
+      yield* positionalSyllableLines(lines);
+    } else {
+      for await (const line of lines) yield formatter.toSyllableLine(line);
+    }
+    return;
+  }
 
-class Hook {
-	constructor(name) {
-		this.name = name;
-		this.taps = [];
-	}
-	tap(fn) {
-		this.taps.push(fn);
-	}
-	async call(data) {
-		for (const fn of this.taps) {
-			await fn(data);
-		}
-	}
+  const [{ fullstopHolder }, { runTagger }, { runRuleEngine }] = await Promise.all([
+    import('../MonoSyllabism/generators/pos-input.js'),
+    import('../MonoSyllabism/main/phoneme/phonology.js'),
+    import('../bridge/Ginit.js'),
+  ]);
+  const tagged = runTagger(fullstopHolder(lines), hash);
+  for await (const line of runRuleEngine(tagged, hash)) {
+    yield {
+      syllable: formatter.toBurmeseLine(line),
+      rawPos: formatter.toBurmeseLineWithPos(line, 'rawPos'),
+    };
+  }
 }
 
-class BridgeHooks {
-	constructor() {
-		this.syllable = new Hook("syllable");
-		this.rawPos = new Hook("rawPos");
-		// Debug-only observability taps (the runIdMapper stage); bridge()
-		// never taps them, so production pays nothing.
-		this.ids = new Hook("ids");
-		this.idMapper = new Hook("idMapper");
-		this.idMerged = new Hook("idMerged");
-	}
+// Hold a web slot for the actual lifetime of a consumed stream, including
+// early cancellation or failure; an unconsumed generator holds no slot.
+async function* stream(request, hash, callerHasHash) {
+  if (callerHasHash) await webSlots.acquire();
+  try {
+    yield* Engine(request, hash, callerHasHash && request.flag === 'syllable');
+  } finally {
+    if (callerHasHash) webSlots.release();
+  }
 }
 
-/* ── Hash receiving — TWO explicit entry modes, no implicit fallback ──────
-   The boundary validates before the bridge is ever reached, so a receiver
-   never re-validates and never mints on the wrong path:
-
-   receiveCallerHash()  API invocation (standalone-web /job, api-server).
-                        The express layer already gated the key + the seven
-                        metadata fields + jobToken uniqueness, and runMain()
-                        already ran hashKind() on the id. Bridge therefore
-                        TRUSTS the caller hash as-is: outputs land as
-                        segmented_{callerHash}_*. No minting on this path.
-
-   receiveInternalHash() Library invocation — the bridge imported directly by
-                        another module (proofreading, …) with no caller id.
-                        The engine owns the session and injects its own
-                        inner-state datetime hash (logen.getDateTimeHash).
-
-   Both call setHash() because createStreamWriter reads the session at
-   construction time (segmented_{hash}_syllable/raw_pos.txt). The core
-   routines below only ever consume an already-resolved hash. */
-export function receiveCallerHash(callerHash) {
-	setHash(callerHash);
-	return callerHash;
+async function debug(request, hash, callerHasHash) {
+  if (callerHasHash) await webSlots.acquire();
+  try {
+    const { runDebug } = await import('./debug-bridge.js');
+    return await runDebug(request.sourceText, hash);
+  } finally {
+    if (callerHasHash) webSlots.release();
+  }
 }
 
-export function receiveInternalHash() {
-	const innerHash = getDateTimeHash();
-	setHash(innerHash);
-	return innerHash;
-}
-
-export async function bridge(seg, writeFlags, sessionHash, inputPath) {
-	bridgeStart({ file: inputPath, hash: sessionHash });
-
-	const flushLines = getFlushLines(inputPath);
-	const hooks = new BridgeHooks();
-	const writers = {};
-	let lineCount = 0;
-
-	if (writeFlags.syllable) {
-		writers.syllable = createStreamWriter(OutputFile(), "syllable", flushLines);
-		hooks.syllable.tap((line) => {
-			writers.syllable.writeLine([toBurmeseLine(line)]);
-		});
-	}
-
-	if (writeFlags.rawPos) {
-		writers.rawPos = createStreamWriter(OutputFile(), "raw_pos", flushLines);
-		hooks.rawPos.tap((line) => {
-			writers.rawPos.writeLine([
-				toBurmeseLineWithPos(line, "rawPos"),
-			]);
-		});
-	}
-
-	const unitGen = fullstopHolder(seg);
-	const taggerGen = runTagger(unitGen, sessionHash);
-	const kernelGen = runRuleEngine(taggerGen, sessionHash);
-
-	for await (const lineResult of kernelGen) {
-		await hooks.syllable.call(lineResult);
-		await hooks.rawPos.call(lineResult);
-
-		lineCount++;
-		bridgeLineCount(1);
-	}
-
-	const paths = {};
-	for (const [name, writer] of Object.entries(writers)) {
-		writer.flush();
-		paths[`${name}Path`] = writer.close();
-	}
-
-	bridgeEnd({ file: inputPath, lineCount });
-
-	return {
-		syllablePath: paths.syllablePath ?? null,
-		rawPosPath: paths.rawPosPath ?? null,
-		lineCount,
-		hash: sessionHash,
-	};
-}
-
-/* Debug sibling of bridge() — the Staging_architecture five-output form
-   (linga PR #21/#23 Syllable.initS.js runMainPipeline type "pos"), kept as a
-   rare-event mapping-inspection safety net rather than a daily routine.
-
-   Chain is IDENTICAL to bridge(): fullstopHolder -> runTagger ->
-   runRuleEngine (the same pass-through kernel — both path-A forms include
-   it). What differs is the runIdMapper observability stage after the kernel:
-   three extra taps render the id views, so all FIVE files are produced:
-
-     segmented_<hash>_syllable.txt   Burmese flat syllables (toBurmeseLine)
-     segmented_<hash>_raw_pos.txt    Burmese merged word + pos (toBurmeseLineWithPos)
-     segmented_<hash>_ids.txt        merged word id + pos (toIdsLineWithPos)
-     segmented_<hash>_id_mapper.txt  id per syllable, no pos (toIdMapperLine)
-     segmented_<hash>_id_merged.txt  merged id, no pos (toIdMergedLine)
-
-   Hardcoded five outputs — writeFlags is deliberately ignored. The old
-   writeSyllable/writePos gates existed only while mapping alignment was
-   being debugged file by file; the flow is stable now, and keeping the
-   renderers here means a future inspection never rewrites the pipeline.
-   Return shape extends bridge() with the three id paths. */
-export async function bridgeDebug(seg, _writeFlags, sessionHash, inputPath) {
-	bridgeStart({ file: inputPath, hash: sessionHash });
-
-	const flushLines = getFlushLines(inputPath);
-	const hooks = new BridgeHooks();
-	const writers = {};
-	let lineCount = 0;
-
-	writers.syllable = createStreamWriter(OutputFile(), "syllable", flushLines);
-	hooks.syllable.tap((line) => {
-		writers.syllable.writeLine([toBurmeseLine(line)]);
-	});
-
-	writers.rawPos = createStreamWriter(OutputFile(), "raw_pos", flushLines);
-	hooks.rawPos.tap((line) => {
-		writers.rawPos.writeLine([toBurmeseLineWithPos(line, "rawPos")]);
-	});
-
-	writers.ids = createStreamWriter(OutputFile(), "ids", flushLines);
-	hooks.ids.tap((line) => {
-		writers.ids.writeLine([toIdsLineWithPos(line)]);
-	});
-
-	writers.idMapper = createStreamWriter(OutputFile(), "id_mapper", flushLines);
-	hooks.idMapper.tap((line) => {
-		// Staging runIdMapper behavior: unmapped surfaces pass through.
-		writers.idMapper.writeLine([
-			toIdMapperLine(line, (s) => burmeseToId(s) ?? s),
-		]);
-	});
-
-	writers.idMerged = createStreamWriter(OutputFile(), "id_merged", flushLines);
-	hooks.idMerged.tap((line) => {
-		writers.idMerged.writeLine([toIdMergedLine(line)]);
-	});
-
-	const unitGen = fullstopHolder(seg);
-	const taggerGen = runTagger(unitGen, sessionHash);
-	const kernelGen = runRuleEngine(taggerGen, sessionHash);
-
-	for await (const lineResult of kernelGen) {
-		await hooks.syllable.call(lineResult);
-		await hooks.rawPos.call(lineResult);
-		await hooks.ids.call(lineResult);
-		await hooks.idMapper.call(lineResult);
-		await hooks.idMerged.call(lineResult);
-
-		lineCount++;
-		bridgeLineCount(1);
-	}
-
-	const paths = {};
-	for (const [name, writer] of Object.entries(writers)) {
-		writer.flush();
-		paths[`${name}Path`] = writer.close();
-	}
-
-	bridgeEnd({ file: inputPath, lineCount });
-
-	return {
-		syllablePath: paths.syllablePath ?? null,
-		rawPosPath: paths.rawPosPath ?? null,
-		idsPath: paths.idsPath ?? null,
-		idMapperPath: paths.idMapperPath ?? null,
-		idMergedPath: paths.idMergedPath ?? null,
-		lineCount,
-		hash: sessionHash,
-	};
-}
-
-/* Syllable-only sibling of bridge(). Thin by design: the writer consumes
-   the segmentor generator directly (disk.js consumeSyllable, formatting in
-   formatter.js) — the tagger and the rule engine are never constructed.
-   Assembly differs on purpose: \n lines here vs two-fullstop units in
-   bridge() (fullstopHolder) — the tagger needs sentence boundaries, the
-   syllable file mirrors input lines. Chosen by flag in runMain(), so this
-   is not a second pass — it is the only pass when POS was not asked
-   for. Whitespace is filtered in toSyllableLine and only there. */
-export async function bridgeSyllable(seg, writeFlags, sessionHash, inputPath) {
-	bridgeStart({ file: inputPath, hash: sessionHash });
-
-	const flushLines = getFlushLines(inputPath);
-	let syllablePath = null;
-	let lineCount = 0;
-
-	if (writeFlags.syllable) {
-		const writer = createStreamWriter(OutputFile(), "syllable", flushLines);
-		lineCount = await writer.consumeSyllable(seg);
-		syllablePath = writer.close();
-	} else {
-		/* No writer: still drain the segmentor so lineCount stays honest. */
-		for await (const line of toLineStrings(seg)) {
-			if (typeof line === "string") lineCount++;
-		}
-	}
-
-	bridgeLineCount(lineCount);
-	bridgeEnd({ file: inputPath, lineCount });
-
-	return { syllablePath, rawPosPath: null, lineCount, hash: sessionHash };
+/**
+ * One entry for text input. Non-debug syllable and hash-free POS calls return
+ * async generators. Hashed POS calls return a promise for the guard message;
+ * debug calls return a promise for the five retained debug output paths.
+ */
+export function BindEngine(request) {
+  if (!request || typeof request !== 'object' || Array.isArray(request)) {
+    throw new TypeError('BindEngine: a request object is required');
+  }
+  if (typeof request.sourceText !== 'string') {
+    throw new TypeError('BindEngine: sourceText must be a string');
+  }
+  if ('inputPath' in request || 'outputPath' in request || 'work' in request || 'seg' in request) {
+    throw new TypeError('BindEngine: supply text, not paths or a segment stream');
+  }
+  if (request.flag !== 'syllable' && request.flag !== 'pos') {
+    throw new TypeError('BindEngine: flag must be syllable or pos');
+  }
+  const isDebug = request.debug === undefined ? false : request.debug;
+  if (typeof isDebug !== 'boolean') {
+    throw new TypeError('BindEngine: debug must be a boolean');
+  }
+  const callerHasHash = request.hash !== undefined && request.hash !== null;
+  if (callerHasHash && (typeof request.hash !== 'string' ||
+      !/^[A-Za-z0-9._-]{72}$/.test(request.hash) || request.hash.includes('..'))) {
+    throw new TypeError('BindEngine: caller hash must be 72 safe characters');
+  }
+  const hash = callerHasHash ? request.hash : randomUUID();
+  const input = { sourceText: request.sourceText, flag: request.flag };
+  if (isDebug) return debug(input, hash, callerHasHash);
+  const result = stream(input, hash, callerHasHash);
+  if (callerHasHash && input.flag === 'pos') {
+    return import('./pos-guard.js').then(({ consumePos }) => consumePos(result));
+  }
+  return result;
 }

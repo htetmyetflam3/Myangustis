@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { parseEnv } from "node:util";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -12,15 +13,34 @@ async function resolveBaseDir() {
   const componentExporter = new URL('../_index.js', import.meta.url);
   if (fs.existsSync(rootExporter) && fs.existsSync(componentExporter)) {
     try {
-      const { JUNK_DIR } = await import('../_index.js');
-      if (typeof JUNK_DIR === 'string' && path.isAbsolute(JUNK_DIR)) return JUNK_DIR;
+      const { JUNK_DIR, ENV_RESULT } = await import('../_index.js');
+      if (typeof JUNK_DIR === 'string' && path.isAbsolute(JUNK_DIR) &&
+          ENV_RESULT && Array.isArray(ENV_RESULT.sources)) return { base: JUNK_DIR, env: ENV_RESULT };
     } catch {
       // Standalone engines use their own directory when exporters cannot load.
     }
   }
-  return __dirname;
+  const file = path.join(__dirname, '.env');
+  const sources = [];
+  const applied = [];
+  try {
+    const values = parseEnv(fs.readFileSync(file, 'utf8'));
+    sources.push(file);
+    for (const [key, value] of Object.entries(values)) {
+      if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) &&
+          (process.env[key] === undefined || process.env[key] === '')) {
+        process.env[key] = value;
+        applied.push(key);
+      }
+    }
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+  return { base: __dirname, env: { sources, applied } };
 }
-export const BASE_DIR = await resolveBaseDir();
+const resolved = await resolveBaseDir();
+export const BASE_DIR = resolved.base;
+export const ENV_RESULT = resolved.env;
 
 function ensureDir(p) { fs.mkdirSync(p, { recursive: true }); return p; }
 
@@ -55,12 +75,18 @@ export function GetDocxDir() { return resolveJunkDir("docx"); }
 export function InputFile() { return path.join(INITIAL_DIRS.INPUT_DIR, "input.txt"); }
 export function OutputFile() { return INITIAL_DIRS.OUTPUT_DIR; }
 export function LogFile() { return INITIAL_DIRS.LOG_DIR; }
+export async function getLogen() {
+  const entry = await import('../_index.js');
+  const logen = await entry.getLogen();
+  logen.setEngineLogDirectory(LogFile);
+  return logen;
+}
 export function DataFile() { return path.join(ENGINE_ROOT, "knowledge", "isTreasure"); }
 export function EngineRoot() { return ENGINE_ROOT; }
 export function resolvePath(p) { return path.isAbsolute(p) ? p : path.resolve(ENGINE_ROOT, p); }
 export function joinPath(...segments) { return path.join(...segments); }
 
-// Legacy map/secure paths (used by engine modules):
+
 const MAP_DIR = "MonoSyllabism/map";
 const MAP_SECURE_FILE = ".data/secure.js";
 const MAP_MASTER_FILE = ".data/master.json";
@@ -71,6 +97,7 @@ export function MapDir() { return MAP_DIR; }
 export function MapBinaryFile() { return MAP_DIR + "/payload.jsc"; }
 export function MapLoaderFile() { return MAP_DIR + "/loader.js"; }
 export function MapSecureFile() { return MAP_SECURE_FILE; }
+export async function getEngineData() { return import('./.data/secure.js'); }
 export function MapMasterFile() { return MAP_MASTER_FILE; }
 export function MapSourceDir() { return "MonoSyllabism/mapbuilder/base"; }
 export function JsonSourceFile() { return JSON_SOURCE_FILE; }
@@ -86,7 +113,7 @@ export function resolveInputs(src) {
   throw new Error(`Input not found: ${abs}`);
 }
 
-// Workspace setup only creates missing directories; later runs preserve files.
+
 export function onPathEnsure(dirPath) {
   const resolved = resolvePath(dirPath);
   fs.mkdirSync(resolved, { recursive: true });
@@ -97,4 +124,4 @@ export function ensureWorkspace() {
 }
 export function PDF_DIR() { return GetPDFDir(); }
 export function DOCX_DIR() { return GetDocxDir(); }
-export default FALLBACK_ROOT;  // default = Engine dir (for internal engine default-imports)
+export default FALLBACK_ROOT;

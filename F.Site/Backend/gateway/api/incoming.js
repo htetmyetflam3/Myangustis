@@ -23,9 +23,9 @@ import {
   taskComplete,
 } from '../queue/processingQueue.js';
 
-/** Bounds how many parses (text extraction or OCR) run at once. The upload
- *  endpoint accepts and answers immediately, so the parse work is bounded
- *  here instead of by the request-concurrency middleware. */
+
+
+
 export function createSlotLimiter(max) {
   const limit = Number.isSafeInteger(max) && max >= 1 ? max : 2;
   let active = 0;
@@ -41,7 +41,7 @@ export function createSlotLimiter(max) {
       }),
     release: () => {
       const next = waiting.shift();
-      if (next) return next(); // the slot is handed over, occupancy unchanged
+      if (next) return next();
       active = Math.max(0, active - 1);
     },
   };
@@ -106,7 +106,17 @@ export function createIncomingRouter({
   queue = null,
   hiddenProcessor = null,
   parseCapacity = null,
+  // PRE-PRODUCTION OVERRIDE — INTENTIONAL, NOT INCORRECT METADATA.
+  // Keep the second upload lane identified as analysis and keep its parser,
+  // queue and Engine handoff wired for future integration. The Engine is not
+  // ready for this Site yet: run analysis-lane documents as conversion only.
+  // Do NOT "fix" this to analysis just because the source is analysis; change
+  // it only when the end-to-end Engine integration is ready for production.
+  analysisTask = 'conversion',
 }) {
+  if (analysisTask !== 'conversion' && analysisTask !== 'analysis') {
+    throw new Error('Unsupported analysis task');
+  }
   const processingQueue =
     queue ||
     createProcessingQueue({
@@ -122,7 +132,7 @@ export function createIncomingRouter({
     analysisPdfParser: createPdfAnalysisParser().parse,
     analysisDocxParser: createDocxAnalysisParser().parse,
   });
-  // The queue is the one that calls the manager; it needs the composed parser.
+
   processingQueue.useParser?.(parser);
   const inputHandler = createInputHandler({
     textHolder: createTextHolder(),
@@ -173,8 +183,8 @@ export function createIncomingRouter({
       if (!consumed.allowed) {
         throw new ClientError(429, 'Quota exceeded');
       }
-      
-      
+
+
 
       const formId = await request.createUploadSession({
         userId: req.userId,
@@ -183,13 +193,13 @@ export function createIncomingRouter({
       });
       queueFormId = formId;
       if (req.file) {
-        // ------------------------------------------------------------------
-        // ACCEPT: save the original, enqueue the job under a submitId the
-        // visitor can already poll, and answer NOW. Parsing a scanned
-        // document can take minutes (OCR); no proxy or browser tolerates a
-        // POST held open that long, so the heavy work continues detached
-        // and the status endpoint tells the story.
-        // ------------------------------------------------------------------
+
+
+
+
+
+
+
         const submitId = crypto.randomUUID();
         const savedPath = await saveOriginal(req.file);
         quarantinePath = savedPath;
@@ -199,6 +209,10 @@ export function createIncomingRouter({
           sessionId: req.visitorHash,
           clientIp: req.edge?.ip || req.ip || req.socket?.remoteAddress,
           intent: uploadMetadata,
+          // INTENTIONAL PRE-PRODUCTION OVERRIDE: analysis-source documents
+          // currently run as conversion, not Engine analysis. Do not 'correct'
+          // this to match metadata; enable it only when Site/Engine is ready.
+          taskOverride: uploadMetadata.source === 'analysis' ? analysisTask : undefined,
           file: req.file,
           inputPath: savedPath,
         });
@@ -213,11 +227,11 @@ export function createIncomingRouter({
           status: publicProcessing?.state ?? 'RECEIVED',
           ...(publicProcessing ? { processing: publicProcessing } : {}),
         });
-        quarantinePath = null; // ownership moves to the detached task below
-        // ------------------------------------------------------------------
-        // PROCESS: detached. Every failure lands on the queue record the
-        // visitor is already polling -- the upload itself was accepted.
-        // ------------------------------------------------------------------
+        quarantinePath = null;
+
+
+
+
         (async () => {
           const praserJob = {};
           let artifactPath = null;
@@ -225,8 +239,8 @@ export function createIncomingRouter({
           let pendingQuarantine = savedPath;
           await parseSlots.acquire();
           try {
-            // The queue calls the manager. This route no longer parses and
-            // then reports; it asks the owner of the record to do both.
+
+
             let parsed;
             try {
               parsed = await processingQueue.runManager(formId, {
@@ -247,7 +261,7 @@ export function createIncomingRouter({
               quarantinePath: parsed.savedPath,
               submitId,
             });
-            pendingQuarantine = null; // rawSaver moved it into ORIGINAL_DIR
+            pendingQuarantine = null;
             await processingQueue.bindSavedResult(formId, {
               submitId: raw.submitId,
               filename: raw.filename,
@@ -259,7 +273,7 @@ export function createIncomingRouter({
               filename: `${path.parse(uploadMetadata.uploadName).name}.${praserJob.manager.output}`,
               mimeType: praserJob.manager.mimeType,
             });
-            if (hiddenProcessor && uploadMetadata?.source === 'analysis') {
+            if (hiddenProcessor && processingQueue.getByFormId(formId)?.task === 'analysis') {
               Promise.resolve(hiddenProcessor({ formId })).catch((error) =>
                 console.error('[incoming] hidden analysis invocation failed', error),
               );
@@ -289,16 +303,38 @@ export function createIncomingRouter({
         })().catch((error) => console.error('[incoming] parse task crashed', error));
         return;
       }
-      // Text submissions have no Praser round, but they still enter the same
-      // metadata-backed queue record. The hidden Engine contract only accepts
-      // jobs it can bind to queue metadata; a raw text body without metadata is
-      // deliberately refused above.
+
+
+
+
       rawResult = await inputHandler({
         req,
         formId,
         parsedText: null,
         quarantinePath: null,
       });
+      // PRE-PRODUCTION: analysis-lane text stops after raw saving. It is
+      // already text: do not enqueue, parse or dispatch it to the Engine.
+      // Keep this deliberate stop until the Site's future text integration is ready.
+      if (uploadMetadata.source === 'analysis') {
+        await request.finalizeUpload({
+          userId: req.userId,
+          visitorHash: req.visitorHash,
+          formId,
+          submitId: rawResult.submitId,
+          filename: rawResult.filename,
+          bridgePath: rawResult.rawPath,
+          originalName: uploadMetadata.originalName,
+        });
+        return res.status(200).json({
+          formId,
+          submitId: rawResult.submitId,
+          text: req.body.text,
+          remaining: consumed.remaining,
+          ...(Number.isInteger(consumed.limit) ? { limit: consumed.limit } : {}),
+          status: 'SAVED',
+        });
+      }
       await processingQueue.enqueue({
         formId,
         userId: req.userId,
@@ -330,7 +366,7 @@ export function createIncomingRouter({
         filename: rawResult.filename,
         mimeType: 'text/plain; charset=utf-8',
       });
-      if (hiddenProcessor && uploadMetadata?.source === 'analysis') {
+      if (hiddenProcessor && processingQueue.getByFormId(formId)?.task === 'analysis') {
         Promise.resolve(hiddenProcessor({ formId })).catch((error) =>
           console.error('[incoming] hidden analysis invocation failed', error),
         );
@@ -385,7 +421,7 @@ export function createIncomingRouter({
     if (record.userId !== String(req.userId) || record.sessionId !== req.visitorHash) {
       return res.status(403).json({ error: 'Processing job metadata mismatch' });
     }
-    // A full circle reaches FINISHED twice; only the closed one is the answer.
+
     if (!taskComplete(record)) {
       return res.status(409).json({ error: 'Processing file is not ready', state: record.state });
     }

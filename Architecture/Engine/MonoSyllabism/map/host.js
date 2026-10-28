@@ -1,9 +1,9 @@
-// Required WASM host (external-key design).
-// The four map sources are never imported here. The linga.payload section is
-// AES-256-GCM encrypted at rest; this host decrypts it with a key held OUTSIDE
-// the box — PAYLOAD_KEY env, else ./payload.key.txt beside this file — and only
-// then boots the engine on the plaintext pack. No Python, no bytenode: Node
-// WebAssembly + node:wasi + node:crypto only.
+
+
+
+
+
+
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -24,7 +24,7 @@ function loadKey() {
   return key;
 }
 
-// container written by build-payload.mjs: iv(12) || ciphertext || tag(16)
+
 function decryptPayload(section, key) {
   const iv = section.subarray(0, 12);
   const tag = section.subarray(section.length - 16);
@@ -40,7 +40,7 @@ export class WasmBox {
       throw new Error("Required WASM box is missing. Run the wasm build; there is no JS/JSC fallback.");
     }
     const bytes = fs.readFileSync(file);
-    // Optional pinning: only enforced when a build-info manifest is supplied.
+
     if (manifest && fs.existsSync(manifest)) {
       const info = JSON.parse(fs.readFileSync(manifest, "utf8"));
       if (info.box_sha256 && crypto.createHash("sha256").update(bytes).digest("hex") !== info.box_sha256) {
@@ -53,7 +53,7 @@ export class WasmBox {
     if (loaderSections.length !== 1 || payloadSections.length !== 1) {
       throw new Error("Invalid WASM box sections");
     }
-    // Decrypt OUTSIDE the engine; the in-box loader only parses plaintext.
+
     const packBytes = decryptPayload(new Uint8Array(payloadSections[0]), loadKey());
 
     this.wasi = new WASI({ version: "preview1", args: [], env: {}, preopens: {}, returnOnExit: true });
@@ -109,7 +109,7 @@ export class WasmBox {
   call(method, ...args) {
     if (["normalize", "mapperNormalize", "myNormalize"].includes(method)) {
       if (typeof args[0] !== "string") throw new TypeError(`${method} requires a string`);
-      args[0] = args[0].normalize("NFC"); // same NFC boundary as before
+      args[0] = args[0].normalize("NFC");
     }
     return JSON.parse(this.run(3, JSON.stringify({ method, args })));
   }

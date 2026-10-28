@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Build entry-point guard: never install, switch, or downgrade Node.
+
 const MIN_MAJOR = 22;
 const match = process.version.match(/^v?(\d+)/);
 const major = match ? Number(match[1]) : NaN;

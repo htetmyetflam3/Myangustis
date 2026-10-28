@@ -1,11 +1,11 @@
-// In-memory job store: the accepted /job records and their lifecycle.
-//
-// State machine mirrors the Site queue labels the engine participates in:
-//   PENDING  — accepted, source pull not started/finished
-//   RUNNING  — source pulled, native engine pipeline executing
-//   DONE     — result accepted by the Site (FINISHED there)
-//   FAILED   — terminal rejection (403/409/410, digest mismatch, pipeline error)
-// Records are TTL-pruned on insert and capped by JOB_STORE_MAX.
+
+
+
+
+
+
+
+
 export const JOB_STATES = Object.freeze({
   PENDING: 'PENDING',
   RUNNING: 'RUNNING',
@@ -18,7 +18,7 @@ export class JobStore {
     this.max = max;
     this.ttlMs = ttlMs;
     this.now = now;
-    this.records = new Map(); // jobToken -> record
+    this.records = new Map();
   }
 
   _prune() {
@@ -48,11 +48,11 @@ export class JobStore {
     return this.records.get(jobToken) ?? null;
   }
 
-  // Preceding-request guard for POST /job: the Site queue keys one file by
-  // formId and mints a fresh jobToken per engine round. A new round is only
-  // admissible once the prior round for that formId reached a terminal state
-  // (DONE/FAILED) — an active PENDING/RUNNING predecessor means the duplicate
-  // call must be refused at the door.
+
+
+
+
+
   activeByFormId(formId) {
     for (const rec of this.records.values()) {
       if (
@@ -88,8 +88,8 @@ export class JobStore {
   }
 }
 
-// Bounded pipeline slots — the upload side accepts fast and queues parse work
-// behind the same kind of limiter (Site createSlotLimiter, default 2).
+
+
 export class SlotLimiter {
   constructor(max) {
     this.max = max;
@@ -109,7 +109,7 @@ export class SlotLimiter {
 
   release() {
     const next = this.waiting.shift();
-    if (next) return next(); // slot handed over — occupancy unchanged
+    if (next) return next();
     this.active = Math.max(0, this.active - 1);
   }
 }

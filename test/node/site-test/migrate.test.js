@@ -60,9 +60,9 @@ test('migrating twice is a no-op', (t) => {
 
 test('an unversioned database with the baseline shape is adopted, not rebuilt', (t) => {
   const db = tempDb(t);
-  db.exec(fs.readFileSync(SCHEMA_FILE, 'utf8'));          // legacy boot path
+  db.exec(fs.readFileSync(SCHEMA_FILE, 'utf8'));
   db.prepare('INSERT INTO users (cookie_hash) VALUES (?)').run('legacy-visitor');
-  db.pragma('user_version = 0');                           // no ledger existed
+  db.pragma('user_version = 0');
   assert.equal(hasApplicationTables(db), true);
 
   const result = migrate(db, { schemaFile: SCHEMA_FILE });
@@ -70,15 +70,15 @@ test('an unversioned database with the baseline shape is adopted, not rebuilt', 
   assert.equal(result.from, 0);
   assert.equal(result.to, LATEST_VERSION);
   assert.ok(result.applied.includes('1:adopt-legacy'));
-  // The row survived.
+
   assert.equal(db.prepare('SELECT count(*) n FROM users').get().n, 1);
 });
 
 test('a drifted database is refused with an actionable error, and is left untouched', (t) => {
   const db = tempDb(t);
-  // A users table from before device_fingerprint/daily_quota_* existed. This is
-  // the case that used to kill the process with "no such column:
-  // device_fingerprint" from CREATE INDEX, with a bare stack trace.
+
+
+
   db.exec(`CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     cookie_hash TEXT NOT NULL,
@@ -101,7 +101,7 @@ test('a drifted database is refused with an actionable error, and is left untouc
     },
   );
 
-  // Refused means refused: no partial work, no stamped version, row intact.
+
   assert.equal(version(db), 0);
   assert.deepEqual(columns(db, 'users'), ['id', 'cookie_hash', 't']);
   assert.equal(db.prepare('SELECT count(*) n FROM users').get().n, 1);
@@ -110,7 +110,7 @@ test('a drifted database is refused with an actionable error, and is left untouc
 test('duplicate rows that violate a unique index are reported, not thrown raw', (t) => {
   const db = tempDb(t);
   const baseline = fs.readFileSync(SCHEMA_FILE, 'utf8');
-  // Baseline shape, but without the unique index, and with rows that break it.
+
   db.exec(baseline.replace(/CREATE UNIQUE INDEX[^;]+;/g, ''));
   const insert = db.prepare('INSERT INTO users (cookie_hash) VALUES (?)');
   insert.run('same');
@@ -159,7 +159,7 @@ test('migration 2 enforces the enumerated source and status values', (t) => {
     'INSERT INTO submissions (submission_id, user_id, source, status) VALUES (?,?,?,?)',
   );
 
-  // Everything the application actually writes must still be accepted.
+
   insert.run('f-1', userId, 'file', 'pending');
   insert.run('f-2', userId, 'text', 'processed');
   insert.run('f-3', userId, 'text', 'failed');
@@ -170,7 +170,7 @@ test('migration 2 enforces the enumerated source and status values', (t) => {
 
 test('migration 2 drops rows it cannot make referentially valid, and keeps the rest', (t) => {
   const db = tempDb(t);
-  // Build a v1 database by hand, with one good row and one orphan.
+
   db.exec(fs.readFileSync(SCHEMA_FILE, 'utf8'));
   db.pragma('user_version = 1');
   const userId = Number(

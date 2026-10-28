@@ -51,8 +51,8 @@ export function createRequest({ db }) {
       return { allowed: true, remaining: Math.max(0, limit - 1) };
     }
 
-    
-    
+
+
     const update = db.prepare(
       `UPDATE users
        SET daily_quota_used = daily_quota_used + 1
@@ -111,10 +111,10 @@ export function createRequest({ db }) {
       if (!row) throw new Error('Upload metadata not found');
       return row;
     },
-    /* DAILY_UPLOAD_LIMIT=0 is the only way the cap is off. There is no
-       per-request override: the dev bypass flags that used to supply one are
-       gone, and with them the cookie-counted fallback for callers that had no
-       user row. The database is the single source of truth. */
+
+
+
+
     checkQuota({ userId }) {
       const limit = dailyLimit();
       if (limit === 0) {
@@ -127,8 +127,8 @@ export function createRequest({ db }) {
           .prepare('SELECT daily_quota_used, daily_quota_reset FROM users WHERE id = ?')
           .get(userId);
       if (!row) return { allowed: false, reason: 'User not found', limit };
-      
-      
+
+
       if (dayOf(row.daily_quota_reset) !== today) {
         db.prepare(
           `UPDATE users SET daily_quota_used = 0, daily_quota_reset = ${SQL_NOW} WHERE id = ?`,
@@ -151,8 +151,8 @@ export function createRequest({ db }) {
 
       if (!exists) return { allowed: false, remaining: 0, limit };
 
-      
-      
+
+
       return { ...consumeQuotaTransaction({ userId, limit }), limit };
     },
     incrementQuota({ userId }) {

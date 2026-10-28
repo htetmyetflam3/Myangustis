@@ -13,8 +13,8 @@ import {
 } from "../../../B.Parser/extend/pipeline.js";
 import { prepareVectorLayout } from "../../../B.Parser/main/parser/codepage/resolve.js";
 
-// working-branch mapping: Parsed/fixtures/ exists on no branch; the same
-// book is tracked here as an upload fixture.
+
+
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.join(HERE, "..", "..", "..", "Junk", "Parser", "upload", "pdf", "bg-mlc-1-1.pdf");
 const OCR_CROP = path.join(HERE, "..", "..", "..", "B.Parser", "main", "File", "upload", "ocr-marked", "zoom-kyone.png");
@@ -44,8 +44,8 @@ test("SVG matching abstains/ranks by labelled code point, without opening a font
   assert.equal(match.codepoints, "U+1039 U+1012");
 });
 
-// The render lane needs the optional heavy deps pdfjs-dist + @napi-rs/canvas.
-// Probe both once; a sandbox without them skips instead of failing the suite.
+
+
 let renderLanePromise;
 function renderLaneAvailable() {
   if (!renderLanePromise) {
@@ -67,13 +67,13 @@ test("a real bg-mlc unknown glyph is cropped to raw pixels and resolved against 
   const match = await matchPdfRegionToVector(
     fs.readFileSync(FIXTURE),
     1,
-    // U+00B4 in the source ToUnicode. Its character quad is nearly zero
-    // width, but the rendered ink is WinInnwa's stacked-da form.
+
+
     { x0: 332.7341, y0: 402.2960, x1: 332.9141, y1: 421.2140 },
     { candidates: ["ဲ", "္ဒ"], scale: 5 },
   );
-  // The crop is pixels, not a file: no encode to undo, so the ink measured is
-  // exactly what PDF.js drew.
+
+
   assert.ok(match.crop.width > 8 && match.crop.height > 8);
   assert.equal(match.accepted, true);
   assert.equal(match.text, "္ဒ");
@@ -85,13 +85,13 @@ test("the OCR dropped-mark site is a raster-to-SVG U+1036 recovery", async (t) =
   if (!fs.existsSync(OCR_CROP) || !fs.existsSync(OCR_LINE)) {
     return t.skip("ocr-marked PNG fixtures exist on no branch of this repo");
   }
-  // A scanner crop arrives as the PNG it already is; it is decoded once, to
-  // be measured, and never re-encoded.
+
+
   const crop = fs.readFileSync(OCR_CROP);
   assert.equal(crop.subarray(1, 4).toString("ascii"), "PNG");
   const match = await matchImageToVector(crop, {
-    // The scanner/dictionary supplies plausible replacements for the unknown
-    // OCR token; pixels choose among them and may abstain.
+
+
     candidates: ["ကြုံ"],
   });
   assert.equal(match.accepted, true);
@@ -108,8 +108,8 @@ test("the OCR dropped-mark site is a raster-to-SVG U+1036 recovery", async (t) =
   assert.equal(repaired.changed, true);
   assert.equal(repaired.text, "ကြုံခဲ့ရသည်");
 
-  // A whole-line crop contains too much context and must not be forced into a
-  // syllable label.
+
+
   const unsafe = await repairTextRegionWithVector("ကြုခဲ့ရသည်", {
     start: 0,
     end: "ကြု".length,
@@ -127,11 +127,11 @@ test("runtime outline layout selects only WinInnwa and preserves Latin resources
   assert.ok(vectorLayout);
   assert.equal(vectorLayout.baseLayout, "wininnwa");
   assert.match(vectorLayout.name, /^vector:WinInnwa$/u);
-  /* The pixel builder this replaces decided 23 slots from rendered crops
-     (16 more refused by the cross-font alias veto). The outline build
-     decides every disputed seat the subset carries -- 61 here -- from the
-     font program itself, and lands on the same base, the same /BaseFont
-     and the same chosen score. */
+
+
+
+
+
   assert.ok(vectorLayout.matched >= 20, `outline vote count ${vectorLayout.matched}`);
   assert.equal(vectorLayout.table.get(0xb4), "္ဒ");
   assert.equal(vectorLayout.table.get(0x4d), "ြ");
@@ -147,9 +147,9 @@ test("runtime outline layout selects only WinInnwa and preserves Latin resources
   assert.ok(decodeLog.includes('[+] Decoding via "vector:WinInnwa" character map'));
 });
 
-/* The alias veto is a refusal, so its test is a refusal: a shape the crowd can
-   place with one candidate must NOT be placed once its alias partner is in the
-   running. Nothing here renders a page or opens a font. */
+
+
+
 test("a claim is refused when the witness crowd cannot place the pair", async () => {
   const { matchRasterMask, getDefaultVectorIndex, isCrossFontAlias } = await import("../../../B.Parser/main/parser/shape/match.js");
   const alias = JSON.parse(fs.readFileSync(new URL("../../../B.Parser/main/parser/jason-map/vector/shape-alias.json", import.meta.url), "utf8"));

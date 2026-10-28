@@ -1,19 +1,19 @@
-/**
- * FILE: Parsed/parser/read/glyf.mjs
- *
- * Reads glyph outline COORDINATES out of a TrueType `glyf`/`loca` table.
- *
- * This is the "original font info gives coordinate of a consonant" half of
- * the shape-consensus idea: every font in the library can state, in its own
- * units, exactly where it draws a given code point relative to the baseline.
- * `ttf.mjs` already parses the table directory, head, maxp and cmap, so this
- * only adds the outline walk on top of it.
- *
- * Coordinates come back in font units with the BASELINE AT y=0, which is the
- * whole point -- a mark that sits above the baseline has positive y, one that
- * hangs below has negative y, and that vertical placement is itself a strong
- * discriminator. Nothing here re-centres or bbox-normalises that away.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { loadFont, TtfFont } from "./ttf.js";
 
 const ON_CURVE = 0x01;
@@ -30,7 +30,7 @@ const WE_HAVE_A_SCALE = 0x0008;
 const WE_HAVE_AN_X_AND_Y_SCALE = 0x0040;
 const WE_HAVE_A_TWO_BY_TWO = 0x0080;
 
-/** Byte offset + length of one glyph in `glyf`, via `loca`. */
+
 function glyphRange(font, gid) {
   const loca = font.tables.get("loca");
   const glyf = font.tables.get("glyf");
@@ -41,14 +41,14 @@ function glyphRange(font, gid) {
     : font.data.readUInt16BE(loca.offset + i * 2) * 2);
   const start = at(gid);
   const end = at(gid + 1);
-  if (end <= start) return null; // empty glyph (e.g. space)
+  if (end <= start) return null;
   return { offset: glyf.offset + start, length: end - start };
 }
 
-/**
- * Outline of one glyph as an array of closed contours, each an array of
- * {x, y, onCurve} in font units with baseline y=0.
- */
+
+
+
+
 export function glyphContours(font, gid, depth = 0) {
   if (depth > 4) return [];
   const range = glyphRange(font, gid);
@@ -56,10 +56,10 @@ export function glyphContours(font, gid, depth = 0) {
   const d = font.data;
   let p = range.offset;
   const numberOfContours = d.readInt16BE(p);
-  p += 10; // skip numberOfContours + xMin/yMin/xMax/yMax
+  p += 10;
 
   if (numberOfContours < 0) {
-    // Composite: splice in each component, honouring xy offsets.
+
     const out = [];
     for (;;) {
       const flags = d.readUInt16BE(p); p += 2;
@@ -128,11 +128,11 @@ export function glyphContours(font, gid, depth = 0) {
   return contours;
 }
 
-/**
- * Point cloud for a code point, in em units with the baseline at y=0.
- * Contours are densified so that long straight runs do not under-sample
- * relative to tightly curved ones.
- */
+
+
+
+
+
 export function codepointCloud(font, codePoint, { samplesPerSegment = 3 } = {}) {
   const gid = font.glyphId(codePoint);
   if (!gid) return null;

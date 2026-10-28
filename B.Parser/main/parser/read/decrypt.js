@@ -28,16 +28,16 @@ export async function decryptPdf(bytes, log = () => {}) {
 
 const OBJSTM_MARK = Buffer.from("/ObjStm");
 
-/* Object streams (PDF 1.5+): whole indirect objects compressed inside an
-   /ObjStm stream are invisible to parsePdfObjects(), so the page tree and
-   fonts never resolve. The reference approach (scraper pdf_support.py) is
-   not a second parser: detect the marker, rewrite the file once with
-   object streams disabled (there: pikepdf ObjectStreamMode.disable, which
-   is libqpdf; here: the qpdf CLI, same library, --object-streams=disable,
-   which also normalises cross-reference streams back to a plain table),
-   then let the existing parser read plain objects. A marker byte-sequence
-   inside a content stream is a false positive whose only cost is one
-   harmless rewrite. */
+
+
+
+
+
+
+
+
+
+
 export function hasObjectStreams(bytes) {
   const buf = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
   return buf.includes(OBJSTM_MARK);

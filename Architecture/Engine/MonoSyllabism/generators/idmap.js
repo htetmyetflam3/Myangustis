@@ -1,11 +1,11 @@
-/**
- * idmap.js — the ASCII↔Burmes↔ID converter tables.
- *
- * Moved from MonoSyllabism/map/base/idmapper.js (map/base/ deleted: the map
- * dir holds only generated artifacts now). Loads once, lazily, from
- * .cache-tree/syllable.mapped.txt written by the build phase. Row parsing
- * goes through Tree.loaded.loadMappedRows — the single home for that file.
- */
+
+
+
+
+
+
+
+
 
 import { TREE_DIR } from "../main/grapheme/cache-integrity.js";
 import { loadMappedRows } from "../main/grapheme/Tree.loaded.js";
@@ -47,28 +47,28 @@ function loadMappings() {
 	);
 }
 
-/** Burmese surface → tree id (null when unmapped). */
+
 export function burmeseToId(syllable) {
 	if (!syllable) return null;
 	loadMappings();
 	return _burmeseToId.get(syllable) ?? null;
 }
 
-/** ASCII key-string → tree id (null when unmapped). */
+
 export function asciiToId(ascii) {
 	if (!ascii) return null;
 	loadMappings();
 	return _asciiToId.get(ascii) ?? null;
 }
 
-/** Tree id → Burmese surface (null when unknown). */
+
 export function idToBurmese(id) {
 	if (!id) return null;
 	loadMappings();
 	return _idToBurmese.get(id) ?? null;
 }
 
-/** Tree id → ASCII key-string (null when unknown). */
+
 export function idToAscii(id) {
 	if (!id) return null;
 	loadMappings();

@@ -1,9 +1,8 @@
 import { parseTtfCmap } from "../core/ttf-cmap.js";
 import fs from "node:fs";
-import path from "node:path";
 import zlib from "node:zlib";
 import { ValueError, pyTruthy, pyInt, pyFloat, fromHexStrict, pyStripBytes } from "../core/pylib.js";
-import { MAP_DIR } from "../../../_path.js";
+import { loadMapJson, mapNameForPath } from "../core/json-map.js";
 import { MAX_PAGES, positiveLimit } from "../core/limits.js";
 import {
   Lexer, PdfName, PdfHexBytes, isNumeric, toNumber,
@@ -29,7 +28,7 @@ export function zlibDecompressCapped(buf, limitMb = null) {
     if (e && (e.code === "ERR_BUFFER_TOO_LARGE" || /maxOutputLength|buffer too large/i.test(String(e.message)))) {
       throw new ValueError(`decompressed stream exceeds ${MAX_STREAM_MB} MB cap (decompression bomb?)`);
     }
-    
+
     const salvaged = inflateTolerant(buf, limit);
     if (salvaged !== null) return salvaged;
     throw e;
@@ -53,7 +52,7 @@ function inflateTolerant(buf, limit) {
     }
   } catch (e) {
     if (e instanceof ValueError) throw e;
-    
+
     if (!chunks.length) return null;
   }
   if (failed && !chunks.length) return null;
@@ -97,7 +96,7 @@ export function parsePdfObjects(raw) {
       const end = raw.indexOf(B_ENDOBJ, start);
       if (end !== -1) {
         const key = `${pyInt(numStr)},${pyInt(genStr)}`;
-        objects.set(key, pyStripBytes(raw.subarray(start, end))); 
+        objects.set(key, pyStripBytes(raw.subarray(start, end)));
         if (objects.size > MAX_PDF_OBJECTS) {
           throw new ValueError(`PDF exceeds the ${MAX_PDF_OBJECTS} object cap`);
         }
@@ -117,8 +116,8 @@ export function getStream(objects, num, gen = 0) {
   const i = d.indexOf(B_STREAM);
   if (i === -1) return null;
   let j = i + 6;
-  if (j < d.length && d[j] === 0x0d) j += 1; 
-  if (j < d.length && d[j] === 0x0a) j += 1; 
+  if (j < d.length && d[j] === 0x0d) j += 1;
+  if (j < d.length && d[j] === 0x0a) j += 1;
   const k = d.lastIndexOf(B_ENDSTREAM);
   if (k === -1) return null;
   const b = d.subarray(j, k);
@@ -126,31 +125,31 @@ export function getStream(objects, num, gen = 0) {
     try {
       return zlibDecompressCapped(b);
     } catch (e) {
-      if (e instanceof ValueError) throw e; 
+      if (e instanceof ValueError) throw e;
       return null;
     }
   }
   return b;
 }
 
-/**
- * Read the document's own /Info dictionary -- Title, Author, Creator,
- * Producer, CreationDate. This is what identifies a broken document later:
- * "LibreOffice 3.6" or a given Creator is usually the real explanation for a
- * whole family of bad PDFs.
- *
- * Two bugs lived here and are fixed:
- *
- *   1. It searched the CATALOG for /Info. /Info is in the TRAILER, so the
- *      search never matched and the function returned {} for every PDF ever
- *      passed to it. That is why nothing noticed it was unwired.
- *   2. It read only literal `(...)` strings. Real producers write hex
- *      `<FEFF...>` UTF-16BE, so even a found dictionary lost Author, Creator
- *      and Producer and kept only CreationDate.
- *
- * `raw` is optional: without it the old Catalog path is still tried, so
- * callers that only have the object map keep working.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export function extractMetadata(objects, raw = null) {
   const infoRef = findInfoRef(objects, raw);
   if (infoRef === null) return {};
@@ -159,11 +158,11 @@ export function extractMetadata(objects, raw = null) {
   return parseInfoDict(body.toString("latin1"));
 }
 
-/** `/Info N G R`, from the trailer first, then the catalog as a fallback. */
+
 function findInfoRef(objects, raw) {
   if (raw) {
     const text = Buffer.isBuffer(raw) ? raw.toString("latin1") : String(raw);
-    // Last trailer wins: an incrementally-updated PDF appends newer ones.
+
     let found = null;
     const re = /trailer[\s\S]{0,2048}?\/Info\s+(\d+)\s+(\d+)\s*R/g;
     let m;
@@ -179,7 +178,7 @@ function findInfoRef(objects, raw) {
   return null;
 }
 
-/** /Key (literal) and /Key <hex> pairs, one pass, values decoded. */
+
 function parseInfoDict(text) {
   const out = {};
   const re = /\/([^\s/[\]<>(){}]+)\s*(?:\(((?:[^\\)]|\\[\s\S])*)\)|<([0-9A-Fa-f\s]*)>)/g;
@@ -202,7 +201,7 @@ function decodeLiteral(body) {
     if (next === undefined) break;
     const octal = /^[0-7]{1,3}/.exec(body.slice(i + 1, i + 4));
     if (octal) { out += String.fromCharCode(parseInt(octal[0], 8)); i += octal[0].length; continue; }
-    if (next === "\n") { i += 1; continue; }            // line continuation
+    if (next === "\n") { i += 1; continue; }
     out += ESCAPES[next] ?? next;
     i += 1;
   }
@@ -211,12 +210,12 @@ function decodeLiteral(body) {
 
 function decodeHex(body) {
   let hex = (body || "").replace(/\s+/g, "");
-  if (hex.length % 2 === 1) hex += "0";                 // spec: pad a trailing nibble
+  if (hex.length % 2 === 1) hex += "0";
   if (!hex) return "";
   return decodeTextString(Buffer.from(hex, "hex"));
 }
 
-/** PDF text strings are UTF-16 with a BOM, or PDFDocEncoding (latin1-ish). */
+
 function decodeTextString(buf) {
   if (buf.length >= 2 && buf[0] === 0xfe && buf[1] === 0xff) {
     return buf.subarray(2).swap16().toString("utf16le").replace(/\0+$/u, "");
@@ -246,13 +245,13 @@ export function findFontStreams(objects) {
   return refs;
 }
 
-export const findFontFiles2 = findFontStreams; 
+export const findFontFiles2 = findFontStreams;
 
 
 export function utf16beToStr(hexStr) {
-  // PDF hex strings may contain an odd number of nibbles; ISO 32000 says the
-  // final nibble is padded with zero. Keep that PDF-specific rule here rather
-  // than weakening fromHexStrict for its other callers.
+
+
+
   const padded = hexStr.length % 2 === 0 ? hexStr : `${hexStr}0`;
   return utf16beBytesToStr(fromHexStrict(padded));
 }
@@ -270,8 +269,8 @@ function swapUtf16BE(raw) {
     swapped[i] = raw[i + 1];
     swapped[i + 1] = raw[i];
   }
-  
-  
+
+
   const s = swapped.toString("utf16le");
   let out = "";
   for (let i = 0; i < s.length; i += 1) {
@@ -295,25 +294,25 @@ const BFRANGE_ARRAY_RE = /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*\[([\s\S]*?)\]/g
 const HEX_TOKEN_RE = /<([0-9A-Fa-f]+)>/g;
 const BRACKET_SPAN_RE = /\[[\s\S]*?\]/g;
 
-/* One token of a CMap body: a `<hex>` string, or a bracketed destination
-   list. Tokenising is what keeps entries apart.
 
-   The old readers were bare regexes over the whole block, and the scalar
-   bfrange reader in particular was three hex tokens separated by `\s*` --
-   which matches newlines. So in a block like
 
-       6 beginbfrange
-       <0100> <0101> [<0020> <103C>]
-       <0102> <0103> <1017>
-       endbfrange
 
-   the array entry left `<0102> <0103>` standing next to `<0104> <010A>` two
-   lines down, and the reader glued the tail of one entry to the head of the
-   next: lo 0x103, hi 0x1017, destination 0x104. It expanded that into 3,605
-   mappings, each code one past the last, so gid 0x148 -- which the very same
-   CMap defines as U+1021 (အ) -- was overwritten with U+0149 (Å‰) and the page
-   came out as Latin Extended-B. Reading one entry at a time cannot splice two
-   entries together, so the phantom range is never formed. */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const CMAP_TOKEN_RE = /<([0-9A-Fa-f]+)>|\[([\s\S]*?)\]/g;
 
 function* cmapTokens(body) {
@@ -324,13 +323,13 @@ function* cmapTokens(body) {
   }
 }
 
-/* A code is one or two bytes, so 65,536 destinations is the most one bfrange
-   can honestly cover. A wider span is a misread token, not a big font. */
+
+
 const MAX_BFRANGE_CODES = 0x10000;
-/* A JavaScript Map holds at most 2**24 - 1 entries and throws RangeError past
-   that -- an uncatchable-looking crash from inside a worker. Stop adding well
-   before the ceiling so a document that really is this large degrades into a
-   partial map instead of taking the conversion down. */
+
+
+
+
 const MAX_TOUNICODE_ENTRIES = 1 << 20;
 
 function incrementBigEndian(bytes) {
@@ -358,7 +357,7 @@ export function parseToUnicodeStream(data) {
     return true;
   };
 
-  /* bfchar: `<src> <dst>` pairs, each pair one mapping. */
+
   BFCHAR_RE.lastIndex = 0;
   let m;
   while ((m = BFCHAR_RE.exec(text)) !== null) {
@@ -373,7 +372,7 @@ export function parseToUnicodeStream(data) {
     }
   }
 
-  /* bfrange: `<lo> <hi> <dst>` or `<lo> <hi> [<dst> <dst> ...]`. */
+
   BFRANGE_RE.lastIndex = 0;
   while ((m = BFRANGE_RE.exec(text)) !== null) {
     let lo = null;
@@ -405,12 +404,12 @@ export function parseToUnicodeStream(data) {
           hi = null;
           continue;
         }
-        // A bfrange destination is a UTF-16BE *byte string*, not a Unicode
-        // scalar. Converting the whole token to a number and calling chr()
-        // works for <0061>, but crashes on valid surrogate pairs such as
-        // <D83DDE00> and on multi-code-unit mappings such as <00660069>. PDF
-        // specifies that the byte string is incremented big-endian for each
-        // source code.
+
+
+
+
+
+
         const raw = tok.hex.length % 2 === 0 ? tok.hex : `${tok.hex}0`;
         const destination = fromHexStrict(raw);
         for (let code = lo; code <= hi; code += 1) {
@@ -447,7 +446,7 @@ export function findToUnicodeMaps(objects) {
       let spaces = 0;
       for (const v of mp.values()) if (v === " ") spaces += 1;
       if (spaces / mp.size > 0.9) {
-        for (const [k, v] of [...mp]) if (v === " ") mp.delete(k); 
+        for (const [k, v] of [...mp]) if (v === " ") mp.delete(k);
       }
       for (const [code, uni] of mp) if (!codeToUni.has(code)) codeToUni.set(code, uni);
     }
@@ -457,15 +456,9 @@ export function findToUnicodeMaps(objects) {
 
 
 export function loadSidecarMap(p = null) {
-  const file = p ?? path.join(MAP_DIR, "cipher-map.json");
-  let text;
   try {
-    text = fs.readFileSync(file, "utf8");
-  } catch {
-    return new Map();
-  }
-  try {
-    const json = JSON.parse(text);
+    const name = p ? mapNameForPath(p) : "cipher-map.json";
+    const json = name ? loadMapJson(name) : JSON.parse(fs.readFileSync(p, "utf8"));
     const out = new Map();
     for (const [k, v] of Object.entries(json)) {
       let key = k.trim();
@@ -489,7 +482,7 @@ export function getPageMediabox(objects, pageNum, pageGen) {
   for (let hop = 0; hop < 8; hop += 1) {
     const m = MEDIABOX_RE.exec(text);
     if (m) {
-      
+
       const [x0, y0, x1, y1] = [m[1], m[2], m[3], m[4]].map(pyFloat);
       return [Math.abs(x1 - x0), Math.abs(y1 - y0)];
     }
@@ -559,7 +552,7 @@ export function collectPages(
         let r;
         while ((r = ANY_REF_RE.exec(kidsText)) !== null) refs.push(r[1]);
         for (const ref of refs) {
-          
+
           pages.push(...collectPages(objects, pyInt(ref), 0, state));
         }
       }
@@ -647,21 +640,21 @@ export function fixDigitConsonantConfusion(text) {
     const after = i + 1 < n ? out[i + 1] : "";
     const before = i > 0 ? out[i - 1] : "";
     if (out[i] === "\u1040") {
-      
+
       if (DEP_MARKS.has((after || "").codePointAt(0)) || (letterOrMark(before) && letterOrMark(after))) {
         out[i] = "\u101d";
       } else if (!isDigit(before) && !letterOrMark(before) && isBase(after)) {
-        
+
         out[i] = "\u101d";
       }
     }
   }
   text = out.join("");
 
-  
-  
-  
-  
+
+
+
+
   for (let pass = 0; pass < 3; pass += 1) {
     const chars = Array.from(text);
     let changed = false;
@@ -697,34 +690,34 @@ export function collapseOverprint(text) {
 
 export function legacyAyarToUnicode(text) {
   text = text.replace(/\u200b/g, "");
-  
-  
-  
-  
+
+
+
+
   text = text.replace(
     /([ေြ]+)([က-အ၀၇၈])(င်္)?((?:္[က-အ])*)/g,
     (_m, vowel, base, kinzi, stacked) => (kinzi || "") + base + (stacked || "") + vowel,
   );
 
-  
-  
-  
-  
-  
+
+
+
+
+
   text = text.replace(
     /([က-အ][ါ-ှ]*)(င်္)(?![က-အ])/g,
     "$2$1",
   );
   text = text.replace(/(ေ)([ျွဲှ္ြ]+)/g, "$2$1");
   text = text.replace(/([က-အ])([က-အ])(င်္)/g, "$1$3$2");
-  
-  
+
+
   text = text.replace(/ဦး/g, "ဦး");
 
-  
-  
-  
-  
+
+
+
+
   return fixDigitConsonantConfusion(text);
 }
 
@@ -772,7 +765,7 @@ function* iterContentOperations(data) {
     if (kind === "kw") {
       if (containers.length) { operands.push(value); continue; }
       const op = String(value);
-      if (op === "ID") { 
+      if (op === "ID") {
         lex.pos = skipInlineImage(data, lex.pos);
         operands = [];
         continue;
@@ -783,7 +776,7 @@ function* iterContentOperations(data) {
     }
     operands.push(value);
     if (!containers.length && operands.length > 64) {
-      
+
       operands.splice(0, operands.length - 16);
     }
   }
@@ -842,10 +835,10 @@ export function extractPageLines(objects, pageNum, pageGen, decoding) {
 
   const pieces = [];
 
-  
-  
-  
-  
+
+
+
+
   let active = null;
 
   for (const sn of streams) {
@@ -866,7 +859,7 @@ export function extractPageLines(objects, pageNum, pageGen, decoding) {
           active = decoders.get(String(operands[operands.length - 2])) ?? null;
         }
         if (inBlock && operands.length && isNumeric(operands[operands.length - 1])) {
-          blockSize = toNumber(operands[operands.length - 1]); 
+          blockSize = toNumber(operands[operands.length - 1]);
         }
         continue;
       }
@@ -877,7 +870,7 @@ export function extractPageLines(objects, pageNum, pageGen, decoding) {
           blockTexts = [];
           blockXy = null;
           blockSize = null;
-          
+
           textXy = [0.0, 0.0];
           leading = 0.0;
         }
@@ -894,14 +887,14 @@ export function extractPageLines(objects, pageNum, pageGen, decoding) {
         continue;
       }
 
-      
-      
+
+
       if (op === "Td" || op === "TD") {
         if (operands.length >= 2 && operands.slice(-2).every(isNumeric)) {
           const dx = toNumber(operands[operands.length - 2]);
           const dy = toNumber(operands[operands.length - 1]);
-          
-          
+
+
           textXy = [textXy[0] + dx, textXy[1] + dy];
           if (op === "TD") leading = -dy;
           if (blockXy === null) blockXy = textXy;
@@ -925,9 +918,9 @@ export function extractPageLines(objects, pageNum, pageGen, decoding) {
       if (op === "ET") {
         inBlock = false;
         if (blockTexts.length && blockXy !== null) {
-          
-          
-          
+
+
+
           let text = blockTexts.join("");
           if (doc.legacyTextFix) text = collapseOverprint(text);
           pieces.push([blockXy[1], blockXy[0], blockSize === null ? 12.0 : blockSize, text]);
@@ -939,10 +932,10 @@ export function extractPageLines(objects, pageNum, pageGen, decoding) {
       if (op === "Tj" || op === "TJ" || op === "'" || op === '"') {
         const decoder = active !== null ? active : unsetFont;
         for (const shown of shownStrings(op, operands)) {
-          
-          
-          
-          
+
+
+
+
           const arg = decoder instanceof UnsetFontDecoder || !(shown instanceof PdfHexBytes)
             ? shown : shown.s;
           blockTexts.push(decoder.decode(arg));
@@ -951,15 +944,15 @@ export function extractPageLines(objects, pageNum, pageGen, decoding) {
     }
   }
 
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
+
+
+
   const uniquePieces = [];
   for (const piece of pieces) {
     const [y, x, , text] = piece;
@@ -972,7 +965,7 @@ export function extractPageLines(objects, pageNum, pageGen, decoding) {
         break;
       }
       if (text.includes(oldText)) {
-        
+
         uniquePieces[k] = piece;
         drop = true;
         break;
@@ -992,9 +985,9 @@ export function extractPageLines(objects, pageNum, pageGen, decoding) {
   let currentY = pieces[0][0];
   let currentLine = [];
   const flush = () => {
-    
-    
-    
+
+
+
     const ordered = [...currentLine].sort((p, q) => p[0] - q[0]);
     let maxSize = -Infinity;
     for (const [, s] of ordered) if (s > maxSize) maxSize = s;

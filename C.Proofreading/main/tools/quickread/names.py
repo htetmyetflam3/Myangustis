@@ -62,7 +62,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent
+ROOT = HERE.parent.parent
 NAMES_FILE = ROOT / "content" / "reference" / "EtoBnames.txt"
 
 MYANMAR = re.compile(r"[\u1000-\u109f\uAA60-\uAA7F\uA9E0-\uA9FF]")

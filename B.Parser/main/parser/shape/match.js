@@ -1,47 +1,47 @@
-/**
- * FILE: Parsed/parser/shape/match.mjs
- *
- * COMPARE side of glyph shape matching: given ink, which labelled glyph is it?
- *
- * Pure geometry. Masks, distance fields and nearest-neighbour search over the
- * labelled SVG specimen sheets in map/vector/. No PDF, no fonts, no decoding --
- * the only thing it reads from disk is a specimen sheet, through shape/svg.mjs.
- *
- * The three files in shape/ are the three sides of one question:
- *   svg.mjs     REFERENCE  labelled specimen sheet  -> contours   (vector)
- *   raster.mjs  PAGE       scanned/rendered pixels  -> contours   (bitmap)
- *   match.mjs   COMPARE    contours or mask         -> a label
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import fs from "node:fs";
 import path from "node:path";
 
 import { VECTOR_MAP_DIR } from "../../../_path.js";
+import { loadMapJson } from "../core/json-map.js";
 
-/* ── per-glyph accept bars ────────────────────────────────────────────
-   Loaded once, read with a Map lookup. Everything expensive about this
-   happened offline in .bin/gen-shape-thresholds.mjs; nothing here
-   computes, scans or allocates per crop.
 
-   The old gate was one flat number for every shape, and it could not
-   work: measured against the real sheet, maxDistance 0.12 never fired at
-   all (the largest gap between any two glyphs is 0.062) while minMargin
-   0.012 was larger than the room 2,572 of 2,598 glyphs have, so a
-   PERFECT, noise-free crop of a known glyph was rejected 94.8% of the
-   time -- and never once mislabelled. The ranking was sound; the bar was
-   on the wrong scale by roughly 40x. */
+
+
+
+
+
+
+
+
+
+
+
 let _bars = null;
 function bars() {
   if (_bars) return _bars;
-  const file = path.join(VECTOR_MAP_DIR, "shape-thresholds.json");
   try {
-    const raw = JSON.parse(fs.readFileSync(file, "utf8"));
+    const raw = loadMapJson("vector/shape-thresholds.json");
     _bars = {
       byLabel: new Map(Object.entries(raw.byLabel || {})),
-      // "X" and "X + a mark" are not rivals: no font draws the bare letter
-      // to look like the marked one, so extra ink IS the mark and the
-      // ranking has already answered it. Asking for a margin between them
-      // throws away a decision that was already correct.
+
+
+
+
       composition: new Set(raw.composition || []),
       fallback: 0.0016,
     };
@@ -56,18 +56,17 @@ const isComposition = (a, b) => {
   return t.has(`${a}\u0000${b}`) || t.has(`${b}\u0000${a}`);
 };
 
-/* The cross-font alias list, generated offline from the witness crowd:
-   map/vector/shape-alias.json. A pair on it is a pair of letters that faces in
-   the corpus draw alike -- one font's ထ sits nearer the reference's က than its
-   own does -- so no margin measured against ONE reference face can separate
-   them for a document drawn in such a face. Absent file, absent veto: the
-   matcher behaves exactly as it did. */
+
+
+
+
+
+
 let _alias = null;
 function aliasTable() {
   if (_alias !== null) return _alias;
   try {
-    const file = path.join(VECTOR_MAP_DIR, "shape-alias.json");
-    const raw = JSON.parse(fs.readFileSync(file, "utf8"));
+    const raw = loadMapJson("vector/shape-alias.json");
     _alias = new Set((raw.pairs || []).map(([a, b]) => `${a}\u0000${b}`));
   } catch {
     _alias = new Set();
@@ -75,7 +74,7 @@ function aliasTable() {
   return _alias;
 }
 
-/** Two letters the crowd itself cannot place. Order-insensitive. */
+
 export function isCrossFontAlias(a, b) {
   const t = aliasTable();
   return t.has(`${a}\u0000${b}`) || t.has(`${b}\u0000${a}`);
@@ -105,7 +104,7 @@ function boundsOfPoints(points) {
   return { x0, y0, x1, y1, w: x1 - x0, h: y1 - y0 };
 }
 
-/** Fill flattened SVG contours into a small, aspect-preserving binary mask. */
+
 export function maskFromContours(contours, size = DEFAULT_GRID, pad = 2) {
   const points = allPoints(contours);
   if (!points.length) return null;
@@ -118,10 +117,10 @@ export function maskFromContours(contours, size = DEFAULT_GRID, pad = 2) {
   const polys = contours.map((contour) => contour.map(([x, y]) => [x * scale + ox, y * scale + oy]));
   const mask = new Uint8Array(size * size);
 
-  // The specimen sheet declares fill-rule=evenodd. Intersect one horizontal
-  // scanline with every contour at once, then fill alternating pairs. This
-  // preserves counters and disconnected marks without rasterising the SVG in
-  // a browser.
+
+
+
+
   for (let y = 0; y < size; y += 1) {
     const yc = y + 0.5;
     const xs = [];
@@ -161,7 +160,7 @@ function inkBounds(mask, width, height) {
   return x1 >= x0 && y1 >= y0 ? { x0, y0, x1, y1, w: x1 - x0 + 1, h: y1 - y0 + 1 } : null;
 }
 
-/** Trim and resize a raster ink mask onto the same square used by the SVG. */
+
 export function normalizeRasterMask(mask, width, height, size = DEFAULT_GRID, pad = 2) {
   const box = inkBounds(mask, width, height);
   if (!box) return null;
@@ -184,10 +183,10 @@ export function normalizeRasterMask(mask, width, height, size = DEFAULT_GRID, pa
   return { mask: out, size, aspect: box.w / box.h };
 }
 
-/**
- * Chamfer distance field of a binary mask, shared by the runtime matcher and
- * by offline witness-crowd tools that build indices of their own.
- */
+
+
+
+
 export function distanceField(mask, size) {
   const diagonal = Math.SQRT2;
   const field = new Float32Array(size * size);
@@ -224,7 +223,7 @@ function inkDistance(mask, field) {
   return count ? sum / count : Infinity;
 }
 
-/** Symmetric chamfer distance with aspect penalty, in grid units. */
+
 export function shapeDistance(a, b) {
   if (a.size !== b.size) throw new Error("vector masks use different grids");
   const forward = inkDistance(a.mask, b.field);
@@ -245,7 +244,7 @@ export function vectorSheetFiles(dir = VECTOR_MAP_DIR) {
     .map((name) => path.join(dir, name));
 }
 
-/** Load the labelled SVG map once. No TTF/font library is opened here. */
+
 export function loadVectorIndex(files = vectorSheetFiles(), { size = DEFAULT_GRID } = {}) {
   const byText = new Map();
   for (const file of files) {
@@ -271,17 +270,17 @@ export function getDefaultVectorIndex() {
   return defaultIndex;
 }
 
-/**
- * Match a binarised crop against labelled entries from the SVG vector map.
- * The function abstains unless the best shape is both close enough and clear
- * of the runner-up. Callers may pass the candidate strings supplied by
- * disagreeing layouts; omitting them searches the complete sheet.
- */
+
+
+
+
+
+
 export function matchRasterMask(mask, width, height, {
   index = getDefaultVectorIndex(),
   candidates = null,
   maxDistance = 0.12,
-  // null = use the per-glyph bar. A number overrides it, for probes.
+
   minMargin = null,
 } = {}) {
   const normalized = normalizeRasterMask(mask, width, height, index.size);
@@ -303,19 +302,19 @@ export function matchRasterMask(mask, width, height, {
   const best = matches[0];
   const second = matches[1] ?? null;
   const margin = second ? second.distance - best.distance : Infinity;
-  /* One lookup for the bar, one set probe for composition. The bar is a
-     fraction of the room THIS glyph actually has, so a crowded shape
-     (တ against က, 0.0039 apart) must clear a high proportion of a small
-     gap, while an isolated one is accepted readily -- which is what a
-     flat number could never express. */
+
+
+
+
+
   const table = bars();
   const runnerUp = matches[1]?.text ?? null;
   const freeOfMargin = runnerUp !== null && isComposition(best.text, runnerUp);
-  /* Majority is not evidence. Three faces claiming က and one claiming ထ does
-     not settle it on က: the one is a font that draws ထ like က, which is the
-     whole reason a single reference face cannot be trusted here. Refuse, and
-     let the disagreement stay visible instead of writing a letter nobody can
-     defend. Composition pairs keep their exemption: extra ink IS the mark. */
+
+
+
+
+
   const aliased = runnerUp !== null && !freeOfMargin && isCrossFontAlias(best.text, runnerUp);
   const need = minMargin === null
     ? (table.byLabel.get(best.text) ?? table.fallback)

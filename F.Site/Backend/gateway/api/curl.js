@@ -4,8 +4,9 @@ import path from 'node:path';
 import express from 'express';
 import multer from 'multer';
 import { createPdfParser, createDocxParser } from '../../file/praser.js';
-import { INPUT_PDF, INPUT_DOCX, abs } from '../../file/paths.js';
-import logger from '../../../../Bridge/logen/site.js';
+import { ensureUploadDir } from '../../file/paths.js';
+import { getLogen } from "../../../_path.js";
+const logger = (await getLogen()).siteLog.default;
 import {
   curlEndpointPath, curlEndpointEnabled, keyMatches, presentedKey, endpointUrl,
 } from './curlGate.js';
@@ -45,8 +46,8 @@ export { curlEndpointEnabled };
 
 const MAX_NAME = 255;
 const KINDS = new Map([
-  ['.pdf', { kind: 'pdf', dir: INPUT_PDF, parser: createPdfParser }],
-  ['.docx', { kind: 'docx', dir: INPUT_DOCX, parser: createDocxParser }],
+  ['.pdf', { kind: 'pdf', parser: createPdfParser }],
+  ['.docx', { kind: 'docx', parser: createDocxParser }],
 ]);
 
 export function createCurlRouter() {
@@ -62,7 +63,7 @@ export function createCurlRouter() {
       destination: (_req, file, cb) => {
         const entry = KINDS.get(path.extname(file.originalname).toLowerCase());
         if (!entry) return cb(new multer.MulterError('LIMIT_UNEXPECTED_FILE', 'file'));
-        return cb(null, abs(entry.dir));
+        return ensureUploadDir(file.originalname).then(dir => cb(null, dir), cb);
       },
       filename: (_req, file, cb) =>
         cb(null, `${crypto.randomUUID()}${path.extname(file.originalname).toLowerCase()}`),

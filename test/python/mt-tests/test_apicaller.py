@@ -20,8 +20,10 @@ import unittest
 import unittest.mock
 from pathlib import Path
 
+import _paths  # noqa: F401 - configure the split proofreading modules
+
 HERE = Path(__file__).resolve().parent
-MT = Path(__file__).resolve().parents[3] / "Proofreading" / "main" / "mt"
+MT = Path(__file__).resolve().parents[3] / "C.Proofreading" / "main" / "translate"
 ROOT = MT.parent
 sys.path.insert(0, str(MT))
 

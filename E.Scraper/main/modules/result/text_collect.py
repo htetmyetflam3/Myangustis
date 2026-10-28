@@ -1,21 +1,12 @@
-"""Collected-text journal and the run-end flush to Parquet.
+"""Text extraction, segmentation and Parquet storage for convertable PDFs.
 
-During a download run every convertable PDF (Unicode or Zawgyi-One text)
-contributes two things the moment it is saved:
+The uploader parses and segments each PDF in ``pdfs/convertable/`` and writes
+its row to ``pdfs/parquet/books.parquet`` before deleting the local copy.
+The separate continuous parse service uses the same Parquet writer.
 
-* one JSON line in ``scan/collected.jsonl`` — filename, sha256, encoding,
-  pages, the converted + normalised text, and the broken-text scan counts.
-  The journal is append-only and fsynced per document, so an interrupted
-  run loses nothing and the next run's flush picks the leftovers up;
-* the PDF itself, filed directly in ``pdfs/convertable/`` so the background
-  uploader pushes convertable books to remote storage one by one immediately
-  (just like ``scanned/`` and ``old/``).
-
-When the download run finishes, :func:`flush` sends the whole collected
-text as ONE stream through a single segmentor process
-(``segment_bridge.mjs`` — the Engine's MonoSyllabism syllable segmentor),
-splits the result back per document, and writes one Parquet file for the run
-in ``pdfs/parquet/`` (kept on the VPS; never uploaded to shared host storage).
+The collected-text journal and :func:`flush` remain available for manual
+recovery of older journaled documents. The current download path does not
+append to the journal or automatically flush it at the end of a run.
 """
 
 from __future__ import annotations

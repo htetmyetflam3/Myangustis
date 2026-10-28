@@ -256,16 +256,6 @@ def _download_details(summary) -> list[str]:
     ]
     if summary.retried:
         lines.append(retry_line(summary))
-    # Run end: flush the collected convertable text through the segmentor
-    # into a committed Parquet batch, then release the staged PDFs. A
-    # failed flush keeps everything journaled/staged for the next run.
-    try:
-        stats = text_flush(OUTPUT_DIR)
-    except Exception as error:  # noqa: BLE001 - reporting must still go out
-        lines.append(f"🧾 Convert: run-end flush crashed: {error}")
-        return lines
-    print(f"[convert] {stats.line()}", flush=True)
-    lines.append(stats.line())
     return lines
 
 

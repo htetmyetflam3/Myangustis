@@ -1,14 +1,14 @@
-// In-memory fixed-window rate limiter — no external dependency.
-//
-// One bucket per key per fixed window. Keys default to the client IP
-// (Express req.ip, which honors the app-level 'trust proxy' setting).
-// Expired buckets are swept lazily on each hit; no background timer, so the
-// limiter adds nothing to keep alive or shut down and is trivial to test.
-//
-// On reject: 429 with Retry-After (seconds) and a JSON body. On accept the
-// standard X-RateLimit-* headers are set so callers can self-throttle.
+
+
+
+
+
+
+
+
+
 export function createRateLimiter({ windowMs = 60_000, max = 60, name = 'rate-limit' } = {}) {
-  const buckets = new Map(); // key -> { count, resetAt }
+  const buckets = new Map();
   let lastSweep = 0;
 
   return function rateLimit(req, res, next) {

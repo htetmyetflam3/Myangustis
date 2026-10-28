@@ -1,8 +1,8 @@
-export const TERMINAL_STATES = ["FINISHED", "FAILED", "EXPIRED"];
+const TERMINAL_STATES = ["FINISHED", "FAILED", "EXPIRED"];
 export const isTerminal = (state) => TERMINAL_STATES.includes(state);
-export const statusUrlFor = (submitId) =>
+const statusUrlFor = (submitId) =>
   `/api/submit/status/${encodeURIComponent(submitId)}`;
-export const downloadUrlFor = (submitId) =>
+const downloadUrlFor = (submitId) =>
   `/api/submit/file/${encodeURIComponent(submitId)}`;
 const str = (value) =>
   typeof value === "string" && value ? value : null;
@@ -26,14 +26,13 @@ export function readDelivery(body, fallbackSubmitId = "") {
   };
 }
 
-export const ANALYSIS_HIDDEN_ENDPOINT = null;
-export const POLL_ATTEMPTS = 40;
-export const POLL_INTERVAL_MS = 1500;
-// OCR over a large scan runs for minutes -- far past the first minute of
-// fast polling. After POLL_ATTEMPTS quick checks the poller slows down
-// instead of giving up, staying within a ~20 minute window.
-export const POLL_SLOW_INTERVAL_MS = 5000;
-export const POLL_SLOW_ATTEMPTS = 240;
+const POLL_ATTEMPTS = 40;
+const POLL_INTERVAL_MS = 1500;
+
+
+
+const POLL_SLOW_INTERVAL_MS = 5000;
+const POLL_SLOW_ATTEMPTS = 240;
 
 export async function pollDelivery(
   submitId,

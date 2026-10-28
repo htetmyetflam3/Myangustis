@@ -15,9 +15,9 @@ function readTableDirectory(data) {
 }
 
 export class TtfFont {
-  /* Accepts a path OR the bytes themselves. A font embedded in a PDF
-     never touches the filesystem, and that is the case that matters:
-     its outlines are the document's own shapes. */
+
+
+
   constructor(source) {
     const isBytes = Buffer.isBuffer(source) || source instanceof Uint8Array;
     this.path = isBytes ? "<embedded>" : source;
@@ -29,7 +29,7 @@ export class TtfFont {
     if (!head) throw new Error(`${this.path} is not a TrueType font (no head table)`);
     this.unitsPerEm = this.data.readUInt16BE(head.offset + 18);
     this.indexToLocFormat = this.data.readInt16BE(head.offset + 50);
-    
+
     this.bbox = [
       this.data.readInt16BE(head.offset + 36),
       this.data.readInt16BE(head.offset + 38),
@@ -45,8 +45,8 @@ export class TtfFont {
     const maxp = tables.get("maxp");
     this.numGlyphs = maxp ? this.data.readUInt16BE(maxp.offset + 4) : 0;
 
-    
-    
+
+
     this.advanceWidths = new Uint16Array(this.numGlyphs);
     const hmtx = tables.get("hmtx");
     if (hmtx && this.numGlyphs) {
@@ -56,17 +56,17 @@ export class TtfFont {
         if (g < this.numberOfHMetrics) {
           if (p + 2 > this.data.length) break;
           last = this.data.readUInt16BE(p);
-          p += 4; 
+          p += 4;
         }
         this.advanceWidths[g] = last;
       }
     }
 
-    
-    
-    this.cmap = parseTtfCmap(this.data); 
 
-    
+
+    this.cmap = parseTtfCmap(this.data);
+
+
     this.scale = 1000 / this.unitsPerEm;
     this.cw = new Map();
     for (const [cp, gid] of this.cmap) {
@@ -91,7 +91,7 @@ export class TtfFont {
     return w === undefined ? this.notdefWidth : w;
   }
 
-  
+
   textWidthPt(text, sizePt) {
     let total = 0;
     for (const ch of text) total += this.widthOf(ch.codePointAt(0));

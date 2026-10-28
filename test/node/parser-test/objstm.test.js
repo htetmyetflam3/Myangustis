@@ -4,13 +4,13 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-/* Object streams (/ObjStm, PDF 1.5+): parsePdfObjects cannot see objects
-   compressed inside them, so the pre-processing in read/decrypt.mjs rewrites
-   the file once with qpdf --object-streams=disable (the scraper repo's
-   pikepdf ObjectStreamMode.disable approach — pikepdf is libqpdf) and the
-   parser then reads plain objects. The fake-qpdf pattern follows
-   qpdf.test.mjs: a stand-in binary records its args and copies input to
-   output, so the suite needs no real qpdf anywhere. */
+
+
+
+
+
+
+
 
 const skip = process.platform === "win32";
 
@@ -53,14 +53,14 @@ test("object streams are detected by marker and expanded through qpdf", { skip }
     assert.equal(hasObjectStreams(OBJSTM_PDF), true);
     assert.equal(hasObjectStreams(PLAIN_PDF), false);
 
-    // No marker: bytes pass through and qpdf is never invoked.
+
     assert.deepEqual(await expandObjectStreams(PLAIN_PDF), PLAIN_PDF);
     assert.equal(called(), false);
 
     const messages = [];
     assert.deepEqual(
       await expandObjectStreams(OBJSTM_PDF, (line) => messages.push(line)),
-      OBJSTM_PDF, // the double copies input to output unchanged
+      OBJSTM_PDF,
     );
     assert.ok(lastArgs().includes("--object-streams=disable"));
     assert.ok(messages.some((line) => line.includes("object streams; expanded with qpdf")));

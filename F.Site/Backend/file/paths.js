@@ -1,4 +1,5 @@
 import { OUTPUT_FONT_DIR } from "../../../B.Parser/_path.js";
+import { SITE_RUNTIME_DIR, SITE_OUTPUT_DIR } from "../../_path.js";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -17,10 +18,10 @@ export function joinPath(...segments) {
   return path.join(...segments);
 }
 export const WEB = path.basename(PROJECT_ROOT);
-// Modular layout. PROJECT_ROOT resolves to Site/ (two levels up from this
-// file). Backend and Frontend stay inside it; the parser moved OUT to a
-// sibling top-level module, hence the leading ../. Every constant below
-// derives from these three roots.
+
+
+
+
 export const BACKEND_DIR = "Backend";
 export const FILE_DIR = `${BACKEND_DIR}/file`;
 export const SITE_ENTRY = "index.js";
@@ -32,14 +33,13 @@ export const PARSER_MAP_DIR = `${PARSER_DIR}/jason-map`;
 export const PARSER_MODEL_DIR = `${PARSER_DIR}/model`;
 export const PARSER_FONT_DIR = path.dirname(OUTPUT_FONT_DIR);
 export const PRASER_WEB = PARSED_ROOT;
-/* The parser is reached through its manager, which owns the worker
-   threads and lanes. There is no CLI entry any more: the API route is the
-   only way in. */
+
+
+
 export const PRASER_MANAGER = `${PARSER_DIR}/manager.js`;
-// Legacy alias for old test assertions expecting the CLI entry path.
+
 export const PRASER_JS = `${PARSER_DIR}/manager.js`;
-export const PARSER_RUNTIME_DIR =
-  String(process.env.PARSER_RUNTIME_DIR || '').trim() || PARSED_ROOT;
+export const PARSER_RUNTIME_DIR = SITE_RUNTIME_DIR;
 export const INPUT_DIR = `${PARSER_RUNTIME_DIR}/upload/input`;
 export const INPUT_TXT = `${INPUT_DIR}/txt`;
 export const INPUT_PDF = `${INPUT_DIR}/pdf`;
@@ -47,7 +47,7 @@ export const INPUT_DOCX = `${INPUT_DIR}/docx`;
 export const FIXTURE_DOCX = `${PARSED_ROOT}/File/upload/docx/zawgyi_fixture.docx`;
 export const FIXTURE_PDF = `${PARSED_ROOT}/File/upload/pdf/test.pdf`;
 export const QUARANTINE_DIR = `${PARSER_RUNTIME_DIR}/upload/quarantine`;
-export const OUTPUT_DIR = `${PARSER_RUNTIME_DIR}/.output`;
+export const OUTPUT_DIR = SITE_OUTPUT_DIR;
 export const RAW_TXT_DIR = `${OUTPUT_DIR}/txt`;
 export const ORIGINAL_DIR = `${OUTPUT_DIR}/original`;
 export const OUTPUT_DOCX_DIR = `${OUTPUT_DIR}/docx`;
@@ -94,23 +94,11 @@ export function inputDirFor(originalname = "") {
   if (ext === "docx" || ext === "doc") return INPUT_DOCX;
   return INPUT_DIR;
 }
-export function ensurePraserDirs() {
-  for (const dir of [
-    INPUT_TXT,
-    INPUT_PDF,
-    INPUT_DOCX,
-    QUARANTINE_DIR,
-    RAW_TXT_DIR,
-    ORIGINAL_DIR,
-    OUTPUT_DOCX_DIR,
-    TREE_DIR,
-    LOGS_DIR,
-    DATA_DIR,
-  ]) {
-    const target = abs(dir);
-    fs.mkdirSync(target, { recursive: true, mode: 0o700 });
-    fs.chmodSync(target, 0o700);
-  }
+export async function ensureUploadDir(originalname) {
+  const directory = abs(inputDirFor(originalname));
+  await fs.promises.mkdir(directory, { recursive: true, mode: 0o700 });
+  await fs.promises.chmod(directory, 0o700);
+  return directory;
 }
 export function ensureDataDir() {
   const dir = path.dirname(abs(DB_FILE));

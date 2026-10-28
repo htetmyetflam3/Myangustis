@@ -32,8 +32,8 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent
-sys.path.insert(0, str(ROOT / "mt"))
+ROOT = HERE.parent.parent
+sys.path.insert(0, str(HERE))
 
 from chapter_map import (  # noqa: E402
     ChapterMapError,

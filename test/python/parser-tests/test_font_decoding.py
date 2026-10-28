@@ -7,7 +7,7 @@ with a Latin ``/WinAnsiEncoding`` resource — which is normal, and happens even
 when both resources point at the SAME embedded font program — then had its
 Latin character codes reinterpreted as Myanmar glyph ids.
 
-Run:  python3 -m unittest discover -s .bin/python/parser-tests -v
+Run:  python3 -m unittest discover -s test/python/parser-tests -v
 """
 
 import os
@@ -15,7 +15,7 @@ import sys
 import unittest
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "Parser", "main", "Python", "modules"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "B.Parser", "main", "Python", "modules"))
 sys.path.insert(0, _HERE)
 
 from pdfbuild import build_pdf, simple_page_pdf, truetype_with_cmap  # noqa: E402

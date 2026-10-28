@@ -19,8 +19,10 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
+import _paths  # noqa: F401 - configure the split proofreading modules
+
 HERE = Path(__file__).resolve().parent
-MT = Path(__file__).resolve().parents[3] / "Proofreading" / "main" / "mt"
+MT = Path(__file__).resolve().parents[3] / "C.Proofreading" / "main" / "translate"
 sys.path.insert(0, str(MT))
 
 import api_translate  # noqa: E402

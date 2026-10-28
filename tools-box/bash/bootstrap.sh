@@ -7,14 +7,6 @@
 #   engine  R_Engine/init/api-server.js         FSMGR api   :9000  R_Engine/nodemon.json
 #   build   R_Site/Build/spa (vite)             SPA builder frontend/  (:5173 with --spa-dev)
 #
-# WHY EVERY WEB IS STARTED FROM THE REPO ROOT
-# Both path maps — R_Site/_file/paths.js and R_Engine/Bridge/path.js — hold
-# RELATIVE constants and resolve them against process.cwd(). Start a web from
-# its own folder and the paths double up: vite's root becomes
-# R_Site/Build/R_Site/Build/spa and the SPA answers 404 while the dev server
-# cheerfully reports "ready". Same for the static dir, the logs, every upload
-# dir. So: cd here once, and let each nodemon config's "exec" carry the entry.
-#
 # WHY THE SPA IS BUILT RATHER THAN DEV-SERVED BY DEFAULT
 # The SPA calls a relative API_BASE="/api" and R_Site/Build/spa/vite.config.js
 # defines no dev proxy, so on :5173 those calls hit vite and die. The built

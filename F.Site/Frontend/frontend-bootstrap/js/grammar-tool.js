@@ -1,4 +1,5 @@
 import confetti from "canvas-confetti";
+import { onFileDrop } from "./file-drop.js";
 import { onOverlayOpen } from "./overlay.js";
 import { detect } from "./detect.js";
 import { probeScript } from "./script.js";
@@ -165,20 +166,7 @@ export function initGrammarTool() {
     showToast("All Burmese spelling and grammar issues resolved!");
     confetti({ particleCount: 60, spread: 80 });
   });
-  drop.addEventListener("dragover", (event) => {
-    event.preventDefault();
-    drop.classList.add("is-over");
-  });
-  drop.addEventListener("dragleave", (event) => {
-    event.preventDefault();
-    drop.classList.remove("is-over");
-  });
-  drop.addEventListener("drop", (event) => {
-    event.preventDefault();
-    drop.classList.remove("is-over");
-    const [file] = event.dataTransfer.files;
-    if (file) void processFile(file);
-  });
+  onFileDrop(drop, (file) => { void processFile(file); });
   document.getElementById("grFile").addEventListener("change", (event) => {
     const [file] = event.target.files;
     if (file) void processFile(file);

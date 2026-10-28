@@ -1,18 +1,18 @@
-// FILE: backend/db/db.test.js
-//
-// Replaces the old backend/db/db_test.js, which was not a test:
-//   - no npm script reached it (test:unit globs *.test.js, not *_test.js, and
-//     did not include backend/db/ at all);
-//   - it wrote into the TRACKED seed database at .data/site.db, inserting rows
-//     into users/sessions/user_logs and bumping sqlite_sequence, with no
-//     cleanup, so running it dirtied a committed artifact;
-//   - it wrapped everything in try/catch + console.log, so it exited 0 even
-//     when it failed — a second run threw UNIQUE constraint failed and still
-//     reported success;
-//   - its header pointed at db.migration.test.mjs, which does not exist.
-//
-// This runs against a throwaway file, asserts instead of logging, and covers
-// the identity/quota layer that previously had no unit coverage at all.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -57,7 +57,7 @@ test('every table the application uses round-trips a row', (t) => {
   assert.equal(db.prepare('SELECT status FROM submissions WHERE submission_id = ?').get('form-1').status, 'pending');
   assert.equal(db.prepare('SELECT count(*) n FROM user_logs WHERE user_id = ?').get(userId).n, 1);
 
-  // created_at defaults are ISO-8601 UTC TEXT, which must sort as strings.
+
   const created = db.prepare('SELECT created_at FROM users WHERE id = ?').get(userId).created_at;
   assert.match(created, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
 });
@@ -161,8 +161,8 @@ test('checkQuota agrees with consumeQuota about whether a submission is allowed'
 test('an unknown user cannot consume quota', (t) => {
   const db = freshDb(t);
   const request = createRequest({ db });
-  // Without an explicit DB-free licence an unknown id is refused outright —
-  // it must not be able to fall through to a fresh cookie allowance.
+
+
   const r = request.consumeQuota({ userId: 99999 });
   assert.equal(r.allowed, false);
   assert.equal(request.checkQuota({ userId: 99999 }).allowed, false);

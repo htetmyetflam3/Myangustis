@@ -16,8 +16,8 @@ export const MAX_INPUT_MB = positiveLimit('UPLOAD_MAX_MB', 64, 2048);
 export const MAX_INPUT_BYTES = MAX_INPUT_MB * 1024 * 1024;
 export const MAX_PAGES = positiveLimit('PRASER_MAX_PAGES', 10_000, 500_000);
 export const MAX_TEXT_CHARS = positiveLimit('PRASER_MAX_TEXT_CHARS', 20_000_000, 1_000_000_000);
-// Both `default` and `manual` methods run in the Praser extraction lane and
-// share this budget. OCR has a separate base plus a per-page allowance.
+
+
 export const WORKER_TIMEOUT_MS = positiveLimit('PRASER_TIMEOUT_MS', 120_000, 3_600_000);
 export const OCR_BASE_TIMEOUT_MS = positiveLimit(
   'PRASER_OCR_TIMEOUT_MS',

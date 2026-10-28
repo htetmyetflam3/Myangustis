@@ -1,7 +1,5 @@
-// External callers supply their own hash through BindEngine.
-// Run: node --test test/node/engine-test/caller-contract.test.js
 import { test } from 'node:test';
-import { randomUUID } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -9,154 +7,106 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO = path.resolve(HERE, '..', '..', '..');
-
-// The door under test — imported exactly as an external service would.
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const engineEntry = await import('../../../Architecture/_index.js');
 const { BindEngine } = engineEntry;
-const facade = await import(path.join(REPO, 'Bridge', 'path.js'));
-
 const SAMPLE = 'ကောင်းကင်သည် ကြည်လင်သည်။\nအင်ဂျင် စမ်းသပ်ချက်။\n';
+const callerHash = () => randomBytes(36).toString('hex');
 
 test('engine entry exposes the single-boundary surface only', () => {
   assert.equal(typeof BindEngine, 'function');
-  assert.deepEqual(Object.keys(engineEntry).sort(), ['BindEngine', 'JUNK_DIR']);
-  assert.deepEqual(Object.keys(facade), ['BindEngine']);
-  assert.equal(facade.BindEngine, BindEngine);
+  assert.deepEqual(Object.keys(engineEntry).sort(), ['BindEngine', 'ENV_RESULT', 'JUNK_DIR', 'getEngineData', 'getLogen']);
+  assert.equal(fs.existsSync(path.join(REPO, 'Bridge')), false);
 });
 
-test('SCRAPER call: BindEngine("scraper") runs path B (syllables only, memory head)', async () => {
-  const hash = randomUUID();
-  const result = await BindEngine('scraper', { hash, sourceText: SAMPLE });
-  assert.equal(result.hash, hash);
-
-  assert.equal(typeof result.hash, 'string');
-  assert.ok(result.hash.length > 0);
-  assert.ok(result.syllablePath, 'path B must return a syllable output path');
-  assert.equal(result.rawPosPath, null, 'scraper never builds the POS tagger');
-  assert.ok(result.lineCount >= 2, 'one count per input line');
-
-  const text = result.syllable;
-  assert.ok(text.includes('က'), 'syllable output carries Burmese surfaces');
-  assert.ok(fs.existsSync(result.syllablePath));
+test('hash-free syllable calls stream Burmese lines without POS', async () => {
+  const lines = await Array.fromAsync(BindEngine({ flag: 'syllable', sourceText: SAMPLE }));
+  assert.equal(lines.length, 2);
+  assert.ok(lines[0].includes('က'));
+  assert.ok(!lines[0].includes('{'));
 });
 
-test('PROOFREADING call: BindEngine("proofreading") runs path A (tagger, dual writers)', async () => {
-  const result = await BindEngine('proofreading', { hash: randomUUID(), sourceText: SAMPLE });
-
-  assert.ok(result.syllablePath, 'proofreading keeps the syllable view');
-  assert.ok(result.rawPosPath, 'proofreading requires the raw POS view');
-  // Path A counts fullstopHolder sentence units (a unit completes at the
-  // second ။), not input lines — the two-line sample yields one unit.
-  assert.ok(result.lineCount >= 1);
-
-  const rawPos = result.rawPos;
-  assert.match(rawPos, /\{[^{}]+\}/, 'raw POS view carries tag markers');
-  assert.ok(rawPos.includes('<eos>'), 'sentence end markers survive the kernel');
+test('hash-free POS calls stream paired syllable and raw POS views', async () => {
+  const units = await Array.fromAsync(BindEngine({ flag: 'pos', sourceText: SAMPLE }));
+  assert.ok(units.length >= 1);
+  assert.ok(units[0].syllable.includes('က'));
+  assert.match(units[0].rawPos, /\{[^{}]+\}/);
+  assert.ok(units[0].rawPos.includes('<eos>'));
 });
 
-test('memory head and file head are interchangeable for proofreading', async () => {
-  const tmp = path.join(os.tmpdir(), `caller-contract-${process.pid}.txt`);
-  fs.writeFileSync(tmp, SAMPLE, 'utf8');
-  try {
-    const mem = await BindEngine('proofreading', { hash: randomUUID(), sourceText: SAMPLE });
-    const file = await BindEngine('proofreading', { hash: randomUUID(), inputPath: tmp });
-    const a = mem.rawPos;
-    const b = file.rawPos;
-    // Same engine output modulo the hash-named file path header lines.
-    assert.equal(a.replace(/\s+/g, ' ').trim(), b.replace(/\s+/g, ' ').trim());
-  } finally {
-    fs.rmSync(tmp, { force: true });
-  }
+test('caller-read file text and memory text are interchangeable for proofreading', async t => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'caller-contract-'));
+  t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
+  const file = path.join(tmp, 'input.txt');
+  fs.writeFileSync(file, SAMPLE, 'utf8');
+  const { tagProofreading } = await import(path.join(REPO, 'C.Proofreading', 'index.js'));
+  const memory = await tagProofreading({ sourceText: SAMPLE });
+  const fromFile = await tagProofreading({ source: file });
+  assert.deepEqual(fromFile, memory);
 });
 
-test('proofreading bridge wrapper: both/syllable views and work-dir retarget', async () => {
-  const { tagProofreading } = await import(
-    path.join(REPO, 'Bridge', 'proofreading-tagger.js')
-  );
-  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'proof-work-'));
-  try {
-    const both = await tagProofreading({ sourceText: SAMPLE, work, views: 'both' });
-    assert.ok(both.syllablePath);
-    assert.ok(both.rawPosPath);
-    assert.equal(typeof both.rawPos, 'string');
-    assert.equal(typeof both.syllable, 'string');
-
-    const syllableOnly = await tagProofreading({
-      sourceText: SAMPLE,
-      work,
-      views: 'syllable',
-    });
-    assert.equal(syllableOnly.rawPosPath, null);
-    assert.equal(syllableOnly.rawPos, null);
-    assert.ok(syllableOnly.syllablePath);
-  } finally {
-    fs.rmSync(work, { recursive: true, force: true });
-  }
+test('proofreading caller collects both views or only syllables without output files', async t => {
+  const { tagProofreading } = await import(path.join(REPO, 'C.Proofreading', 'index.js'));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'proof-work-'));
+  t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
+  const both = await tagProofreading({ sourceText: SAMPLE, views: 'both' });
+  assert.match(both.rawPos, /\{[^{}]+\}/);
+  assert.ok(both.syllable.includes('က'));
+  const syllables = await tagProofreading({ sourceText: SAMPLE, views: 'syllable' });
+  assert.equal(syllables.rawPos, null);
+  assert.ok(syllables.syllable.includes('က'));
+  assert.deepEqual(fs.readdirSync(tmp), []);
+  await assert.rejects(tagProofreading({ sourceText: SAMPLE, work: tmp }), /not supported/);
 });
 
-test('scraper segment_bridge CLI: one facade import, U+001D stdin contract preserved', () => {
+test('scraper segment CLI keeps its U+001D stdin contract', () => {
   const bin = path.join(REPO, 'E.Scraper', 'main', 'extend', 'scraper-segmented.js');
   const source = fs.readFileSync(bin, 'utf8');
-  // Static guard: the old deep-import shape must never come back.
-  assert.ok(!source.includes('MonoSyllabism/'), 'no deep engine imports in the scraper bridge');
-  assert.ok(source.includes('BindEngine'), 'the scraper bridge calls the single boundary');
-  assert.ok(source.includes('../../_index.js'), 'goes through the component entry');
-
-  const outFile = path.join(os.tmpdir(), `segment-out-${process.pid}.txt`);
-  const SEP = '\u001d';
-  const run = spawnSync(process.execPath, [bin, outFile], {
-    input: ['ကောင်းကင် စမ်းသပ်', 'နေ့သစ် မနက်ဖြန်', ''].join(SEP),
-    encoding: 'utf8',
-  });
-  assert.equal(run.status, 0, run.stderr || run.stdout);
-  const out = fs.readFileSync(outFile, 'utf8');
-  const docs = out.split(SEP);
-  assert.equal(docs.length, 3, 'document separator preserved end to end');
-  assert.ok(docs[0].trim().length > 0);
-  assert.ok(docs[1].trim().length > 0);
-  assert.equal(docs[2], '', 'empty input document maps to empty output document');
-  fs.rmSync(outFile, { force: true });
-});
-
-test('concurrent callers keep workspace and caller-supplied ids separate', async () => {
-  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'bridge-concurrent-'));
+  assert.ok(!source.includes('MonoSyllabism/'));
+  assert.ok(source.includes('../../_index.js'));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'segment-out-'));
   try {
-    const dirs = [path.join(work, 'first'), path.join(work, 'second')];
-    const hashes = dirs.map(() => randomUUID());
-    const results = await Promise.all(dirs.map((dir, i) =>
-      BindEngine('scraper', { hash: hashes[i], sourceText: SAMPLE, work: dir })));
-    for (let i = 0; i < results.length; i++) {
-      assert.equal(results[i].hash, hashes[i]);
-      assert.equal(path.dirname(results[i].syllablePath), path.join(dirs[i], 'out'));
-      assert.ok(results[i].syllable.includes('က'));
-    }
-    assert.notEqual(results[0].hash, results[1].hash);
+    const outFile = path.join(tmp, 'result.txt');
+    const SEP = '\u001d';
+    const run = spawnSync(process.execPath, [bin, outFile], {
+      input: ['ကောင်းကင် စမ်းသပ်', 'နေ့သစ် မနက်ဖြန်', ''].join(SEP), encoding: 'utf8',
+    });
+    assert.equal(run.status, 0, run.stderr || run.stdout);
+    const docs = fs.readFileSync(outFile, 'utf8').split(SEP);
+    assert.equal(docs.length, 3);
+    assert.ok(docs[0].trim());
+    assert.ok(docs[1].trim());
+    assert.equal(docs[2], '');
   } finally {
-    fs.rmSync(work, { recursive: true, force: true });
+    fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
 
-test('failed run restores workspace and does not block the next caller', async () => {
+test('concurrent hashed syllable callers receive separate positional streams', async () => {
+  const inputs = [SAMPLE, 'မြန်မာစာ။\n'];
+  const results = await Promise.all(inputs.map(sourceText =>
+    Array.fromAsync(BindEngine({ flag: 'syllable', hash: callerHash(), sourceText }))));
+  assert.equal(results[0][0].index, 'က');
+  assert.equal(results[1][0].index, 'မ');
+});
+
+test('invalid calls do not alter workspace or block a subsequent call', async () => {
   const { GetOutputDir, GetLogDir } = await import('../../../Architecture/Engine/_path.js');
   const previous = [GetOutputDir(), GetLogDir()];
-  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'bridge-failure-'));
-  try {
-    await assert.rejects(BindEngine('scraper', { hash: randomUUID(), work }),
-      error => String(error).includes('inputPath or sourceText'));
-    assert.deepEqual([GetOutputDir(), GetLogDir()], previous);
-    const result = await BindEngine('scraper', { hash: randomUUID(), work, sourceText: SAMPLE });
-    assert.ok(result.syllable.includes('က'));
-    assert.deepEqual([GetOutputDir(), GetLogDir()], previous);
-  } finally {
-    fs.rmSync(work, { recursive: true, force: true });
-  }
+  assert.throws(() => BindEngine({ flag: 'syllable', hash: callerHash() }), /sourceText/);
+  const result = await Array.fromAsync(BindEngine({ flag: 'syllable', sourceText: SAMPLE }));
+  assert.ok(result[0].includes('က'));
+  assert.deepEqual([GetOutputDir(), GetLogDir()], previous);
 });
 
-for (const hash of [undefined, null, '', 123]) {
-  test(`BindEngine rejects missing/invalid external hash: ${String(hash)}`, async () => {
-    await assert.rejects(BindEngine('scraper', { hash, sourceText: SAMPLE }),
-      error => error === 'BindEngine: hash is required');
+for (const invalid of ['', 123, 'short']) {
+  test(`BindEngine rejects invalid external hash: ${String(invalid)}`, () => {
+    assert.throws(() => BindEngine({ flag: 'syllable', hash: invalid, sourceText: SAMPLE }), /72/);
   });
 }
+
+test('missing and null hashes select internal calls', async () => {
+  const a = await Array.fromAsync(BindEngine({ flag: 'syllable', sourceText: SAMPLE }));
+  const b = await Array.fromAsync(BindEngine({ flag: 'syllable', sourceText: SAMPLE, hash: null }));
+  assert.deepEqual(a, b);
+});

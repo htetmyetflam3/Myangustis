@@ -23,7 +23,7 @@ must be brought into compliance with this Agreement or destroyed.
 "Software" means the Myangustis program, including all source code, object
 code, scripts, syllable/cache trees, codepage registries, shape/vector maps,
 models, data files, configuration, tooling (tools-box/), Architecture/
-Engine, Bridge, C.Proofreading, D.Parser, E.Scraper, F.Site (both Backend
+Engine, Bridge, B.Parser, C.Proofreading, E.Scraper, F.Site (both Backend
 and Frontend), test fixtures, documentation, and any updates, modifications,
 or derivative works thereof contained in this repository.
 
@@ -150,9 +150,6 @@ huggingface_hub (Apache-2.0), pikepdf (MPL-2.0 — used unmodified),
 pyarrow (Apache-2.0), pypdf (BSD), requests (Apache-2.0), selenium
 (Apache-2.0), tenacity (Apache-2.0), trio (MIT/Apache-2.0), trio-websocket
 (MIT), typing_extensions (PSF/MIT), urllib3 (MIT), websocket-client (Apache-2.0).
-
-The github-cli package was removed after audit because its license field
-was a non-SPDX custom URL and it was not imported anywhere in the codebase.
 
 Nothing in this Agreement modifies or restricts your rights in those
 third-party components under their own upstream licenses; this proprietary

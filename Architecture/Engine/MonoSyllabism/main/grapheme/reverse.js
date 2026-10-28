@@ -1,12 +1,12 @@
-// FILE: main/grapheme/reverse.js
-/**
- * walkReverse — lookup in grouped RTL tree with action instruction.
- * 
- * @param {object} reverseTree — grouped rtl JSON (St-1, St-2, ...)
- * @param {string} syllable — full accumulated syllable (root + body)
- * @param {string} rootTok — root character
- * @returns {object} { action: 'continue'|'emit'|'retry'|'fail', id: string|null, cut?: number }
- */
+
+
+
+
+
+
+
+
+
 export function walkReverse(reverseTree, syllable, rootTok) {
   const body = syllable.slice(1);
   if (!body) {

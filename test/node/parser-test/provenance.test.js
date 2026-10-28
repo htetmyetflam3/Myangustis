@@ -1,15 +1,15 @@
-/**
- * FILE: Parsed/parser/test/provenance.test.mjs
- *
- * Covers the authoring register (core/provenance.mjs) and the /Info reader it
- * depends on (read/pdf-extract.mjs extractMetadata).
- *
- * The metadata tests use the real fixtures on purpose. extractMetadata looked
- * correct for a long time while returning {} for every PDF in existence,
- * because it searched the Catalog for a key that lives in the trailer. A unit
- * test with a hand-made dictionary would have passed. Only real files catch
- * this, so these assert actual values from actual documents.
- */
+
+
+
+
+
+
+
+
+
+
+
+
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -22,19 +22,19 @@ import { extractMetadata, parsePdfObjects } from "../../../B.Parser/main/parser/
 import { startRecord, note, appendRecord, registerPath } from "../../../B.Parser/main/parser/core/provenance.js";
 
 const REPO = path.dirname(path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.url)))));
-// working-branch mapping: the fixtures this suite wants live in the upload
-// books here, not under Parsed/fixtures (which exists on no branch).
+
+
 const fixture = (name) => path.join(REPO, "Junk/Parser/upload/pdf", name);
 const readInfo = (file) => {
   const bytes = fs.readFileSync(file);
   return extractMetadata(parsePdfObjects(bytes), bytes);
 };
 
-/* ── the /Info reader ───────────────────────────────────────────────── */
+
 
 test("reads /Info from the trailer, not the catalog", () => {
   const info = readInfo(fixture("bg-mlc-1-1.pdf"));
-  // Every value here is a hex UTF-16BE string; the old reader saw none of them.
+
   assert.equal(info.Author, "Tyler Davis");
   assert.equal(info.Creator, "Writer");
   assert.equal(info.Producer, "LibreOffice 3.6");
@@ -46,7 +46,7 @@ test("decodes a second real document with different producers", (t) => {
   if (!fs.existsSync(file)) return t.skip("fixture exists on no branch of this repo");
   const info = readInfo(file);
   assert.equal(info.Producer, "IntSig");
-  assert.equal(info.Author, "CamScanner");  // i.e. this one is a scan -> OCR path
+  assert.equal(info.Author, "CamScanner");
 });
 
 test("a PDF with no /Info yields {} rather than throwing", () => {
@@ -54,7 +54,7 @@ test("a PDF with no /Info yields {} rather than throwing", () => {
   assert.deepEqual(extractMetadata(objects, Buffer.from("trailer<</Size 1>>")), {});
 });
 
-/* ── the register ───────────────────────────────────────────────────── */
+
 
 const tmpdir = () => fs.mkdtempSync(path.join(os.tmpdir(), "linga-register-"));
 
@@ -68,9 +68,9 @@ test("one document appends one greppable, parseable entry", () => {
   assert.equal(appendRecord(record, { file }), file);
 
   const text = fs.readFileSync(file, "utf8");
-  // greppable: the bare filename on its own line
+
   assert.match(text, /^bg-mlc-1-1\.pdf$/mu);
-  // and the path is kept so the source can be found again
+
   const body = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
   assert.equal(body.sourcePath, "/somewhere/bg-mlc-1-1.pdf");
   assert.equal(body.pages, 12);
@@ -114,10 +114,10 @@ test("PRASER_REGISTER=<path> overrides the default location", () => {
 
 test("a register that cannot be written never fails the conversion", () => {
   const lines = [];
-  /* A FILE standing where a directory is needed: mkdirSync fails with
-     ENOTDIR immediately. Do NOT reach for a /proc path here -- recursive
-     mkdir under /proc does not fail, it HANGS, and that hung this whole
-     file for long enough that it got parked instead of diagnosed. */
+
+
+
+
   const blocker = path.join(tmpdir(), "not-a-directory");
   fs.writeFileSync(blocker, "x");
   const unwritable = path.join(blocker, "register.log");
@@ -129,7 +129,7 @@ test("a register that cannot be written never fails the conversion", () => {
 test("note() ignores undefined so call sites stay one-liners", () => {
   const record = startRecord("x.pdf");
   note(record, { pages: undefined, metadata: null });
-  assert.equal(record.pages, null);     // untouched default
-  assert.equal(record.metadata, null);  // explicit null is recorded
+  assert.equal(record.pages, null);
+  assert.equal(record.metadata, null);
   assert.equal(note(null, { pages: 1 }), null);
 });

@@ -1,26 +1,26 @@
-import { DataFile, MasterFile } from '../../../_path.js';
-import { readSecureText, readSecureJson } from '../../../../../.data/secure.js';
+import { DataFile, MasterFile, getEngineData } from '../../../_path.js';
+const { MASTER_ENC, readMasterText, readSecureText, readSecureJson } = await getEngineData();
 import { TREE_DIR, verifyCacheTree } from './cache-integrity.js';
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
 
-// Moved from helper/utilities.js (helper/ deleted): secure JSON load with
-// plaintext fallback, used by the tree getters below.
+
+
 export function parseJson(filePath = DataFile() + '/sid-syllables.json') {
   return readSecureJson(filePath);
 }
 
-// ============================================
-// SYLLABLE TREE (forward + RTL)
-// ============================================
+
+
+
 
 let syllableTree = null;
 let rtlTree = null;
 
 export function getTree() {
   if (syllableTree) return syllableTree;
-  verifyCacheTree(); // built-in manifest gate — never load an unverified trie
+  verifyCacheTree();
   const p = path.join(TREE_DIR, 'syllable.tree.json');
   syllableTree = parseJson(p);
   if (!syllableTree) throw new Error(`Syllable tree failed to parse: ${p}`);
@@ -44,14 +44,14 @@ export function resetRtlTree() {
   rtlTree = null;
 }
 
-// Syllable tree steps: St-1, St-2, ... St-F
+
 export function getStepKey(entry, stepNum) {
   if (!entry) return 'St-F';
   const numKey = `St-${stepNum}`;
   return entry[numKey] ? numKey : 'St-F';
 }
 
-// Syllable stepData is an array of { [token]: [...ids] }
+
 export function findEntry(stepData, s, pos) {
   if (!stepData) return null;
   for (const item of stepData) {
@@ -63,9 +63,9 @@ export function findEntry(stepData, s, pos) {
   return null;
 }
 
-// ============================================
-// POS TREE
-// ============================================
+
+
+
 
 let posTree = null;
 
@@ -81,7 +81,7 @@ export function resetPosTree() {
   posTree = null;
 }
 
-// POS tree steps: St-1, St-2, ... (capital S, matching builder)
+
 export function getPosStepKey(stepNum) {
   return `St-${stepNum}`;
 }
@@ -94,25 +94,25 @@ export function hasPosStep(node, stepNum) {
   return node?.[`St-${stepNum}`] !== undefined;
 }
 
-// ============================================
-// SYLLABLE DATA LOADING (moved from graph/shape.js (ex-builder/_build.js))
-// ============================================
 
-/* master.json keeps the syllable list either at  "syllables": [ ... ]
-   or nested as  "syllables": { "burmese": [ ... ] }. Both shapes stream
-   through one line loop — only the moment the string array OPENS differs.
-   `for await` accepts a plain array as well as a readline interface, so the
-   decrypted-text path and the plaintext-file path share this machine. */
+
+
+
+
+
+
+
+
 async function* _syllablesFromLines(lines) {
-  let inSection = false;   // saw the "syllables" key
-  let collecting = false;  // inside its string array
+  let inSection = false;
+  let collecting = false;
   for await (const line of lines) {
     const trimmed = line.trim();
     if (!inSection) {
-      const m = trimmed.match(/^"syllables"\s*:\s*([\[{])/);
+      const m = trimmed.match(/^"syllables"\s*:\s*([\x5b{])/);
       if (m) {
         inSection = true;
-        collecting = m[1] === '['; // bare array opens the list at once
+        collecting = m[1] === '[';
       }
       continue;
     }
@@ -133,7 +133,10 @@ async function _collect(lines) {
 }
 
 export async function streamSyllables(jsonPath) {
-  // If an encrypted <file>.enc exists, decrypt instead of streaming plaintext.
+  const resolved = path.resolve(jsonPath);
+  if (resolved === MASTER_ENC || `${resolved}.enc` === MASTER_ENC) {
+    return _collect(readMasterText().split('\n'));
+  }
   if (fs.existsSync(jsonPath + '.enc')) {
     const text = readSecureText(jsonPath);
     return _collect(text.split('\n'));
@@ -149,14 +152,14 @@ export async function loadSyllablesData(jsonPath = MasterFile()) {
   return syllables;
 }
 
-// ============================================
-// MAPPED-FILE LOADING (single home for syllable.mapped.txt parsing)
-// ============================================
-// Canonical reader — serves the build file-fallback (build.js runBuildPos)
-// and the runtime lookup (mapper/map/idmapper.js). Returns rows or null when the
-// file is absent (callers keep their own missing-file policy: build throws,
-// lookup warns). opts.skipComments (default true): lookup behavior; build
-// passes false to preserve its exact legacy parse. opts.onBadLine(n, line).
+
+
+
+
+
+
+
+
 export function loadMappedRows(treeDir = TREE_DIR, opts = {}) {
   const { skipComments = true, onBadLine = null } = opts;
   verifyCacheTree(treeDir);

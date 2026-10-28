@@ -38,7 +38,7 @@ test('plain text requests require upload metadata too', () => {
   assert.throws(() => readUploadMetadata({}, null), /metadata JSON/);
   const textIntent = {
     ...intent,
-    // already text: nothing to parse, so the handling is "false"
+
     job: 'false',
     method: undefined,
     fileFormat: 'txt',
@@ -71,11 +71,11 @@ test('rejects demo metadata because demos never reach the server', () => {
   );
 });
 test('accepts tested large PDFs and rejects only above the parser page cap', () => {
-  /* The cap is CONFIGURED, so the test has to read it the way the module
-     does. Hardcoding the default made this pass under `npm test` -- which
-     does not load .env -- while asserting something untrue of a deployment
-     that sets PRASER_MAX_PAGES. Caught by running the suite inside the
-     server, where .env is loaded. */
+
+
+
+
+
   const raw = process.env.PRASER_MAX_PAGES;
   const parsed = /^\d+$/.test(String(raw ?? '')) ? Number.parseInt(raw, 10) : 10_000;
   const cap = parsed >= 1 && parsed <= 500_000 ? parsed : 10_000;
@@ -100,15 +100,15 @@ test('accepts tested large PDFs and rejects only above the parser page cap', () 
 test('rejects contradictory routing combinations', () => {
   const ocrOnText = { ...intent, job: 'ocr', content: 'text' };
   assert.throws(() => readUploadMetadata({ metadata: JSON.stringify(ocrOnText) }, file), /OCR handling/);
-  // mixed and null are one fact under two headings; neither stands alone
+
   const mixedNoNull = { ...intent, content: 'mixed' };
   assert.throws(() => readUploadMetadata({ metadata: JSON.stringify(mixedNoNull) }, file), /require each other/);
   const nullNotMixed = { ...intent, job: 'null' };
   assert.throws(() => readUploadMetadata({ metadata: JSON.stringify(nullNotMixed) }, file), /require each other/);
-  // the other column's labels are not synonyms
+
   const wrongColumn = { ...intent, source: 'analysis' };
   assert.throws(() => readUploadMetadata({ metadata: JSON.stringify(wrongColumn) }, file), /converter label/);
-  // the mode decides the output
+
   const skipToDocx = { ...intent, desired: 'docx', conversion: 'docx' };
   assert.throws(() => readUploadMetadata({ metadata: JSON.stringify(skipToDocx) }, file), /cannot produce docx/);
   const carryToTxt = { ...intent, method: 'manual' };
@@ -156,7 +156,7 @@ test('each column carries only its own labels, and desired is the output', () =>
   assert.equal(converter('extracting').source, 'converter');
   assert.equal(converter('extracting').job, 'extracting');
   assert.equal(converter('extracting', 'pdf').desired, 'pdf');
-  // analysis spells the handling `method` and the mode `task`, and has no job
+
   assert.equal(analysis('extracting').method, 'extracting');
   assert.equal(analysis('extracting').task, 'default');
   assert.equal(analysis('extracting').job, undefined);

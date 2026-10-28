@@ -19,3 +19,120 @@
 - Six sealed-dictionary tests require `MASTER_JSON_KEY`, which is unavailable in this environment; they remain enabled automatically when that key is supplied.
 - Two existing skips require unavailable PDF/OCR fixtures.
 - This result covers the complete Node suite invoked by `npm test`, not an unexecuted Python or deployed-service suite.
+
+## [Unreleased] - 2026-10-28 — Engine data and cleanup
+### Added
+- Add a JavaScript bridge for Python callers to access the engine-owned sealed data.
+- Add a JavaScript comment cleaner that preserves ESLint directives and meaningful empty-block comments.
+### Changed / Fixed / Removed
+- Move sealed engine data to `Architecture/Engine/.data`, with lazy access through the shared path chain and no root `.data` fallback.
+- Route Python POS comparison and tagging through the engine instead of maintaining a separate Python POS code map.
+- Remove the obsolete scraper run-end text flush; per-file upload processing continues to segment and write Parquet rows.
+- Remove ordinary JavaScript comments while retaining ESLint and tool directives, and remove the obsolete package-removal explanation from the license.
+## [Unreleased] - 2026-10-28 — Engine master cache
+### Changed / Fixed / Removed
+- Route master-data consumers and fingerprint requests through the shared engine data entry, including the proofreading register tool.
+- Cache parsed master data in memory with caller isolation and source/key invalidation; retain the encrypted disk cache and existing verified tree caches.
+- Add synthetic encrypted-master and tree-cache regression tests.
+
+## [Unreleased] - 2026-10-28 — Python workspace environment
+### Changed / Fixed / Removed
+- Load the Python workspace environment through `index-path.py`, using the same root and engine-data sources and precedence as the Node workspace entry.
+- Migrate the Python tools from `secretloader.py` and remove that obsolete loader; add Python/Node environment parity tests.
+
+## [Unreleased] - 2026-10-28 — Parser JSON maps
+### Changed / Fixed / Removed
+- Load parser JSON maps on demand through one source-aware in-memory cache, with isolated return values and regression tests.
+- Correct parser workspace and scraper integration paths to `B.Parser`; retain the existing `E.Scraper` workspace.
+
+## [Unreleased] - 2026-10-28 — Shared logging and proofreading paths
+### Changed / Fixed / Removed
+- Consolidate server-side logging implementations and helpers into root `logen.js`, accessed by components through their index/path chains; leave browser-side logging unchanged.
+- Move the proofreading tagger into `C.Proofreading/main` and resolve its engine binding through the proofreading path chain.
+- Preserve shared event-bus behavior and append-only engine logs; add logging-chain and relocated-tagger tests.
+
+## [Unreleased] - 2026-10-29 — Streaming engine bridge
+### Changed / Fixed / Removed
+- Replace signature dispatch with one flag-driven, string-input `BindEngine`: syllables stream per line, POS streams paired syllable and tagged views, and hashed POS returns the guard placeholder.
+- Limit hashed callers to two active slots and preserve the old five-file debug output under `Junk/output`; retain the previous bridge implementations in the tools archive.
+- Migrate the scraper, site, proofreading tools and tools API to the new boundary. Public tokenizer processing now accepts text in POST bodies; the former file-readback GET routes return 405.
+- Update caller, API, debug, workspace and environment-chain tests for the streaming contract.
+### Verification
+- Node: 252 tests, 244 passed, 8 skipped; both frontend builds passed with existing bundle-size warnings.
+- Python: 316 passed, 17 failed, 6 skipped, 8 errors and 35 subtests passed; failures and collection errors match the prior baseline involving unavailable source modules and fixtures.
+- Targeted ESLint and the bridge, caller, public API, tools API and environment-chain tests passed.
+
+## [Unreleased] - 2026-10-29 — Proofreading path and DOCX repairs
+### Changed / Fixed / Removed
+- Regenerate `episodes.docx` from the tracked Chinese and Burmese sources using the verified 195 chapter pairs; restore the title CLI regression and fix the moved DOCX generator imports and source paths.
+- Point review, names, chapter-map, translation and dictionary inventory paths at their current directories; make the MCP entry discover its split modules and generate client configs for the actual CLI.
+- Use the engine mapper loader for imposter-table tests, retain the sealed dictionary tests and report loader failures, and update grammar tests for JSON without the retired runtime guard. The comparison POS view remains unported.
+- Replace the unrelated `docx` dependency with `python-docx`, as used by the generator.
+### Verification
+- Node: 252 tests, 244 passed, 8 skipped. Targeted Python: 128 passed. Targeted ESLint and `git diff --check` passed.
+- Full Python: 333 passed, 11 failed, 3 skipped, 4 collection errors, and 35 subtests passed. Six failures need `MASTER_JSON_KEY`; one needs the unported comparison POS view; four failures and four collection errors involve missing `agent_work`, `agent_english`, or `audit_source` modules. These tests remain in place.
+
+## [Unreleased] - 2026-10-29 — Remove tests for absent modules
+### Changed / Fixed / Removed
+- Remove tests that require the absent `agent_work`, `agent_english` or `audit_source` modules; retain independent chapter-selection, title, verse and CLI-alias coverage.
+### Verification
+- Focused Python: 34 passed, 18 subtests passed. Full Python: 343 passed, 7 failed, 3 skipped, 35 subtests passed; six failures require `MASTER_JSON_KEY`, and one requires the unported comparison POS view. No collection errors.
+- Node: 252 tests, 244 passed, 8 skipped.
+
+## [Unreleased] - 2026-10-29 — Remove root Bridge directory
+### Changed / Fixed / Removed
+- Remove the root `Bridge/path.js` re-export and its directory; callers use the shared engine entry instead.
+- Remove the obsolete schema and bootstrap references, and verify the root Bridge directory stays absent.
+### Verification
+- Node: 244 passed, 8 skipped; targeted engine and logging tests: 14 passed. Schema JSON, targeted ESLint, shell syntax and `git diff --check` passed.
+- Python: 343 passed, 7 failed, 3 skipped and 35 subtests passed; the same six sealed-dictionary key failures and one unported comparison POS failure remain.
+
+## [Unreleased] - 2026-10-29 — Site and Parser workspaces
+### Changed / Fixed / Removed
+- Route Site runtime output and uploads through `index-path.js` → Site `_index.js` → `_path.js`, using `Junk/Site` or the Site directory when the chain fails; load the Site-local `.env` on fallback. Existing database and frontend build locations remain unchanged.
+- Create Site upload, original and other subdirectories only as needed; preserve previous outputs, private directory modes and the existing runtime override.
+- Route Parser outputs through its root chain to `Junk/Parser`, or `B.Parser/.output` on fallback. The Parser no longer reads a component-local `.env` or creates unrelated upload and font directories; the shared root still loads its own environment normally.
+- Ignore generated Site runtime uploads and test real Parser output, Site upload round trips, local fallbacks and existing-file preservation.
+### Verification
+- Node: 255 tests, 247 passed, 8 skipped. Both frontend builds passed with existing bundle-size warnings; targeted ESLint and `git diff --check` passed.
+- Python: 343 passed, 7 failed, 3 skipped and 35 subtests passed; six failures require `MASTER_JSON_KEY` and one requires the unported comparison POS view.
+- Site backend started using a temporary database and returned HTTP 200 from `/healthz`. Fallback path/output behavior was tested separately; complete standalone operation still requires the shared logger and other service dependencies.
+
+## [Unreleased] - 2026-10-29 — Shared engine entry holder
+### Changed / Fixed / Removed
+- Run the existing per-line entry holder after normalization and segmentation in both syllable and POS lanes. POS then passes those lines through its two-full-stop holder before tagging; debug uses the same chain.
+- Wrap the existing syllable formatter for hashed positional streams, preserving non-debug no-file output, the web slot limit and paired syllable/POS output.
+- Add holder ordering, cross-line grouping, lazy cancellation and positional-wrapper tests; compare representative outputs with the preceding implementation.
+### Verification
+- Node: 258 tests, 250 passed, 8 skipped; targeted ESLint and `git diff --check` passed.
+- Python: 343 passed, 7 failed, 3 skipped and 35 subtests passed; six failures need `MASTER_JSON_KEY`, and one needs the unported comparison POS view.
+
+## [Unreleased] - 2026-10-29 — Bound entry-holder buffer
+### Changed / Fixed / Removed
+- Limit the shared entry holder's pending line to 5 MiB of UTF-8 text. If an input item crosses the limit before a line boundary, discard the buffered text and that item without yielding, then continue collecting the same line.
+- Preserve normal blank lines, avoid an empty emission for a wholly discarded line, and apply the same entry guard to syllable and POS lanes.
+### Verification
+- Node: 264 tests, 256 passed, 8 skipped; targeted ESLint and `git diff --check` passed. Tests cover exact threshold, Unicode byte counts, repeated overflow and POS integration.
+- Python: 343 passed, 7 failed, 3 skipped and 35 subtests passed; six failures need `MASTER_JSON_KEY`, and one needs the unported comparison POS view.
+## [Unreleased] - 2026-10-29 — Private host engine endpoint
+### Changed / Fixed / Removed
+- Remove unused disk-backed `initS.js`; current engine syllable positions remain streamed by the tokenizer wrapper.
+- Add the private host `POST /UchihaItachiIsMyFavChar` route for hash-free syllable or POS processing. It bypasses session and rate gates and authenticates via the same `CURL_KEY_SHA256` / `CURL_KEY` as the Site conversion route, with shared timing-safe verification; accept the `x-curl-key` or Bearer header.
+- Keep the optional `CURL_MAX_MB` size limit, return 404 for failed authentication, and reject caller hashes and debug mode on this route.
+### Verification
+- Node: 266 tests, 258 passed, 8 skipped; targeted private host and Site curl tests passed, as did ESLint and `git diff --check`.
+- Python: 343 passed, 7 failed, 3 skipped and 35 subtests passed; six failures need `MASTER_JSON_KEY` and one needs the unported comparison POS view.
+
+## [Unreleased] - 2026-10-29 — Frontend analysis lane follow-up
+### Verification / Follow-up
+- Check the actual browser UI selectors and event flow for both Bootstrap and React: code contains analysis-flow listeners, but no matching Bootstrap `data-open-analysis` control or React `akkhara:open-analysis` event emitter was found in the frontend source. A real browser click-through has not been verified.
+- A local real Site-to-engine upload reached the queue as `analysis` and returned an engine result when configured; it was submitted by script using the frontend payload builder, not through the browser UI. The queue can fall back to the Site artifact when the engine is unwired or dispatch is refused.
+
+## [Unreleased] - 2026-10-29 — Pre-production analysis conversion override
+### Changed / Fixed / Removed
+- Keep second-lane analysis metadata intact, but deliberately run its document uploads as conversion-only Site tasks until the Site/Engine integration is ready; add explicit do-not-correct comments beside the override and keep the future Engine handoff wired.
+- Stop analysis-lane text immediately after raw saving, finalize its record and return the text without queuing or dispatching it. The saved text is unchanged.
+- Prevent a conversion task from entering the Engine dispatcher and use the requested conversion format for the Site parser; retain future Engine-path coverage separately.
+### Verification
+- Live isolated Site and real Engine host: analysis PDF completed as conversion, analysis text returned HTTP 200 after saving, and the Engine job list remained empty. This was an HTTP check, not a frontend browser click-through.
+- Node: 267 tests, 259 passed, 8 skipped; targeted ESLint and `git diff --check` passed. Python: 343 passed, 7 failed, 3 skipped, 35 subtests passed; six failures require `MASTER_JSON_KEY` and one needs the unported comparison POS view.

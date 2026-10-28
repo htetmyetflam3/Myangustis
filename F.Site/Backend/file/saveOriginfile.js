@@ -4,7 +4,7 @@ import path from 'node:path';
 import { QUARANTINE_DIR, abs } from './paths.js';
 const fsp = fs.promises;
 export async function moveFile(source, destination) {
-  await fsp.mkdir(path.dirname(destination), { recursive: true });
+  await fsp.mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
   try {
     await fsp.rename(source, destination);
   } catch (err) {
