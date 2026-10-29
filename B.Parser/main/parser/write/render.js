@@ -160,7 +160,11 @@ export async function writeDocxLayout(outPath, pages, pdfPath) {
       const chunk = [];
       const [wPt, hPt] = pg.wh ?? [612.0, 792.0];
       const lines = pg.lines ?? [];
-      if (!lines.length && pg.hasImg) {
+      if (!lines.length && String(pg.text ?? "").trim()) {
+        for (const line of String(pg.text).split("\n")) {
+          chunk.push(line ? layoutPara(20 * TWIPS, 0, 11, line) : "<w:p/>");
+        }
+      } else if (!lines.length && pg.hasImg) {
         chunk.push(layoutPara(20 * TWIPS, 20 * TWIPS, 10, "[image-only page]"));
       }
       let prevBase = null;

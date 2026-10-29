@@ -163,14 +163,15 @@ export function createSourceRunner({ kind, method, docxImages = false, pdfImages
     const dictData = isDraft ? null : dictionaryOnce();
     const words = isDraft ? new Set() : dictionaryWords(dictData);
     const standalone = dictData?.mapData?.newClause?.standalone || [];
-    const { pages: repairedPages, totals: repairTotals } = repairPages(
-      buildFinalPages(job, true),
-      words,
-    );
+    const applyCleanup = msg.applyCleanup !== false;
+    const finalPages = buildFinalPages(job, applyCleanup);
+    const { pages: repairedPages, totals: repairTotals } = applyCleanup
+      ? repairPages(finalPages, words)
+      : { pages: finalPages, totals: { pages: 0, repairs: 0, splits: 0 } };
     const { report, scanLog, scanSummary, scanTotals } = isDraft
       ? { report: null, scanLog: null, scanSummary: [], scanTotals: null }
       : scanPathVerdict(repairedPages, outPath, chosenPath);
-    const pages = isDraft ? repairedPages
+    const pages = isDraft || !applyCleanup ? repairedPages
       : repairFromScanVerdict(repairedPages, report, words, { path: chosenPath, standalone });
     const scanRepairPages = pages.reduce(
       (n, page, i) => n + ((page?.text || "") !== (repairedPages[i]?.text || "") ? 1 : 0),
@@ -179,7 +180,6 @@ export function createSourceRunner({ kind, method, docxImages = false, pdfImages
     const scanRepaired = scanRepairPages
       ? { scanRepair: { path: chosenPath, pages: scanRepairPages } }
       : {};
-    const written = await writeOutput(outPath, pages, { counts: job.counts, source: name ?? "" });
     const repaired = repairTotals.repairs || repairTotals.splits ? { repair: repairTotals } : {};
     note(provenance, {
       detection: job.counts,
@@ -188,21 +188,25 @@ export function createSourceRunner({ kind, method, docxImages = false, pdfImages
       ...repaired,
       ...scanRepaired,
     });
-    appendRecord(provenance, { file: registerPath(REGISTER_LOG) });
-
-    return {
+    const common = {
       filename: name ?? null,
-      pages: pages.length,
       counts: job.counts,
-
       encodingPath: chosenPath,
       ...(scanLog ? { scanLog } : {}),
       ...(scanTotals ? { scanPath: chosenPath } : {}),
       ...(scanSummary?.length ? { scanSummary } : {}),
+      ...(msg.includePreview ? { metadata: job.metadata ?? {}, changes: job.changes ?? [] } : {}),
       ...(job.imageFiles ? { imageFiles: job.imageFiles, imageDir } : {}),
       ...repaired,
       ...scanRepaired,
-      ...written,
     };
+    if (msg.deferOutput) {
+      return { ...common, deferredOutput: true, pagesData: pages, provenance };
+    }
+    const written = await writeOutput(outPath, pages, {
+      counts: job.counts, source: name ?? "", includeText: msg.includeText === true,
+    });
+    appendRecord(provenance, { file: registerPath(REGISTER_LOG) });
+    return { ...common, pages: pages.length, ...written };
   };
 }

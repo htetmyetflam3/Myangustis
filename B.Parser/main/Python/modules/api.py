@@ -1,51 +1,15 @@
-"""Bare JSON API (Flask) — meant to be called by a Node.js backend.
+# Separate JavaScript and Python parsers were planned and may be revisited;
+# currently the Python API invokes the JavaScript Manager in a Node child.
+"""Flask API that delegates PDF/DOCX conversion to the JavaScript Manager."""
 
-    GET  /health                                            -> {"ok": true}
-    GET  /health                                            -> {"ok": true}
-    POST /api/preview   multipart: file=<pdf|docx>          -> JSON preview
-    GET  /api/content   query: job_id=..., apply=0|1        -> one full text
-    POST /api/finalize  form: job_id=..., apply=0|1, fmt=txt|docx|pdf -> download
-
-Engine handshake (the owner's two-web design — the ENGINE initiates the
-connection and the praser RESPONDS WITH THE TEXT once parsing is done;
-the binary itself is only ever touched here, never in the Site server
-or the engine):
-
-    POST /api/engine/bind     JSON: job_id + metadata{submitId, filename,
-                              userId, sessionId, formId}
-                              the uploader side (same web, port-to-port)
-                              DECLARES the identity onto its job — once.
-    POST /api/engine/collect  JSON: the same metadata, presented BY THE
-                              ENGINE (cross-web). Cross-checked against
-                              the bound identity: aligned -> the response
-                              body IS the parsed text; misaligned -> 403
-                              and the binding is burned; not-yet-parsed
-                              -> 404 (the engine polls while encoding
-                              finishes). One binding = one collect.
-
-The preview returns the WHOLE extracted document as a single plain-text
-``content`` field (no banner, no page markers, no HTML tags), plus per-page
-detection info and a list of cleanup changes as plain original/suggested
-lines.  Both server-side formats run the same detect -> Rabbit (ZAWGYI) /
-cleanup (UNICODE) pipeline: .pdf through the PDF extractor, .docx through the docx paragraph
-reader (the browser could never do the encoding half for either).  The
-user's single apply/skip choice comes back to /api/finalize as apply=1|0,
-or to /api/content when only the full text (base or cleaned) is needed.
-DOCX jobs finalize to txt only — no layout is kept for them.
-"""
-
+import io
 import os
 import uuid
 import tempfile
 import threading
+from pathlib import Path
 
-from pipeline import (
-    load_detector,
-    process_bytes,
-    build_final_pages,
-    build_content,
-    render_texts,
-)
+from node_manager import dispatch_bytes
 
 _JOBS = {}
 _JOBS_LOCK = threading.Lock()
@@ -99,8 +63,6 @@ def create_app():
             return jsonify({"error": "refused: bad X-Praser-Key"}), 403
         return None
 
-    detector = load_detector()
-
     @app.errorhandler(413)
     def _upload_too_large(_e):
         return jsonify({"error": f"upload too large (max {MAX_UPLOAD_MB} MB)"}), 413
@@ -132,23 +94,38 @@ def create_app():
         else:
             return jsonify({"error": "only .pdf and .docx files are supported"}), 400
 
+        data = f.read()
+        method = (request.form.get("method") or ("manual" if kind == "pdf" else "default")).lower()
+        if method not in ("manual", "default"):
+            return jsonify({"error": "method must be manual or default"}), 400
         try:
-            job = process_bytes(f.read(), kind, detector, filename=f.filename,
-                                log=lambda m: None)
+            with tempfile.TemporaryDirectory(prefix="myangustis-preview-") as directory:
+                result = dispatch_bytes(data, f.filename, Path(directory) / "preview.txt",
+                                        kind=kind, method=method, apply_cleanup=False,
+                                        include_preview=True)
         except Exception as e:  # noqa: BLE001
             return jsonify({"error": str(e)}), 400
 
+        job = {
+            "filename": os.path.basename(f.filename), "kind": kind, "data": data,
+            "method": method, "content": result.get("text", ""),
+            "pages": result.get("pages", 0), "counts": result.get("counts") or {},
+            "metadata": result.get("metadata") or {}, "changes": result.get("changes") or [],
+            "ocr_pages": result.get("ocrPages", []), "encoding_path": result.get("encodingPath"),
+        }
         jid = _store_job(job)
         return jsonify({
             "job_id": jid,
             "filename": job["filename"],
-            "kind": job.get("kind"),
-            "content": build_content(job),   # whole body, one plain text
-            "pages": len(job["reports"]),
+            "kind": job["kind"],
+            "content": job["content"],
+            "pages": job["pages"],
             "counts": job["counts"],
             "metadata": job["metadata"],
             "total_changes": len(job["changes"]),
             "changes": job["changes"],
+            "ocr_pages": job["ocr_pages"],
+            "encoding_path": job["encoding_path"],
         })
 
     @app.route("/api/content", methods=["GET", "POST"])
@@ -169,12 +146,21 @@ def create_app():
         if job is None:
             return jsonify({"error": "unknown or expired job_id"}), 404
 
+        try:
+            body = job["content"]
+            if apply_cleanup:
+                with tempfile.TemporaryDirectory(prefix="myangustis-content-") as directory:
+                    result = dispatch_bytes(job["data"], job["filename"], Path(directory) / "content.txt",
+                                            kind=job["kind"], method=job["method"], apply_cleanup=True)
+                body = result.get("text", "")
+        except Exception as e:  # noqa: BLE001
+            return jsonify({"error": str(e)}), 400
         return jsonify({
             "job_id": jid,
             "filename": job["filename"],
             "kind": job.get("kind"),
             "apply": apply_cleanup,
-            "content": build_content(job, apply_cleanup),
+            "content": body,
         })
 
     @app.post("/api/finalize")
@@ -194,20 +180,17 @@ def create_app():
             return jsonify({"error": "docx jobs carry no layout - use fmt=txt"}), 400
 
         base = os.path.splitext(job["filename"])[0] or "output"
-        tmp = tempfile.NamedTemporaryFile(suffix=f".{fmt}", delete=False)
-        tmp.close()
         try:
-            pages = build_final_pages(job, apply_cleanup)
-            render_texts(tmp.name, pages, job["counts"], job["filename"])
+            with tempfile.TemporaryDirectory(prefix="myangustis-finalize-") as directory:
+                target = Path(directory) / f"output.{fmt}"
+                dispatch_bytes(job["data"], job["filename"], target, kind=job["kind"],
+                               method=job["method"], apply_cleanup=apply_cleanup, include_text=False)
+                payload = target.read_bytes()
         except Exception as e:  # noqa: BLE001
-            try:
-                os.unlink(tmp.name)
-            except OSError:
-                pass
             return jsonify({"error": str(e)}), 400
 
-        download_name = f"{base}_cleaned.{'docx' if fmt == 'docx' else fmt}"
-        return send_file(tmp.name, as_attachment=True, download_name=download_name)
+        return send_file(io.BytesIO(payload), as_attachment=True,
+                         download_name=f"{base}_cleaned.{fmt}")
 
     # ── engine handshake: uploader side declares ─────────────────
     @app.post("/api/engine/bind")
@@ -265,8 +248,8 @@ def create_app():
             "job_id": jid,
             "filename": job["filename"],
             "kind": job.get("kind"),
-            "pages": len(job["reports"]),
-            "content": build_content(job),
+            "pages": job["pages"],
+            "content": job["content"],
         })
 
     return app

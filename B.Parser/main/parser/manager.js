@@ -2,11 +2,16 @@ import { Worker } from "node:worker_threads";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { DEFAULT_OUTPUT_DIR } from "../../_path.js";
+import { TextDecoder } from "node:util";
+import { DEFAULT_OUTPUT_DIR, REGISTER_LOG } from "../../_path.js";
+import { writeOutput } from "./write/emit.js";
+import { appendRecord, note, registerPath } from "./core/provenance.js";
 import {
   WORKER_HEAP_MB,
   WORKER_TIMEOUT_MS,
   MAX_OCR_PAGES,
+  MAX_INPUT_BYTES,
+  MAX_INPUT_MB,
   ocrTimeoutMs,
 } from "./core/limits.js";
 import { decideForCaller, normalizeCaller } from "../../extend/caller-policy.js";
@@ -88,6 +93,9 @@ export function readManagerPayload(job) {
 
     throw new Error('method:"null" is DOCX-only (no PDF path emits it)');
   }
+  if (job?.applyCleanup !== undefined && typeof job.applyCleanup !== "boolean") {
+    throw new TypeError("applyCleanup must be a boolean");
+  }
 
   return { job: jobField, method, output };
 }
@@ -165,7 +173,9 @@ export class Manager {
     const lane = route(job);
     const out = resolveOutput(job);
     const meta = echoMeta(job);
-    const inputKind = job.inputKind ?? inferInputKind(job);
+    const inputKind = inferInputKind(job);
+    const manualPdf = lane === "extract" && jobField === "extracting"
+      && method === "manual" && inputKind === "pdf";
     const fileInfo = {
       filename: job.filename ?? null,
       inputKind,
@@ -216,16 +226,21 @@ export class Manager {
       const id = ++this.seq;
       const payload =
         lane === "ocr"
-          ? { id, op: "ocr", inPath: job.inPath, data: job.data, source: job.filename, outPath }
+          ? { id, op: "ocr", inPath: job.inPath, data: job.data, source: job.filename, outPath,
+              includeText: job.includeText === true }
           : {
               id,
               op: "extract",
               method,
-              kind: job.inputKind,
+              kind: inputKind,
               filename: job.filename,
               inPath: job.inPath,
               data: job.data,
               outPath,
+              applyCleanup: job.applyCleanup,
+              includeText: job.includeText === true,
+              includePreview: job.includePreview === true,
+              ...(manualPdf ? { deferOutput: true } : {}),
             };
 
 
@@ -242,7 +257,7 @@ export class Manager {
         budget = ocrTimeoutMs(pages);
       }
 
-      const reply = await new Promise((resolve, reject) => {
+      let reply = await new Promise((resolve, reject) => {
         const timer = setTimeout(() => {
           this.pending.delete(id);
           reject(new Error(`${lane} worker exceeded ${budget} ms`));
@@ -260,10 +275,7 @@ export class Manager {
         }
       });
 
-
-
-
-
+      if (manualPdf) reply = await this._finishManualPdf(reply, job, outPath);
 
       if (jobField === "null" && Array.isArray(reply.imageFiles) && reply.imageFiles.length) {
         try {
@@ -299,18 +311,61 @@ export class Manager {
         ...(reply.scanLog ? { scanLog: reply.scanLog } : {}),
         ...(reply.scanPath ? { scanPath: reply.scanPath } : {}),
         ...(reply.scanSummary?.length ? { scanSummary: reply.scanSummary } : {}),
+        ...(Array.isArray(reply.ocrPages) ? { ocrPages: reply.ocrPages } : {}),
+        ...(job.includePreview ? { metadata: reply.metadata ?? {}, changes: reply.changes ?? [] } : {}),
 
         ...meta,
       };
-      if (out === "docx" && "text" in reply) result.text = reply.text;
+      if (typeof reply.text === "string") result.text = reply.text;
       return result;
     } finally {
       releaseLane();
     }
   }
 
-  async dispatchImages(files) {
-    if (!Array.isArray(files) || files.length === 0) return [];
+  async _finishManualPdf(reply, job, outPath) {
+    if (!reply.deferredOutput || !Array.isArray(reply.pagesData)) {
+      throw new Error("Manual PDF extraction did not return page data");
+    }
+    const pages = reply.pagesData;
+    const scanned = [];
+    let source;
+    let pageHasRasterImage;
+    for (let index = 0; index < pages.length; index += 1) {
+      const page = pages[index];
+      if (String(page?.text ?? "").trim()) continue;
+      let hasImage = Boolean(page?.hasImg);
+      if (!hasImage) {
+        if (!pageHasRasterImage) {
+          ({ pageHasRasterImage } = await import("./read/pdf-render.js"));
+          source = job.inPath ? await fs.readFile(job.inPath) : job.data;
+          if (!source) throw new Error("Manual PDF input is missing");
+        }
+        hasImage = await pageHasRasterImage(source, index + 1);
+      }
+      if (hasImage) scanned.push(index);
+    }
+    if (scanned.length > MAX_OCR_PAGES) {
+      throw new Error(`PDF has ${scanned.length} image-only pages; the OCR lane accepts at most ${MAX_OCR_PAGES} at a time`);
+    }
+    for (const index of scanned) {
+      const text = await this._dispatchOcr({
+        type: "ocrPage", inPath: job.inPath, data: job.data, pageNumber: index + 1,
+      }, 1);
+      if (typeof text !== "string") throw new Error(`OCR did not return text for page ${index + 1}`);
+      pages[index] = { ...pages[index], text, lines: [], hasImg: true };
+    }
+    const written = await writeOutput(outPath, pages, {
+      counts: reply.counts, source: job.filename ?? reply.filename ?? "",
+      includeText: job.includeText === true,
+    });
+    const ocrPages = scanned.map((index) => index + 1);
+    note(reply.provenance, { ocr: { pages: ocrPages } });
+    appendRecord(reply.provenance, { file: registerPath(REGISTER_LOG) });
+    return { ...reply, ...written, pages: pages.length, ocrPages };
+  }
+
+  async _dispatchOcr(payload, count) {
     const lane = "ocr";
     const previous = this.laneTails[lane];
     let releaseLane;
@@ -320,7 +375,7 @@ export class Manager {
     try {
       const worker = this._worker(lane);
       const id = ++this.seq;
-      const budget = ocrTimeoutMs(files.length);
+      const budget = ocrTimeoutMs(count);
       const reply = await new Promise((resolve, reject) => {
         const timer = setTimeout(() => {
           this.pending.delete(id);
@@ -330,12 +385,47 @@ export class Manager {
         }, budget);
         timer.unref();
         this.pending.set(id, { resolve, reject, lane, timer });
-        worker.postMessage({ id, op: "ocr-images", files });
+        try {
+          worker.postMessage({ id, ...payload });
+        } catch (error) {
+          clearTimeout(timer);
+          this.pending.delete(id);
+          reject(error);
+        }
       });
-      return reply.result ?? [];
+      return reply.result;
     } finally {
       releaseLane();
     }
+  }
+
+  async dispatchImages(files) {
+    if (!Array.isArray(files) || files.length === 0) return [];
+    return (await this._dispatchOcr({ op: "ocr-images", files }, files.length)) ?? [];
+  }
+
+  async startOcr() {
+    return this._dispatchOcr({ type: "init" }, 1);
+  }
+
+  async dispatchOcrImageDetailed(data) {
+    if (!(data instanceof Uint8Array) || data.byteLength > MAX_INPUT_BYTES) {
+      throw new Error(`OCR image must be bytes within the ${MAX_INPUT_MB} MB cap`);
+    }
+    return this._dispatchOcr({ type: "ocrImageDetailed", data }, 1);
+  }
+
+  // Formatting existing text does not recover a lost font or encoding.
+  async renderPlainText({ inPath, outPath }) {
+    if (!inPath || !outPath || path.extname(outPath).toLowerCase() !== ".docx") {
+      throw new Error("Plain text rendering requires an input file and a .docx output path");
+    }
+    const info = await fs.stat(inPath);
+    if (info.size > MAX_INPUT_BYTES) throw new Error(`Parser input exceeds the ${MAX_INPUT_MB} MB cap`);
+    const bytes = await fs.readFile(inPath);
+    if (bytes.byteLength > MAX_INPUT_BYTES) throw new Error(`Parser input exceeds the ${MAX_INPUT_MB} MB cap`);
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return writeOutput(outPath, [{ text }], { source: path.basename(inPath) });
   }
 
   async run(jobs, caller = "site") {

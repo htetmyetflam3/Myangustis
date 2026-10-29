@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   ocrAvailable,
+  initOcr,
   pdfPageCount,
   pageHasImage,
   ocrPdfPage,
@@ -45,6 +46,7 @@ export async function ocrToFile(msg) {
   const written = await writeOutput(msg.outPath, pages, {
     counts: { ZAWGYI: 0, UNICODE: 0, UNKNOWN: 0 },
     source,
+    includeText: msg.includeText === true,
   });
   return { filename: source || null, pages: n, ...written };
 }
@@ -69,6 +71,9 @@ export async function handleOcrMessage(msg) {
   switch (type) {
     case "available":
       return await ocrAvailable();
+    case "init":
+      await initOcr();
+      return true;
     case "pageCount":
       return await pdfPageCount(bytes);
     case "pageHasImage":

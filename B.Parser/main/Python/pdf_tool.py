@@ -1,20 +1,35 @@
 #!/usr/bin/env python3
-"""
-Description: Myanmar/Burmese PDF text extractor with Zawgyi→Unicode conversion,
-mark-reordering preview with violation highlighting, and approval-based output.
-Reads: PDF files with embedded CID fonts.
-Processes: PDF parsing, TTF cmap extraction, layout-preserving text extraction,
-           Zawgyi detection, Rabbit conversion, mark-reordering with space/tab
-           handling within mark sequences, approval flow (terminal or frontend).
-Outputs: .txt, .docx, or .pdf based on file extension.
+# Separate JavaScript and Python parsers were planned and may be revisited;
+# currently the Python entry point invokes the JavaScript Manager in a Node child.
+"""Legacy PDF tool entry point; conversion now delegates to the JS Manager.
 
-Usage:
-  python myanmar_pdf_tool.py <input.pdf> [output_path]
-  python myanmar_pdf_tool.py input.pdf out.txt
-  python myanmar_pdf_tool.py input.pdf out.docx
-  python myanmar_pdf_tool.py input.pdf out.pdf
-  python myanmar_pdf_tool.py input.pdf out.txt --admin
+The historical helper functions below remain importable for offline work, but
+executing this program does not run a second production parser.
 """
+
+
+def _delegate_to_manager():
+    import argparse
+    import os
+    import sys
+
+    parser = argparse.ArgumentParser(description="Convert a PDF through the JavaScript Manager")
+    parser.add_argument("pdf", help="Input PDF file path")
+    parser.add_argument("out", nargs="?", default="", help="Output file or directory")
+    parser.add_argument("--admin", action="store_true", help="Prompt once for cleanup")
+    parser.add_argument("--auto-approve", action="store_true", help="Apply cleanup")
+    args = parser.parse_args()
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "modules"))
+    from cli import main as manager_main
+    cleanup = "yes" if args.auto_approve else "ask" if args.admin else "no"
+    argv = [args.pdf]
+    if args.out:
+        argv.append(args.out)
+    return manager_main([*argv, "--cleanup", cleanup])
+
+
+if __name__ == "__main__":
+    raise SystemExit(_delegate_to_manager())
 
 import sys
 import os
@@ -906,122 +921,6 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+
 def main() -> None:
-    args = parse_args()
-    pdf_path = args.pdf
-
-    # 1. Read PDF
-    with open(pdf_path, "rb") as f:
-        raw = f.read()
-    print(f"[+] PDF size: {len(raw):,} bytes")
-
-    # 2. Parse objects
-    objects = parse_pdf_objects(raw)
-    print(f"[+] Objects found: {len(objects)}")
-
-    # 3. Metadata
-    metadata = extract_metadata(objects)
-    if metadata:
-        print(f"[+] Metadata: {metadata}")
-    else:
-        print("[+] No metadata found")
-
-    # 4. Extract embedded TTF
-    ff2_ref = find_font_file2(objects)
-    if not ff2_ref:
-        print("[-] No embedded FontFile2 found. Exiting.")
-        sys.exit(1)
-    print(f"[+] FontFile2 at obj {ff2_ref[0]}")
-
-    ttf = get_stream(objects, *ff2_ref)
-    if not ttf:
-        print("[-] Failed to extract font stream. Exiting.")
-        sys.exit(1)
-    print(f"[+] TTF size: {len(ttf):,} bytes")
-
-    # 5. Parse cmap
-    cmap_uni_to_gid = parse_ttf_cmap(ttf)
-    gid_to_uni = {gid: uni for uni, gid in cmap_uni_to_gid.items() if gid}
-    print(f"[+] cmap entries: {len(cmap_uni_to_gid)}, reverse: {len(gid_to_uni)}")
-
-    # 6. Collect pages
-    pages_obj = find_root_pages(objects)
-    if not pages_obj:
-        print("[-] No page tree found. Exiting.")
-        sys.exit(1)
-    all_pages = collect_pages(objects, pages_obj)
-    print(f"[+] Total pages: {len(all_pages)}")
-
-    # 7. Extract text from all pages
-    all_texts = []
-    for idx, (pnum, pgen) in enumerate(all_pages):
-        txt = extract_page_text_layout(objects, pnum, pgen, gid_to_uni)
-        all_texts.append(txt)
-        if (idx + 1) % 500 == 0:
-            print(f"    ... processed {idx+1}/{len(all_pages)} pages")
-
-    total_chars = sum(len(t) for t in all_texts)
-    print(f"[+] Total characters: {total_chars:,}")
-
-    # 8. Process all pages: detection → conversion → preview → approval → output
-    print("[+] Processing pages (detection, conversion, reordering preview)...")
-
-    if args.auto_approve:
-        # Auto-approve: no callback, no admin — just apply reordering
-        results = process_all_pages_sync(all_texts, is_admin=False, approval_callback=None)
-        # Override: force approve
-        for r in results:
-            if r["violations"]:
-                r["approved"] = True
-                r["output"] = r["preview"]
-    elif args.admin:
-        # Admin mode: terminal blocking approval
-        results = process_all_pages_sync(all_texts, is_admin=True, approval_callback=None)
-    else:
-        # Default: no approval mechanism — safe mode, no reordering applied
-        results = process_all_pages_sync(all_texts, is_admin=False, approval_callback=None)
-
-    # Collect final output texts
-    final_texts = [r["output"] for r in results]
-
-    # Summary
-    zg_count = sum(1 for r in results if r["encoding"] == EncodingResult.ZAWGYI)
-    uc_count = sum(1 for r in results if r["encoding"] == EncodingResult.UNICODE)
-    unk_count = sum(1 for r in results if r["encoding"] == EncodingResult.OTHER)
-    approved_count = sum(1 for r in results if r["approved"])
-    rejected_count = sum(1 for r in results if not r["approved"] and r["violations"])
-    print(f"[+] Summary: {zg_count} Zawgyi, {uc_count} Unicode, {unk_count} unknown")
-    print(f"[+] Reordering: {approved_count} approved, {rejected_count} rejected, "
-          f"{len(results) - approved_count - rejected_count} no-violation (auto)")
-
-    # 9. Resolve output path
-    out_arg = args.out
-    if not out_arg:
-        out_arg = "."
-    out_ext = os.path.splitext(out_arg)[1].lower()
-    base_name = os.path.splitext(os.path.basename(pdf_path))[0]
-
-    if out_ext in ('.txt', '.docx', '.pdf'):
-        out_path = out_arg
-    else:
-        os.makedirs(out_arg, exist_ok=True)
-        out_path = os.path.join(out_arg, base_name + '.txt')
-        out_ext = '.txt'
-
-    out_dir = os.path.dirname(os.path.abspath(out_path))
-    if out_dir:
-        os.makedirs(out_dir, exist_ok=True)
-
-    # 10. Write output
-    if out_ext == '.txt':
-        write_txt(out_path, pdf_path, final_texts, metadata)
-    elif out_ext == '.docx':
-        write_docx(out_path, pdf_path, final_texts, metadata)
-    elif out_ext == '.pdf':
-        write_pdf(out_path, pdf_path, final_texts, metadata)
-
-    print("[+] Done.")
-
-
-if __name__ == "__main__":
-    main()
+    raise SystemExit(_delegate_to_manager())

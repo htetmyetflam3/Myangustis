@@ -171,8 +171,7 @@ vite.config.ts.timestamp-*
 /Junk/Site/
 /F.Site/upload/
 
-# Local source and generated kit files; Engine runtime keys remain tracked.
-/tools-box/kit/master/master.json
+# Local generated kit files; Engine runtime keys remain tracked.
 /tools-box/kit/master/master.key.txt
 /tools-box/kit/master/master.json.enc
 /tools-box/kit/master/tree/

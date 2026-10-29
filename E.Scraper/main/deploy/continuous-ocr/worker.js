@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import readline from 'node:readline';
 import { openPdf, renderPageCanvas, cropCanvasRgba } from '../../../../B.Parser/main/parser/read/pdf-render.js';
-import { initOcr, ocrImageDetailed, closeOcr } from '../../../../B.Parser/main/parser/read/ocr.js';
+import { Manager } from '../../../../B.Parser/main/parser/manager.js';
 import { getDefaultVectorIndex } from '../../../../B.Parser/main/parser/shape/match.js';
 import { matchPixelsToVector } from '../../../../B.Parser/main/parser/codepage/vote.js';
 import { loadScanDictionary, dictionaryWords, scanBrokenSpans } from '../../../../B.Parser/main/parser/text/scan.js';
@@ -16,7 +16,13 @@ const words = dictionaryWords(data);
 if (!words?.size) throw new Error('OCR scan dictionary is empty; refusing unguarded repair');
 const standalone = data?.mapData?.newClause?.standalone || [];
 const index = getDefaultVectorIndex();
-await initOcr();
+const manager = new Manager();
+try {
+  await manager.startOcr();
+} catch (error) {
+  await manager.close();
+  throw error;
+}
 reply({ ready: true, vectorEntries: index.entries.length, dictionaryWords: words.size });
 
 function isHomoglyphOnly(a, b) {
@@ -34,7 +40,7 @@ async function run(request) {
       const page = await doc.getPage(n);
       try {
         const rendered = await renderPageCanvas(page, 3, { maxPixels: MAX_OCR_PIXELS });
-        const ocr = await ocrImageDetailed(rendered.canvas.toBuffer('image/png'));
+        const ocr = await manager.dispatchOcrImageDetailed(rendered.canvas.toBuffer('image/png'));
         let text = ocr.text;
         const spans = scanBrokenSpans(text, { dictionary: words, standalone });
 
@@ -76,4 +82,4 @@ try {
     try { reply(await run(request)); }
     catch (error) { reply({ ok: false, error: `${error.name || 'Error'}: ${error.message || String(error)}\n${error.stack || ''}` }); }
   }
-} finally { await closeOcr(); }
+} finally { await manager.close(); }

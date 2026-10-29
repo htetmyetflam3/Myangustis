@@ -29,7 +29,7 @@ function countLines(texts) {
 }
 
 
-export async function writeOutput(outPath, pages, { counts = {}, source = "", log = () => {} } = {}) {
+export async function writeOutput(outPath, pages, { counts = {}, source = "", log = () => {}, includeText = false } = {}) {
   let out = outPath;
   let ext = path.extname(out).toLowerCase();
   if (ext === "") {
@@ -79,7 +79,7 @@ export async function writeOutput(outPath, pages, { counts = {}, source = "", lo
     textBytes: Buffer.byteLength(joined, "utf8"),
     mimeType: MIME_TYPES[ext],
   };
-  if (ext === ".docx") result.text = joined;
+  if (ext === ".docx" || includeText) result.text = joined;
   return result;
 }
 
