@@ -2,6 +2,7 @@ import fs from "node:fs";
 import { readCentralDirectory, readEntry } from "../core/zip.js";
 import { ValueError } from "../core/pylib.js";
 import { positiveLimit } from "../core/limits.js";
+import { containsMyanmar } from "../text/detector.js";
 
 
 
@@ -137,11 +138,11 @@ function* walkXml(xml) {
 }
 
 
-export function extractDocxParagraphs(docxPath) {
+export function extractDocxParagraphs(docxPath, { fontNamesByParagraph = null } = {}) {
   const buf = Buffer.isBuffer(docxPath) || docxPath instanceof Uint8Array
     ? Buffer.from(docxPath.buffer, docxPath.byteOffset, docxPath.byteLength)
     : fs.readFileSync(docxPath);
-  return parseDocxParagraphs(buf);
+  return parseDocxParagraphs(buf, { fontNamesByParagraph });
 }
 
 
@@ -225,13 +226,14 @@ function orderedParts(names) {
   return ordered;
 }
 
-export function parseDocxParagraphs(zipBuf, { includeImageMarkers = false } = {}) {
+export function parseDocxParagraphs(zipBuf, { includeImageMarkers = false, fontNamesByParagraph = null } = {}) {
   const entries = validateDocxArchive(zipBuf);
   const paragraphs = [];
   for (const name of orderedParts([...entries.keys()])) {
     const info = entries.get(name);
     if (!info) continue;
-    paragraphs.push(...collectParagraphs(readMemberXml(zipBuf, info, name), { includeImageMarkers }));
+    paragraphs.push(...collectParagraphs(readMemberXml(zipBuf, info, name),
+      { includeImageMarkers, fontNamesByParagraph }));
   }
   return paragraphs;
 }
@@ -253,10 +255,12 @@ export function extractDocxImages(zipBuf, directory) {
 }
 
 
-export function collectParagraphs(xml, { includeImageMarkers = false } = {}) {
+export function collectParagraphs(xml, { includeImageMarkers = false, fontNamesByParagraph = null } = {}) {
   const paragraphs = [];
+  const paragraphFonts = [];
   let imageMarkerCount = 1;
-  const openParagraphs = []; 
+  const openParagraphs = [];
+  const openRuns = [];
   const elStack = [];        
 
   for (const ev of walkXml(xml)) {
@@ -266,9 +270,18 @@ export function collectParagraphs(xml, { includeImageMarkers = false } = {}) {
         
         
         
-        const ctx = { parts: [], at: paragraphs.length };
+        const ctx = { parts: [], at: paragraphs.length, fonts: new Set() };
         paragraphs.push("");
+        paragraphFonts.push(ctx.fonts);
         openParagraphs.push(ctx);
+      }
+      if (ev.uri === W_URI && ev.local === "r") openRuns.push({ fonts: null });
+      if (ev.uri === W_URI && ev.local === "rFonts" && openRuns.length) {
+        // Only direct run declarations are evidence. Style inheritance and
+        // theme fonts are deliberately left unknown.
+        const relevant = ev.attrs.filter(([name]) => /^w:(?:ascii|hAnsi|cs|eastAsia)$/u.test(name));
+        const themed = ev.attrs.some(([name]) => /^w:(?:ascii|hAnsi|cs|eastAsia)Theme$/u.test(name));
+        openRuns[openRuns.length - 1].fonts = themed ? [""] : relevant.map(([, value]) => value || "");
       }
       if (openParagraphs.length) {
         if (includeImageMarkers && ev.uri === W_URI && ev.local === "drawing") {
@@ -287,15 +300,23 @@ export function collectParagraphs(xml, { includeImageMarkers = false } = {}) {
       const top = elStack[elStack.length - 1];
       if (top && !top.textTaken && top.uri === W_URI && top.local === "t" && openParagraphs.length) {
         top.textTaken = true;
-        for (const ctx of openParagraphs) ctx.parts.push(ev.value);
+        for (const ctx of openParagraphs) {
+          ctx.parts.push(ev.value);
+          if (fontNamesByParagraph && containsMyanmar(ev.value)) {
+            const fonts = openRuns[openRuns.length - 1]?.fonts;
+            for (const name of fonts?.length ? fonts : [""]) ctx.fonts.add(name);
+          }
+        }
       }
     } else if (ev.kind === "close") {
       elStack.pop();
+      if (ev.uri === W_URI && ev.local === "r") openRuns.pop();
       if (ev.uri === W_URI && ev.local === "p") {
         const ctx = openParagraphs.pop();
         if (ctx) paragraphs[ctx.at] = ctx.parts.join("");
       }
     }
   }
+  if (fontNamesByParagraph) fontNamesByParagraph.push(...paragraphFonts);
   return paragraphs;
 }

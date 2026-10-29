@@ -23,6 +23,7 @@ const OCR_URL = new URL("./worker/ocr.entry.js", import.meta.url);
 const OUTPUT_TYPES = new Set(["txt", "docx", "pdf"]);
 const JOBS = new Set(["extracting", "ocr", "null"]);
 const METHODS = new Set(["default", "manual", "null"]);
+const SOURCE_ENCODINGS = new Set(["auto", "unicode", "zawgyi-one"]);
 
 
 
@@ -95,6 +96,9 @@ export function readManagerPayload(job) {
   }
   if (job?.applyCleanup !== undefined && typeof job.applyCleanup !== "boolean") {
     throw new TypeError("applyCleanup must be a boolean");
+  }
+  if (job?.sourceEncoding !== undefined && !SOURCE_ENCODINGS.has(job.sourceEncoding)) {
+    throw new Error('sourceEncoding must be "auto", "unicode", or "zawgyi-one"');
   }
 
   return { job: jobField, method, output };
@@ -238,6 +242,7 @@ export class Manager {
               data: job.data,
               outPath,
               applyCleanup: job.applyCleanup,
+              sourceEncoding: job.sourceEncoding,
               includeText: job.includeText === true,
               includePreview: job.includePreview === true,
               ...(manualPdf ? { deferOutput: true } : {}),

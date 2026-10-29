@@ -33,7 +33,6 @@ const FONT_ROOT = path.join(BASE_DIR, "fonts");
 export const MAP_DIR = path.join(PARSER_DIR, "jason-map");
 export const VECTOR_MAP_DIR = path.join(MAP_DIR, "vector");
 export const MODEL_DIR = path.join(PARSER_DIR, "model");
-export const DEFAULT_MODEL_PATH = path.join(MODEL_DIR, "zawgyiUnicodeModel.dat");
 export const OCR_MODEL_DIR = MODEL_DIR;
 
 export const FONT_DIR = path.join(FONT_ROOT, "Unicode");
@@ -62,19 +61,6 @@ const isFile = (p) => {
     return false;
   }
 };
-
-export function findModelPath() {
-  const candidates = [
-    process.env.ZAWGYI_MODEL,
-    DEFAULT_MODEL_PATH,
-    path.join(PARSER_DIR, "zawgyiUnicodeModel.dat"),
-    path.join(PARSED_ROOT, "zawgyiUnicodeModel.dat"),
-  ];
-  for (const cand of candidates) {
-    if (cand && isFile(cand)) return cand;
-  }
-  return DEFAULT_MODEL_PATH;
-}
 
 export function findMyanmarFont() {
   const candidates = [

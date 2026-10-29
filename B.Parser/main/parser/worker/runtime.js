@@ -44,10 +44,11 @@ function dictionaryOnce() {
 
 
 
-function repairPages(pages, words) {
+function repairPages(pages, words, eligible = () => true) {
   const totals = { pages: 0, repairs: 0, splits: 0 };
   if (!words || !words.size) return { pages, totals };
-  const repairedPages = pages.map((page) => {
+  const repairedPages = pages.map((page, index) => {
+    if (!eligible(index)) return page;
     const text = page?.text || "";
     if (!text) return page;
     const repaired = repairText(text, words);
@@ -135,6 +136,7 @@ export function createSourceRunner({ kind, method, docxImages = false, pdfImages
     const options = (docxImages || pdfImages)
       ? (imageDir = fs.mkdtempSync(path.join(os.tmpdir(), "linga-img-"))) && { imageDir, provenance }
       : { provenance };
+    options.sourceEncoding = msg.sourceEncoding ?? "auto";
     const job = await processBytesForMethod(
       bytes,
       kind,
@@ -165,14 +167,16 @@ export function createSourceRunner({ kind, method, docxImages = false, pdfImages
     const standalone = dictData?.mapData?.newClause?.standalone || [];
     const applyCleanup = msg.applyCleanup !== false;
     const finalPages = buildFinalPages(job, applyCleanup);
+    const eligible = (index) => job.reports[index]?.category !== "UNKNOWN";
     const { pages: repairedPages, totals: repairTotals } = applyCleanup
-      ? repairPages(finalPages, words)
+      ? repairPages(finalPages, words, eligible)
       : { pages: finalPages, totals: { pages: 0, repairs: 0, splits: 0 } };
     const { report, scanLog, scanSummary, scanTotals } = isDraft
       ? { report: null, scanLog: null, scanSummary: [], scanTotals: null }
       : scanPathVerdict(repairedPages, outPath, chosenPath);
-    const pages = isDraft || !applyCleanup ? repairedPages
+    const scanRepairedPages = isDraft || !applyCleanup ? repairedPages
       : repairFromScanVerdict(repairedPages, report, words, { path: chosenPath, standalone });
+    const pages = scanRepairedPages.map((page, index) => eligible(index) ? page : finalPages[index]);
     const scanRepairPages = pages.reduce(
       (n, page, i) => n + ((page?.text || "") !== (repairedPages[i]?.text || "") ? 1 : 0),
       0,

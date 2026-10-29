@@ -18,6 +18,7 @@ def _delegate_to_manager():
     parser.add_argument("out", nargs="?", default="", help="Output file or directory")
     parser.add_argument("--admin", action="store_true", help="Prompt once for cleanup")
     parser.add_argument("--auto-approve", action="store_true", help="Apply cleanup")
+    parser.add_argument("--source-encoding", choices=["auto", "unicode", "zawgyi-one"], default="auto")
     args = parser.parse_args()
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "modules"))
     from cli import main as manager_main
@@ -25,7 +26,7 @@ def _delegate_to_manager():
     argv = [args.pdf]
     if args.out:
         argv.append(args.out)
-    return manager_main([*argv, "--cleanup", cleanup])
+    return manager_main([*argv, "--cleanup", cleanup, "--source-encoding", args.source_encoding])
 
 
 if __name__ == "__main__":

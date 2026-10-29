@@ -19,6 +19,7 @@ import os
 import zlib
 
 from mm_score import MARKS
+from detector import contains_myanmar
 from pdf_fonts import (
     CMapEncoding,
     CmapIdentityMap,
@@ -884,7 +885,7 @@ def _join_draft_runs(pieces, order):
     return ''.join(out)
 
 
-def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=False):
+def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=False, *, used_myanmar_fonts=None):
     """Extract text lines WITH layout: ``(lines, page_w, page_h)``.
 
     ``lines`` is a top-to-bottom list of ``(x, y, size, text)`` where x/y are
@@ -1031,6 +1032,8 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
                 decoder = active if active is not None else unset_font
                 for shown in _shown_strings(op, operands):
                     text = decoder.decode(shown)
+                    if used_myanmar_fonts is not None and contains_myanmar(text):
+                        used_myanmar_fonts.add(decoder.base_font or "")
                     block_texts.append(text)
                     if doc.zawcode_order:
                         block_runs.append((decoder.zawcode_glyphs is not None, text))

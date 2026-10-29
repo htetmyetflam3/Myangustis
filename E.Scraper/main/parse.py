@@ -38,7 +38,7 @@ def main():
                 'support/segment_bridge.mjs', 'modules/guard/disk/disk_floor.py',
                 'deploy/engine_ready.py', 'deploy/continuous-parse/install.py',
                 'Engine/MonoSyllabism', 'praser/pdf_extract.py', 'praser/detector.py',
-                'praser/rabbit.py', 'model/zawgyiUnicodeModel.dat']
+                'praser/rabbit.py']
     missing = [p for p in required if not (ROOT / p).exists()]
     if missing:
         sys.exit('This must run inside an existing scraper checkout. Missing: '

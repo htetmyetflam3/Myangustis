@@ -109,7 +109,6 @@ export function ensureDataDir() {
 export function validatePraserAssets() {
   const required = [
     PRASER_MANAGER,
-    `${PARSER_MODEL_DIR}/zawgyiUnicodeModel.dat`,
     `${PARSER_MODEL_DIR}/mya.traineddata`,
     `${PARSER_MAP_DIR}/cipher-map.json`,
     `${PARSER_MAP_DIR}/mm-score.json`,

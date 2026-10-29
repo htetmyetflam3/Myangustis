@@ -98,17 +98,21 @@ def create_app():
         method = (request.form.get("method") or ("manual" if kind == "pdf" else "default")).lower()
         if method not in ("manual", "default"):
             return jsonify({"error": "method must be manual or default"}), 400
+        source_encoding = (request.form.get("source_encoding") or "auto").lower()
+        if source_encoding not in ("auto", "unicode", "zawgyi-one"):
+            return jsonify({"error": "source_encoding must be auto, unicode, or zawgyi-one"}), 400
         try:
             with tempfile.TemporaryDirectory(prefix="myangustis-preview-") as directory:
                 result = dispatch_bytes(data, f.filename, Path(directory) / "preview.txt",
                                         kind=kind, method=method, apply_cleanup=False,
-                                        include_preview=True)
+                                        include_preview=True, source_encoding=source_encoding)
         except Exception as e:  # noqa: BLE001
             return jsonify({"error": str(e)}), 400
 
         job = {
             "filename": os.path.basename(f.filename), "kind": kind, "data": data,
-            "method": method, "content": result.get("text", ""),
+            "method": method, "source_encoding": source_encoding,
+            "content": result.get("text", ""),
             "pages": result.get("pages", 0), "counts": result.get("counts") or {},
             "metadata": result.get("metadata") or {}, "changes": result.get("changes") or [],
             "ocr_pages": result.get("ocrPages", []), "encoding_path": result.get("encodingPath"),
@@ -151,7 +155,8 @@ def create_app():
             if apply_cleanup:
                 with tempfile.TemporaryDirectory(prefix="myangustis-content-") as directory:
                     result = dispatch_bytes(job["data"], job["filename"], Path(directory) / "content.txt",
-                                            kind=job["kind"], method=job["method"], apply_cleanup=True)
+                                            kind=job["kind"], method=job["method"], apply_cleanup=True,
+                                            source_encoding=job["source_encoding"])
                 body = result.get("text", "")
         except Exception as e:  # noqa: BLE001
             return jsonify({"error": str(e)}), 400
@@ -184,7 +189,8 @@ def create_app():
             with tempfile.TemporaryDirectory(prefix="myangustis-finalize-") as directory:
                 target = Path(directory) / f"output.{fmt}"
                 dispatch_bytes(job["data"], job["filename"], target, kind=job["kind"],
-                               method=job["method"], apply_cleanup=apply_cleanup, include_text=False)
+                               method=job["method"], apply_cleanup=apply_cleanup, include_text=False,
+                               source_encoding=job["source_encoding"])
                 payload = target.read_bytes()
         except Exception as e:  # noqa: BLE001
             return jsonify({"error": str(e)}), 400

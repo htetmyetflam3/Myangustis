@@ -27,7 +27,6 @@ import tempfile
 from functools import lru_cache
 from pathlib import Path
 
-from paths import find_model_path
 from decrypt import (
     decrypt_pdf,
     expand_object_streams,
@@ -35,6 +34,7 @@ from decrypt import (
     is_encrypted_pdf,
 )
 from rabbit import Rabbit
+from detector import contains_myanmar, has_only_zawgyi_fonts
 from cleanup import cleanup_text, order_text
 from legacy_order import count_zawcode_evidence, reorder_zawcode_text
 from docx_extract import extract_docx_paragraphs
@@ -174,13 +174,7 @@ def load_detector():
             "Place detector.py next to this script."
         )
 
-    model_path = find_model_path()
-    if not Path(model_path).is_file():
-        raise RuntimeError(
-            f"Zawgyi model not found (searched: {model_path}). "
-            "Expected zawgyiUnicodeModel.dat under module/model/ (or set ZAWGYI_MODEL)."
-        )
-    return ZawgyiDetector(model_path)
+    return ZawgyiDetector()
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -198,7 +192,7 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
     ``metadata`` is always ``{}`` — the final pipeline does not scan PDF
     metadata (that full-object regex pass was pure overhead).
 
-    Decoding strategy (model-first, fonts only as a last resort):
+    Decoding strategy (direct text first, then embedded font maps):
 
     1. When a ``detector`` is supplied, the first ``_DETECT_PROBE_PAGES``
        pages are decoded directly (Identity-H: the content-stream code IS the
@@ -253,7 +247,9 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
         has_img = page_has_images(objects, pnum, pgen)
         stats = getattr(code_to_uni, 'zawcode_stats', None)
         before = stats['glyphs'] if stats is not None else 0
-        lines, w, h = extract_page_lines(objects, pnum, pgen, code_to_uni)
+        font_names = set()
+        lines, w, h = extract_page_lines(objects, pnum, pgen, code_to_uni,
+                                         used_myanmar_fonts=font_names)
         used_draft_font = stats is not None and stats['glyphs'] > before
         return {
             "idx": idx,
@@ -264,6 +260,7 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
             # How the glyph ids became characters, carried to the report
             # because the cmap fork below needs it (JS: pg.decodeKind).
             "decode_kind": getattr(code_to_uni, "kind", None),
+            "font_names": font_names,
             "text_path": None if text_path == 'zawcode' and not used_draft_font else text_path,
         }
 
@@ -322,7 +319,7 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
                         yield item if item['text_path'] else fallback_page(idx)
                     return
 
-        # --- Pass 1: model-first direct (Identity-H) decoding -------------
+        # --- Pass 1: direct (Identity-H) decoding -------------------------
         # The codes ARE the code points; simple fonts on the same page still
         # go through their own declared encoding, so Latin resources are not
         # read as Myanmar code points.
@@ -331,7 +328,7 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
             probe_n = min(_DETECT_PROBE_PAGES, npages)
             probe = [_page(idx, direct) for idx in range(probe_n)]
             has_myanmar = any(
-                _is_myanmar_category(detector.detect(p["text"])[0]) for p in probe
+                contains_myanmar(p["text"]) for p in probe
             )
             if has_myanmar:
                 log("[+] Identity-H direct decode — no font/CMap lookup needed")
@@ -351,7 +348,7 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
         #     scrubbed codepoints) and must never win while a cmap decodes.
         # (b) ToUnicode CMaps (+ cross-volume sidecar fill) — fallback for
         #     CFF/OpenType fonts with no usable cmap.
-        # Each source is verified with the Markov model on probe pages.
+        # Each source is probed for Myanmar-script characters.
         #
         # None of them is a page-wide decoder any more: a source is the
         # document-level FALLBACK that the per-resource decoders in pdf_fonts
@@ -366,7 +363,7 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
                 pnum, pgen = all_pages[i]
                 plines, _, _ = extract_page_lines(objects, pnum, pgen, strategy)
                 t = "\n".join(x[3] for x in plines)
-                if _is_myanmar_category(detector.detect(t)[0]):
+                if contains_myanmar(t):
                     return True
             return False
 
@@ -557,26 +554,26 @@ def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
                     rep.update({'lines': pg['lines'], 'wh': pg['wh'], 'has_img': pg['has_img']})
                 yield rep
                 continue
-            category, prob = detector.detect(raw)
+            named_zawgyi = has_only_zawgyi_fonts(pg.get("font_names"))
+            category, prob = ("ZAWGYI", 1.0) if named_zawgyi else detector.detect(raw)
             cat = _norm_category(category)
-            cat = _cmap_fork(cat, raw, pg.get("decode_kind"), idx, category, log)
+            if not named_zawgyi:
+                cat = _cmap_fork(cat, raw, pg.get("decode_kind"), idx, category, log)
 
-            # Mark ordering is not a toggle and not a branch: every page
-            # gets it, Zawgyi after Rabbit, Unicode as extracted, Unknown
-            # too (where it is a no-op -- nothing to order outside Myanmar).
+            # Order known sources; keep ambiguous text unchanged.
             if cat == "ZAWGYI":
                 base = order_text(Rabbit.zg2uni(raw))
-                log(f"    Page {idx + 1}: ZAWGYI (p={prob:.3f}) -> converted")
+                log(f"    Page {idx + 1}: ZAWGYI (font/source evidence) -> converted")
             elif cat == "UNICODE":
                 base = order_text(raw)
-                log(f"    Page {idx + 1}: UNICODE (p={prob:.3f}) -> kept")
+                log(f"    Page {idx + 1}: UNICODE (source evidence) -> kept")
             else:
-                base = order_text(raw)
+                base = raw
                 log(f"    Page {idx + 1}: UNKNOWN -> passed through")
                 rep = {"page": idx + 1, "category": cat, "prob": _safe_prob(prob),
                        "text": base, "n_changes": 0}
                 if want_layout:
-                    rep.update({"lines": _conv_lines(pg["lines"], None, None),
+                    rep.update({"lines": pg["lines"],
                                 "wh": pg["wh"], "has_img": pg["has_img"]})
                 yield rep
                 continue
@@ -814,11 +811,7 @@ def process_pdf_bytes(data, detector, filename="upload.pdf", log=lambda m: None,
 #  DOCX input — same pipeline, different container
 # ═══════════════════════════════════════════════════════════════════════════
 
-# Paragraphs per detection/conversion chunk. The detector is a Markov model
-# over Myanmar codepoint sequences: it needs a run of text to be confident,
-# but a whole 300-page novel in one string would slow the per-chunk Rabbit
-# pass for no gain. 80 paragraphs ≈ one book page — same granularity the PDF
-# path detects at.
+# Keep bounded chunks for conversion and output.
 _DOCX_CHUNK_PARAGRAPHS = 80
 
 
@@ -860,8 +853,10 @@ def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: Non
         # category; imposter cleanup only where the Unicode branch allows it.
         if cat == "ZAWGYI":
             base = order_text(Rabbit.zg2uni(chunk))
+        elif cat == "UNICODE":
+            base = order_text(chunk)
         else:
-            base = order_text(chunk)  # UNICODE kept, UNKNOWN passed through
+            base = chunk
 
         clean = _cleanup_for(cat, base)   # UNICODE only
         reports.append({"page": idx + 1, "category": cat,

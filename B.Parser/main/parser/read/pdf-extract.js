@@ -5,6 +5,7 @@ import { ValueError, pyTruthy, pyInt, pyFloat, fromHexStrict, pyStripBytes } fro
 import { loadMapJson, mapNameForPath } from "../core/json-map.js";
 import { MAX_PAGES, positiveLimit } from "../core/limits.js";
 import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../codepage/registry.js";
+import { containsMyanmar } from "../text/detector.js";
 import {
   Lexer, PdfName, PdfHexBytes, isNumeric, toNumber,
   asDocumentDecoding, FontResourceLoader, LegacyAyarMap, UnsetFontDecoder, pageFontDecoders,
@@ -834,7 +835,7 @@ function joinDraftRuns(pieces, order) {
   return out;
 }
 
-export function extractPageLines(objects, pageNum, pageGen, decoding) {
+export function extractPageLines(objects, pageNum, pageGen, decoding, { usedMyanmarFonts = null } = {}) {
   const doc = asDocumentDecoding(decoding);
   const loader = documentLoader(doc, objects);
   const decoders = pageFontDecoders(loader, pageNum, pageGen, doc);
@@ -966,6 +967,7 @@ export function extractPageLines(objects, pageNum, pageGen, decoding) {
           const arg = decoder instanceof UnsetFontDecoder || !(shown instanceof PdfHexBytes)
             ? shown : shown.s;
           const text = decoder.decode(arg);
+          if (usedMyanmarFonts && containsMyanmar(text)) usedMyanmarFonts.add(decoder.baseFont || "");
           blockTexts.push(text);
           if (doc.zawcodeOrder) blockRuns.push([decoder.zawcodeGlyphs != null, text]);
         }

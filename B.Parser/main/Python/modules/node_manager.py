@@ -49,7 +49,7 @@ def _request(job, *, caller="site", operation="dispatch"):
 
 def dispatch_path(in_path, out_path, *, kind=None, filename=None, method=None,
                   apply_cleanup=True, include_text=True, include_preview=False,
-                  caller="site"):
+                  source_encoding="auto", caller="site"):
     source = Path(in_path).resolve()
     name = os.path.basename(filename or source.name)
     if kind is None:
@@ -62,13 +62,13 @@ def dispatch_path(in_path, out_path, *, kind=None, filename=None, method=None,
         "inPath": str(source), "outPath": str(Path(out_path).resolve()),
         "filename": name, "inputKind": kind,
         "applyCleanup": bool(apply_cleanup), "includeText": bool(include_text),
-        "includePreview": bool(include_preview),
+        "includePreview": bool(include_preview), "sourceEncoding": source_encoding,
     }, caller=caller)
 
 
 def dispatch_bytes(data, filename, out_path, *, kind, method=None,
                    apply_cleanup=True, include_text=True, include_preview=False,
-                   caller="site"):
+                   source_encoding="auto", caller="site"):
     with tempfile.TemporaryDirectory(prefix="myangustis-input-") as directory:
         source = Path(directory) / ("input.docx" if kind == "docx" else "input.pdf")
         fd = os.open(source, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
@@ -76,7 +76,8 @@ def dispatch_bytes(data, filename, out_path, *, kind, method=None,
             stream.write(data)
         return dispatch_path(source, out_path, kind=kind, filename=filename, method=method,
                              apply_cleanup=apply_cleanup, include_text=include_text,
-                             include_preview=include_preview, caller=caller)
+                             include_preview=include_preview,
+                             source_encoding=source_encoding, caller=caller)
 
 
 def render_text(in_path, out_path):

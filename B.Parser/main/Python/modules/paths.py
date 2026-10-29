@@ -15,13 +15,11 @@ centralized dirs live directly under it, NOT under a port dir:
       Python/module/         <- this package (model/ kept beside the code)
       js/module/             <- the Node port (model/ kept beside the code)
 
-  - Zawgyi model : module/model/zawgyiUnicodeModel.dat  (or $ZAWGYI_MODEL)
   - Myanmar fonts: Praser/fonts/Unicode/
   - Output fonts : Praser/fonts/output/ (Anonymous Pro + MyanmarSagar)
   - Default output dir: Praser/.output/  (or pass an explicit output path)
 """
 
-import os
 from pathlib import Path
 
 MODULE_DIR = Path(__file__).resolve().parent       # .../Praser/Python/module
@@ -31,11 +29,6 @@ PRASER_ROOT = PORT_DIR.parent                      # .../Praser (shared root)
 # Centralized input — samples and runtime uploads land here (docx/ pdf/ txt/).
 UPLOAD_DIR = PRASER_ROOT / "upload"
 INPUT_DIR = UPLOAD_DIR / "input"
-
-# Zawgyi detection Markov model (zawgyiUnicodeModel.dat) — kept per port,
-# beside the module code that loads it.
-MODEL_DIR = MODULE_DIR / "model"
-DEFAULT_MODEL_PATH = MODEL_DIR / "zawgyiUnicodeModel.dat"
 
 # Myanmar Unicode fonts are centralized under Praser/fonts/Unicode/
 FONT_DIR = PRASER_ROOT / "fonts" / "Unicode"
@@ -56,20 +49,6 @@ _LATIN_FONT_CANDIDATES = [
     Path("C:/Windows/Fonts/arial.ttf"),
     Path("/System/Library/Fonts/Supplemental/Arial.ttf"),
 ]
-
-
-def find_model_path():
-    """Return the path to zawgyiUnicodeModel.dat (first existing candidate)."""
-    candidates = [
-        os.environ.get("ZAWGYI_MODEL"),
-        MODULE_DIR / "model" / "zawgyiUnicodeModel.dat",  # module/model/ (actual location)
-        MODULE_DIR / "zawgyiUnicodeModel.dat",            # beside detector.py
-        PRASER_ROOT / "zawgyiUnicodeModel.dat",
-    ]
-    for cand in candidates:
-        if cand and Path(cand).is_file():
-            return str(Path(cand))
-    return str(DEFAULT_MODEL_PATH)
 
 
 def find_myanmar_font():

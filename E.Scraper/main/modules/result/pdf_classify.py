@@ -9,17 +9,16 @@ document is:
   image-dominance / text-based thresholds;
 * the parser's decoding ladder (Parsed/parser/pipeline.mjs streamPdfPages):
   identity probe -> merged embedded-font cmap -> /ToUnicode (+ sidecar
-  cipher map), each gated by the Zawgyi/Unicode detector.
+  cipher map), with Myanmar-script presence gating each decode.
 
 What is deliberately NOT here: OCR, legacy code-page voting, old-font
 recovery. Old-font documents are preserved as PDFs only, and the verdict
 is structural, not statistical: a document is old when its decoded text
 contains no Myanmar script at all, or decodes too little of the book to
 be a real reading (coverage floor), or fails the broken-text scan
-(scan.py rules — marks Burmese cannot write) after conversion. The
-Zawgyi/Unicode detector model has exactly one job here — splitting
-genuine Myanmar text between the two encodings for conversion; it never
-decides old vs convertable.
+(scan.py rules — marks Burmese cannot write) after conversion. Source
+encoding is inferred only from explicit Zawgyi-One font evidence;
+unlabelled or mixed-font text is left unchanged.
 
 Categories:
   ``convertable``  Unicode or Zawgyi-One text: ``result.text`` holds the
@@ -46,8 +45,7 @@ if str(_PRASER) not in sys.path:
     sys.path.insert(0, str(_PRASER))
 
 from cleanup import cleanup_text, order_text  # noqa: E402
-from detector import ZawgyiDetector  # noqa: E402
-from paths import find_model_path  # noqa: E402
+from detector import ZawgyiDetector, has_only_zawgyi_fonts  # noqa: E402
 from pdf_extract import (  # noqa: E402
     collect_pages,
     extract_page_lines,
@@ -436,13 +434,14 @@ _DETECTOR: ZawgyiDetector | None = None
 def get_detector() -> ZawgyiDetector:
     global _DETECTOR
     if _DETECTOR is None:
-        _DETECTOR = ZawgyiDetector(find_model_path())
+        _DETECTOR = ZawgyiDetector()
     return _DETECTOR
 
 
-def _page_text(objects, pages, idx, decoding) -> str:
+def _page_text(objects, pages, idx, decoding, font_names=None) -> str:
     pnum, pgen = pages[idx]
-    lines = extract_page_lines(objects, pnum, pgen, decoding)[0]
+    lines = extract_page_lines(objects, pnum, pgen, decoding,
+                               used_myanmar_fonts=font_names)[0]
     return "\n".join(line[3] for line in lines)
 
 
@@ -482,9 +481,8 @@ def choose_decoding(objects, pages, zawgyi_one_named: bool):
     """Return (DocumentDecoding, kind_label) for this document.
 
     The gate for each ladder rung is deterministic: does the decoded probe
-    text contain adjacent Myanmar-script characters at all? No statistical
-    model is consulted here — the model's only job in this module is the
-    Zawgyi/Unicode split, later.
+    text contain adjacent Myanmar-script characters at all? This does not
+    decide whether those characters are Unicode or Zawgyi.
     """
     npages = len(pages)
     probe_n = min(DETECT_PROBE_PAGES, npages)
@@ -546,7 +544,7 @@ def choose_decoding(objects, pages, zawgyi_one_named: bool):
 @dataclass
 class ClassifyResult:
     category: str                 # convertable | scanned | old
-    encoding: str | None = None   # zawgyi-one | unicode (convertable only)
+    encoding: str | None = None   # zawgyi-one | unicode | unknown (convertable only)
     pages: int = 0
     decode: str = "none"          # identity | cmap | tounicode | none
     text: str | None = None       # converted+normalised text (convertable)
@@ -570,16 +568,17 @@ class ClassifyResult:
                 "old": "old"}[self.category]
 
 
-def _convert_page(raw: str, detector) -> tuple[str, str]:
-    """Port of pipeline.mjs processPageRecord (text only, cleanup applied)."""
-    category, _prob = detector.detect(raw)
+def _convert_page(raw: str, detector, font_names=None) -> tuple[str, str]:
+    """Convert only when the source encoding has evidence."""
+    category, _prob = (("ZAWGYI", 1.0) if has_only_zawgyi_fonts(font_names)
+                       else detector.detect(raw))
     if category == "ZAWGYI":
         return order_text(Rabbit.zg2uni(raw)), category
     if category == "UNICODE":
         base = order_text(raw)
         clean = cleanup_text(base)
         return (clean if clean else base), category
-    return order_text(raw), "UNKNOWN"
+    return raw, "UNKNOWN"
 
 
 def classify_pdf(data: bytes, detector: ZawgyiDetector | None = None) -> ClassifyResult:
@@ -629,9 +628,10 @@ def classify_pdf(data: bytes, detector: ZawgyiDetector | None = None) -> Classif
             for i in range(sample_count)
         ]
     parts = []
+    sampled_font_names = set()
     for idx in indexes:
         try:
-            page_text = _page_text(objects, pages, idx, decoding)
+            page_text = _page_text(objects, pages, idx, decoding, sampled_font_names)
         except Exception:  # noqa: BLE001 - one broken page must not stop the doc
             page_text = ""
         parts.append(page_text)
@@ -680,22 +680,22 @@ def classify_pdf(data: bytes, detector: ZawgyiDetector | None = None) -> Classif
         result.ms = int((time.monotonic() - started) * 1000)
         return result
 
-    # The model's ONLY decision: is this Myanmar text Zawgyi or Unicode?
-    # (It cannot answer "is this a correct decode" — that is the scanner's
-    # job below.)
-    category, _prob = detector.detect(sampled_text)
-    encoding = "zawgyi-one" if category == "ZAWGYI" else "unicode"
+    # Named faces provide source evidence; unlabelled text stays unknown.
+    category, _prob = (("ZAWGYI", 1.0) if has_only_zawgyi_fonts(sampled_font_names)
+                       else detector.detect(sampled_text))
+    encoding = {"ZAWGYI": "zawgyi-one", "UNICODE": "unicode"}.get(category, "unknown")
 
     # --- full extraction + conversion, page by page ---
     converted: list[str] = []
     total_chars = 0
     truncated = False
     for idx in range(npages):
+        font_names = set()
         try:
-            raw = _page_text(objects, pages, idx, decoding)
+            raw = _page_text(objects, pages, idx, decoding, font_names)
         except Exception:  # noqa: BLE001
             raw = ""
-        page_out, _page_cat = _convert_page(raw, detector) if raw else ("", "")
+        page_out, _page_cat = _convert_page(raw, detector, font_names) if raw else ("", "")
         converted.append(page_out)
         total_chars += len(page_out)
         if total_chars > MAX_TEXT_CHARS:
@@ -804,11 +804,12 @@ def extract_convertable_text(
     total_chars = 0
     truncated = False
     for idx in range(len(pages)):
+        font_names = set()
         try:
-            raw = _page_text(objects, pages, idx, decoding)
+            raw = _page_text(objects, pages, idx, decoding, font_names)
         except Exception:  # noqa: BLE001 - one broken page must not stop the book
             raw = ""
-        page_out, _page_cat = _convert_page(raw, detector) if raw else ("", "")
+        page_out, _page_cat = _convert_page(raw, detector, font_names) if raw else ("", "")
         converted.append(page_out)
         total_chars += len(page_out)
         if total_chars > MAX_TEXT_CHARS:

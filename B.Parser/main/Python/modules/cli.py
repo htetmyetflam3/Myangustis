@@ -20,6 +20,8 @@ def parse_args(argv=None):
                         help="Apply the Manager's existing cleanup stage")
     parser.add_argument("--method", choices=["manual", "default"], default=None,
                         help="PDF defaults to manual page routing; DOCX defaults to default")
+    parser.add_argument("--source-encoding", choices=["auto", "unicode", "zawgyi-one"], default="auto",
+                        help="Declare the input encoding when the font is not labelled")
     parser.add_argument("--content", action="store_true", help="Print only the extracted body")
     parser.add_argument("--scan", nargs="?", const="auto", default="", metavar="LOG",
                         help="Run the existing optional text scan after conversion")
@@ -95,11 +97,13 @@ def run_cli(args):
         if args.content:
             with tempfile.TemporaryDirectory(prefix="myangustis-content-") as directory:
                 result = dispatch_path(source, Path(directory) / "content.txt", kind=kind,
-                                       method=args.method, apply_cleanup=apply_cleanup)
+                                       method=args.method, apply_cleanup=apply_cleanup,
+                                       source_encoding=args.source_encoding)
             sys.stdout.write(result.get("text", ""))
             return
         result = dispatch_path(source, out_path, kind=kind, method=args.method,
-                               apply_cleanup=apply_cleanup, include_text=True)
+                               apply_cleanup=apply_cleanup, include_text=True,
+                               source_encoding=args.source_encoding)
 
     if result.get("skipped"):
         raise ManagerError(result.get("reason") or "Manager skipped the input")
