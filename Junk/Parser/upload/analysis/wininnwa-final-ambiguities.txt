@@ -121,7 +121,7 @@ UNRESOLVED (the legacy output is not an answer):
 ==============================================================================
 bg-mlc-2-5.pdf /F4
 SHA-256: 31e1447e813a2b15bee4bc4b1be515764554378cfd254ee45d9f9c0a7eda686b
-Direct entries: 35; review resolutions: 60; unresolved byte slots: 18
+Direct entries: 35; review resolutions: 63; unresolved byte slots: 15
 
 BOOK 2: 0B 64 = တ္တ; 1D 6C = န္တ. Writing follows the requested
 same-versus-different upper rule; other upper consonants for 6C are not independently observed.
@@ -173,6 +173,8 @@ CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   3F = 'ဗ'  candidate window ဗျည်း / 3F 2A 17 04 14 (page 2)
   41 = 'င်္'  သင်္ကေတ / 06 18 23 41 0B (page 3)
   42 = 'ဏ္ဍ'  ဝါကျကဏ္ဍ / 21 09 23 2A 23 42 (page 2)
+  43 = 'ဤ'  ဤပါဠိသက်နာမ် / 04 22 23 06 17 04 36 12 43 16 09 63 1E 06 23 04 03 (page 13)
+    Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives.
   4A = '္ဗ'  သမ္ဗန္ဓ / 06 02 4A 1D 4B (page 3)
     149 of 150 occurrences follow 02; one follows 1D. Writing is restricted to the directly supported 02 pair until that observation is resolved.
   4B = '္ဓ'  သမ္ဗန္ဓ / 06 02 4A 1D 4B (page 3)
@@ -183,10 +185,14 @@ CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   52 = '’'  ‘က၊ခ’ / 51 23 11 13 52 (page 4)
   54 = 'ျွ'  ကျွန်မ / 23 54 03 04 02 (page 59)
   56 = 'ျှ'  candidate window သမျှ / 06 02 56 (page 12)
+  5A = 'ြ'  ကြိုက် / 18 22 23 05 23 04 11 12 5A 23 1E 1C 23 04 36 (page 7)
+    Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives.
   60 = 'ူ'  candidate window ဖြူ / 01 35 60 (page 15)
   61 = '္ပ'  အဓိပ္ပာယ် / 0A 31 1E 16 61 05 2C 04 (page 11)
   64 = '္တ'  မေတ္တာ / 18 02 0B 64 05 (page 12)
   66 = '္ဂ'  candidate window မဂ္ဂဇင်း / 02 40 66 5D 1A 04 14 (page 13)
+  67 = '့'  သန့်ရှင်းရေး / 14 19 0D 3E 12 06 03 04 67 20 28 1A 04 14 18 20 14 (page 20)
+    Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives.
   6A = '္ဆ'  တိရစ္ဆာန် / 0B 1E 20 1B 6A 05 03 04 (page 40)
   6C = '္တ'  မန္တလေး / 02 1D 6C 18 2D 14 (page 40)
   6D = '္ဘ'  ကမ္ဘာ့ / 23 02 6D 05 29 (page 47)
@@ -205,11 +211,10 @@ UNRESOLVED (the legacy output is not an answer):
     page 2: 1B 04 12 2D 02 04 14 1B [2E] 04 04 16 09 0B 24 12 2E
     page 2: 2E 04 04 16 09 0B 24 12 [2E] 23 2F 30 22 23 24 14 23
     page 2: 23 1E 1C 12 18 20 28 14 [2E] 24 14 1B 0C 05 12 01 16
-  43: occurrences=38; old output='ခ'; legacy bridge has no mapping; current fallback is not verified
-    page 2: 14 18 23 05 1A 04 14 12 [43] 01 02 03 04 02 05 12 06
-    page 5: 20 28 1E 06 17 04 36 12 [43] 0A 23 4D 20 05 0E 0F 10
-    page 13: 04 22 23 06 17 04 36 12 [43] 16 09 63 1E 06 23 04 03
   45: occurrences=275; old output='၄'; current output overlaps another observed byte; held for review
+    candidates requiring context: '၄', '၎'
+    အက္ခရာ ၄ လုံး (က၊ စ၊ တ၊ ပ) / 0A 23 4D 20 05 0E 45 10 2D 1F 1C 14 12 0E 23 11 12 1B 11 12 0B 11 12 16 10 (page 6)
+    ၎င်းတို့ / 45 1A 04 14 0B 1E 1C 32 (page 38)
     page 3: [45] 36
     page 3: [45] 21
     page 3: 15 [45]
@@ -235,8 +240,6 @@ UNRESOLVED (the legacy output is not an answer):
   59: occurrences=2; old output='္ဓ'; not one code point
     page 5: 0D 01 13 1A 04 14 4E 12 [59] 23 11 12 55 13 11 12 55
     page 45: 23 04 02 2A 05 14 12 18 [59] 23
-  5A: occurrences=1; old output='္ဂ'; not one code point
-    page 7: 18 22 23 05 23 04 11 12 [5A] 23 1E 1C 23 04 36
   5E: occurrences=9; old output='ျှ'; unresolved
     page 11: [5E] 04
     page 11: [5E] 4F 06 0B 04
@@ -245,10 +248,6 @@ UNRESOLVED (the legacy output is not an answer):
     page 11: [5F] 20 1E 2C 05 16 1C 0B 04
   62: occurrences=1; old output='၄'; legacy bridge has no mapping; current fallback is not verified
     page 11: 06 1E 2E [62] 34 21 04 14
-  67: occurrences=3; old output='၌'; current output overlaps another observed byte; held for review
-    page 20: 14 19 0D 3E 12 06 03 04 [67] 20 28 1A 04 14 18 20 14
-    page 44: 0A 1F 29 11 2D 0B 64 1F [67] 52 12
-    page 62: 1B 4C 17 04 14 0B 1E 1C [67] 06 17 04 12 03 05 02 04
   68: occurrences=5; old output='ည'; current output overlaps another observed byte; held for review
     page 24: 0E [68] 10 12
     page 39: 0E [68] 10 12 2C 28 2E 04 0B 0C

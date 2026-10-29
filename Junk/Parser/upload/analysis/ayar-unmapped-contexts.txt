@@ -860,9 +860,11 @@ UNRESOLVED (the legacy output is not an answer):
 ==============================================================================
 mm-grammar.pdf /TT35 (IWBEFM+Arlarwade)
 SHA-256: a7c9e0380ddaa992b8544130db21696438cbe6ec1b0afd8f262c9fc699623437
-Direct entries: 54; review resolutions: 10; unresolved byte slots: 40
+Direct entries: 54; review resolutions: 11; unresolved byte slots: 39
 
 CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
+  26 = 'န'  ဓနိတ / 49 29 4C 29 4A 4D 26 38 2B 24 32 (page 160)
+    Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives.
   28 = 'း'  candidate window အား / 24 35 28 (page 160)
   30 = 'ျ'  candidate window အချ / 24 25 30 (page 163)
   35 = 'ာ'  candidate window လျာ / 43 30 35 (page 160)
@@ -876,10 +878,6 @@ CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   80 = '္မ'  လိမ္မာ / 43 38 36 80 35 (page 174)
 
 UNRESOLVED (the legacy output is not an answer):
-  26: occurrences=2409; old output='န'; multiple observed bytes share this output
-    page 160: 24 25 [26] 27 28 29 21 2A 29 24 2B
-    page 160: 49 29 4C 29 4A 4D [26] 38 2B 24 32
-    page 160: 2A 29 [26] 2A 29 36 4A
   27: occurrences=9894; old output='်'; unresolved
     page 160: 24 25 26 [27] 28 29 21 2A 29 24 2B 2C
     page 160: 2F 30 31 [27] 28 24 32 33 34 35 29 2E
@@ -1036,7 +1034,7 @@ UNRESOLVED (the legacy output is not an answer):
 ==============================================================================
 mm-grammar.pdf /TT41 (FPRRRK+Arlarwade)
 SHA-256: 3da8a08e4a4bf0a6629f4efa1e5c0af7ce1d1349edf6580e2c74a33b56eea0ec
-Direct entries: 58; review resolutions: 10; unresolved byte slots: 46
+Direct entries: 58; review resolutions: 12; unresolved byte slots: 44
 
 CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   2A = 'န'  မြန်မာသဒ္ဒါ / 4A 31 2A 2B 31 32 3E 79 81 47 (page 217)
@@ -1047,6 +1045,10 @@ CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   4A = 'ြ'  candidate window ပြာ / 4A 34 32 (page 210)
   4C = 'ု'  candidate window ပြု / 4A 34 4C (page 215)
   5A = 'ူ'  candidate window မူလ / 31 5A 3A (page 210)
+  6D = '္စ'  ပစ္စည်း / 66 24 2B 28 27 34 33 6D 30 2B 2C 28 27 3E 31 (page 218)
+    Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives. Raw 6D occurs 466 times after 33=စ and twice after 6C (currently seeded as ဥ; the latter context needs separate review).
+  7C = '္ပ'  ပစ္စုပ္ပန် / 4C 34 7C 2A 2B 42 32 3A 4A 34 (page 245)
+    Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives.
   7F = '္တ'  သတ္တမ / 3E 24 7F 31 (page 230)
   81 = '္ဒ'  မြန်မာသဒ္ဒါ / 4A 31 2A 2B 31 32 3E 79 81 47 (page 217)
     Some occurrences follow other preceding bytes; do not infer that the same writing glyph is valid for a different upper consonant.
@@ -1156,10 +1158,6 @@ UNRESOLVED (the legacy output is not an answer):
     page 212: [6B] 38 4A 31 2A 2B 31 32 23
     page 215: 21 22 [6B]
     page 216: [6B] 38 6A 2B 6A 27
-  6D: occurrences=468; old output='္စ'; multiple code points
-    page 212: 28 27 34 6C [6D] 31 23 42 50 3B 32
-    page 218: 3C 66 24 2B 28 27 34 33 [6D] 30 2B 2C 28 27 3E 31 7A
-    page 219: 34 33 [6D] 30 2B 2C 54 42 2B 56 27
   6F: occurrences=1106; old output='ြ'; unresolved
     page 213: 3E 40 2B 34 36 2A 2B 2C [6F] 42 49 2C 3E 40 2B 70 3C
     page 213: 3E 40 2B 34 36 2A 2B 2C [6F] 42 49 2C 24 26 40 2B 27
@@ -1185,10 +1183,6 @@ UNRESOLVED (the legacy output is not an answer):
     page 216: 34 52 3E 24 2B 74 31 7A [7B] 79 3C 34 2B
     page 219: 21 5D 46 4A 31 5C 4A 4B [7B] 51 46 4A 31 4A 4B 7B
     page 219: 4B 7B 51 46 4A 31 4A 4B [7B]
-  7C: occurrences=75; old output='္ပ'; multiple code points
-    page 216: 23 5B 3C 34 [7C] 32 3F 2B
-    page 217: 23 2A 42 2B 23 5B 3C 34 [7C] 32 3F 2B 23 3B 4E 3D 40
-    page 217: 23 2A 42 2B 23 5B 3C 34 [7C] 32 3F 2B 23 3B 27 2A 32
   7D: occurrences=1; old output='္က'; multiple code points
     page 216: 2B 3A 52 3E 24 2B 24 42 [7D] 3E 3C 36 3A 2B
   7E: occurrences=1; old output='္ဇ'; multiple code points
@@ -1235,7 +1229,7 @@ UNRESOLVED (the legacy output is not an answer):
 ==============================================================================
 mm-grammar.pdf /TT49 (LOZWCO+Arlarwade)
 SHA-256: ab7518c9f0347ee639244fe89fce37115fb9f4fd0fa5b7b065c08ff104bb4c25
-Direct entries: 55; review resolutions: 10; unresolved byte slots: 63
+Direct entries: 55; review resolutions: 12; unresolved byte slots: 61
 
 CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   2B = 'န'  မြန်မာသဒ္ဒါ / 2F 30 2B 2C 30 31 39 48 7B 5B (page 295)
@@ -1243,6 +1237,10 @@ CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   2F = 'ြ'  မြန်မာသဒ္ဒါ / 2F 30 2B 2C 30 31 39 48 7B 5B (page 295)
   31 = 'ာ'  မြန်မာသဒ္ဒါ / 2F 30 2B 2C 30 31 39 48 7B 5B (page 295)
   35 = 'ိ'  candidate window အထိ / 24 4F 35 (page 279)
+  3E = '္ခ'  နက္ခတ် / 33 3F 28 28 28 3F 2B 33 3E 25 2C 29 28 32 33 (page 298)
+    Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives.
+  58 = 'ဏ္ဌ'  သဏ္ဌာန် / 33 31 32 29 28 39 58 31 2B 2C 29 28 52 (page 299)
+    Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives.
   5B = 'ါ'  မြန်မာသဒ္ဒါ / 2F 30 2B 2C 30 31 39 48 7B 5B (page 295)
   6E = '္တ'  သတ္တိ / 39 25 6E 35 (page 297)
   7B = '္ဒ'  မြန်မာသဒ္ဒါ / 2F 30 2B 2C 30 31 39 48 7B 5B (page 295)
@@ -1286,10 +1284,6 @@ UNRESOLVED (the legacy output is not an answer):
     page 279: 3A 25 2C 3B 27 3C 2C 30 [3D] 31 2D
     page 279: 41 38 2D 24 39 31 2D 30 [3D] 31 2D
     page 279: 41 38 2D 24 39 31 2D 30 [3D] 31 2D 3F 28 28 28 28
-  3E: occurrences=205; old output='္ခ'; multiple code points
-    page 279: 2F 30 2B 2C 30 31 24 33 [3E] 38 31
-    page 279: 2F 30 2B 2C 30 31 24 33 [3E] 38 31 24 41 38 2D 24 39
-    page 279: 2F 30 2B 2C 30 31 24 33 [3E] 38 31 25 35 36 50 39 4E
   40: occurrences=632; old output='ူ'; unresolved
     page 279: 30 [40] 38 37 2C 2D 24 41 38 2D
     page 279: 52 51 36 33 35 36 28 30 [40] 38 37 2C 2D 24 41 38 2D
@@ -1343,10 +1337,6 @@ UNRESOLVED (the legacy output is not an answer):
     page 279: 2C 54 3A 37 2C 4D 24 30 [57] 28 52 51 36 39 58 31 2B
     page 279: 2C 2D 33 35 36 39 35 55 [57] 37 2C 28
     page 279: 27 4C 38 35 3A 38 39 30 [57] 28 2F 30 2B 2C 30 31 41
-  58: occurrences=45; old output='ဏ္ဌ'; multiple code points
-    page 279: 24 30 57 28 52 51 36 39 [58] 31 2B 2C 24 34 37 2C 4D
-    page 279: 33 3E 38 31 52 51 36 39 [58] 31 2B 2C 25 35 36 50 33
-    page 280: 33 3E 38 31 52 51 36 39 [58] 31 2B 2C
   5E: occurrences=51; old output='ွှ'; unresolved
     page 279: 35 36 50 39 4E 2C 28 38 [5E] 51 4C 41 32 2D 2F 52 31
     page 279: 29 28 43 31 25 2C 24 4E [5E] 2B 2C 2D 30 3D 31 2D 33

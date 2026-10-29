@@ -8443,8 +8443,21 @@
               "raw": "2A 29 [26] 2A 29 36 4A"
             }
           ],
-          "reason": "multiple observed bytes share this output",
-          "engineCandidateCount": 127
+          "reason": "Provisional reading supported by the original Unicode grammar and the adjacent raw slots; not a global glyph proof.",
+          "engineCandidateCount": 127,
+          "reviewedValue": "\u1014",
+          "resolutionEvidence": {
+            "method": "Unicode grammar section matched to a page-stream raw window using previously mapped anchors; source chapter order was not used.",
+            "word": "\u1013\u1014\u102d\u1010",
+            "raw": "49 29 4C 29 4A 4D 26 38 2B 24 32",
+            "pageExample": 160,
+            "databaseSection": 6,
+            "chapter": "6",
+            "sourceTitle": "\u1046\u104b \u1017\u103b\u100a\u103a\u1038\u1021\u1000\u1039\u1001\u101b\u102c \u1044 \u1019\u103b\u102d\u102f\u1038",
+            "sourceText": "( \u1002 ) \u1013\u1014\u102d\u1010\u1021\u1000\u1039\u1001\u101b\u102c (\u101e\u1036\u1010\u1004\u103a\u1038\u1021\u1000\u1039\u1001\u101b\u102c)",
+            "matchedVisual": "(\u1002)\u1013\u1014\u102d\u1010\u1021\u1000",
+            "limitation": "Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives."
+          }
         },
         "33": {
           "currentOutput": "\u1039\u1001",
@@ -8940,7 +8953,8 @@
         "40": "\u103c",
         "5E": "\u1039\u1005",
         "6D": "\u1039\u1010",
-        "80": "\u1039\u1019"
+        "80": "\u1039\u1019",
+        "26": "\u1014"
       },
       "engineSeedSupportedBytes": 22,
       "visualOrderEvidence": {
@@ -10408,8 +10422,21 @@
               "raw": "34 33 [6D] 30 2B 2C 54 42 2B"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 35
+          "reason": "Provisional reading supported by the original Unicode grammar and the adjacent raw slots; not a global glyph proof.",
+          "engineCandidateCount": 35,
+          "reviewedValue": "\u1039\u1005",
+          "resolutionEvidence": {
+            "method": "Unicode grammar section matched to a page-stream raw window using previously mapped anchors; source chapter order was not used.",
+            "word": "\u1015\u1005\u1039\u1005\u100a\u103a\u1038",
+            "raw": "66 24 2B 28 27 34 33 6D 30 2B 2C 28 27 3E 31",
+            "pageExample": 218,
+            "databaseSection": 31,
+            "chapter": "12",
+            "sourceTitle": "( \u1002 ) \u1015\u1031\u102b\u1004\u103a\u1038\u1005\u1015\u103a\u1015\u102f\u1012\u103a",
+            "sourceText": "\u1048\u1042\u104b \u1015\u1031\u102b\u1004\u103a\u1038\u1005\u1015\u103a\u1015\u102f\u1012\u103a \u104b \u104b \u101d\u102d\u1018\u1010\u103a\u104a \u1015\u1005\u1039\u1005\u100a\u103a\u1038\u104a \u101e\u1019\u1039\u1017\u1014\u1039\u1013\u1010\u1005\u103a\u1001\u102f\u1001\u102f\u1000\u102d\u102f \u1000\u103c\u102c\u1038\u104c\u1019\u1001\u1036\u1018\u1032 \u101e\u102e\u1038\u1001\u103c\u102c\u1038\u1005\u1000\u102c\u1038\u101c\u102f\u1036\u1038 \u1042 \u101c\u102f\u1036\u1038\u104a \u1043 \u101c\u102f\u1036\u1038 \u1005\u101e\u100a\u103a\u1010\u102d\u102f\u1037\u1000\u102d\u102f \u1015\u1031\u102b\u1004\u103a\u1038\u1005\u1015\u103a\u1016\u103d\u1032\u1037\u1005\u100a\u103a\u1038\u1011\u102c\u1038\u101e\u100a\u1037\u103a\u1015\u102f\u1012\u103a\u1000\u102d\u102f \u1015\u1031\u102b\u1004\u103a\u1038\u1005\u1015\u103a\u1015\u102f\u1012\u103a\u101f\u102f \u1001\u1031\u102b\u103a\u101e\u100a\u103a\u104b",
+            "matchedVisual": "\u1018\u1010\u103a\u104a\u1015\u1005\u1039\u1005\u100a\u103a\u1038\u104a\u101e\u1019",
+            "limitation": "Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives. Raw 6D occurs 466 times after 33=\u1005 and twice after 6C (currently seeded as \u1025; the latter context needs separate review)."
+          }
         },
         "70": {
           "currentOutput": "\u101b",
@@ -10492,8 +10519,21 @@
               "raw": "42 2B 23 5B 3C 34 [7C] 32 3F 2B 23 3B 27"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 60
+          "reason": "Provisional reading supported by the original Unicode grammar and the adjacent raw slots; not a global glyph proof.",
+          "engineCandidateCount": 60,
+          "reviewedValue": "\u1039\u1015",
+          "resolutionEvidence": {
+            "method": "Unicode grammar section matched to a page-stream raw window using previously mapped anchors; source chapter order was not used.",
+            "word": "\u1015\u1005\u1039\u1005\u102f\u1015\u1039\u1015\u1014\u103a",
+            "raw": "4C 34 7C 2A 2B 42 32 3A 4A 34",
+            "pageExample": 245,
+            "databaseSection": 39,
+            "chapter": "13",
+            "sourceTitle": "\u1000\u102c\u101c",
+            "sourceText": "\u1042\u1045\u104b \u101e\u100a\u103a\u104a \u104f\u104a \u1015\u103c\u102e \u1000\u103c\u102d\u101a\u102c\u101d\u102d\u1018\u1010\u103a\u1010\u102d\u102f\u1037\u1000\u102d\u102f \"\u1015\u1005\u1039\u1005\u102f\u1015\u1039\u1015\u1014\u103a\u1000\u102c\u101c\u1015\u103c\u1000\u103c\u102d\u101a\u102c \u101d\u102d\u1018\u1010\u103a\u104a \u1021\u1010\u102d\u1010\u103a\u1000\u102c\u101c\u1015\u103c \u1000\u103c\u102d\u101a\u102c\u101d\u102d\u1018\u1010\u103a\"\u101f\u1030\u104d \u101e\u1010\u103a\u101e\u1010\u103a\u1019\u103e\u1010\u103a\u1019\u103e\u1010\u103a \u101e\u102f\u1036\u1038\u1005\u103d\u1032\u1001\u103c\u1004\u103a\u1038\u1019\u101b\u103e\u102d\u1001\u103b\u1031\u104b \u101d\u102b\u1000\u103b\u104f \u1006\u102d\u102f\u101c\u102d\u102f\u101e\u100a\u1037\u103a\u1021\u1013\u102d\u1015\u1039\u1015\u102c\u101a\u103a\u1014\u103e\u1004\u1037\u103a \u101d\u102b\u1000\u103b\u104c\u1015\u102b\u101d\u1004\u103a\u101e\u1031\u102c \u1021\u1001\u103b\u102d\u1014\u103a\u1015\u103c\u1015\u102f\u1012\u103a\u1000\u102d\u102f \u1011\u1031\u102c\u1000\u103a\u104d \u1015\u1005\u1039\u1005\u102f\u1015\u1039\u1015\u1014\u103a\u1014\u103e\u1004\u1037\u103a\u1021\u1010\u102d\u1010\u103a\u1000\u102d\u102f \u1001\u103d\u1032\u1001\u103c\u102c\u1038\u1014\u102d\u102f\u1004\u103a\u1001\u103c\u1004\u103a\u1038\u1016\u103c\u1005\u103a\u101e\u100a\u103a\u104b",
+            "matchedVisual": "\u102f\u1015\u1039\u1015\u1014\u103a\u1000\u102c\u101c\u103c\u1015",
+            "limitation": "Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives."
+          }
         },
         "7D": {
           "currentOutput": "\u1039\u1000",
@@ -10850,7 +10890,9 @@
         "2B": "\u103a",
         "81": "\u1039\u1012",
         "47": "\u102b",
-        "7F": "\u1039\u1010"
+        "7F": "\u1039\u1010",
+        "6D": "\u1039\u1005",
+        "7C": "\u1039\u1015"
       },
       "engineSeedSupportedBytes": 23,
       "visualOrderEvidence": {
@@ -10964,6 +11006,18 @@
               "24"
             ],
             "basis": "Same-consonant stack in the named source word; other preceding contexts are not generalized."
+          },
+          "6D": {
+            "precedingBytes": [
+              "33"
+            ],
+            "basis": "Repeated \u1005 stack in \u1015\u1005\u1039\u1005\u100a\u103a\u1038; other preceding contexts remain unverified."
+          },
+          "7C": {
+            "precedingBytes": [
+              "34"
+            ],
+            "basis": "Repeated \u1015 stack in \u1015\u1005\u1039\u1005\u102f\u1015\u1039\u1015\u1014\u103a; no other preceding context observed."
           }
         }
       }
@@ -12098,8 +12152,21 @@
               "raw": "2B 2C 30 31 24 33 [3E] 38 31 25 35 36 50"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 66
+          "reason": "Provisional reading supported by the original Unicode grammar and the adjacent raw slots; not a global glyph proof.",
+          "engineCandidateCount": 66,
+          "reviewedValue": "\u1039\u1001",
+          "resolutionEvidence": {
+            "method": "Unicode grammar section matched to a page-stream raw window using previously mapped anchors; source chapter order was not used.",
+            "word": "\u1014\u1000\u1039\u1001\u1010\u103a",
+            "raw": "33 3F 28 28 28 3F 2B 33 3E 25 2C 29 28 32 33",
+            "pageExample": 298,
+            "databaseSection": 11,
+            "chapter": "9",
+            "sourceTitle": "( \u1002 ) \u1015\u102b\u100c\u103a\u1006\u1004\u1037\u103a\u101b\u1031\u1038\u1014\u100a\u103a\u1038\u1014\u103e\u1004\u1037\u103a\u1016\u1010\u103a\u1014\u100a\u103a\u1038",
+            "sourceText": "\u1000 + \u1001 = \u1000\u1039\u1001 \u101e\u102c\u1013\u1000\u104b \u104b \u1014\u1000\u1039\u1001\u1010\u103a\u104a \u1005\u1000\u1039\u1001\u102f\u104b",
+            "matchedVisual": "\u1000\u104b\u104b\u1014\u1000\u1039\u1001\u1010\u103a\u104a\u1005\u1000",
+            "limitation": "Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives."
+          }
         },
         "42": {
           "currentOutput": "\u1039\u1000",
@@ -12182,8 +12249,21 @@
               "raw": "38 31 52 51 36 39 [58] 31 2B 2C"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 41
+          "reason": "Provisional reading supported by the original Unicode grammar and the adjacent raw slots; not a global glyph proof.",
+          "engineCandidateCount": 41,
+          "reviewedValue": "\u100f\u1039\u100c",
+          "resolutionEvidence": {
+            "method": "Unicode grammar section matched to a page-stream raw window using previously mapped anchors; source chapter order was not used.",
+            "word": "\u101e\u100f\u1039\u100c\u102c\u1014\u103a",
+            "raw": "33 31 32 29 28 39 58 31 2B 2C 29 28 52",
+            "pageExample": 299,
+            "databaseSection": 11,
+            "chapter": "9",
+            "sourceTitle": "( \u1002 ) \u1015\u102b\u100c\u103a\u1006\u1004\u1037\u103a\u101b\u1031\u1038\u1014\u100a\u103a\u1038\u1014\u103e\u1004\u1037\u103a\u1016\u1010\u103a\u1014\u100a\u103a\u1038",
+            "sourceText": "\u100f \u101e\u102c\u1013\u1000\u104b \u104b \u1000\u100f\u1039\u100b\u1000\u1031\u102c\u1005\u104a \u101e\u100f\u1039\u100c\u102c\u1014\u103a\u104a \u1015\u100f\u1039\u100d\u102d\u1010\u104b",
+            "matchedVisual": "\u1000\u102c\u1005\u104a\u101e\u100f\u1039\u100c\u102c\u1014\u103a\u104a\u1015",
+            "limitation": "Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives."
+          }
         },
         "61": {
           "currentOutput": "\u1039\u1013",
@@ -13036,7 +13116,9 @@
         "5B": "\u102b",
         "6E": "\u1039\u1010",
         "85": "\u1039\u1005",
-        "91": "\u1039\u1019"
+        "91": "\u1039\u1019",
+        "3E": "\u1039\u1001",
+        "58": "\u100f\u1039\u100c"
       },
       "engineSeedSupportedBytes": 22,
       "visualOrderEvidence": {
@@ -13162,6 +13244,12 @@
               "30"
             ],
             "basis": "Same-consonant stack in the named source word; other preceding contexts are not generalized."
+          },
+          "3E": {
+            "precedingBytes": [
+              "33"
+            ],
+            "basis": "Different-upper \u1000\u1039\u1001 stack in \u1014\u1000\u1039\u1001\u1010\u103a; other upper consonants are not generalized."
           }
         }
       }

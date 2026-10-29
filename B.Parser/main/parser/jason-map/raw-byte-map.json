@@ -2057,14 +2057,49 @@
           }
         },
         "43": {
-          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "reason": "Provisional reading supported by the original Unicode grammar and the adjacent raw slots; not a global glyph proof.",
           "currentOutput": "\u1001",
-          "observedOccurrences": 38
+          "observedOccurrences": 38,
+          "reviewedValue": "\u1024",
+          "resolutionEvidence": {
+            "method": "Unicode grammar section matched to a page-stream raw window using previously mapped anchors; source chapter order was not used.",
+            "word": "\u1024\u1015\u102b\u1020\u102d\u101e\u1000\u103a\u1014\u102c\u1019\u103a",
+            "raw": "04 22 23 06 17 04 36 12 43 16 09 63 1E 06 23 04 03",
+            "pageExample": 13,
+            "databaseSection": 35,
+            "chapter": "13",
+            "sourceTitle": "(\u1000) \u1014\u102c\u1019\u103a",
+            "sourceText": "\u101e\u102c\u1013\u1000 (\u1002) \u104c \u1016\u1031\u102c\u103a\u1015\u103c\u1011\u102c\u1038\u101e\u100a\u1037\u103a \u1015\u100a\u102c\u104a\u1019\u1031\u1010\u1039\u1010\u102c\u104a\u1005\u1031\u1010\u1014\u102c \u1005\u101e\u100a\u1037\u103a \u1014\u102c\u1019\u103a\u1010\u102d\u102f\u1037\u101e\u100a\u103a \u1015\u102b\u1020\u102d\u101e\u1000\u103a\u1014\u102c\u1019\u103a\u1019\u103b\u102c\u1038 \u1016\u103c\u1005\u103a\u1000\u103c\u101e\u100a\u103a\u104b \u1024\u1015\u102b\u1020\u102d\u101e\u1000\u103a\u1014\u102c\u1019\u103a\u1010\u102d\u102f\u1037\u1000\u102d\u102f \u1015\u102b\u1020\u102d\u101e\u1012\u1039\u1012\u102b\u1014\u100a\u103a\u1038\u1021\u101b \u1001\u103d\u1032\u1005\u102d\u1010\u103a\u104d \u101b\u1014\u102d\u102f\u1004\u103a\u1019\u100a\u103a \u1016\u103c\u1005\u103a\u101e\u1031\u102c\u103a\u101c\u100a\u103a\u1038 \u1019\u103c\u1014\u103a\u1019\u102c\u101e\u1012\u1039\u1012\u102b\u1014\u100a\u103a\u1038\u1021\u101b \u1001\u103d\u1032\u1005\u102d\u1010\u103a\u104d\u1019\u101b\u1014\u102d\u102f\u1004\u103a\u1015\u1031\u104b \u1011\u102d\u102f\u1037\u1000\u103c\u1031\u102c\u1004\u1037\u103a \u104e\u1004\u103a\u1038\u1010\u102d\u102f\u1037\u101e\u100a\u103a\u101c\u100a\u103a\u1038 \u1015\u1004\u103a\u1000\u102d\u102f\u1014\u102c\u1019\u103a\u1019\u103b\u102c\u1038\u1015\u1004\u103a \u1016\u103c\u1005\u103a\u1000\u103c\u101e\u100a\u103a\u104b",
+            "matchedVisual": "\u103a\u103c\u1000\u101e\u100a\u103a\u104b\u1024\u1015\u102b\u1020\u102d\u101e\u1000\u103a\u1014",
+            "limitation": "Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives."
+          }
         },
         "45": {
           "reason": "current output overlaps another observed byte; held for review",
           "currentOutput": "\u1044",
-          "observedOccurrences": 275
+          "observedOccurrences": 275,
+          "candidateValues": [
+            "\u1044",
+            "\u104e"
+          ],
+          "contextEvidence": {
+            "method": "The original Unicode grammar and raw source contexts support both \u1044 and \u104e; do not map unconditionally.",
+            "examples": [
+              {
+                "word": "\u1021\u1000\u1039\u1001\u101b\u102c \u1044 \u101c\u102f\u1036\u1038 (\u1000\u104a \u1005\u104a \u1010\u104a \u1015)",
+                "raw": "0A 23 4D 20 05 0E 45 10 2D 1F 1C 14 12 0E 23 11 12 1B 11 12 0B 11 12 16 10",
+                "pageExample": 6,
+                "databaseSection": 8,
+                "sourceText": "\u1019\u103c\u1014\u103a\u1019\u102c\u1021\u101e\u1010\u103a \u1041\u101d \u1015\u102b\u1038\u1010\u102d\u102f\u1037\u101e\u100a\u103a \u1015\u1011\u1019\u1021\u1000\u1039\u1001\u101b\u102c \u1044 \u101c\u102f\u1036\u1038 (\u1000\u1005\u1010\u1015) \u1015\u1009\u1039\u1005\u1019\u1021\u1000\u1039\u1001\u101b\u102c \u1044 \u101c\u102f\u1036\u1038 (\u1004\u104a \u100a\u104a \u1014\u104a \u1019) \u104a \u1009(\u100a\u1000\u101c\u1031\u1038)\u1021\u101d\u1002\u103a\u1019\u103e (\u101a) \u1010\u102d\u102f\u1037\u1000\u102d\u102f \u1010\u1036\u1001\u103d\u1014\u103a\u101c\u103d\u103e\u102c\u1038\u1011\u102c\u1038\u1001\u103c\u1004\u103a\u1038\u1015\u1004\u103a \u1016\u103c\u1005\u103a\u101e\u100a\u103a\u104b"
+              },
+              {
+                "word": "\u104e\u1004\u103a\u1038\u1010\u102d\u102f\u1037",
+                "raw": "45 1A 04 14 0B 1E 1C 32",
+                "pageExample": 38,
+                "databaseSection": 34
+              }
+            ]
+          }
         },
         "48": {
           "reason": "current output overlaps another observed byte; held for review",
@@ -2193,9 +2228,22 @@
           "observedOccurrences": 2
         },
         "5A": {
-          "reason": "not one code point",
+          "reason": "Provisional reading supported by the original Unicode grammar and the adjacent raw slots; not a global glyph proof.",
           "currentOutput": "\u1039\u1002",
-          "observedOccurrences": 1
+          "observedOccurrences": 1,
+          "reviewedValue": "\u103c",
+          "resolutionEvidence": {
+            "method": "Unicode grammar section matched to a page-stream raw window using previously mapped anchors; source chapter order was not used.",
+            "word": "\u1000\u103c\u102d\u102f\u1000\u103a",
+            "raw": "18 22 23 05 23 04 11 12 5A 23 1E 1C 23 04 36",
+            "pageExample": 7,
+            "databaseSection": 8,
+            "chapter": "8",
+            "sourceTitle": "\u1048\u104b \u1021\u101e\u1010\u103a\u1019\u103b\u102c\u1038",
+            "sourceText": "                   \u1000\u103c\u1000\u103a\u104a \u1000\u103c\u1031\u102c\u1000\u103a\u104a \u1000\u103c\u102d\u102f\u1000\u103a\u104b",
+            "matchedVisual": "\u1031\u103c\u1000\u102c\u1000\u103a\u104a\u103c\u1000\u102d\u102f\u1000\u103a\u104b",
+            "limitation": "Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives."
+          }
         },
         "5F": {
           "reason": "legacy bridge has no mapping; current fallback is not verified",
@@ -2259,9 +2307,22 @@
           }
         },
         "67": {
-          "reason": "current output overlaps another observed byte; held for review",
+          "reason": "Provisional reading supported by the original Unicode grammar and the adjacent raw slots; not a global glyph proof.",
           "currentOutput": "\u104c",
-          "observedOccurrences": 3
+          "observedOccurrences": 3,
+          "reviewedValue": "\u1037",
+          "resolutionEvidence": {
+            "method": "Unicode grammar section matched to a page-stream raw window using previously mapped anchors; source chapter order was not used.",
+            "word": "\u101e\u1014\u103a\u1037\u101b\u103e\u1004\u103a\u1038\u101b\u1031\u1038",
+            "raw": "14 19 0D 3E 12 06 03 04 67 20 28 1A 04 14 18 20 14",
+            "pageExample": 20,
+            "databaseSection": 36,
+            "chapter": "13",
+            "sourceTitle": "( \u1001 ) \u1014\u102c\u1019\u103a\u1005\u102c\u1038",
+            "sourceText": "(\u1043) \u1000\u103b\u1031\u102c\u1004\u103a\u1038\u101e\u102c\u1038\u1019\u103b\u102c\u1038\u101e\u100a\u103a\u1000\u103b\u1031\u102c\u1004\u103a\u1038\u101d\u1004\u103a\u1038\u1011\u1032\u104c \u101e\u1014\u103a\u1037\u101b\u103e\u1004\u103a\u1038\u101b\u1031\u1038 \u101c\u102f\u1015\u103a\u1014\u1031\u1000\u103c\u101e\u100a\u103a\u104b \u1021\u1019\u103b\u102c\u1038\u1005\u102f\u1000 \u1001\u103b\u102f\u1036\u1019\u103b\u102c\u1038\u1000\u102d\u102f \u101b\u103e\u1004\u103a\u1038\u101c\u1004\u103a\u1038\u1000\u103c\u101e\u100a\u103a\u104b",
+            "matchedVisual": "\u1038\u1011\u1032\u104c\u101e\u1014\u103a\u1037\u101b\u103e\u1004\u103a\u1038\u1031\u101b\u1038",
+            "limitation": "Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives."
+          }
         },
         "68": {
           "reason": "current output overlaps another observed byte; held for review",
@@ -2490,7 +2551,10 @@
         "70": "\u1039\u1019",
         "25": "\u100c",
         "39": "\u1009\u102c",
-        "4C": "\u1039\u1005"
+        "4C": "\u1039\u1005",
+        "43": "\u1024",
+        "5A": "\u103c",
+        "67": "\u1037"
       },
       "visualOrderEvidence": {
         "rawOrphanFlags": 4258,
