@@ -11,6 +11,11 @@ bg-mlc-1-1.pdf /F4
 SHA-256: 9b3622c34d21de53fb2a6dacd19e698f05dc46e2d32091ddefe42e23ab7916f2
 Direct seeds: 39; review resolutions: 47; unresolved byte slots: 19
 
+USER-CONFIRMED WRITING RULE: Book1 17 25 = က္က; 0B 5F = တ္တ.
+Same-consonant stack bytes are not assumed valid after different upper consonants.
+A source context 02 2B 5F 1F 21 14 (page 9; candidate မန္တလေး)
+conflicts with the 5F restriction; its interpretation remains unresolved.
+
 CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   01 = 'ြ'
   03 = 'န'

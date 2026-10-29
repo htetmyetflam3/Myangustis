@@ -718,7 +718,7 @@
               }
             ],
             "possibleValue": "\u1039\u1010",
-            "status": "held separately for user clarification because 5F was specified for \u1010\u1039\u1010"
+            "status": "Unresolved: candidate words appear to require \u1039\u1010 after \u1010, conflicting with the user-confirmed 0B 5F-only writing rule for \u1010\u1039\u1010."
           }
         },
         "5D": {
@@ -743,7 +743,13 @@
           "reason": "reviewed value conflicts with current output",
           "currentOutput": "\u1006",
           "reviewedValue": "\u1039\u1010",
-          "observedOccurrences": 53
+          "observedOccurrences": 53,
+          "contextConflict": {
+            "raw": "02 2B 5F 1F 21 14",
+            "wordCandidate": "\u1019\u1014\u1039\u1010\u101c\u1031\u1038",
+            "pageExample": 9,
+            "status": "Observed raw context conflicts with restricting 5F to a same-consonant stack. Retain the user-confirmed writing rule; do not infer a different-byte mapping without resolving the evidence."
+          }
         },
         "61": {
           "reason": "candidate revised using full-word context; previous decoder output differs",
@@ -954,8 +960,15 @@
             "precedingBytes": [
               "17"
             ]
+          },
+          "5F": {
+            "precedingBytes": [
+              "0B"
+            ],
+            "basis": "User specifies 5F for the repeated \u1010\u1039\u1010 stack; different upper and lower consonants use a separate glyph. This writing restriction does not resolve conflicting source observations."
           }
-        }
+        },
+        "sameConsonantStacks": "A confirmed duplicate-stack byte is valid only with its matching upper consonant. A stack with a different upper consonant uses a different byte, which must be identified separately."
       },
       "visualOrderEvidence": {
         "rawOrphanFlags": 1839,
