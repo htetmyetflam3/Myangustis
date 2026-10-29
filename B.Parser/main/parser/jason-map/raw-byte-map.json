@@ -44,7 +44,6 @@
         "27": "\u1004",
         "28": "\u103f",
         "2D": "\u1018",
-        "2E": "\u1040",
         "32": "\u1016",
         "34": "\u101f",
         "36": "\u1002",
@@ -74,15 +73,25 @@
         ],
         "\u103c": [
           "01",
-          "3E"
+          "3E",
+          "45",
+          "62"
         ],
         "\u102f": [
           "18",
           "1C"
         ],
+        "\u1037": [
+          "2C",
+          "33"
+        ],
         "\u1014": [
           "03",
           "2B"
+        ],
+        "\u1030": [
+          "2A",
+          "63"
         ]
       },
       "flaggedOrExcluded": {
@@ -107,7 +116,35 @@
         "09": {
           "currentOutput": "\u102b",
           "observedOccurrences": 449,
-          "orphanFlags": 149
+          "orphanFlags": 149,
+          "reviewedValue": "\u102b",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 1,
+                "raw": "1B 09 06 1D 04",
+                "words": [
+                  "\u1015\u102b\u101e\u100a\u103a"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "1B 09 14",
+                "words": [
+                  "\u1015\u102b\u1038"
+                ]
+              },
+              {
+                "page": 2,
+                "raw": "1B 09 06 1D 04",
+                "words": [
+                  "\u1015\u102b\u101e\u100a\u103a"
+                ]
+              }
+            ],
+            "matchingWindows": 139
+          }
         },
         "0C": {
           "currentOutput": "\u103d",
@@ -159,7 +196,35 @@
         "20": {
           "currentOutput": "\u1036",
           "observedOccurrences": 309,
-          "orphanFlags": 10
+          "orphanFlags": 10,
+          "reviewedValue": "\u1036",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 1,
+                "raw": "0A 1F 01 13 13 20",
+                "words": [
+                  "\u1021\u1001\u103c\u1031\u1001\u1036"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "0A 1F 01 13 13 20 1B 1D 05",
+                "words": [
+                  "\u1021\u1001\u103c\u1031\u1001\u1036\u1015\u100a\u102c"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "06 18 20 14",
+                "words": [
+                  "\u101e\u102f\u1036\u1038"
+                ]
+              }
+            ],
+            "matchingWindows": 366
+          }
         },
         "25": {
           "currentOutput": "\u1031",
@@ -176,12 +241,68 @@
         "2A": {
           "currentOutput": "\u1030",
           "observedOccurrences": 297,
-          "orphanFlags": 1
+          "orphanFlags": 1,
+          "reviewedValue": "\u1030",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 1,
+                "raw": "1F 17 29 05 27 04 14 06 2A",
+                "words": [
+                  "\u1000\u103b\u1031\u102c\u1004\u103a\u1038\u101e\u1030"
+                ]
+              },
+              {
+                "page": 6,
+                "raw": "24 2A 14",
+                "words": [
+                  "\u1011\u1030\u1038"
+                ]
+              },
+              {
+                "page": 6,
+                "raw": "0A 24 2A",
+                "words": [
+                  "\u1021\u1011\u1030"
+                ]
+              }
+            ],
+            "matchingWindows": 167
+          }
         },
         "2C": {
           "currentOutput": "\u1037",
           "observedOccurrences": 476,
-          "orphanFlags": 8
+          "orphanFlags": 8,
+          "reviewedValue": "\u1037",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 1,
+                "raw": "2B 15 27 04 2C",
+                "words": [
+                  "\u1014\u103e\u1004\u103a\u1037"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "1F 21 2C",
+                "words": [
+                  "\u101c\u1031\u1037"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "1F 21 2C 21 05",
+                "words": [
+                  "\u101c\u1031\u1037\u101c\u102c"
+                ]
+              }
+            ],
+            "matchingWindows": 575
+          }
         },
         "2F": {
           "currentOutput": "\u103b\u103d",
@@ -191,7 +312,35 @@
         "31": {
           "currentOutput": "\u102e",
           "observedOccurrences": 276,
-          "orphanFlags": 3
+          "orphanFlags": 3,
+          "reviewedValue": "\u102e",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 1,
+                "raw": "0A 1D 31",
+                "words": [
+                  "\u1021\u100a\u102e"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "2B 15 31 14",
+                "words": [
+                  "\u1014\u103e\u102e\u1038"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "26 27 04 14 2B 15 31 14",
+                "words": [
+                  "\u101b\u1004\u103a\u1038\u1014\u103e\u102e\u1038"
+                ]
+              }
+            ],
+            "matchingWindows": 274
+          }
         },
         "37": {
           "currentOutput": "\u1004\u103a\u1039",
@@ -207,17 +356,63 @@
         "49": {
           "currentOutput": "\u102d\u1036",
           "observedOccurrences": 43,
-          "orphanFlags": 0
+          "orphanFlags": 0,
+          "reviewedValue": "\u1039\u1005",
+          "reason": "candidate revised using full-word context; previous decoder output differs",
+          "resolutionEvidence": {
+            "method": "Whole dictionary word matched with known surrounding raw slots, across the listed PDF pages; context-supported.",
+            "word": "\u1015\u1005\u1039\u1005\u100a\u103a\u1038",
+            "raw": "1B 16 49 1D 04 14",
+            "pageExample": 2,
+            "rawMatches": 25
+          }
         },
         "4C": {
           "currentOutput": "\u102b\u103a",
           "observedOccurrences": 80,
-          "orphanFlags": 2
+          "orphanFlags": 2,
+          "reviewedValue": "\u102b\u103a",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 2,
+                "raw": "1F 13 4C",
+                "words": [
+                  "\u1001\u1031\u102b\u103a"
+                ]
+              },
+              {
+                "page": 2,
+                "raw": "1F 13 4C 06 1D 04",
+                "words": [
+                  "\u1001\u1031\u102b\u103a\u101e\u100a\u103a"
+                ]
+              },
+              {
+                "page": 3,
+                "raw": "1F 13 4C",
+                "words": [
+                  "\u1001\u1031\u102b\u103a"
+                ]
+              }
+            ],
+            "matchingWindows": 138
+          }
         },
         "50": {
           "currentOutput": "\u102b",
           "observedOccurrences": 56,
-          "orphanFlags": 0
+          "orphanFlags": 0,
+          "reviewedValue": "\u1039\u1015",
+          "reason": "candidate revised using full-word context; previous decoder output differs",
+          "resolutionEvidence": {
+            "method": "Whole dictionary word matched with known surrounding raw slots, across the listed PDF pages; context-supported.",
+            "word": "\u1021\u1013\u102d\u1015\u1039\u1015\u102c\u101a\u103a",
+            "raw": "0A 4D 19 1B 50 05 22 04",
+            "pageExample": 2,
+            "rawMatches": 36
+          }
         },
         "52": {
           "currentOutput": "\u103c",
@@ -242,7 +437,35 @@
         "63": {
           "currentOutput": "\u1030",
           "observedOccurrences": 4,
-          "orphanFlags": 0
+          "orphanFlags": 0,
+          "reviewedValue": "\u1030",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 10,
+                "raw": "01 32 63",
+                "words": [
+                  "\u1016\u103c\u1030"
+                ]
+              },
+              {
+                "page": 10,
+                "raw": "21 15 63",
+                "words": [
+                  "\u101c\u103e\u1030"
+                ]
+              },
+              {
+                "page": 10,
+                "raw": "0A 21 15 63",
+                "words": [
+                  "\u1021\u101c\u103e\u1030"
+                ]
+              }
+            ],
+            "matchingWindows": 5
+          }
         }
       },
       "unmapped": {
@@ -267,7 +490,35 @@
         "08": {
           "reason": "not one code point",
           "currentOutput": "\u1039\u1012",
-          "observedOccurrences": 22
+          "observedOccurrences": 22,
+          "reviewedValue": "\u1039\u1012",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 1,
+                "raw": "06 07 08 09",
+                "words": [
+                  "\u101e\u1012\u1039\u1012\u102b"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "06 07 08 09 03 1D 04 14",
+                "words": [
+                  "\u101e\u1012\u1039\u1012\u102b\u1014\u100a\u103a\u1038"
+                ]
+              },
+              {
+                "page": 2,
+                "raw": "06 07 08 09",
+                "words": [
+                  "\u101e\u1012\u1039\u1012\u102b"
+                ]
+              }
+            ],
+            "matchingWindows": 20
+          }
         },
         "0A": {
           "reason": "current output overlaps another observed byte; held for review",
@@ -319,24 +570,53 @@
           "reviewedValue": "\u1037"
         },
         "35": {
-          "reason": "not one code point",
+          "reason": "candidate revised using full-word context; previous decoder output differs",
           "currentOutput": "\u1039\u1019",
-          "observedOccurrences": 30
+          "observedOccurrences": 30,
+          "reviewedValue": "\u103b\u103d",
+          "resolutionEvidence": {
+            "method": "Full word with known surrounding slots; dictionary and raw-page contexts support this reading.",
+            "word": "\u1000\u103b\u103d\u1019\u103a\u1038",
+            "raw": "17 35 02 04 14",
+            "pageExample": 1
+          }
         },
         "39": {
-          "reason": "not one code point",
+          "reason": "resolved by word context; previous decoder output was incorrect",
           "currentOutput": "\u1039\u1001",
-          "observedOccurrences": 30
+          "observedOccurrences": 30,
+          "reviewedValue": "\u103b\u103e",
+          "resolutionEvidence": {
+            "word": "\u101c\u103b\u103e\u1004\u103a",
+            "raw": "21 39 27 04",
+            "rawMatches": 21,
+            "pageExample": 17,
+            "method": "known \u101c, \u1004, \u103a; full word and rendered source page"
+          }
         },
         "3A": {
-          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "reason": "candidate revised using full-word context; previous decoder output differs",
           "currentOutput": "\u1021",
-          "observedOccurrences": 63
+          "observedOccurrences": 63,
+          "reviewedValue": "\u1024",
+          "resolutionEvidence": {
+            "method": "Full-word raw context; source text uses \u1024\u101e\u102d\u102f\u1037 and \u1024\u101d\u102b\u1000\u103b, rather than the legacy fallback \u1021.",
+            "word": "\u1024\u101e\u102d\u102f\u1037",
+            "raw": "3A 06 18 19 33",
+            "pageExample": 12
+          }
         },
         "3C": {
-          "reason": "not one code point",
+          "reason": "candidate revised using full-word context; previous decoder output differs",
           "currentOutput": "\u1039\u1005",
-          "observedOccurrences": 14
+          "observedOccurrences": 14,
+          "reviewedValue": "\u100f",
+          "resolutionEvidence": {
+            "method": "Full word with known surrounding slots; dictionary and raw-page contexts support this reading.",
+            "word": "\u1015\u103c\u1005\u103a\u1012\u100f\u103a",
+            "raw": "01 1B 16 04 07 3C 04",
+            "pageExample": 16
+          }
         },
         "3F": {
           "reason": "current output overlaps another observed byte; held for review",
@@ -344,9 +624,17 @@
           "observedOccurrences": 69
         },
         "40": {
-          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "reason": "resolved by full-word context; legacy fallback value was incorrect",
           "currentOutput": "\u1012",
-          "observedOccurrences": 23
+          "observedOccurrences": 23,
+          "reviewedValue": "\u1039\u1001",
+          "resolutionEvidence": {
+            "word": "\u1021\u1000\u1039\u1001\u101b\u102c",
+            "raw": "0A 17 40 26 05",
+            "rawMatches": 23,
+            "pageExample": 2,
+            "method": "Known surrounding \u1021/\u1000/\u101b/\u102c, full master-dictionary word, and source page"
+          }
         },
         "44": {
           "reason": "current output overlaps another observed byte; held for review",
@@ -354,9 +642,37 @@
           "observedOccurrences": 52
         },
         "45": {
-          "reason": "not one code point",
+          "reason": "candidate revised using full-word context; previous decoder output differs",
           "currentOutput": "\u1039\u1018",
-          "observedOccurrences": 163
+          "observedOccurrences": 163,
+          "reviewedValue": "\u103c",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 2,
+                "raw": "45 17 19 22 05",
+                "words": [
+                  "\u1000\u103c\u102d\u101a\u102c"
+                ]
+              },
+              {
+                "page": 5,
+                "raw": "45 17 19 22 05",
+                "words": [
+                  "\u1000\u103c\u102d\u101a\u102c"
+                ]
+              },
+              {
+                "page": 6,
+                "raw": "45 17 19 22 05",
+                "words": [
+                  "\u1000\u103c\u102d\u101a\u102c"
+                ]
+              }
+            ],
+            "matchingWindows": 162
+          }
         },
         "46": {
           "reason": "current output overlaps another observed byte; held for review",
@@ -387,7 +703,23 @@
         "5C": {
           "reason": "observed after \u1010; exact value and relationship to 5F not yet established",
           "currentOutput": "",
-          "observedOccurrences": 2
+          "observedOccurrences": 2,
+          "contextEvidence": {
+            "wordCandidates": [
+              {
+                "word": "\u1000\u1010\u1039\u1010\u102c\u1038",
+                "raw": "17 0B 5C 05 14",
+                "pageExample": 6
+              },
+              {
+                "word": "\u1000\u103c\u101c\u1010\u1039\u1010\u1036\u1037",
+                "raw": "3E 17 21 0B 5C 20 33",
+                "pageExample": 17
+              }
+            ],
+            "possibleValue": "\u1039\u1010",
+            "status": "held separately for user clarification because 5F was specified for \u1010\u1039\u1010"
+          }
         },
         "5D": {
           "reason": "legacy bridge has no mapping; current fallback is not verified",
@@ -395,9 +727,17 @@
           "observedOccurrences": 12
         },
         "5E": {
-          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "reason": "candidate revised using full-word context; previous decoder output differs",
           "currentOutput": "\u100f",
-          "observedOccurrences": 7
+          "observedOccurrences": 7,
+          "reviewedValue": "\u1039\u1006",
+          "resolutionEvidence": {
+            "method": "Whole dictionary word matched with known surrounding raw slots, across the listed PDF pages; context-supported.",
+            "word": "\u1010\u102d\u101b\u1005\u1039\u1006\u102c\u1014\u103a",
+            "raw": "0B 19 26 16 5E 05 03 04",
+            "pageExample": 7,
+            "rawMatches": 6
+          }
         },
         "5F": {
           "reason": "reviewed value conflicts with current output",
@@ -406,19 +746,62 @@
           "observedOccurrences": 53
         },
         "61": {
-          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "reason": "candidate revised using full-word context; previous decoder output differs",
           "currentOutput": "\u1048",
-          "observedOccurrences": 19
+          "observedOccurrences": 19,
+          "reviewedValue": "\u1039\u1019",
+          "resolutionEvidence": {
+            "method": "Full word with known surrounding slots; dictionary and raw-page contexts support this reading.",
+            "word": "\u101c\u102d\u1019\u1039\u1019\u102c",
+            "raw": "21 19 02 61 05",
+            "pageExample": 9
+          }
         },
         "62": {
-          "reason": "not one code point",
+          "reason": "candidate revised using full-word context; previous decoder output differs",
           "currentOutput": "\u1039\u1012",
-          "observedOccurrences": 10
+          "observedOccurrences": 10,
+          "reviewedValue": "\u103c",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 9,
+                "raw": "62 02 19 1C",
+                "words": [
+                  "\u1019\u103c\u102d\u102f"
+                ]
+              },
+              {
+                "page": 9,
+                "raw": "62 02 19 1C 33",
+                "words": [
+                  "\u1019\u103c\u102d\u102f\u1037"
+                ]
+              },
+              {
+                "page": 15,
+                "raw": "62 1B 19 1C",
+                "words": [
+                  "\u1015\u103c\u102d\u102f"
+                ]
+              }
+            ],
+            "matchingWindows": 14
+          }
         },
         "64": {
-          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "reason": "candidate revised using full-word context; previous decoder output differs",
           "currentOutput": "\u1046",
-          "observedOccurrences": 16
+          "observedOccurrences": 16,
+          "reviewedValue": "\u1039\u101c",
+          "resolutionEvidence": {
+            "method": "Whole dictionary word matched with known surrounding raw slots, across the listed PDF pages; context-supported.",
+            "word": "\u1015\u102f\u101c\u1039\u101c\u102d\u1004\u103a",
+            "raw": "1B 18 21 64 19 27 04",
+            "pageExample": 12,
+            "rawMatches": 15
+          }
         },
         "65": {
           "reason": "legacy bridge has no mapping; current fallback is not verified",
@@ -436,9 +819,27 @@
           "observedOccurrences": 6
         },
         "69": {
-          "reason": "not one code point",
+          "reason": "candidate revised using full-word context; previous decoder output differs",
           "currentOutput": "\u100f\u1039\u100d",
-          "observedOccurrences": 2
+          "observedOccurrences": 2,
+          "reviewedValue": "\u1039\u1002",
+          "resolutionEvidence": {
+            "method": "Whole dictionary word matched with known surrounding raw slots, across the listed PDF pages; context-supported.",
+            "word": "\u1015\u102f\u1002\u1039\u1002\u102d\u102f\u101c\u103a",
+            "raw": "1B 18 36 69 19 1C 21 04",
+            "pageExample": 37,
+            "rawMatches": 2
+          }
+        },
+        "2E": {
+          "reason": "same-shaped Burmese zero and wa require context",
+          "currentOutput": "\u1040",
+          "candidateValues": [
+            "\u1040",
+            "\u101d"
+          ],
+          "evidence": "Used as a numeral and in Burmese words; the raw glyph alone cannot choose.",
+          "observedOccurrences": 433
         }
       },
       "candidateAlternates": {
@@ -512,7 +913,28 @@
         "1D": "\u100a",
         "2B": "\u1014",
         "30": "\u104c",
-        "07": "\u1012"
+        "07": "\u1012",
+        "39": "\u103b\u103e",
+        "20": "\u1036",
+        "2A": "\u1030",
+        "2C": "\u1037",
+        "31": "\u102e",
+        "45": "\u103c",
+        "62": "\u103c",
+        "63": "\u1030",
+        "4C": "\u102b\u103a",
+        "09": "\u102b",
+        "08": "\u1039\u1012",
+        "40": "\u1039\u1001",
+        "35": "\u103b\u103d",
+        "3C": "\u100f",
+        "61": "\u1039\u1019",
+        "49": "\u1039\u1005",
+        "50": "\u1039\u1015",
+        "5E": "\u1039\u1006",
+        "64": "\u1039\u101c",
+        "69": "\u1039\u1002",
+        "3A": "\u1024"
       },
       "writingRules": {
         "uVariants": {
@@ -649,7 +1071,6 @@
         "1A": "\u1004",
         "1B": "\u1005",
         "20": "\u101b",
-        "21": "\u1040",
         "23": "\u1000",
         "2C": "\u101a",
         "2E": "\u1025",
@@ -677,13 +1098,33 @@
         "6E": "\u104f"
       },
       "alternateBytes": {
+        "\u1020": [
+          "30",
+          "63"
+        ],
         "\u103c": [
           "01",
           "22"
         ],
+        "\u102f": [
+          "1C",
+          "34"
+        ],
         "\u1037": [
           "29",
           "32"
+        ],
+        "\u1014": [
+          "03",
+          "1D"
+        ],
+        "\u1030": [
+          "37",
+          "60"
+        ],
+        "\u1011": [
+          "19",
+          "26"
         ]
       },
       "flaggedOrExcluded": {
@@ -708,7 +1149,35 @@
         "09": {
           "currentOutput": "\u102b",
           "observedOccurrences": 988,
-          "orphanFlags": 476
+          "orphanFlags": 476,
+          "reviewedValue": "\u102b",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 2,
+                "raw": "16 09 06 17 04",
+                "words": [
+                  "\u1015\u102b\u101e\u100a\u103a"
+                ]
+              },
+              {
+                "page": 4,
+                "raw": "18 16 09",
+                "words": [
+                  "\u1015\u1031\u102b"
+                ]
+              },
+              {
+                "page": 4,
+                "raw": "18 16 09 1A 04",
+                "words": [
+                  "\u1015\u1031\u102b\u1004\u103a"
+                ]
+              }
+            ],
+            "matchingWindows": 490
+          }
         },
         "0C": {
           "currentOutput": "\u103d",
@@ -749,7 +1218,35 @@
         "1F": {
           "currentOutput": "\u1036",
           "observedOccurrences": 584,
-          "orphanFlags": 20
+          "orphanFlags": 20,
+          "reviewedValue": "\u1036",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 1,
+                "raw": "1D 1E 1C 1A 04 1A 1F",
+                "words": [
+                  "\u1014\u102d\u102f\u1004\u103a\u1004\u1036"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "0A 18 01 13 13 1F",
+                "words": [
+                  "\u1021\u1001\u103c\u1031\u1001\u1036"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "0A 18 01 13 13 1F 16 17 05",
+                "words": [
+                  "\u1021\u1001\u103c\u1031\u1001\u1036\u1015\u100a\u102c"
+                ]
+              }
+            ],
+            "matchingWindows": 201
+          }
         },
         "22": {
           "currentOutput": "\u103c",
@@ -760,7 +1257,35 @@
         "24": {
           "currentOutput": "\u102e",
           "observedOccurrences": 578,
-          "orphanFlags": 1
+          "orphanFlags": 1,
+          "reviewedValue": "\u102e",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 1,
+                "raw": "22 23 24 14",
+                "words": [
+                  "\u1000\u103c\u102e\u1038"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "18 23 05 04 02 0B 24",
+                "words": [
+                  "\u1000\u1031\u102c\u103a\u1019\u1010\u102e"
+                ]
+              },
+              {
+                "page": 2,
+                "raw": "22 23 24 14",
+                "words": [
+                  "\u1000\u103c\u102e\u1038"
+                ]
+              }
+            ],
+            "matchingWindows": 793
+          }
         },
         "28": {
           "currentOutput": "\u103e",
@@ -783,7 +1308,15 @@
         "30": {
           "currentOutput": "\u103b\u103d",
           "observedOccurrences": 7,
-          "orphanFlags": 0
+          "orphanFlags": 0,
+          "reviewedValue": "\u1020",
+          "reason": "candidate revised using full-word context; previous decoder output differs",
+          "resolutionEvidence": {
+            "method": "Full word with known surrounding slots; dictionary and raw-page contexts support this reading.",
+            "word": "\u1015\u102b\u1020\u102d",
+            "raw": "16 09 30 1E",
+            "pageExample": 6
+          }
         },
         "33": {
           "currentOutput": "\u103b\u103d",
@@ -793,12 +1326,68 @@
         "34": {
           "currentOutput": "\u102f",
           "observedOccurrences": 405,
-          "orphanFlags": 3
+          "orphanFlags": 3,
+          "reviewedValue": "\u102f",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 2,
+                "raw": "01 16 34",
+                "words": [
+                  "\u1015\u103c\u102f"
+                ]
+              },
+              {
+                "page": 2,
+                "raw": "01 16 34 1B 1C",
+                "words": [
+                  "\u1015\u103c\u102f\u1005\u102f"
+                ]
+              },
+              {
+                "page": 2,
+                "raw": "02 2A 1E 34",
+                "words": [
+                  "\u1019\u103b\u102d\u102f"
+                ]
+              }
+            ],
+            "matchingWindows": 845
+          }
         },
         "37": {
           "currentOutput": "\u1030",
           "observedOccurrences": 492,
-          "orphanFlags": 0
+          "orphanFlags": 0,
+          "reviewedValue": "\u1030",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 2,
+                "raw": "2D 0C 2C 04 23 37",
+                "words": [
+                  "\u101c\u103d\u101a\u103a\u1000\u1030"
+                ]
+              },
+              {
+                "page": 2,
+                "raw": "06 1A 04 2C 37",
+                "words": [
+                  "\u101e\u1004\u103a\u101a\u1030"
+                ]
+              },
+              {
+                "page": 2,
+                "raw": "18 23 2A 05 1A 04 14 06 37",
+                "words": [
+                  "\u1000\u103b\u1031\u102c\u1004\u103a\u1038\u101e\u1030"
+                ]
+              }
+            ],
+            "matchingWindows": 168
+          }
         },
         "3E": {
           "currentOutput": "\u1037",
@@ -813,7 +1402,15 @@
         "42": {
           "currentOutput": "\u1037",
           "observedOccurrences": 285,
-          "orphanFlags": 0
+          "orphanFlags": 0,
+          "reviewedValue": "\u100f\u1039\u100d",
+          "reason": "candidate revised using full-word context; previous decoder output differs",
+          "resolutionEvidence": {
+            "method": "Full word with known surrounding slots; dictionary and raw-page contexts support this reading.",
+            "word": "\u101d\u102b\u1000\u103b\u1000\u100f\u1039\u100d",
+            "raw": "21 09 23 2A 23 42",
+            "pageExample": 2
+          }
         },
         "4C": {
           "currentOutput": "\u102d\u1036",
@@ -828,7 +1425,35 @@
         "50": {
           "currentOutput": "\u102b\u103a",
           "observedOccurrences": 140,
-          "orphanFlags": 0
+          "orphanFlags": 0,
+          "reviewedValue": "\u102b\u103a",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 3,
+                "raw": "18 13 50",
+                "words": [
+                  "\u1001\u1031\u102b\u103a"
+                ]
+              },
+              {
+                "page": 3,
+                "raw": "18 13 50 06 17 04",
+                "words": [
+                  "\u1001\u1031\u102b\u103a\u101e\u100a\u103a"
+                ]
+              },
+              {
+                "page": 4,
+                "raw": "18 16 50",
+                "words": [
+                  "\u1015\u1031\u102b\u103a"
+                ]
+              }
+            ],
+            "matchingWindows": 237
+          }
         },
         "52": {
           "currentOutput": "\u103c",
@@ -848,7 +1473,35 @@
         "60": {
           "currentOutput": "\u1030",
           "observedOccurrences": 7,
-          "orphanFlags": 1
+          "orphanFlags": 1,
+          "reviewedValue": "\u1030",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 15,
+                "raw": "01 35 60",
+                "words": [
+                  "\u1016\u103c\u1030"
+                ]
+              },
+              {
+                "page": 24,
+                "raw": "2D 28 60",
+                "words": [
+                  "\u101c\u103e\u1030"
+                ]
+              },
+              {
+                "page": 24,
+                "raw": "0A 2D 28 60",
+                "words": [
+                  "\u1021\u101c\u103e\u1030"
+                ]
+              }
+            ],
+            "matchingWindows": 8
+          }
         }
       },
       "unmapped": {
@@ -860,7 +1513,35 @@
         "08": {
           "reason": "not one code point",
           "currentOutput": "\u1039\u1012",
-          "observedOccurrences": 48
+          "observedOccurrences": 48,
+          "reviewedValue": "\u1039\u1012",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 47,
+                "raw": "2B 1D 08",
+                "words": [
+                  "\u1006\u1014\u1039\u1012"
+                ]
+              },
+              {
+                "page": 47,
+                "raw": "0A 2D 1E 1C 2B 1D 08",
+                "words": [
+                  "\u1021\u101c\u102d\u102f\u1006\u1014\u1039\u1012"
+                ]
+              },
+              {
+                "page": 58,
+                "raw": "2B 1D 08",
+                "words": [
+                  "\u1006\u1014\u1039\u1012"
+                ]
+              }
+            ],
+            "matchingWindows": 18
+          }
         },
         "0E": {
           "reason": "current output overlaps another observed byte; held for review",
@@ -887,7 +1568,35 @@
         "13": {
           "reason": "current output overlaps another observed byte; held for review",
           "currentOutput": "\u1001",
-          "observedOccurrences": 1356
+          "observedOccurrences": 1356,
+          "reviewedValue": "\u1001",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 1,
+                "raw": "13 03 04 14",
+                "words": [
+                  "\u1001\u1014\u103a\u1038"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "0A 13 03 04 14",
+                "words": [
+                  "\u1021\u1001\u1014\u103a\u1038"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "18 01 13",
+                "words": [
+                  "\u1001\u103c\u1031"
+                ]
+              }
+            ],
+            "matchingWindows": 1798
+          }
         },
         "17": {
           "reason": "current output overlaps another observed byte; held for review",
@@ -897,12 +1606,68 @@
         "19": {
           "reason": "current output overlaps another observed byte; held for review",
           "currentOutput": "\u1011",
-          "observedOccurrences": 447
+          "observedOccurrences": 447,
+          "reviewedValue": "\u1011",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 1,
+                "raw": "18 19 05",
+                "words": [
+                  "\u1011\u1031\u102c"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "18 19 05 1A 04",
+                "words": [
+                  "\u1011\u1031\u102c\u1004\u103a"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "01 16 17 04 18 19 05 1A 04 1B 1C",
+                "words": [
+                  "\u1015\u103c\u100a\u103a\u1011\u1031\u102c\u1004\u103a\u1005\u102f"
+                ]
+              }
+            ],
+            "matchingWindows": 759
+          }
         },
         "1D": {
           "reason": "current output overlaps another observed byte; held for review",
           "currentOutput": "\u1014",
-          "observedOccurrences": 594
+          "observedOccurrences": 594,
+          "reviewedValue": "\u1014",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 1,
+                "raw": "1D 1E 1C 1A 04",
+                "words": [
+                  "\u1014\u102d\u102f\u1004\u103a"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "02 05 1D",
+                "words": [
+                  "\u1019\u102c\u1014"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "1D 28 1A 04",
+                "words": [
+                  "\u1014\u103e\u1004\u103a"
+                ]
+              }
+            ],
+            "matchingWindows": 635
+          }
         },
         "25": {
           "reason": "current output overlaps another observed byte; held for review",
@@ -912,7 +1677,35 @@
         "26": {
           "reason": "legacy bridge has no mapping; current fallback is not verified",
           "currentOutput": "\u1011",
-          "observedOccurrences": 63
+          "observedOccurrences": 63,
+          "reviewedValue": "\u1011",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 1,
+                "raw": "26 1E 1C",
+                "words": [
+                  "\u1011\u102d\u102f"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "26 1E 1C 14",
+                "words": [
+                  "\u1011\u102d\u102f\u1038"
+                ]
+              },
+              {
+                "page": 6,
+                "raw": "26 1E 1C",
+                "words": [
+                  "\u1011\u102d\u102f"
+                ]
+              }
+            ],
+            "matchingWindows": 66
+          }
         },
         "27": {
           "reason": "reviewed value conflicts with current output",
@@ -923,7 +1716,35 @@
         "2B": {
           "reason": "current output overlaps another observed byte; held for review",
           "currentOutput": "\u1006",
-          "observedOccurrences": 412
+          "observedOccurrences": 412,
+          "reviewedValue": "\u1006",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 2,
+                "raw": "2B 1E 1C",
+                "words": [
+                  "\u1006\u102d\u102f"
+                ]
+              },
+              {
+                "page": 2,
+                "raw": "2B 23 04",
+                "words": [
+                  "\u1006\u1000\u103a"
+                ]
+              },
+              {
+                "page": 2,
+                "raw": "2B 23 04 2D 23 04",
+                "words": [
+                  "\u1006\u1000\u103a\u101c\u1000\u103a"
+                ]
+              }
+            ],
+            "matchingWindows": 630
+          }
         },
         "2D": {
           "reason": "current output overlaps another observed byte; held for review",
@@ -954,14 +1775,49 @@
           "observedOccurrences": 2
         },
         "3A": {
-          "reason": "not one code point",
+          "reason": "candidate revised using full-word context; previous decoder output differs",
           "currentOutput": "\u1039\u1005",
-          "observedOccurrences": 102
+          "observedOccurrences": 102,
+          "reviewedValue": "\u100f",
+          "resolutionEvidence": {
+            "method": "Full word with known surrounding slots; dictionary and raw-page contexts support this reading.",
+            "word": "\u1002\u102f\u100f\u103a",
+            "raw": "40 1C 3A 04",
+            "pageExample": 12
+          }
         },
         "3F": {
           "reason": "current output overlaps another observed byte; held for review",
           "currentOutput": "\u1017",
-          "observedOccurrences": 52
+          "observedOccurrences": 52,
+          "reviewedValue": "\u1017",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 2,
+                "raw": "3F 2A 17 04 14",
+                "words": [
+                  "\u1017\u103b\u100a\u103a\u1038"
+                ]
+              },
+              {
+                "page": 2,
+                "raw": "3F 2A 17 04 14 0B 0C 0D",
+                "words": [
+                  "\u1017\u103b\u100a\u103a\u1038\u1010\u103d\u1032"
+                ]
+              },
+              {
+                "page": 3,
+                "raw": "3F 2A 17 04 14",
+                "words": [
+                  "\u1017\u103b\u100a\u103a\u1038"
+                ]
+              }
+            ],
+            "matchingWindows": 56
+          }
         },
         "43": {
           "reason": "legacy bridge has no mapping; current fallback is not verified",
@@ -989,14 +1845,50 @@
           "observedOccurrences": 149
         },
         "4D": {
-          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "reason": "candidate revised using full-word context; previous decoder output differs",
           "currentOutput": "\u104b",
-          "observedOccurrences": 17
+          "observedOccurrences": 17,
+          "reviewedValue": "\u1039\u1001",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 3,
+                "raw": "0A 23 4D 20 05",
+                "words": [
+                  "\u1021\u1000\u1039\u1001\u101b\u102c"
+                ]
+              },
+              {
+                "page": 5,
+                "raw": "0A 23 4D 20 05",
+                "words": [
+                  "\u1021\u1000\u1039\u1001\u101b\u102c"
+                ]
+              },
+              {
+                "page": 6,
+                "raw": "0A 23 4D 20 05",
+                "words": [
+                  "\u1021\u1000\u1039\u1001\u101b\u102c"
+                ]
+              }
+            ],
+            "matchingWindows": 17
+          }
         },
         "54": {
-          "reason": "not one code point",
+          "reason": "candidate revised using full-word context; previous decoder output differs",
           "currentOutput": "\u1039\u1019",
-          "observedOccurrences": 89
+          "observedOccurrences": 89,
+          "reviewedValue": "\u103b\u103d",
+          "resolutionEvidence": {
+            "method": "Whole dictionary word matched with known surrounding raw slots, across the listed PDF pages; context-supported.",
+            "word": "\u1000\u103b\u103d\u1014\u103a\u1019",
+            "raw": "23 54 03 04 02",
+            "pageExample": 59,
+            "rawMatches": 4
+          }
         },
         "55": {
           "reason": "not one code point",
@@ -1004,9 +1896,37 @@
           "observedOccurrences": 6
         },
         "56": {
-          "reason": "not one code point",
+          "reason": "candidate revised using full-word context; previous decoder output differs",
           "currentOutput": "\u1039\u1001",
-          "observedOccurrences": 130
+          "observedOccurrences": 130,
+          "reviewedValue": "\u103b\u103e",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 12,
+                "raw": "06 02 56",
+                "words": [
+                  "\u101e\u1019\u103b\u103e"
+                ]
+              },
+              {
+                "page": 24,
+                "raw": "2D 56 1A 04",
+                "words": [
+                  "\u101c\u103b\u103e\u1004\u103a"
+                ]
+              },
+              {
+                "page": 25,
+                "raw": "02 56 1A 04",
+                "words": [
+                  "\u1019\u103b\u103e\u1004\u103a"
+                ]
+              }
+            ],
+            "matchingWindows": 55
+          }
         },
         "58": {
           "reason": "not one code point",
@@ -1045,9 +1965,30 @@
           "observedOccurrences": 48
         },
         "66": {
-          "reason": "not one code point",
+          "reason": "candidate revised using full-word context; previous decoder output differs",
           "currentOutput": "\u100f\u1039\u100d",
-          "observedOccurrences": 5
+          "observedOccurrences": 5,
+          "reviewedValue": "\u1039\u1002",
+          "resolutionEvidence": {
+            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
+            "examples": [
+              {
+                "page": 13,
+                "raw": "02 40 66 5D 1A 04 14",
+                "words": [
+                  "\u1019\u1002\u1039\u1002\u1007\u1004\u103a\u1038"
+                ]
+              },
+              {
+                "page": 19,
+                "raw": "16 1C 40 66 2D 03 05 02 04 1B 05 14",
+                "words": [
+                  "\u1015\u102f\u1002\u1039\u1002\u101c\u1014\u102c\u1019\u103a\u1005\u102c\u1038"
+                ]
+              }
+            ],
+            "matchingWindows": 3
+          }
         },
         "67": {
           "reason": "current output overlaps another observed byte; held for review",
@@ -1088,6 +2029,16 @@
           "reason": "legacy bridge has no mapping; current fallback is not verified",
           "currentOutput": "\u100d",
           "observedOccurrences": 2
+        },
+        "21": {
+          "reason": "same-shaped Burmese zero and wa require context",
+          "currentOutput": "\u1040",
+          "candidateValues": [
+            "\u1040",
+            "\u101d"
+          ],
+          "evidence": "Used as a numeral and in Burmese words; the raw glyph alone cannot choose.",
+          "observedOccurrences": 1512
         }
       },
       "candidateAlternates": {
@@ -1179,7 +2130,28 @@
         "03": "\u1014",
         "17": "\u100a",
         "2D": "\u101c",
-        "3E": "\u104c"
+        "3E": "\u104c",
+        "13": "\u1001",
+        "1D": "\u1014",
+        "2B": "\u1006",
+        "34": "\u102f",
+        "37": "\u1030",
+        "4D": "\u1039\u1001",
+        "56": "\u103b\u103e",
+        "66": "\u1039\u1002",
+        "08": "\u1039\u1012",
+        "09": "\u102b",
+        "19": "\u1011",
+        "1F": "\u1036",
+        "24": "\u102e",
+        "26": "\u1011",
+        "3F": "\u1017",
+        "50": "\u102b\u103a",
+        "60": "\u1030",
+        "30": "\u1020",
+        "3A": "\u100f",
+        "42": "\u100f\u1039\u100d",
+        "54": "\u103b\u103d"
       },
       "visualOrderEvidence": {
         "rawOrphanFlags": 4258,
