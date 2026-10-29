@@ -1,74 +1,69 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import crypto from "node:crypto";
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { ENV_RESULT } from "../_path.js";
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-
-export const MASTER_ENC = path.join(HERE, "master.json.enc");
-const CACHE_FILE = path.join(HERE, "master.json.cache");
-
-const MAGIC = "MGR1";
-const CACHE_MAGIC = "MGC1";
+export const MASTER_ENC = path.join(HERE, 'master.json.enc');
+export const MASTER_KEY_FILE = path.join(HERE, 'master.key.txt');
+const CACHE_FILE = path.join(HERE, 'master.json.cache');
+const MASTER_MAGIC = 'MGR1';
+const CACHE_MAGIC = 'MGC1';
 const IV_BYTES = 12;
 const TAG_BYTES = 16;
 
-function checkKey(hex) {
-  const key = Buffer.from(hex, "hex");
-  if (key.length !== 32) throw new Error("MASTER_JSON_KEY must be a 32-byte hex key");
-  return key;
-}
-
 function loadKey() {
-  const key = process.env.MASTER_JSON_KEY;
-  if (!key) {
-    const searched = ENV_RESULT.sources.length ? ENV_RESULT.sources.join(", ") : "no .env files found";
-    throw new Error(`Missing required secret "MASTER_JSON_KEY". Checked process.env and ${searched}.`);
+  let hex = (process.env.MASTER_JSON_KEY || '').trim();
+  if (!hex) {
+    try {
+      hex = fs.readFileSync(MASTER_KEY_FILE, 'utf8').trim();
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+      throw new Error('MASTER_JSON_KEY or the tracked master.key.txt is required');
+    }
   }
-  return checkKey(key);
+  if (!/^[0-9a-f]{64}$/i.test(hex)) {
+    throw new Error('The master key must be exactly 32 bytes in hexadecimal');
+  }
+  return Buffer.from(hex, 'hex');
 }
 
-function seal(magic, key, plaintext) {
-  const iv = crypto.randomBytes(IV_BYTES);
-  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
-  const body = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
-  return Buffer.concat([Buffer.from(magic, "ascii"), iv, cipher.getAuthTag(), body]);
+function digest(data) {
+  return crypto.createHash('sha256').update(data).digest('hex');
 }
 
-function openContainer(magic, key, file) {
-  const buf = fs.readFileSync(file);
-  if (
-    buf.length < 4 + IV_BYTES + TAG_BYTES ||
-    buf.subarray(0, 4).toString("ascii") !== magic
-  ) {
-    throw new Error(`invalid ${magic} container: ${file}`);
+function openContainer(magic, key, bytes, source) {
+  const headerBytes = 4 + IV_BYTES + TAG_BYTES;
+  if (bytes.length < headerBytes || bytes.subarray(0, 4).toString('ascii') !== magic) {
+    throw new Error(`Invalid ${magic} container: ${source}`);
   }
-  const iv = buf.subarray(4, 4 + IV_BYTES);
-  const tag = buf.subarray(4 + IV_BYTES, 4 + IV_BYTES + TAG_BYTES);
-  const body = buf.subarray(4 + IV_BYTES + TAG_BYTES);
-  const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+  const iv = bytes.subarray(4, 4 + IV_BYTES);
+  const tag = bytes.subarray(4 + IV_BYTES, headerBytes);
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
   decipher.setAuthTag(tag);
-  return Buffer.concat([decipher.update(body), decipher.final()]).toString("utf8");
+  return Buffer.concat([decipher.update(bytes.subarray(headerBytes)), decipher.final()]).toString('utf8');
 }
 
-function sha256(file) {
-  return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+function sealCache(key, text) {
+  const iv = crypto.randomBytes(IV_BYTES);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const ciphertext = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
+  return Buffer.concat([Buffer.from(CACHE_MAGIC, 'ascii'), iv, cipher.getAuthTag(), ciphertext]);
+}
+
+function writeCache(key, sourceHash, text) {
+  const tmp = `${CACHE_FILE}.${process.pid}.${crypto.randomBytes(6).toString('hex')}.tmp`;
+  try {
+    fs.writeFileSync(tmp, sealCache(key, JSON.stringify({ src: sourceHash, text })), {
+      mode: 0o600,
+      flag: 'wx',
+    });
+    fs.renameSync(tmp, CACHE_FILE);
+  } catch {
+    // Caching is optional; a read-only or full disk must not block decryption.
+  } finally {
+    try { fs.rmSync(tmp, { force: true }); } catch { /* best-effort cleanup */ }
+  }
 }
 
 let memoizedText;
@@ -76,72 +71,62 @@ let memoizedJson;
 let memoizedSourceHash;
 let memoizedKeyHash;
 
-export function masterFingerprint() {
-  return sha256(MASTER_ENC);
-}
-
-function rememberMaster(text, sourceHash, keyHash) {
-  const parsed = JSON.parse(text);
+function remember(text, sourceHash, keyHash) {
+  memoizedJson = JSON.parse(text);
   memoizedText = text;
-  memoizedJson = parsed;
   memoizedSourceHash = sourceHash;
   memoizedKeyHash = keyHash;
   return text;
 }
 
-function writeCache(key, sourceHash, text) {
-  const tmp = `${CACHE_FILE}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, seal(CACHE_MAGIC, key, JSON.stringify({ src: sourceHash, text })));
-  fs.renameSync(tmp, CACHE_FILE);
+export function masterFingerprint() {
+  return digest(fs.readFileSync(MASTER_ENC));
 }
 
 export function readMasterText() {
   const key = loadKey();
-  const sourceHash = masterFingerprint();
-  const keyHash = crypto.createHash("sha256").update(key).digest("hex");
+  const sealed = fs.readFileSync(MASTER_ENC);
+  const sourceHash = digest(sealed);
+  const keyHash = digest(key);
   if (memoizedText !== undefined && memoizedSourceHash === sourceHash && memoizedKeyHash === keyHash) {
     return memoizedText;
   }
   if (fs.existsSync(CACHE_FILE)) {
     try {
-      const envelope = JSON.parse(openContainer(CACHE_MAGIC, key, CACHE_FILE));
-      if (envelope.src === sourceHash && typeof envelope.text === "string") {
-        return rememberMaster(envelope.text, sourceHash, keyHash);
+      const cached = JSON.parse(openContainer(CACHE_MAGIC, key, fs.readFileSync(CACHE_FILE), CACHE_FILE));
+      if (cached.src === sourceHash && typeof cached.text === 'string') {
+        return remember(cached.text, sourceHash, keyHash);
       }
     } catch {
-      // Wrong key (rotation), tampered or stale cache — rebuild below.
+      // A stale or damaged encrypted cache is rebuilt from the master below.
     }
   }
-  const text = openContainer(MAGIC, key, MASTER_ENC);
-  const parsed = JSON.parse(text);
+  const text = openContainer(MASTER_MAGIC, key, sealed, MASTER_ENC);
+  remember(text, sourceHash, keyHash);
   writeCache(key, sourceHash, text);
-  memoizedText = text;
-  memoizedJson = parsed;
-  memoizedSourceHash = sourceHash;
-  memoizedKeyHash = keyHash;
   return text;
 }
 
 export function readMasterJson() {
   readMasterText();
-  // Each caller receives its own object, as it did when parsing on every call.
   return globalThis.structuredClone(memoizedJson);
 }
 
-
-
-function isMasterFile(file) {
-  const enc = file.endsWith(".enc") ? file : `${file}.enc`;
-  return path.resolve(enc) === MASTER_ENC;
-}
-
 export function readSecureText(file) {
-  if (isMasterFile(file)) return readMasterText();
-  const enc = file.endsWith(".enc") ? file : `${file}.enc`;
-  if (fs.existsSync(enc)) return openContainer(MAGIC, loadKey(), enc);
-  return fs.readFileSync(file, "utf8");
+  const name = file instanceof URL ? fileURLToPath(file) : file;
+  if (typeof name !== 'string') throw new TypeError('Expected a file path');
+  const encrypted = name.endsWith('.enc') ? name : `${name}.enc`;
+  if (path.resolve(encrypted) === MASTER_ENC) return readMasterText();
+  if (fs.existsSync(encrypted)) {
+    return openContainer(MASTER_MAGIC, loadKey(), fs.readFileSync(encrypted), encrypted);
+  }
+  return fs.readFileSync(name, 'utf8');
 }
 
 export function readSecureJson(file) {
-  return isMasterFile(file) ? readMasterJson() : JSON.parse(readSecureText(file));
+  const name = file instanceof URL ? fileURLToPath(file) : file;
+  const encrypted = typeof name === 'string' && (name.endsWith('.enc') ? name : `${name}.enc`);
+  return encrypted && path.resolve(encrypted) === MASTER_ENC
+    ? readMasterJson()
+    : JSON.parse(readSecureText(file));
 }

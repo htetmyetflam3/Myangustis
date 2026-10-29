@@ -20,6 +20,11 @@
     "id": "£000"
   },
   {
+    "original": "ဣ",
+    "mapped": "«",
+    "id": "«000"
+  },
+  {
     "original": "အ",
     "mapped": "¶",
     "id": "¶000"
@@ -13181,7 +13186,7 @@
   },
   {
     "original": "င်္က္က",
-    "mapped": "E#«",
+    "mapped": "E#Aက",
     "id": "E546"
   },
   {
@@ -13351,63 +13356,63 @@
   },
   {
     "original": "က္က",
-    "mapped": "«",
-    "id": "«580"
+    "mapped": "Aက",
+    "id": "A505"
   },
   {
     "original": "က္ကာ",
-    "mapped": "«¼",
-    "id": "«011"
+    "mapped": "Aက¼",
+    "id": "A506"
   },
   {
     "original": "က္ကာာ",
-    "mapped": "«¼¼",
-    "id": "«581"
+    "mapped": "Aက¼",
+    "id": "A506"
   },
   {
     "original": "က္ကိ",
-    "mapped": "«Ð",
-    "id": "«012"
+    "mapped": "AကÐ",
+    "id": "A507"
   },
   {
     "original": "က္ကိံ",
-    "mapped": "«Ð¾",
-    "id": "«292"
+    "mapped": "AကÐ¾",
+    "id": "A580"
   },
   {
     "original": "က္ကီ",
-    "mapped": "«Þ",
-    "id": "«002"
+    "mapped": "AကÞ",
+    "id": "A508"
   },
   {
     "original": "က္ကု",
-    "mapped": "«ð",
-    "id": "«003"
+    "mapped": "Aကð",
+    "id": "A509"
   },
   {
     "original": "က္ကူ",
-    "mapped": "«þ",
-    "id": "«004"
+    "mapped": "Aကþ",
+    "id": "A581"
   },
   {
     "original": "က္ကေ",
-    "mapped": "«∆",
-    "id": "«013"
+    "mapped": "Aက∆",
+    "id": "A510"
   },
   {
     "original": "က္ကော",
-    "mapped": "«∆¼",
-    "id": "«008"
+    "mapped": "Aက∆¼",
+    "id": "A511"
   },
   {
     "original": "က္ကံ",
-    "mapped": "«¾",
-    "id": "«006"
+    "mapped": "Aက¾",
+    "id": "A582"
   },
   {
     "original": "က္က္",
-    "mapped": "«$",
-    "id": "«582"
+    "mapped": "Aက$",
+    "id": "A583"
   },
   {
     "original": "က္ခ",
@@ -13417,7 +13422,7 @@
   {
     "original": "က္ခာ",
     "mapped": "Aခ¼",
-    "id": "A583"
+    "id": "A584"
   },
   {
     "original": "က္ခိ",
@@ -13432,12 +13437,12 @@
   {
     "original": "က္ခိံ",
     "mapped": "AခÐ¾",
-    "id": "A584"
+    "id": "A585"
   },
   {
     "original": "က္ခီ",
     "mapped": "AခÞ",
-    "id": "A585"
+    "id": "A586"
   },
   {
     "original": "က္ခု",
@@ -13447,12 +13452,12 @@
   {
     "original": "က္ခုံ",
     "mapped": "Aခð¾",
-    "id": "A586"
+    "id": "A587"
   },
   {
     "original": "က္ခူ",
     "mapped": "Aခþ",
-    "id": "A587"
+    "id": "A588"
   },
   {
     "original": "က္ခေ",
@@ -13462,47 +13467,47 @@
   {
     "original": "က္ခော",
     "mapped": "Aခ∆¼",
-    "id": "A588"
+    "id": "A589"
   },
   {
     "original": "က္ခံ",
     "mapped": "Aခ¾",
-    "id": "A589"
+    "id": "A590"
   },
   {
     "original": "က္ခ္",
     "mapped": "Aခ$",
-    "id": "A590"
+    "id": "A591"
   },
   {
     "original": "က္ချ",
     "mapped": "Aခ*",
-    "id": "A591"
+    "id": "A592"
   },
   {
     "original": "က္ချာ",
     "mapped": "Aခ*¼",
-    "id": "A592"
+    "id": "A593"
   },
   {
     "original": "က္ခွာ",
     "mapped": "Aခ¤¼",
-    "id": "A593"
+    "id": "A594"
   },
   {
     "original": "က္စ",
     "mapped": "Aစ",
-    "id": "A594"
+    "id": "A595"
   },
   {
     "original": "က္တ္",
     "mapped": "Aတ$",
-    "id": "A595"
+    "id": "A596"
   },
   {
     "original": "က္မု",
     "mapped": "Aမð",
-    "id": "A596"
+    "id": "A597"
   },
   {
     "original": "က္လ",
@@ -13517,12 +13522,12 @@
   {
     "original": "က္လေ",
     "mapped": "Aလ∆",
-    "id": "A597"
+    "id": "A598"
   },
   {
     "original": "က္သော",
     "mapped": "Aသ∆¼",
-    "id": "A598"
+    "id": "A599"
   },
   {
     "original": "ဂ္ဂ",
@@ -13542,12 +13547,12 @@
   {
     "original": "ဂ္ဂို",
     "mapped": "CဂÐð",
-    "id": "C599"
+    "id": "C600"
   },
   {
     "original": "ဂ္ဂိံ",
     "mapped": "CဂÐ¾",
-    "id": "C600"
+    "id": "C601"
   },
   {
     "original": "ဂ္ဂီ",
@@ -13562,7 +13567,7 @@
   {
     "original": "ဂ္ဂူ",
     "mapped": "Cဂþ",
-    "id": "C601"
+    "id": "C602"
   },
   {
     "original": "ဂ္ဂေ",
@@ -13577,12 +13582,12 @@
   {
     "original": "ဂ္ဂံ",
     "mapped": "Cဂ¾",
-    "id": "C602"
+    "id": "C603"
   },
   {
     "original": "ဂ္ဂ္",
     "mapped": "Cဂ$",
-    "id": "C603"
+    "id": "C604"
   },
   {
     "original": "ဂ္ဂ",
@@ -13597,7 +13602,7 @@
   {
     "original": "ဂ္ဃါ",
     "mapped": "Cဃ½",
-    "id": "C604"
+    "id": "C605"
   },
   {
     "original": "ဂ္ဃာ",
@@ -13612,12 +13617,12 @@
   {
     "original": "ဂ္ဃီ",
     "mapped": "CဃÞ",
-    "id": "C605"
+    "id": "C606"
   },
   {
     "original": "ဂ္ဃု",
     "mapped": "Cဃð",
-    "id": "C606"
+    "id": "C607"
   },
   {
     "original": "ဂ္ဃေ",
@@ -13627,12 +13632,12 @@
   {
     "original": "ဂ္ဃေါ",
     "mapped": "Cဃ∆½",
-    "id": "C607"
+    "id": "C608"
   },
   {
     "original": "ဂ္ဃော",
     "mapped": "Cဃ∆¼",
-    "id": "C608"
+    "id": "C609"
   },
   {
     "original": "ဂ္ဃံ",
@@ -13642,212 +13647,212 @@
   {
     "original": "ဂ္ဃွါ",
     "mapped": "Cဃ¤½",
-    "id": "C609"
+    "id": "C610"
   },
   {
     "original": "င်္ကာ",
     "mapped": "E#A¼",
-    "id": "E610"
+    "id": "E611"
   },
   {
     "original": "င်္က္",
     "mapped": "E#A$",
-    "id": "E611"
+    "id": "E612"
   },
   {
     "original": "င်္ချေ",
     "mapped": "E#B*∆",
-    "id": "E612"
+    "id": "E613"
   },
   {
     "original": "င်္ဂ",
     "mapped": "E#C",
-    "id": "E613"
+    "id": "E614"
   },
   {
     "original": "င်္ဂါ",
     "mapped": "E#C½",
-    "id": "E614"
+    "id": "E615"
   },
   {
     "original": "င်္ဂိ",
     "mapped": "E#CÐ",
-    "id": "E615"
+    "id": "E616"
   },
   {
     "original": "င်္ဂီ",
     "mapped": "E#CÞ",
-    "id": "E616"
+    "id": "E617"
   },
   {
     "original": "င်္ဂု",
     "mapped": "E#Cð",
-    "id": "E617"
+    "id": "E618"
   },
   {
     "original": "င်္ဂူ",
     "mapped": "E#Cþ",
-    "id": "E618"
+    "id": "E619"
   },
   {
     "original": "င်္ဂေ",
     "mapped": "E#C∆",
-    "id": "E619"
+    "id": "E620"
   },
   {
     "original": "င်္ဂေါ",
     "mapped": "E#C∆½",
-    "id": "E620"
+    "id": "E621"
   },
   {
     "original": "င်္ဂံ",
     "mapped": "E#C¾",
-    "id": "E621"
+    "id": "E622"
   },
   {
     "original": "င်္ဂျ",
     "mapped": "E#C*",
-    "id": "E622"
+    "id": "E623"
   },
   {
     "original": "င်္ဂြို",
     "mapped": "E#C¢Ðð",
-    "id": "E623"
+    "id": "E624"
   },
   {
     "original": "င်္ဂ",
     "mapped": "E#C",
-    "id": "E613"
+    "id": "E614"
   },
   {
     "original": "င်္ဃု",
     "mapped": "E#Dð",
-    "id": "E624"
+    "id": "E625"
   },
   {
     "original": "င်္င",
     "mapped": "E#E",
-    "id": "E625"
+    "id": "E626"
   },
   {
     "original": "င်္ဉ္",
     "mapped": "E#J$",
-    "id": "E626"
+    "id": "E627"
   },
   {
     "original": "င်္သိ",
     "mapped": "E#YÐ",
-    "id": "E627"
+    "id": "E628"
   },
   {
     "original": "င်္သေ့",
     "mapped": "E#Y∆¿",
-    "id": "E628"
+    "id": "E629"
   },
   {
     "original": "စ္စ",
     "mapped": "Fစ",
-    "id": "F594"
+    "id": "F595"
   },
   {
     "original": "စ္စာ",
     "mapped": "Fစ¼",
-    "id": "F629"
+    "id": "F630"
   },
   {
     "original": "စ္စိ",
     "mapped": "FစÐ",
-    "id": "F630"
+    "id": "F631"
   },
   {
     "original": "စ္စိံ",
     "mapped": "FစÐ¾",
-    "id": "F631"
+    "id": "F632"
   },
   {
     "original": "စ္စီ",
     "mapped": "FစÞ",
-    "id": "F632"
+    "id": "F633"
   },
   {
     "original": "စ္စု",
     "mapped": "Fစð",
-    "id": "F633"
+    "id": "F634"
   },
   {
     "original": "စ္စူ",
     "mapped": "Fစþ",
-    "id": "F634"
+    "id": "F635"
   },
   {
     "original": "စ္စေ",
     "mapped": "Fစ∆",
-    "id": "F635"
+    "id": "F636"
   },
   {
     "original": "စ္စော",
     "mapped": "Fစ∆¼",
-    "id": "F636"
+    "id": "F637"
   },
   {
     "original": "စ္စံ",
     "mapped": "Fစ¾",
-    "id": "F637"
+    "id": "F638"
   },
   {
     "original": "စ္စ္",
     "mapped": "Fစ$",
-    "id": "F638"
+    "id": "F639"
   },
   {
     "original": "စ္ဆ",
     "mapped": "Fဆ",
-    "id": "F639"
-  },
-  {
-    "original": "စ္ဆာ",
-    "mapped": "Fဆ¼",
     "id": "F640"
   },
   {
     "original": "စ္ဆာ",
     "mapped": "Fဆ¼",
-    "id": "F640"
+    "id": "F641"
+  },
+  {
+    "original": "စ္ဆာ",
+    "mapped": "Fဆ¼",
+    "id": "F641"
   },
   {
     "original": "စ္ဆိ",
     "mapped": "FဆÐ",
-    "id": "F641"
-  },
-  {
-    "original": "စ္ဆိံ",
-    "mapped": "FဆÐ¾",
     "id": "F642"
   },
   {
     "original": "စ္ဆိံ",
     "mapped": "FဆÐ¾",
-    "id": "F642"
+    "id": "F643"
+  },
+  {
+    "original": "စ္ဆိံ",
+    "mapped": "FဆÐ¾",
+    "id": "F643"
   },
   {
     "original": "စ္ဆီ",
     "mapped": "FဆÞ",
-    "id": "F643"
+    "id": "F644"
   },
   {
     "original": "စ္ဆု",
     "mapped": "Fဆð",
-    "id": "F644"
+    "id": "F645"
   },
   {
     "original": "စ္ဆုံ",
     "mapped": "Fဆð¾",
-    "id": "F645"
+    "id": "F646"
   },
   {
     "original": "စ္ဆူ",
     "mapped": "Fဆþ",
-    "id": "F646"
+    "id": "F647"
   },
   {
     "original": "စ္ဆေ",
@@ -13857,7 +13862,7 @@
   {
     "original": "စ္ဆော",
     "mapped": "Fဆ∆¼",
-    "id": "F647"
+    "id": "F648"
   },
   {
     "original": "စ္ဆေေ",
@@ -13867,17 +13872,17 @@
   {
     "original": "စ္ဆံ",
     "mapped": "Fဆ¾",
-    "id": "F648"
+    "id": "F649"
   },
   {
     "original": "စ္ဇျာ",
     "mapped": "Fဇ*¼",
-    "id": "F649"
+    "id": "F650"
   },
   {
     "original": "စ္ဈ",
     "mapped": "Fဈ",
-    "id": "F650"
+    "id": "F651"
   },
   {
     "original": "စ္တ",
@@ -13887,27 +13892,27 @@
   {
     "original": "ဇ္စ",
     "mapped": "Gစ",
-    "id": "G594"
+    "id": "G595"
   },
   {
     "original": "ဇ္စျ",
     "mapped": "Gစ*",
-    "id": "G651"
+    "id": "G652"
   },
   {
     "original": "ဇ္စျု",
     "mapped": "Gစ*ð",
-    "id": "G652"
+    "id": "G653"
   },
   {
     "original": "ဇ္စျေ",
     "mapped": "Gစ*∆",
-    "id": "G653"
+    "id": "G654"
   },
   {
     "original": "ဇ္စျေေ",
     "mapped": "Gစ*∆",
-    "id": "G653"
+    "id": "G654"
   },
   {
     "original": "ဇ္ဇ",
@@ -13917,72 +13922,72 @@
   {
     "original": "ဇ္ဇာ",
     "mapped": "Gဇ¼",
-    "id": "G654"
+    "id": "G655"
   },
   {
     "original": "ဇ္ဇိ",
     "mapped": "GဇÐ",
-    "id": "G655"
+    "id": "G656"
   },
   {
     "original": "ဇ္ဇိံ",
     "mapped": "GဇÐ¾",
-    "id": "G656"
+    "id": "G657"
   },
   {
     "original": "ဇ္ဇီ",
     "mapped": "GဇÞ",
-    "id": "G657"
+    "id": "G658"
   },
   {
     "original": "ဇ္ဇု",
     "mapped": "Gဇð",
-    "id": "G658"
+    "id": "G659"
   },
   {
     "original": "ဇ္ဇုံ",
     "mapped": "Gဇð¾",
-    "id": "G659"
+    "id": "G660"
   },
   {
     "original": "ဇ္ဇူ",
     "mapped": "Gဇþ",
-    "id": "G660"
+    "id": "G661"
   },
   {
     "original": "ဇ္ဇေ",
     "mapped": "Gဇ∆",
-    "id": "G661"
+    "id": "G662"
   },
   {
     "original": "ဇ္ဇော",
     "mapped": "Gဇ∆¼",
-    "id": "G662"
+    "id": "G663"
   },
   {
     "original": "ဇ္ဇံ",
     "mapped": "Gဇ¾",
-    "id": "G663"
+    "id": "G664"
   },
   {
     "original": "ဇ္ဇ္",
     "mapped": "Gဇ$",
-    "id": "G664"
+    "id": "G665"
   },
   {
     "original": "ဇ္ဇျာ",
     "mapped": "Gဇ*¼",
-    "id": "G649"
+    "id": "G650"
   },
   {
     "original": "ဇ္ဇျိ",
     "mapped": "Gဇ*Ð",
-    "id": "G665"
+    "id": "G666"
   },
   {
     "original": "ဇ္ဈ",
     "mapped": "Gဈ",
-    "id": "G650"
+    "id": "G651"
   },
   {
     "original": "ဇ္ဈာ",
@@ -13997,12 +14002,12 @@
   {
     "original": "ဇ္ဈိံ",
     "mapped": "GဈÐ¾",
-    "id": "G666"
+    "id": "G667"
   },
   {
     "original": "ဇ္ဈီ",
     "mapped": "GဈÞ",
-    "id": "G667"
+    "id": "G668"
   },
   {
     "original": "ဇ္ဈု",
@@ -14012,142 +14017,142 @@
   {
     "original": "ဇ္ဈူ",
     "mapped": "Gဈþ",
-    "id": "G668"
+    "id": "G669"
   },
   {
     "original": "ဇ္ဈေ",
     "mapped": "Gဈ∆",
-    "id": "G669"
+    "id": "G670"
   },
   {
     "original": "ဇ္ဈော",
     "mapped": "Gဈ∆¼",
-    "id": "G670"
+    "id": "G671"
   },
   {
     "original": "ဇ္ဈံ",
     "mapped": "Gဈ¾",
-    "id": "G671"
+    "id": "G672"
   },
   {
     "original": "ဇ္ဈ",
     "mapped": "Gဈ",
-    "id": "G650"
+    "id": "G651"
   },
   {
     "original": "ဇ္ဖ",
     "mapped": "Gဖ",
-    "id": "G672"
+    "id": "G673"
   },
   {
     "original": "ဇ္ဖါ",
     "mapped": "Gဖ½",
-    "id": "G673"
+    "id": "G674"
   },
   {
     "original": "ဇ္လူ",
     "mapped": "Gလþ",
-    "id": "G674"
+    "id": "G675"
   },
   {
     "original": "ဉ္စ",
     "mapped": "Jစ",
-    "id": "J594"
+    "id": "J595"
   },
   {
     "original": "ဉ္စာ",
     "mapped": "Jစ¼",
-    "id": "J629"
+    "id": "J630"
   },
   {
     "original": "ဉ္စိ",
     "mapped": "JစÐ",
-    "id": "J630"
+    "id": "J631"
   },
   {
     "original": "ဉ္စိံ",
     "mapped": "JစÐ¾",
-    "id": "J631"
+    "id": "J632"
   },
   {
     "original": "ဉ္စီ",
     "mapped": "JစÞ",
-    "id": "J632"
+    "id": "J633"
   },
   {
     "original": "ဉ္စု",
     "mapped": "Jစð",
-    "id": "J633"
+    "id": "J634"
   },
   {
     "original": "ဉ္စူ",
     "mapped": "Jစþ",
-    "id": "J634"
+    "id": "J635"
   },
   {
     "original": "ဉ္စေ",
     "mapped": "Jစ∆",
-    "id": "J635"
+    "id": "J636"
   },
   {
     "original": "ဉ္စော",
     "mapped": "Jစ∆¼",
-    "id": "J636"
+    "id": "J637"
   },
   {
     "original": "ဉ္စံ",
     "mapped": "Jစ¾",
-    "id": "J637"
+    "id": "J638"
   },
   {
     "original": "ဉ္စ္",
     "mapped": "Jစ$",
-    "id": "J638"
+    "id": "J639"
   },
   {
     "original": "ဉ္စျ",
     "mapped": "Jစ*",
-    "id": "J651"
+    "id": "J652"
   },
   {
     "original": "ဉ္စျာ",
     "mapped": "Jစ*¼",
-    "id": "J675"
+    "id": "J676"
   },
   {
     "original": "ဉ္စျိ",
     "mapped": "Jစ*Ð",
-    "id": "J676"
+    "id": "J677"
   },
   {
     "original": "ဉ္စွံ",
     "mapped": "Jစ¤¾",
-    "id": "J677"
+    "id": "J678"
   },
   {
     "original": "ဉ္ဆ",
     "mapped": "Jဆ",
-    "id": "J639"
+    "id": "J640"
   },
   {
     "original": "ဉ္ဆာ",
     "mapped": "Jဆ¼",
-    "id": "J640"
-  },
-  {
-    "original": "ဉ္ဆိ",
-    "mapped": "JဆÐ",
     "id": "J641"
   },
   {
     "original": "ဉ္ဆိ",
     "mapped": "JဆÐ",
-    "id": "J641"
+    "id": "J642"
+  },
+  {
+    "original": "ဉ္ဆိ",
+    "mapped": "JဆÐ",
+    "id": "J642"
   },
   {
     "original": "ဉ္ဆိံ",
     "mapped": "JဆÐ¾",
-    "id": "J642"
+    "id": "J643"
   },
   {
     "original": "ဉ္ဆေ",
@@ -14157,12 +14162,12 @@
   {
     "original": "ဉ္ဆော",
     "mapped": "Jဆ∆¼",
-    "id": "J647"
+    "id": "J648"
   },
   {
     "original": "ဉ္ဆံ",
     "mapped": "Jဆ¾",
-    "id": "J648"
+    "id": "J649"
   },
   {
     "original": "ဉ္ဇ",
@@ -14172,57 +14177,57 @@
   {
     "original": "ဉ္ဇာ",
     "mapped": "Jဇ¼",
-    "id": "J654"
+    "id": "J655"
   },
   {
     "original": "ဉ္ဇိ",
     "mapped": "JဇÐ",
-    "id": "J655"
+    "id": "J656"
   },
   {
     "original": "ဉ္ဇိံ",
     "mapped": "JဇÐ¾",
-    "id": "J656"
+    "id": "J657"
   },
   {
     "original": "ဉ္ဇီ",
     "mapped": "JဇÞ",
-    "id": "J657"
+    "id": "J658"
   },
   {
     "original": "ဉ္ဇု",
     "mapped": "Jဇð",
-    "id": "J658"
+    "id": "J659"
   },
   {
     "original": "ဉ္ဇူ",
     "mapped": "Jဇþ",
-    "id": "J660"
+    "id": "J661"
   },
   {
     "original": "ဉ္ဇေ",
     "mapped": "Jဇ∆",
-    "id": "J661"
+    "id": "J662"
   },
   {
     "original": "ဉ္ဇော",
     "mapped": "Jဇ∆¼",
-    "id": "J662"
+    "id": "J663"
   },
   {
     "original": "ဉ္ဇံ",
     "mapped": "Jဇ¾",
-    "id": "J663"
+    "id": "J664"
   },
   {
     "original": "ဉ္ဇျာ",
     "mapped": "Jဇ*¼",
-    "id": "J649"
+    "id": "J650"
   },
   {
     "original": "ဉ္ဈ",
     "mapped": "Jဈ",
-    "id": "J650"
+    "id": "J651"
   },
   {
     "original": "ဉ္ဈာ",
@@ -14237,7 +14242,7 @@
   {
     "original": "ဉ္ဈော",
     "mapped": "Jဈ∆¼",
-    "id": "J670"
+    "id": "J671"
   },
   {
     "original": "ဉ္တ",
@@ -14247,12 +14252,12 @@
   {
     "original": "ဉ္ဖါ",
     "mapped": "Jဖ½",
-    "id": "J673"
+    "id": "J674"
   },
   {
     "original": "ဉ္ဖီ",
     "mapped": "JဖÞ",
-    "id": "J678"
+    "id": "J679"
   },
   {
     "original": "ဋ္ဈာ",
@@ -14262,142 +14267,142 @@
   {
     "original": "ဋ္ဋ",
     "mapped": "Iဋ",
-    "id": "I679"
+    "id": "I680"
   },
   {
     "original": "ဋ္ဋာ",
     "mapped": "Iဋ¼",
-    "id": "I680"
+    "id": "I681"
   },
   {
     "original": "ဋ္ဋိ",
     "mapped": "IဋÐ",
-    "id": "I681"
+    "id": "I682"
   },
   {
     "original": "ဋ္ဋီ",
     "mapped": "IဋÞ",
-    "id": "I682"
+    "id": "I683"
   },
   {
     "original": "ဋ္ဋု",
     "mapped": "Iဋð",
-    "id": "I683"
+    "id": "I684"
   },
   {
     "original": "ဋ္ဋူ",
     "mapped": "Iဋþ",
-    "id": "I684"
+    "id": "I685"
   },
   {
     "original": "ဋ္ဋေ",
     "mapped": "Iဋ∆",
-    "id": "I685"
+    "id": "I686"
   },
   {
     "original": "ဋ္ဋော",
     "mapped": "Iဋ∆¼",
-    "id": "I686"
+    "id": "I687"
   },
   {
     "original": "ဋ္ဋံ",
     "mapped": "Iဋ¾",
-    "id": "I687"
+    "id": "I688"
   },
   {
     "original": "ဋ္ဌ",
     "mapped": "Iဌ",
-    "id": "I688"
+    "id": "I689"
   },
   {
     "original": "ဋ္ဌß",
     "mapped": "Iဌß",
-    "id": "I689"
+    "id": "I690"
   },
   {
     "original": "ဋ္ဌာ",
     "mapped": "Iဌ¼",
-    "id": "I690"
+    "id": "I691"
   },
   {
     "original": "ဋ္ဌိ",
     "mapped": "IဌÐ",
-    "id": "I691"
+    "id": "I692"
   },
   {
     "original": "ဋ္ဌိံ",
     "mapped": "IဌÐ¾",
-    "id": "I692"
+    "id": "I693"
   },
   {
     "original": "ဋ္ဌီ",
     "mapped": "IဌÞ",
-    "id": "I693"
+    "id": "I694"
   },
   {
     "original": "ဋ္ဌု",
     "mapped": "Iဌð",
-    "id": "I694"
+    "id": "I695"
   },
   {
     "original": "ဋ္ဌုံ",
     "mapped": "Iဌð¾",
-    "id": "I695"
+    "id": "I696"
   },
   {
     "original": "ဋ္ဌူ",
     "mapped": "Iဌþ",
-    "id": "I696"
+    "id": "I697"
   },
   {
     "original": "ဋ္ဌေ",
     "mapped": "Iဌ∆",
-    "id": "I697"
+    "id": "I698"
   },
   {
     "original": "ဋ္ဌော",
     "mapped": "Iဌ∆¼",
-    "id": "I698"
+    "id": "I699"
   },
   {
     "original": "ဋ္ဌေး",
     "mapped": "Iဌ∆_",
-    "id": "I699"
+    "id": "I700"
   },
   {
     "original": "ဋ္ဌံ",
     "mapped": "Iဌ¾",
-    "id": "I700"
+    "id": "I701"
   },
   {
     "original": "ဋ္ဌျံ",
     "mapped": "Iဌ*¾",
-    "id": "I701"
+    "id": "I702"
   },
   {
     "original": "ဋ္ထိ",
     "mapped": "IထÐ",
-    "id": "I702"
+    "id": "I703"
   },
   {
     "original": "ဍ္ဍ",
     "mapped": "Kဍ",
-    "id": "K703"
+    "id": "K704"
   },
   {
     "original": "ဍ္ဍာ",
     "mapped": "Kဍ¼",
-    "id": "K704"
+    "id": "K705"
   },
   {
     "original": "ဍ္ဍိ",
     "mapped": "KဍÐ",
-    "id": "K705"
+    "id": "K706"
   },
   {
     "original": "ဍ္ဍီ",
     "mapped": "KဍÞ",
-    "id": "K706"
+    "id": "K707"
   },
   {
     "original": "ဍ္ဍု",
@@ -14407,12 +14412,12 @@
   {
     "original": "ဍ္ဍေ",
     "mapped": "Kဍ∆",
-    "id": "K707"
+    "id": "K708"
   },
   {
     "original": "ဍ္ဍံ",
     "mapped": "Kဍ¾",
-    "id": "K708"
+    "id": "K709"
   },
   {
     "original": "ဍ္ဎ",
@@ -14422,52 +14427,52 @@
   {
     "original": "ဍ္ဎာ",
     "mapped": "Kဎ¼",
-    "id": "K709"
+    "id": "K710"
   },
   {
     "original": "ဍ္ဎိ",
     "mapped": "KဎÐ",
-    "id": "K710"
+    "id": "K711"
   },
   {
     "original": "ဍ္ဎိံ",
     "mapped": "KဎÐ¾",
-    "id": "K711"
+    "id": "K712"
   },
   {
     "original": "ဍ္ဎီ",
     "mapped": "KဎÞ",
-    "id": "K712"
+    "id": "K713"
   },
   {
     "original": "ဍ္ဎု",
     "mapped": "Kဎð",
-    "id": "K713"
+    "id": "K714"
   },
   {
     "original": "ဍ္ဎူ",
     "mapped": "Kဎþ",
-    "id": "K714"
+    "id": "K715"
   },
   {
     "original": "ဍ္ဎေ",
     "mapped": "Kဎ∆",
-    "id": "K715"
+    "id": "K716"
   },
   {
     "original": "ဍ္ဎော",
     "mapped": "Kဎ∆¼",
-    "id": "K716"
+    "id": "K717"
   },
   {
     "original": "ဍ္ဎံ",
     "mapped": "Kဎ¾",
-    "id": "K717"
+    "id": "K718"
   },
   {
     "original": "ဍ္ဎ္",
     "mapped": "Kဎ$",
-    "id": "K718"
+    "id": "K719"
   },
   {
     "original": "ဏ္က",
@@ -14492,122 +14497,122 @@
   {
     "original": "ဏ္ဃ္",
     "mapped": "Lဃ$",
-    "id": "L719"
+    "id": "L720"
   },
   {
     "original": "ဏ္ဋ",
     "mapped": "Lဋ",
-    "id": "L679"
+    "id": "L680"
   },
   {
     "original": "ဏ္ဋာ",
     "mapped": "Lဋ¼",
-    "id": "L680"
+    "id": "L681"
   },
   {
     "original": "ဏ္ဋိ",
     "mapped": "LဋÐ",
-    "id": "L681"
+    "id": "L682"
   },
   {
     "original": "ဏ္ဋီ",
     "mapped": "LဋÞ",
-    "id": "L682"
+    "id": "L683"
   },
   {
     "original": "ဏ္ဋု",
     "mapped": "Lဋð",
-    "id": "L683"
+    "id": "L684"
   },
   {
     "original": "ဏ္ဋူ",
     "mapped": "Lဋþ",
-    "id": "L684"
+    "id": "L685"
   },
   {
     "original": "ဏ္ဋော",
     "mapped": "Lဋ∆¼",
-    "id": "L686"
+    "id": "L687"
   },
   {
     "original": "ဏ္ဋံ",
     "mapped": "Lဋ¾",
-    "id": "L687"
+    "id": "L688"
   },
   {
     "original": "ဏ္ဌ",
     "mapped": "Lဌ",
-    "id": "L688"
+    "id": "L689"
   },
   {
     "original": "ဏ္ဌာ",
     "mapped": "Lဌ¼",
-    "id": "L690"
+    "id": "L691"
   },
   {
     "original": "ဏ္ဌိ",
     "mapped": "LဌÐ",
-    "id": "L691"
+    "id": "L692"
   },
   {
     "original": "ဏ္ဌိံ",
     "mapped": "LဌÐ¾",
-    "id": "L692"
+    "id": "L693"
   },
   {
     "original": "ဏ္ဌီ",
     "mapped": "LဌÞ",
-    "id": "L693"
+    "id": "L694"
   },
   {
     "original": "ဏ္ဌု",
     "mapped": "Lဌð",
-    "id": "L694"
+    "id": "L695"
   },
   {
     "original": "ဏ္ဌူ",
     "mapped": "Lဌþ",
-    "id": "L696"
+    "id": "L697"
   },
   {
     "original": "ဏ္ဌေ",
     "mapped": "Lဌ∆",
-    "id": "L697"
+    "id": "L698"
   },
   {
     "original": "ဏ္ဌော",
     "mapped": "Lဌ∆¼",
-    "id": "L698"
+    "id": "L699"
   },
   {
     "original": "ဏ္ဌျ",
     "mapped": "Lဌ*",
-    "id": "L720"
+    "id": "L721"
   },
   {
     "original": "ဏ္ဍ",
     "mapped": "Lဍ",
-    "id": "L703"
+    "id": "L704"
   },
   {
     "original": "ဏ္ဍာ",
     "mapped": "Lဍ¼",
-    "id": "L704"
+    "id": "L705"
   },
   {
     "original": "ဏ္ဍိ",
     "mapped": "LဍÐ",
-    "id": "L705"
+    "id": "L706"
   },
   {
     "original": "ဏ္ဍိံ",
     "mapped": "LဍÐ¾",
-    "id": "L721"
+    "id": "L722"
   },
   {
     "original": "ဏ္ဍီ",
     "mapped": "LဍÞ",
-    "id": "L706"
+    "id": "L707"
   },
   {
     "original": "ဏ္ဍု",
@@ -14617,87 +14622,87 @@
   {
     "original": "ဏ္ဍူ",
     "mapped": "Lဍþ",
-    "id": "L722"
+    "id": "L723"
   },
   {
     "original": "ဏ္ဍေ",
     "mapped": "Lဍ∆",
-    "id": "L707"
+    "id": "L708"
   },
   {
     "original": "ဏ္ဍော",
     "mapped": "Lဍ∆¼",
-    "id": "L723"
+    "id": "L724"
   },
   {
     "original": "ဏ္ဍံ",
     "mapped": "Lဍ¾",
-    "id": "L708"
+    "id": "L709"
   },
   {
     "original": "ဏ္ဏ",
     "mapped": "Lဏ",
-    "id": "L724"
+    "id": "L725"
   },
   {
     "original": "ဏ္ဏာ",
     "mapped": "Lဏ¼",
-    "id": "L725"
+    "id": "L726"
   },
   {
     "original": "ဏ္ဏိ",
     "mapped": "LဏÐ",
-    "id": "L726"
+    "id": "L727"
   },
   {
     "original": "ဏ္ဏီ",
     "mapped": "LဏÞ",
-    "id": "L727"
+    "id": "L728"
   },
   {
     "original": "ဏ္ဏု",
     "mapped": "Lဏð",
-    "id": "L728"
+    "id": "L729"
   },
   {
     "original": "ဏ္ဏူ",
     "mapped": "Lဏþ",
-    "id": "L729"
+    "id": "L730"
   },
   {
     "original": "ဏ္ဏေ",
     "mapped": "Lဏ∆",
-    "id": "L730"
+    "id": "L731"
   },
   {
     "original": "ဏ္ဏော",
     "mapped": "Lဏ∆¼",
-    "id": "L731"
+    "id": "L732"
   },
   {
     "original": "ဏ္ဏေး",
     "mapped": "Lဏ∆_",
-    "id": "L732"
+    "id": "L733"
   },
   {
     "original": "ဏ္ဏံ",
     "mapped": "Lဏ¾",
-    "id": "L733"
+    "id": "L734"
   },
   {
     "original": "ဏ္ဏး",
     "mapped": "Lဏ_",
-    "id": "L734"
+    "id": "L735"
   },
   {
     "original": "ဏ္ဏ္",
     "mapped": "Lဏ$",
-    "id": "L735"
+    "id": "L736"
   },
   {
     "original": "တ္က္",
     "mapped": "Mက$",
-    "id": "M736"
+    "id": "M583"
   },
   {
     "original": "တ္ဈု",
@@ -14822,7 +14827,7 @@
   {
     "original": "တ္ထိ",
     "mapped": "MထÐ",
-    "id": "M702"
+    "id": "M703"
   },
   {
     "original": "တ္ထိံ",
@@ -15032,17 +15037,17 @@
   {
     "original": "ဒ္မု",
     "mapped": "Oမð",
-    "id": "O596"
+    "id": "O597"
   },
   {
     "original": "န္ဃု",
     "mapped": "Pဃð",
-    "id": "P606"
+    "id": "P607"
   },
   {
     "original": "န္ဇိ",
     "mapped": "PဇÐ",
-    "id": "P655"
+    "id": "P656"
   },
   {
     "original": "န္ဈာ",
@@ -15052,12 +15057,12 @@
   {
     "original": "န္ဌိ",
     "mapped": "PဌÐ",
-    "id": "P691"
+    "id": "P692"
   },
   {
     "original": "န္ဏ္",
     "mapped": "Pဏ$",
-    "id": "P735"
+    "id": "P736"
   },
   {
     "original": "န္တ",
@@ -15147,7 +15152,7 @@
   {
     "original": "န္တ္",
     "mapped": "Pတ$",
-    "id": "P595"
+    "id": "P596"
   },
   {
     "original": "န္တျာ",
@@ -15192,7 +15197,7 @@
   {
     "original": "န္ထိ",
     "mapped": "PထÐ",
-    "id": "P702"
+    "id": "P703"
   },
   {
     "original": "န္ထိံ",
@@ -15532,12 +15537,12 @@
   {
     "original": "ပ္ဖ",
     "mapped": "Qဖ",
-    "id": "Q672"
+    "id": "Q673"
   },
   {
     "original": "ပ္ဖါ",
     "mapped": "Qဖ½",
-    "id": "Q673"
+    "id": "Q674"
   },
   {
     "original": "ပ္ဖာ",
@@ -15557,7 +15562,7 @@
   {
     "original": "ပ္ဖီ",
     "mapped": "QဖÞ",
-    "id": "Q678"
+    "id": "Q679"
   },
   {
     "original": "ပ္ဖု",
@@ -15737,7 +15742,7 @@
   {
     "original": "မ္ဇော",
     "mapped": "Uဇ∆¼",
-    "id": "U662"
+    "id": "U663"
   },
   {
     "original": "မ္န္",
@@ -15812,7 +15817,7 @@
   {
     "original": "မ္ဖ",
     "mapped": "Uဖ",
-    "id": "U672"
+    "id": "U673"
   },
   {
     "original": "မ္ဖိ",
@@ -15977,7 +15982,7 @@
   {
     "original": "မ္မု",
     "mapped": "Uမð",
-    "id": "U596"
+    "id": "U597"
   },
   {
     "original": "မ္မူ",
@@ -16032,7 +16037,7 @@
   {
     "original": "လ္က္",
     "mapped": "Xက$",
-    "id": "X736"
+    "id": "X583"
   },
   {
     "original": "လ္ဒေ",
@@ -16067,12 +16072,12 @@
   {
     "original": "လ္လူ",
     "mapped": "Xလþ",
-    "id": "X674"
+    "id": "X675"
   },
   {
     "original": "လ္လေ",
     "mapped": "Xလ∆",
-    "id": "X597"
+    "id": "X598"
   },
   {
     "original": "လ္လော",
@@ -16092,7 +16097,7 @@
   {
     "original": "ဝ္စ",
     "mapped": "§စ",
-    "id": "§594"
+    "id": "§595"
   },
   {
     "original": "ဝ္ဈာ",
@@ -16102,7 +16107,7 @@
   {
     "original": "သ္က္",
     "mapped": "Yက$",
-    "id": "Y736"
+    "id": "Y583"
   },
   {
     "original": "သ္တ",
@@ -16192,7 +16197,7 @@
   {
     "original": "သ္မု",
     "mapped": "Yမð",
-    "id": "Y596"
+    "id": "Y597"
   },
   {
     "original": "သ္မူ",
@@ -16232,7 +16237,7 @@
   {
     "original": "ဟ္မု",
     "mapped": "Zမð",
-    "id": "Z596"
+    "id": "Z597"
   },
   {
     "original": "ဟ္မူ",
@@ -16262,12 +16267,12 @@
   {
     "original": "ဥ္စ",
     "mapped": "£စ",
-    "id": "£594"
+    "id": "£595"
   },
   {
     "original": "ဥ္စိ",
     "mapped": "£စÐ",
-    "id": "£630"
+    "id": "£631"
   },
   {
     "original": "ဥ္ဇ",
@@ -16277,7 +16282,7 @@
   {
     "original": "ဥ္ဇာ",
     "mapped": "£ဇ¼",
-    "id": "£654"
+    "id": "£655"
   },
   {
     "original": "၍",
