@@ -1,0 +1,1078 @@
+{
+  "version": 2,
+  "status": "partial; not enabled in the runtime extractor",
+  "scope": "Observed single-byte WinInnwa /F4 font subsets, keyed by SHA-256 of the embedded font program. Not a universal raw-byte map; no production parser is wired to this file.",
+  "method": "All sample pages. A byte is admitted only when the existing WinInnwa decoder produces one code point via its legacy bridge, the code point is not flagged in either sample, it has no overlapping current output from another observed byte in the same font, and it does not contradict the previously reviewed sample map. Offline comparison uses that existing decoder, which currently reads the font ToUnicode bridge. No vector matching, cleanup, or reordering is used here. Absence of scorer flags is not proof of correctness. resolvedForReview records the previously reviewed values and context-based corrections; flagged and ambiguous entries remain separate from the 1:1 candidate list. These are not a complete verified font map. Book1 18/1C and the 25 writing restriction follow the user-supplied glyph rules; engine syllable evidence alone is not proof that an ambiguous glyph has one particular reading.",
+  "flaggedCodepoints": [
+    "\u102b",
+    "\u102c",
+    "\u102d",
+    "\u102e",
+    "\u102f",
+    "\u1030",
+    "\u1031",
+    "\u1032",
+    "\u1036",
+    "\u1037",
+    "\u1038",
+    "\u103a",
+    "\u103b",
+    "\u103c",
+    "\u103d",
+    "\u103e"
+  ],
+  "profiles": {
+    "9b3622c34d21de53fb2a6dacd19e698f05dc46e2d32091ddefe42e23ab7916f2": {
+      "example": "bg-mlc-1-1.pdf /F4",
+      "pagesExamined": 41,
+      "bytes": {
+        "02": "\u1019",
+        "06": "\u101e",
+        "0B": "\u1010",
+        "0F": "(",
+        "10": "\u1041",
+        "11": ")",
+        "13": "\u1001",
+        "16": "\u1005",
+        "17": "\u1000",
+        "1B": "\u1015",
+        "21": "\u101c",
+        "22": "\u101a",
+        "23": "\u1042",
+        "24": "\u1011",
+        "26": "\u101b",
+        "27": "\u1004",
+        "28": "\u103f",
+        "2D": "\u1018",
+        "2E": "\u1040",
+        "32": "\u1016",
+        "34": "\u101f",
+        "36": "\u1002",
+        "38": "\u1049",
+        "3B": "\u1025",
+        "3D": "\u1006",
+        "41": "\u1045",
+        "42": "\u1044",
+        "43": "\u1047",
+        "4D": "\u1013",
+        "4E": "\u1017",
+        "4F": "\u104d",
+        "51": "=",
+        "53": "\u1020",
+        "54": "\u1003",
+        "56": "\u1027",
+        "57": "\u1007",
+        "59": "\u100c",
+        "5A": "[",
+        "60": "\u104f",
+        "67": "\u104c"
+      },
+      "alternateBytes": {
+        "\u104c": [
+          "30",
+          "67"
+        ],
+        "\u103c": [
+          "01",
+          "3E"
+        ],
+        "\u102f": [
+          "18",
+          "1C"
+        ],
+        "\u1014": [
+          "03",
+          "2B"
+        ]
+      },
+      "flaggedOrExcluded": {
+        "01": {
+          "currentOutput": "\u103c",
+          "observedOccurrences": 908,
+          "orphanFlags": 129,
+          "reviewedValue": "\u103c"
+        },
+        "04": {
+          "currentOutput": "\u103a",
+          "observedOccurrences": 4999,
+          "orphanFlags": 1,
+          "reviewedValue": "\u103a"
+        },
+        "05": {
+          "currentOutput": "\u102c",
+          "observedOccurrences": 2770,
+          "orphanFlags": 26,
+          "reviewedValue": "\u102c"
+        },
+        "09": {
+          "currentOutput": "\u102b",
+          "observedOccurrences": 449,
+          "orphanFlags": 149
+        },
+        "0C": {
+          "currentOutput": "\u103d",
+          "observedOccurrences": 422,
+          "orphanFlags": 0,
+          "reviewedValue": "\u103d"
+        },
+        "0D": {
+          "currentOutput": "\u1032",
+          "observedOccurrences": 151,
+          "orphanFlags": 4,
+          "reviewedValue": "\u1032"
+        },
+        "14": {
+          "currentOutput": "\u1038",
+          "observedOccurrences": 2146,
+          "orphanFlags": 23,
+          "reviewedValue": "\u1038"
+        },
+        "15": {
+          "currentOutput": "\u103e",
+          "observedOccurrences": 441,
+          "orphanFlags": 2,
+          "reviewedValue": "\u103e"
+        },
+        "18": {
+          "currentOutput": "\u102f",
+          "observedOccurrences": 1698,
+          "orphanFlags": 37,
+          "reviewedValue": "\u102f"
+        },
+        "19": {
+          "currentOutput": "\u102d",
+          "observedOccurrences": 1893,
+          "orphanFlags": 145,
+          "reviewedValue": "\u102d"
+        },
+        "1C": {
+          "currentOutput": "\u102f",
+          "observedOccurrences": 181,
+          "orphanFlags": 2
+        },
+        "1F": {
+          "currentOutput": "\u1031",
+          "observedOccurrences": 1877,
+          "orphanFlags": 446,
+          "reviewedValue": "\u1031"
+        },
+        "20": {
+          "currentOutput": "\u1036",
+          "observedOccurrences": 309,
+          "orphanFlags": 10
+        },
+        "25": {
+          "currentOutput": "\u1031",
+          "observedOccurrences": 2,
+          "orphanFlags": 0,
+          "reviewedValue": "\u1039\u1000"
+        },
+        "29": {
+          "currentOutput": "\u103b",
+          "observedOccurrences": 769,
+          "orphanFlags": 0,
+          "reviewedValue": "\u103b"
+        },
+        "2A": {
+          "currentOutput": "\u1030",
+          "observedOccurrences": 297,
+          "orphanFlags": 1
+        },
+        "2C": {
+          "currentOutput": "\u1037",
+          "observedOccurrences": 476,
+          "orphanFlags": 8
+        },
+        "2F": {
+          "currentOutput": "\u103b\u103d",
+          "observedOccurrences": 35,
+          "orphanFlags": 8
+        },
+        "31": {
+          "currentOutput": "\u102e",
+          "observedOccurrences": 276,
+          "orphanFlags": 3
+        },
+        "37": {
+          "currentOutput": "\u1004\u103a\u1039",
+          "observedOccurrences": 40,
+          "orphanFlags": 0
+        },
+        "3E": {
+          "currentOutput": "\u103c",
+          "observedOccurrences": 250,
+          "orphanFlags": 25,
+          "reviewedValue": "\u103c"
+        },
+        "49": {
+          "currentOutput": "\u102d\u1036",
+          "observedOccurrences": 43,
+          "orphanFlags": 0
+        },
+        "4C": {
+          "currentOutput": "\u102b\u103a",
+          "observedOccurrences": 80,
+          "orphanFlags": 2
+        },
+        "50": {
+          "currentOutput": "\u102b",
+          "observedOccurrences": 56,
+          "orphanFlags": 0
+        },
+        "52": {
+          "currentOutput": "\u103c",
+          "observedOccurrences": 50,
+          "orphanFlags": 5
+        },
+        "55": {
+          "currentOutput": "\u1036",
+          "observedOccurrences": 11,
+          "orphanFlags": 7
+        },
+        "58": {
+          "currentOutput": "\u103b\u103e",
+          "observedOccurrences": 2,
+          "orphanFlags": 4
+        },
+        "5B": {
+          "currentOutput": "\u103c",
+          "observedOccurrences": 29,
+          "orphanFlags": 10
+        },
+        "63": {
+          "currentOutput": "\u1030",
+          "observedOccurrences": 4,
+          "orphanFlags": 0
+        }
+      },
+      "unmapped": {
+        "03": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u1014",
+          "observedOccurrences": 788
+        },
+        "07": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u1012",
+          "observedOccurrences": 190
+        },
+        "08": {
+          "reason": "not one code point",
+          "currentOutput": "\u1039\u1012",
+          "observedOccurrences": 22
+        },
+        "0A": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u1021",
+          "observedOccurrences": 829
+        },
+        "0E": {
+          "reason": "current decoder conflicts with observed glyph/context",
+          "currentOutput": "",
+          "observedOccurrences": 4685,
+          "reviewedValue": " "
+        },
+        "12": {
+          "reason": "current decoder conflicts with observed glyph/context",
+          "currentOutput": "\u104b",
+          "reviewedValue": "\u104a",
+          "observedOccurrences": 544
+        },
+        "1A": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u1043",
+          "observedOccurrences": 123
+        },
+        "1D": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u100a",
+          "observedOccurrences": 1327
+        },
+        "1E": {
+          "reason": "current decoder conflicts with observed glyph/context",
+          "currentOutput": "\u104a",
+          "reviewedValue": "\u104b",
+          "observedOccurrences": 1145
+        },
+        "2B": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u1014",
+          "observedOccurrences": 235
+        },
+        "30": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u1014",
+          "observedOccurrences": 160
+        },
+        "33": {
+          "reason": "current decoder conflicts with observed glyph/context",
+          "currentOutput": "\u1039\u1000",
+          "observedOccurrences": 357,
+          "reviewedValue": "\u1037"
+        },
+        "35": {
+          "reason": "not one code point",
+          "currentOutput": "\u1039\u1019",
+          "observedOccurrences": 30
+        },
+        "39": {
+          "reason": "not one code point",
+          "currentOutput": "\u1039\u1001",
+          "observedOccurrences": 30
+        },
+        "3A": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u1021",
+          "observedOccurrences": 63
+        },
+        "3C": {
+          "reason": "not one code point",
+          "currentOutput": "\u1039\u1005",
+          "observedOccurrences": 14
+        },
+        "3F": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u2014",
+          "observedOccurrences": 69
+        },
+        "40": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u1012",
+          "observedOccurrences": 23
+        },
+        "44": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u1046",
+          "observedOccurrences": 52
+        },
+        "45": {
+          "reason": "not one code point",
+          "currentOutput": "\u1039\u1018",
+          "observedOccurrences": 163
+        },
+        "46": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u1048",
+          "observedOccurrences": 71
+        },
+        "47": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u1043",
+          "observedOccurrences": 23
+        },
+        "48": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u2014",
+          "observedOccurrences": 24
+        },
+        "4A": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u100a",
+          "observedOccurrences": 17
+        },
+        "4B": {
+          "reason": "reviewed value conflicts with current output",
+          "currentOutput": "\u1024",
+          "reviewedValue": "\u103d\u103e",
+          "observedOccurrences": 11
+        },
+        "5C": {
+          "reason": "observed after \u1010; exact value and relationship to 5F not yet established",
+          "currentOutput": "",
+          "observedOccurrences": 2
+        },
+        "5D": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u1009",
+          "observedOccurrences": 12
+        },
+        "5E": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u100f",
+          "observedOccurrences": 7
+        },
+        "5F": {
+          "reason": "reviewed value conflicts with current output",
+          "currentOutput": "\u1006",
+          "reviewedValue": "\u1039\u1010",
+          "observedOccurrences": 53
+        },
+        "61": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u1048",
+          "observedOccurrences": 19
+        },
+        "62": {
+          "reason": "not one code point",
+          "currentOutput": "\u1039\u1012",
+          "observedOccurrences": 10
+        },
+        "64": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u1046",
+          "observedOccurrences": 16
+        },
+        "65": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u1024",
+          "observedOccurrences": 1
+        },
+        "66": {
+          "reason": "not one code point",
+          "currentOutput": "\u1039\u1006",
+          "observedOccurrences": 3
+        },
+        "68": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u1009",
+          "observedOccurrences": 6
+        },
+        "69": {
+          "reason": "not one code point",
+          "currentOutput": "\u100f\u1039\u100d",
+          "observedOccurrences": 2
+        }
+      },
+      "candidateAlternates": {
+        "\u103c": [
+          "52",
+          "5B"
+        ]
+      },
+      "overlapCandidates": {
+        "\u1014": [
+          "03",
+          "2B",
+          "30"
+        ],
+        "\u1012": [
+          "07",
+          "40"
+        ],
+        "\u1021": [
+          "0A",
+          "3A"
+        ],
+        "\u1043": [
+          "1A",
+          "47"
+        ],
+        "\u100a": [
+          "1D",
+          "4A"
+        ],
+        "\u2014": [
+          "3F",
+          "48"
+        ],
+        "\u1046": [
+          "44",
+          "64"
+        ],
+        "\u1048": [
+          "46",
+          "61"
+        ],
+        "\u1009": [
+          "5D",
+          "68"
+        ]
+      },
+      "resolvedForReview": {
+        "01": "\u103c",
+        "04": "\u103a",
+        "05": "\u102c",
+        "0C": "\u103d",
+        "0D": "\u1032",
+        "0E": " ",
+        "12": "\u104a",
+        "14": "\u1038",
+        "15": "\u103e",
+        "18": "\u102f",
+        "19": "\u102d",
+        "1E": "\u104b",
+        "1F": "\u1031",
+        "25": "\u1039\u1000",
+        "29": "\u103b",
+        "33": "\u1037",
+        "3E": "\u103c",
+        "4B": "\u103d\u103e",
+        "5F": "\u1039\u1010",
+        "1C": "\u102f",
+        "03": "\u1014",
+        "0A": "\u1021",
+        "1D": "\u100a",
+        "2B": "\u1014",
+        "30": "\u104c"
+      },
+      "writingRules": {
+        "uVariants": {
+          "unicode": "\u102f",
+          "short": "18",
+          "long": "1C",
+          "longWhenContains": [
+            "\u103c",
+            "\u103b",
+            "\u100a"
+          ],
+          "longInPaliOrStack": true
+        },
+        "restrictedBytes": {
+          "25": {
+            "precedingBytes": [
+              "17"
+            ]
+          }
+        }
+      }
+    },
+    "31e1447e813a2b15bee4bc4b1be515764554378cfd254ee45d9f9c0a7eda686b": {
+      "example": "bg-mlc-2-5.pdf /F4",
+      "pagesExamined": 86,
+      "bytes": {
+        "02": "\u1019",
+        "06": "\u101e",
+        "07": "\u1012",
+        "0A": "\u1021",
+        "0B": "\u1010",
+        "0F": "\u1042",
+        "15": "\u1045",
+        "16": "\u1015",
+        "1A": "\u1004",
+        "1B": "\u1005",
+        "20": "\u101b",
+        "21": "\u1040",
+        "23": "\u1000",
+        "2C": "\u101a",
+        "2E": "\u1025",
+        "31": "\u1013",
+        "35": "\u1016",
+        "38": "\u103f",
+        "3B": "\u1043",
+        "3C": "\u1041",
+        "3D": "\u1018",
+        "40": "\u1002",
+        "44": "\u101f",
+        "46": "\u1046",
+        "47": "\u1047",
+        "49": "\u1049",
+        "4F": "\u2014",
+        "51": "=",
+        "57": "/",
+        "5B": "\u1027",
+        "5C": "\u104d",
+        "5D": "\u1007",
+        "63": "\u1020",
+        "65": "\u1003",
+        "69": "[",
+        "6B": "\u1009",
+        "6E": "\u104f"
+      },
+      "alternateBytes": {
+        "\u103c": [
+          "01",
+          "22"
+        ],
+        "\u1037": [
+          "29",
+          "32"
+        ]
+      },
+      "flaggedOrExcluded": {
+        "01": {
+          "currentOutput": "\u103c",
+          "observedOccurrences": 2127,
+          "orphanFlags": 188,
+          "reviewedValue": "\u103c"
+        },
+        "04": {
+          "currentOutput": "\u103a",
+          "observedOccurrences": 9671,
+          "orphanFlags": 8,
+          "reviewedValue": "\u103a"
+        },
+        "05": {
+          "currentOutput": "\u102c",
+          "observedOccurrences": 4933,
+          "orphanFlags": 154,
+          "reviewedValue": "\u102c"
+        },
+        "09": {
+          "currentOutput": "\u102b",
+          "observedOccurrences": 988,
+          "orphanFlags": 476
+        },
+        "0C": {
+          "currentOutput": "\u103d",
+          "observedOccurrences": 650,
+          "orphanFlags": 9,
+          "reviewedValue": "\u103d"
+        },
+        "0D": {
+          "currentOutput": "\u1032",
+          "observedOccurrences": 351,
+          "orphanFlags": 1,
+          "reviewedValue": "\u1032"
+        },
+        "14": {
+          "currentOutput": "\u1038",
+          "observedOccurrences": 3827,
+          "orphanFlags": 30,
+          "reviewedValue": "\u1038"
+        },
+        "18": {
+          "currentOutput": "\u1031",
+          "observedOccurrences": 3189,
+          "orphanFlags": 829,
+          "reviewedValue": "\u1031"
+        },
+        "1C": {
+          "currentOutput": "\u102f",
+          "observedOccurrences": 2783,
+          "orphanFlags": 7,
+          "reviewedValue": "\u102f"
+        },
+        "1E": {
+          "currentOutput": "\u102d",
+          "observedOccurrences": 4042,
+          "orphanFlags": 731,
+          "reviewedValue": "\u102d"
+        },
+        "1F": {
+          "currentOutput": "\u1036",
+          "observedOccurrences": 584,
+          "orphanFlags": 20
+        },
+        "22": {
+          "currentOutput": "\u103c",
+          "observedOccurrences": 1077,
+          "orphanFlags": 217,
+          "reviewedValue": "\u103c"
+        },
+        "24": {
+          "currentOutput": "\u102e",
+          "observedOccurrences": 578,
+          "orphanFlags": 1
+        },
+        "28": {
+          "currentOutput": "\u103e",
+          "observedOccurrences": 1071,
+          "orphanFlags": 9,
+          "reviewedValue": "\u103e"
+        },
+        "29": {
+          "currentOutput": "\u1037",
+          "observedOccurrences": 990,
+          "orphanFlags": 13,
+          "reviewedValue": "\u1037"
+        },
+        "2A": {
+          "currentOutput": "\u103b",
+          "observedOccurrences": 1545,
+          "orphanFlags": 8,
+          "reviewedValue": "\u103b"
+        },
+        "30": {
+          "currentOutput": "\u103b\u103d",
+          "observedOccurrences": 7,
+          "orphanFlags": 0
+        },
+        "33": {
+          "currentOutput": "\u103b\u103d",
+          "observedOccurrences": 98,
+          "orphanFlags": 8
+        },
+        "34": {
+          "currentOutput": "\u102f",
+          "observedOccurrences": 405,
+          "orphanFlags": 3
+        },
+        "37": {
+          "currentOutput": "\u1030",
+          "observedOccurrences": 492,
+          "orphanFlags": 0
+        },
+        "3E": {
+          "currentOutput": "\u1037",
+          "observedOccurrences": 331,
+          "orphanFlags": 60
+        },
+        "41": {
+          "currentOutput": "\u1004\u103a\u1039",
+          "observedOccurrences": 118,
+          "orphanFlags": 0
+        },
+        "42": {
+          "currentOutput": "\u1037",
+          "observedOccurrences": 285,
+          "orphanFlags": 0
+        },
+        "4C": {
+          "currentOutput": "\u102d\u1036",
+          "observedOccurrences": 252,
+          "orphanFlags": 0
+        },
+        "4E": {
+          "currentOutput": "\u103c",
+          "observedOccurrences": 188,
+          "orphanFlags": 21
+        },
+        "50": {
+          "currentOutput": "\u102b\u103a",
+          "observedOccurrences": 140,
+          "orphanFlags": 0
+        },
+        "52": {
+          "currentOutput": "\u103c",
+          "observedOccurrences": 68,
+          "orphanFlags": 24
+        },
+        "53": {
+          "currentOutput": "\u103c",
+          "observedOccurrences": 197,
+          "orphanFlags": 30
+        },
+        "5E": {
+          "currentOutput": "\u103b\u103e",
+          "observedOccurrences": 9,
+          "orphanFlags": 18
+        },
+        "60": {
+          "currentOutput": "\u1030",
+          "observedOccurrences": 7,
+          "orphanFlags": 1
+        }
+      },
+      "unmapped": {
+        "03": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u1014",
+          "observedOccurrences": 2143
+        },
+        "08": {
+          "reason": "not one code point",
+          "currentOutput": "\u1039\u1012",
+          "observedOccurrences": 48
+        },
+        "0E": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "(",
+          "observedOccurrences": 1239
+        },
+        "10": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": ")",
+          "observedOccurrences": 1236
+        },
+        "11": {
+          "reason": "current decoder conflicts with observed glyph/context",
+          "currentOutput": "\u104b",
+          "observedOccurrences": 1016,
+          "reviewedValue": "\u104a"
+        },
+        "12": {
+          "reason": "current decoder conflicts with observed glyph/context",
+          "currentOutput": "",
+          "observedOccurrences": 8705,
+          "reviewedValue": " "
+        },
+        "13": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u1001",
+          "observedOccurrences": 1356
+        },
+        "17": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u100a",
+          "observedOccurrences": 2653
+        },
+        "19": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u1011",
+          "observedOccurrences": 447
+        },
+        "1D": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u1014",
+          "observedOccurrences": 594
+        },
+        "25": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u100c",
+          "observedOccurrences": 9
+        },
+        "26": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u1011",
+          "observedOccurrences": 63
+        },
+        "27": {
+          "reason": "reviewed value conflicts with current output",
+          "currentOutput": "\u1024",
+          "reviewedValue": "\u103d\u103e",
+          "observedOccurrences": 53
+        },
+        "2B": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u1006",
+          "observedOccurrences": 412
+        },
+        "2D": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u101c",
+          "observedOccurrences": 1122
+        },
+        "2F": {
+          "reason": "reviewed value conflicts with current output",
+          "currentOutput": "\u1014",
+          "reviewedValue": "\u1039\u1000",
+          "observedOccurrences": 4
+        },
+        "32": {
+          "reason": "current decoder conflicts with observed glyph/context",
+          "currentOutput": "\u1039\u1000",
+          "observedOccurrences": 820,
+          "reviewedValue": "\u1037"
+        },
+        "36": {
+          "reason": "current decoder conflicts with observed glyph/context",
+          "currentOutput": "\u104a",
+          "reviewedValue": "\u104b",
+          "observedOccurrences": 2196
+        },
+        "39": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u100c",
+          "observedOccurrences": 2
+        },
+        "3A": {
+          "reason": "not one code point",
+          "currentOutput": "\u1039\u1005",
+          "observedOccurrences": 102
+        },
+        "3F": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u1017",
+          "observedOccurrences": 52
+        },
+        "43": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u1001",
+          "observedOccurrences": 38
+        },
+        "45": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u1044",
+          "observedOccurrences": 275
+        },
+        "48": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u1048",
+          "observedOccurrences": 129
+        },
+        "4A": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": " ",
+          "observedOccurrences": 150
+        },
+        "4B": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u101c",
+          "observedOccurrences": 149
+        },
+        "4D": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u104b",
+          "observedOccurrences": 17
+        },
+        "54": {
+          "reason": "not one code point",
+          "currentOutput": "\u1039\u1019",
+          "observedOccurrences": 89
+        },
+        "55": {
+          "reason": "not one code point",
+          "currentOutput": "\u1039\u1006",
+          "observedOccurrences": 6
+        },
+        "56": {
+          "reason": "not one code point",
+          "currentOutput": "\u1039\u1001",
+          "observedOccurrences": 130
+        },
+        "58": {
+          "reason": "not one code point",
+          "currentOutput": "\u1039\u1015",
+          "observedOccurrences": 2
+        },
+        "59": {
+          "reason": "not one code point",
+          "currentOutput": "\u1039\u1013",
+          "observedOccurrences": 2
+        },
+        "5A": {
+          "reason": "not one code point",
+          "currentOutput": "\u1039\u1002",
+          "observedOccurrences": 1
+        },
+        "5F": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u1006",
+          "observedOccurrences": 1
+        },
+        "61": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u1048",
+          "observedOccurrences": 72
+        },
+        "62": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u1044",
+          "observedOccurrences": 1
+        },
+        "64": {
+          "reason": "reviewed value conflicts with current output",
+          "currentOutput": "\u1046",
+          "reviewedValue": "\u1039\u1010",
+          "observedOccurrences": 48
+        },
+        "66": {
+          "reason": "not one code point",
+          "currentOutput": "\u100f\u1039\u100d",
+          "observedOccurrences": 5
+        },
+        "67": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u104c",
+          "observedOccurrences": 3
+        },
+        "68": {
+          "reason": "current output overlaps another observed byte; held for review",
+          "currentOutput": "\u100a",
+          "observedOccurrences": 5
+        },
+        "6A": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u1017",
+          "observedOccurrences": 1
+        },
+        "6C": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "(",
+          "observedOccurrences": 3
+        },
+        "6D": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": ")",
+          "observedOccurrences": 1
+        },
+        "6F": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u104c",
+          "observedOccurrences": 1
+        },
+        "70": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u1008",
+          "observedOccurrences": 10
+        },
+        "71": {
+          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "currentOutput": "\u100d",
+          "observedOccurrences": 2
+        }
+      },
+      "candidateAlternates": {
+        "\u103c": [
+          "4E",
+          "52",
+          "53"
+        ]
+      },
+      "overlapCandidates": {
+        "\u1014": [
+          "03",
+          "1D"
+        ],
+        "(": [
+          "0E",
+          "6C"
+        ],
+        ")": [
+          "10",
+          "6D"
+        ],
+        "\u104b": [
+          "11",
+          "4D"
+        ],
+        "\u1001": [
+          "13",
+          "43"
+        ],
+        "\u100a": [
+          "17",
+          "68"
+        ],
+        "\u1011": [
+          "19",
+          "26"
+        ],
+        "\u100c": [
+          "25",
+          "39"
+        ],
+        "\u1006": [
+          "2B",
+          "5F"
+        ],
+        "\u101c": [
+          "2D",
+          "4B"
+        ],
+        "\u1017": [
+          "3F",
+          "6A"
+        ],
+        "\u1044": [
+          "45",
+          "62"
+        ],
+        "\u1048": [
+          "48",
+          "61"
+        ],
+        "\u104c": [
+          "67",
+          "6F"
+        ]
+      },
+      "resolvedForReview": {
+        "01": "\u103c",
+        "04": "\u103a",
+        "05": "\u102c",
+        "0C": "\u103d",
+        "0D": "\u1032",
+        "11": "\u104a",
+        "12": " ",
+        "14": "\u1038",
+        "18": "\u1031",
+        "1C": "\u102f",
+        "1E": "\u102d",
+        "22": "\u103c",
+        "27": "\u103d\u103e",
+        "28": "\u103e",
+        "29": "\u1037",
+        "2A": "\u103b",
+        "2F": "\u1039\u1000",
+        "32": "\u1037",
+        "36": "\u104b",
+        "64": "\u1039\u1010",
+        "03": "\u1014",
+        "17": "\u100a",
+        "2D": "\u101c",
+        "3E": "\u104c"
+      }
+    }
+  }
+}
