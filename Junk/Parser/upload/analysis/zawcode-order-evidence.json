@@ -1,0 +1,1742 @@
+{
+  "scope": "Page content streams only; two-byte Identity-H / CIDToGIDMap Identity. No ToUnicode, cleanup, OCR, or keyboard byte table. Cmap and direct GSUB single-substitution readings are provisional and ambiguous candidates are excluded from pattern matching.",
+  "fontSha256": "5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9",
+  "source": "ယဲ့နင် စာစဉ် a ၁.merged.merged.pdf",
+  "totalPages": 4414,
+  "pagesExamined": 200,
+  "rawGlyphOccurrences": 104626,
+  "glyphCandidates": {
+    "0003": {
+      "values": [
+        " "
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 37
+    },
+    "0011": {
+      "values": [
+        "."
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 37
+    },
+    "001D": {
+      "values": [
+        ":"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 5
+    },
+    "0063": {
+      "values": [
+        "‘"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 132
+    },
+    "0064": {
+      "values": [
+        "’"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 128
+    },
+    "0065": {
+      "values": [
+        "“"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 232
+    },
+    "0066": {
+      "values": [
+        "”"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 239
+    },
+    "0069": {
+      "values": [
+        "က"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 5216
+    },
+    "006A": {
+      "values": [
+        "ခ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1856
+    },
+    "006B": {
+      "values": [
+        "ဂ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 149
+    },
+    "006D": {
+      "values": [
+        "င"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 4381
+    },
+    "006E": {
+      "values": [
+        "စ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 2019
+    },
+    "006F": {
+      "values": [
+        "ဆ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 611
+    },
+    "0070": {
+      "values": [
+        "ဇ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 161
+    },
+    "0072": {
+      "values": [
+        "ဉ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 53
+    },
+    "0073": {
+      "values": [
+        "ည"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 2881
+    },
+    "0074": {
+      "values": [
+        "ဋ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 2
+    },
+    "0075": {
+      "values": [
+        "ဌ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1
+    },
+    "0078": {
+      "values": [
+        "ဏ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 171
+    },
+    "0079": {
+      "values": [
+        "တ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 3302
+    },
+    "007A": {
+      "values": [
+        "ထ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 980
+    },
+    "007B": {
+      "values": [
+        "ဒ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 226
+    },
+    "007C": {
+      "values": [
+        "ဓ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 39
+    },
+    "007D": {
+      "values": [
+        "န"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 2272
+    },
+    "007E": {
+      "values": [
+        "ပ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 2636
+    },
+    "007F": {
+      "values": [
+        "ဖ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 794
+    },
+    "0080": {
+      "values": [
+        "ဗ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 76
+    },
+    "0081": {
+      "values": [
+        "ဘ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 338
+    },
+    "0082": {
+      "values": [
+        "မ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 3891
+    },
+    "0083": {
+      "values": [
+        "ယ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1485
+    },
+    "0084": {
+      "values": [
+        "ရ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 2167
+    },
+    "0085": {
+      "values": [
+        "လ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 2220
+    },
+    "0086": {
+      "values": [
+        "ဝ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 319
+    },
+    "0087": {
+      "values": [
+        "သ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 4624
+    },
+    "0088": {
+      "values": [
+        "ဟ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 318
+    },
+    "008A": {
+      "values": [
+        "အ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1905
+    },
+    "008C": {
+      "values": [
+        "ဤ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 66
+    },
+    "008D": {
+      "values": [
+        "ဥ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 2
+    },
+    "008E": {
+      "values": [
+        "ဦ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 14
+    },
+    "008F": {
+      "values": [
+        "ဧ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 139
+    },
+    "0090": {
+      "values": [
+        "ဩ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 25
+    },
+    "0092": {
+      "values": [
+        "ါ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1
+    },
+    "0093": {
+      "values": [
+        "ာ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 5
+    },
+    "0095": {
+      "values": [
+        "ီ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1
+    },
+    "0097": {
+      "values": [
+        "ူ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 4
+    },
+    "0098": {
+      "values": [
+        "ေ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1
+    },
+    "009A": {
+      "values": [
+        "ံ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1
+    },
+    "009C": {
+      "values": [
+        "း"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1
+    },
+    "009E": {
+      "values": [
+        "်"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1
+    },
+    "00A0": {
+      "values": [
+        "ြ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1
+    },
+    "00A3": {
+      "values": [
+        "ဿ"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 10
+    },
+    "00A4": {
+      "values": [
+        "၀"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 7
+    },
+    "00A5": {
+      "values": [
+        "၁"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 7
+    },
+    "00A6": {
+      "values": [
+        "၂"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1
+    },
+    "00A7": {
+      "values": [
+        "၃"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1
+    },
+    "00A8": {
+      "values": [
+        "၄"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1
+    },
+    "00A9": {
+      "values": [
+        "၅"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 2
+    },
+    "00AA": {
+      "values": [
+        "၆"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1
+    },
+    "00AB": {
+      "values": [
+        "၇"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1
+    },
+    "00AC": {
+      "values": [
+        "၈"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1
+    },
+    "00AD": {
+      "values": [
+        "၉"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1
+    },
+    "00AE": {
+      "values": [
+        "၊"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 120
+    },
+    "00AF": {
+      "values": [
+        "။"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 1105
+    },
+    "00B0": {
+      "values": [
+        "၌"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 17
+    },
+    "00B1": {
+      "values": [
+        "၍"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 38
+    },
+    "00B2": {
+      "values": [
+        "၎"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 6
+    },
+    "00B3": {
+      "values": [
+        "၏"
+      ],
+      "origins": [
+        "cmap"
+      ],
+      "occurrences": 411
+    },
+    "00BE": {
+      "values": [],
+      "origins": [],
+      "occurrences": 1
+    },
+    "00BF": {
+      "values": [],
+      "origins": [],
+      "occurrences": 7
+    },
+    "00C0": {
+      "values": [],
+      "origins": [],
+      "occurrences": 2
+    },
+    "00C3": {
+      "values": [],
+      "origins": [],
+      "occurrences": 45
+    },
+    "00C4": {
+      "values": [],
+      "origins": [],
+      "occurrences": 8
+    },
+    "00CE": {
+      "values": [],
+      "origins": [],
+      "occurrences": 41
+    },
+    "00D0": {
+      "values": [],
+      "origins": [],
+      "occurrences": 7
+    },
+    "00D1": {
+      "values": [],
+      "origins": [],
+      "occurrences": 25
+    },
+    "00D3": {
+      "values": [],
+      "origins": [],
+      "occurrences": 1
+    },
+    "00D6": {
+      "values": [],
+      "origins": [],
+      "occurrences": 36
+    },
+    "00D7": {
+      "values": [],
+      "origins": [],
+      "occurrences": 15
+    },
+    "00DA": {
+      "values": [],
+      "origins": [],
+      "occurrences": 13
+    },
+    "00DE": {
+      "values": [
+        "ါ"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 589
+    },
+    "00DF": {
+      "values": [
+        "ာ"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 6278
+    },
+    "00E0": {
+      "values": [
+        "ိ"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 4322
+    },
+    "00E1": {
+      "values": [
+        "ီ"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 858
+    },
+    "00E2": {
+      "values": [],
+      "origins": [],
+      "occurrences": 3840
+    },
+    "00E3": {
+      "values": [],
+      "origins": [],
+      "occurrences": 1181
+    },
+    "00E4": {
+      "values": [
+        "ေ"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 4907
+    },
+    "00E5": {
+      "values": [
+        "ဲ"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 1626
+    },
+    "00E6": {
+      "values": [
+        "ံ"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 860
+    },
+    "00E7": {
+      "values": [
+        "့"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 3229
+    },
+    "00E8": {
+      "values": [
+        "း"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 5574
+    },
+    "00E9": {
+      "values": [
+        "်"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 13681
+    },
+    "00EA": {
+      "values": [
+        "ျ"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 1842
+    },
+    "00EB": {
+      "values": [
+        "ွ"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 1625
+    },
+    "00EC": {
+      "values": [
+        "ှ"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 1462
+    },
+    "00ED": {
+      "values": [],
+      "origins": [],
+      "occurrences": 100
+    },
+    "00EE": {
+      "values": [
+        "ြ"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 1606
+    },
+    "00EF": {
+      "values": [],
+      "origins": [],
+      "occurrences": 616
+    },
+    "00F0": {
+      "values": [],
+      "origins": [],
+      "occurrences": 312
+    },
+    "00F1": {
+      "values": [],
+      "origins": [],
+      "occurrences": 238
+    },
+    "00F4": {
+      "values": [],
+      "origins": [],
+      "occurrences": 60
+    },
+    "00F5": {
+      "values": [],
+      "origins": [],
+      "occurrences": 16
+    },
+    "00F6": {
+      "values": [],
+      "origins": [],
+      "occurrences": 2
+    },
+    "00F7": {
+      "values": [],
+      "origins": [],
+      "occurrences": 13
+    },
+    "00F8": {
+      "values": [],
+      "origins": [],
+      "occurrences": 154
+    },
+    "0101": {
+      "values": [
+        "ှ"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 19
+    },
+    "0102": {
+      "values": [],
+      "origins": [],
+      "occurrences": 206
+    },
+    "0103": {
+      "values": [
+        "ု"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 395
+    },
+    "0104": {
+      "values": [
+        "ူ"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 114
+    },
+    "0105": {
+      "values": [
+        "ည"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 12
+    },
+    "0106": {
+      "values": [
+        "ဉ"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 82
+    },
+    "0108": {
+      "values": [
+        "န"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 557
+    },
+    "0109": {
+      "values": [
+        "ရ"
+      ],
+      "origins": [
+        "GSUB single substitution"
+      ],
+      "occurrences": 132
+    },
+    "0110": {
+      "values": [],
+      "origins": [],
+      "occurrences": 22
+    }
+  },
+  "patterns": {
+    "e_ra_base": {
+      "count": 265,
+      "examples": [
+        {
+          "page": 1,
+          "rawWindow": "0069 00E3 00E8 00E4 00EE 007E 00DF 006D 00E9 00E8 00E4 0084",
+          "windowSlots": [
+            "က",
+            null,
+            "း",
+            "ေ",
+            "ြ",
+            "ပ",
+            "ာ",
+            "င",
+            "်",
+            "း",
+            "ေ",
+            "ရ"
+          ],
+          "inputSlots": [
+            "ေ",
+            "ြ",
+            "ပ"
+          ],
+          "orderedSlots": [
+            "ပ",
+            "ြ",
+            "ေ"
+          ]
+        },
+        {
+          "page": 3,
+          "rawWindow": "0069 00E3 00E8 00E4 00EE 007E 00DF 006D 00E9 00E8 00E4 0084",
+          "windowSlots": [
+            "က",
+            null,
+            "း",
+            "ေ",
+            "ြ",
+            "ပ",
+            "ာ",
+            "င",
+            "်",
+            "း",
+            "ေ",
+            "ရ"
+          ],
+          "inputSlots": [
+            "ေ",
+            "ြ",
+            "ပ"
+          ],
+          "orderedSlots": [
+            "ပ",
+            "ြ",
+            "ေ"
+          ]
+        },
+        {
+          "page": 4,
+          "rawWindow": "00DF 006D 00E9 00E4 00EE 006A 00DF 0069 00E9 006A 00E2 008A",
+          "windowSlots": [
+            "ာ",
+            "င",
+            "်",
+            "ေ",
+            "ြ",
+            "ခ",
+            "ာ",
+            "က",
+            "်",
+            "ခ",
+            null,
+            "အ"
+          ],
+          "inputSlots": [
+            "ေ",
+            "ြ",
+            "ခ"
+          ],
+          "orderedSlots": [
+            "ခ",
+            "ြ",
+            "ေ"
+          ]
+        },
+        {
+          "page": 4,
+          "rawWindow": "00DF 006D 00E9 00E4 00EE 006A 00DF 0069 00E9 006A 00E2 0082",
+          "windowSlots": [
+            "ာ",
+            "င",
+            "်",
+            "ေ",
+            "ြ",
+            "ခ",
+            "ာ",
+            "က",
+            "်",
+            "ခ",
+            null,
+            "မ"
+          ],
+          "inputSlots": [
+            "ေ",
+            "ြ",
+            "ခ"
+          ],
+          "orderedSlots": [
+            "ခ",
+            "ြ",
+            "ေ"
+          ]
+        },
+        {
+          "page": 4,
+          "rawWindow": "00DF 006D 00E9 00E4 00EE 006A 00DF 0069 00E9 006A 00E2 0087",
+          "windowSlots": [
+            "ာ",
+            "င",
+            "်",
+            "ေ",
+            "ြ",
+            "ခ",
+            "ာ",
+            "က",
+            "်",
+            "ခ",
+            null,
+            "သ"
+          ],
+          "inputSlots": [
+            "ေ",
+            "ြ",
+            "ခ"
+          ],
+          "orderedSlots": [
+            "ခ",
+            "ြ",
+            "ေ"
+          ]
+        },
+        {
+          "page": 4,
+          "rawWindow": "00DF 006D 00E9 00E4 00EE 006A 00DF 0069 00E9 006A 00E2 00B3",
+          "windowSlots": [
+            "ာ",
+            "င",
+            "်",
+            "ေ",
+            "ြ",
+            "ခ",
+            "ာ",
+            "က",
+            "်",
+            "ခ",
+            null,
+            "၏"
+          ],
+          "inputSlots": [
+            "ေ",
+            "ြ",
+            "ခ"
+          ],
+          "orderedSlots": [
+            "ခ",
+            "ြ",
+            "ေ"
+          ]
+        },
+        {
+          "page": 9,
+          "rawWindow": "00E4 00EE 006A 00DF 0069 00E9 00EE 007E 0073",
+          "windowSlots": [
+            "ေ",
+            "ြ",
+            "ခ",
+            "ာ",
+            "က",
+            "်",
+            "ြ",
+            "ပ",
+            "ည"
+          ],
+          "inputSlots": [
+            "ေ",
+            "ြ",
+            "ခ"
+          ],
+          "orderedSlots": [
+            "ခ",
+            "ြ",
+            "ေ"
+          ]
+        },
+        {
+          "page": 9,
+          "rawWindow": "0081 00DF 00E4 00EE 007E 00DF 00E4 0087 00E8 0085 00E5",
+          "windowSlots": [
+            "ဘ",
+            "ာ",
+            "ေ",
+            "ြ",
+            "ပ",
+            "ာ",
+            "ေ",
+            "သ",
+            "း",
+            "လ",
+            "ဲ"
+          ],
+          "inputSlots": [
+            "ေ",
+            "ြ",
+            "ပ"
+          ],
+          "orderedSlots": [
+            "ပ",
+            "ြ",
+            "ေ"
+          ]
+        }
+      ]
+    },
+    "ra_base": {
+      "count": 1606,
+      "examples": [
+        {
+          "page": 1,
+          "rawWindow": "0087 0082 00EC 00EE 007F 006E 00E9 0082 0083 00E9",
+          "windowSlots": [
+            "သ",
+            "မ",
+            "ှ",
+            "ြ",
+            "ဖ",
+            "စ",
+            "်",
+            "မ",
+            "ယ",
+            "်"
+          ],
+          "inputSlots": [
+            "ြ",
+            "ဖ"
+          ],
+          "orderedSlots": [
+            "ဖ",
+            "ြ"
+          ]
+        },
+        {
+          "page": 1,
+          "rawWindow": "00DF 0087 00DF 00EE 007E 007D 00E9",
+          "windowSlots": [
+            "ာ",
+            "သ",
+            "ာ",
+            "ြ",
+            "ပ",
+            "န",
+            "်"
+          ],
+          "inputSlots": [
+            "ြ",
+            "ပ"
+          ],
+          "orderedSlots": [
+            "ပ",
+            "ြ"
+          ]
+        },
+        {
+          "page": 1,
+          "rawWindow": "00E3 00E8 00E4 00EE 007E 00DF 006D 00E9 00E8 00E4 0084",
+          "windowSlots": [
+            null,
+            "း",
+            "ေ",
+            "ြ",
+            "ပ",
+            "ာ",
+            "င",
+            "်",
+            "း",
+            "ေ",
+            "ရ"
+          ],
+          "inputSlots": [
+            "ြ",
+            "ပ"
+          ],
+          "orderedSlots": [
+            "ပ",
+            "ြ"
+          ]
+        },
+        {
+          "page": 1,
+          "rawWindow": "006D 00E9 00E8 00EE 006A 006D 00E9 00E8 0082 00EA 00DF",
+          "windowSlots": [
+            "င",
+            "်",
+            "း",
+            "ြ",
+            "ခ",
+            "င",
+            "်",
+            "း",
+            "မ",
+            "ျ",
+            "ာ"
+          ],
+          "inputSlots": [
+            "ြ",
+            "ခ"
+          ],
+          "orderedSlots": [
+            "ခ",
+            "ြ"
+          ]
+        },
+        {
+          "page": 1,
+          "rawWindow": "00EE 007E 0073 00E7 00E9 006E 00E2 00E6",
+          "windowSlots": [
+            "ြ",
+            "ပ",
+            "ည",
+            "့",
+            "်",
+            "စ",
+            null,
+            "ံ"
+          ],
+          "inputSlots": [
+            "ြ",
+            "ပ"
+          ],
+          "orderedSlots": [
+            "ပ",
+            "ြ"
+          ]
+        },
+        {
+          "page": 1,
+          "rawWindow": "00EE 007F 006E 00E9 0082 0073 00E7 00E9",
+          "windowSlots": [
+            "ြ",
+            "ဖ",
+            "စ",
+            "်",
+            "မ",
+            "ည",
+            "့",
+            "်"
+          ],
+          "inputSlots": [
+            "ြ",
+            "ဖ"
+          ],
+          "orderedSlots": [
+            "ဖ",
+            "ြ"
+          ]
+        },
+        {
+          "page": 1,
+          "rawWindow": "006D 00E9 00E8 00EE 007F 00DF 0079 00E5 00E7",
+          "windowSlots": [
+            "င",
+            "်",
+            "း",
+            "ြ",
+            "ဖ",
+            "ာ",
+            "တ",
+            "ဲ",
+            "့"
+          ],
+          "inputSlots": [
+            "ြ",
+            "ဖ"
+          ],
+          "orderedSlots": [
+            "ဖ",
+            "ြ"
+          ]
+        },
+        {
+          "page": 2,
+          "rawWindow": "008A 00EE 006A 00DF 00E8 0085 00E3 0082 00EA",
+          "windowSlots": [
+            "အ",
+            "ြ",
+            "ခ",
+            "ာ",
+            "း",
+            "လ",
+            null,
+            "မ",
+            "ျ"
+          ],
+          "inputSlots": [
+            "ြ",
+            "ခ"
+          ],
+          "orderedSlots": [
+            "ခ",
+            "ြ"
+          ]
+        }
+      ]
+    },
+    "e_base_ya": {
+      "count": 229,
+      "examples": [
+        {
+          "page": 5,
+          "rawWindow": "0108 00EC 00DF 00E4 006A 00EA 0085 00F8 006D 00E9 007E 006D",
+          "windowSlots": [
+            "န",
+            "ှ",
+            "ာ",
+            "ေ",
+            "ခ",
+            "ျ",
+            "လ",
+            null,
+            "င",
+            "်",
+            "ပ",
+            "င"
+          ],
+          "inputSlots": [
+            "ေ",
+            "ခ",
+            "ျ"
+          ],
+          "orderedSlots": [
+            "ခ",
+            "ျ",
+            "ေ"
+          ]
+        },
+        {
+          "page": 6,
+          "rawWindow": "00E0 006E 00C3 00E4 006A 00EA 00DF 00F0 007E 00E1 00E8",
+          "windowSlots": [
+            "ိ",
+            "စ",
+            null,
+            "ေ",
+            "ခ",
+            "ျ",
+            "ာ",
+            null,
+            "ပ",
+            "ီ",
+            "း"
+          ],
+          "inputSlots": [
+            "ေ",
+            "ခ",
+            "ျ"
+          ],
+          "orderedSlots": [
+            "ခ",
+            "ျ",
+            "ေ"
+          ]
+        },
+        {
+          "page": 7,
+          "rawWindow": "00E2 0079 00E9 00E4 006A 00EA 00AF",
+          "windowSlots": [
+            null,
+            "တ",
+            "်",
+            "ေ",
+            "ခ",
+            "ျ",
+            "။"
+          ],
+          "inputSlots": [
+            "ေ",
+            "ခ",
+            "ျ"
+          ],
+          "orderedSlots": [
+            "ခ",
+            "ျ",
+            "ေ"
+          ]
+        },
+        {
+          "page": 8,
+          "rawWindow": "00E1 007E 00DE 00E4 006A 00EA 00AF",
+          "windowSlots": [
+            "ီ",
+            "ပ",
+            "ါ",
+            "ေ",
+            "ခ",
+            "ျ",
+            "။"
+          ],
+          "inputSlots": [
+            "ေ",
+            "ခ",
+            "ျ"
+          ],
+          "orderedSlots": [
+            "ခ",
+            "ျ",
+            "ေ"
+          ]
+        },
+        {
+          "page": 12,
+          "rawWindow": "0079 00DF 00E7 00E4 006A 00EA 00AF",
+          "windowSlots": [
+            "တ",
+            "ာ",
+            "့",
+            "ေ",
+            "ခ",
+            "ျ",
+            "။"
+          ],
+          "inputSlots": [
+            "ေ",
+            "ခ",
+            "ျ"
+          ],
+          "orderedSlots": [
+            "ခ",
+            "ျ",
+            "ေ"
+          ]
+        },
+        {
+          "page": 12,
+          "rawWindow": "00E4 0069 00EA 00DF 00E9 00EF 0069 00DF 00E8",
+          "windowSlots": [
+            "ေ",
+            "က",
+            "ျ",
+            "ာ",
+            "်",
+            null,
+            "က",
+            "ာ",
+            "း"
+          ],
+          "inputSlots": [
+            "ေ",
+            "က",
+            "ျ"
+          ],
+          "orderedSlots": [
+            "က",
+            "ျ",
+            "ေ"
+          ]
+        },
+        {
+          "page": 13,
+          "rawWindow": "00EB 00E7 0084 00E4 006A 00EA 00AF",
+          "windowSlots": [
+            "ွ",
+            "့",
+            "ရ",
+            "ေ",
+            "ခ",
+            "ျ",
+            "။"
+          ],
+          "inputSlots": [
+            "ေ",
+            "ခ",
+            "ျ"
+          ],
+          "orderedSlots": [
+            "ခ",
+            "ျ",
+            "ေ"
+          ]
+        },
+        {
+          "page": 14,
+          "rawWindow": "00E7 00EF 0069 00E4 006A 00EA 00AF",
+          "windowSlots": [
+            "့",
+            null,
+            "က",
+            "ေ",
+            "ခ",
+            "ျ",
+            "။"
+          ],
+          "inputSlots": [
+            "ေ",
+            "ခ",
+            "ျ"
+          ],
+          "orderedSlots": [
+            "ခ",
+            "ျ",
+            "ေ"
+          ]
+        }
+      ]
+    },
+    "e_base_delayed_ya": {
+      "count": 0,
+      "examples": []
+    },
+    "e_base": {
+      "count": 4133,
+      "examples": [
+        {
+          "page": 1,
+          "rawWindow": "00E4 0087 0082 00EC 00EE 007F 006E 00E9",
+          "windowSlots": [
+            "ေ",
+            "သ",
+            "မ",
+            "ှ",
+            "ြ",
+            "ဖ",
+            "စ",
+            "်"
+          ],
+          "inputSlots": [
+            "ေ",
+            "သ"
+          ],
+          "orderedSlots": [
+            "သ",
+            "ေ"
+          ]
+        },
+        {
+          "page": 1,
+          "rawWindow": "008A 006D 00E9 00E4 0082 00DF 00E9 0079 0083 00E9 0069",
+          "windowSlots": [
+            "အ",
+            "င",
+            "်",
+            "ေ",
+            "မ",
+            "ာ",
+            "်",
+            "တ",
+            "ယ",
+            "်",
+            "က"
+          ],
+          "inputSlots": [
+            "ေ",
+            "မ"
+          ],
+          "orderedSlots": [
+            "မ",
+            "ေ"
+          ]
+        },
+        {
+          "page": 1,
+          "rawWindow": "006D 00E9 00E8 00E4 0084 00DF 0069 00E9 0084 00EC 00E0",
+          "windowSlots": [
+            "င",
+            "်",
+            "း",
+            "ေ",
+            "ရ",
+            "ာ",
+            "က",
+            "်",
+            "ရ",
+            "ှ",
+            "ိ"
+          ],
+          "inputSlots": [
+            "ေ",
+            "ရ"
+          ],
+          "orderedSlots": [
+            "ရ",
+            "ေ"
+          ]
+        },
+        {
+          "page": 1,
+          "rawWindow": "007E 00E1 00E8 00E4 007D 00DF 0069 00E9",
+          "windowSlots": [
+            "ပ",
+            "ီ",
+            "း",
+            "ေ",
+            "န",
+            "ာ",
+            "က",
+            "်"
+          ],
+          "inputSlots": [
+            "ေ",
+            "န"
+          ],
+          "orderedSlots": [
+            "န",
+            "ေ"
+          ]
+        },
+        {
+          "page": 1,
+          "rawWindow": "00E6 0082 00D7 00E4 0069 00DF 006D 00E9 00E8 00EE 006A",
+          "windowSlots": [
+            "ံ",
+            "မ",
+            null,
+            "ေ",
+            "က",
+            "ာ",
+            "င",
+            "်",
+            "း",
+            "ြ",
+            "ခ"
+          ],
+          "inputSlots": [
+            "ေ",
+            "က"
+          ],
+          "orderedSlots": [
+            "က",
+            "ေ"
+          ]
+        },
+        {
+          "page": 1,
+          "rawWindow": "006E 00E2 00E6 00E4 007D 006A 00E5 00E7 00E4 0085 00F0",
+          "windowSlots": [
+            "စ",
+            null,
+            "ံ",
+            "ေ",
+            "န",
+            "ခ",
+            "ဲ",
+            "့",
+            "ေ",
+            "လ",
+            null
+          ],
+          "inputSlots": [
+            "ေ",
+            "န"
+          ],
+          "orderedSlots": [
+            "န",
+            "ေ"
+          ]
+        },
+        {
+          "page": 1,
+          "rawWindow": "006A 00E5 00E7 00E4 0085 00F0 007E 00E1 00AF",
+          "windowSlots": [
+            "ခ",
+            "ဲ",
+            "့",
+            "ေ",
+            "လ",
+            null,
+            "ပ",
+            "ီ",
+            "။"
+          ],
+          "inputSlots": [
+            "ေ",
+            "လ"
+          ],
+          "orderedSlots": [
+            "လ",
+            "ေ"
+          ]
+        },
+        {
+          "page": 1,
+          "rawWindow": "00E4 0087 0085 00EB 007D 00E9 00F0 007E",
+          "windowSlots": [
+            "ေ",
+            "သ",
+            "လ",
+            "ွ",
+            "န",
+            "်",
+            null,
+            "ပ"
+          ],
+          "inputSlots": [
+            "ေ",
+            "သ"
+          ],
+          "orderedSlots": [
+            "သ",
+            "ေ"
+          ]
+        }
+      ]
+    }
+  }
+}
