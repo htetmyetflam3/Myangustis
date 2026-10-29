@@ -11,6 +11,7 @@ WinInnwa unresolved raw-byte cases — both embedded font subsets
 
 Engine walker: 1223 reference syllables fully matched with equal mapped/Unicode code-point counts.
 A syllable match is supporting evidence, not proof of a byte value: different readings can both be valid syllables.
+Matching windows may overlap. Arbitrary substitutions that form syllables are not evidence that the raw glyph has those readings.
 The old decoder readings below are candidate hints, not independently verified. Raw snippets are unmodified PDF content bytes; page streams only, Form XObjects are not scanned.
 A byte may expand to multiple code points; byte count need not equal Unicode code-point count.
 
@@ -19,7 +20,6 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 07 — occurrences: 190; previous decoder candidate: 'ဒ'
   Engine-compatible candidate: 'ဒ'; 67 matching windows, e.g. ဒိ, ဒု, ဒေ, ဒြ
-  Other engine-compatible candidates: 'က' (60 windows), 'ခ' (60 windows), 'င' (60 windows)
   page 1: 02 03 04 02 05 06 [07] 08 09
   page 1: 02 03 04 02 05 06 [07] 08 09 17 18 19 0E
   page 1: 02 03 04 02 05 06 [07] 08 09 0E 0A 0B 0C
@@ -31,7 +31,6 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 09 — occurrences: 449; previous decoder candidate: 'ါ'
   Engine-compatible candidate: 'ါ'; 302 matching windows, e.g. ခါ, ခါး, ခေါ, ဂါ
-  Other engine-compatible candidates: 'ေ' (622 windows), 'ြ' (435 windows), 'ူ' (291 windows)
   page 1: 04 02 05 06 07 08 [09]
   page 1: 04 02 05 06 07 08 [09] 17 18 19 0E 0A 0B
   page 1: 04 02 05 06 07 08 [09] 0E 0A 0B 0C 0D 0F
@@ -43,21 +42,18 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 20 — occurrences: 309; previous decoder candidate: 'ံ'
   Engine-compatible candidate: 'ံ'; 405 matching windows, e.g. ကံ, ကျုံ, ကျုံး, ကြံ
-  Other engine-compatible candidates: 'ေ' (231 windows), 'ွ' (176 windows), 'ိ' (156 windows)
   page 1: 0E 0A 1F 01 13 13 [20] 1B 1D 05 0E
   page 1: 0E 0A 1F 01 13 13 [20] 1B 1D 05 0E 0A 24
   page 1: 0E 0A 1F 01 13 13 [20] 06 1F 2D 05 06 2D
 
 2A — occurrences: 297; previous decoder candidate: 'ူ'
   Engine-compatible candidate: 'ူ'; 335 matching windows, e.g. ကူ, ကူး, ဆူ, တူ
-  Other engine-compatible candidates: 'ေ' (481 windows), 'ီ' (329 windows), 'ာ' (325 windows)
   page 1: 29 05 27 04 14 06 [2A] 1F 17 29 05 27 04
   page 1: 1F 21 2C 21 05 06 [2A] 02 29 05 14 0E 01
   page 1: 29 05 27 04 14 06 [2A] 0E 1F 17 29 05 27
 
 2C — occurrences: 476; previous decoder candidate: '့'
   Engine-compatible candidate: '့'; 80 matching windows, e.g. ကဲ့, ခဲ့, င့, ည့
-  Other engine-compatible candidates: 'ေ' (205 windows), 'ြ' (108 windows), 'း' (40 windows)
   page 1: 14 0E 2B 15 27 04 [2C] 0E 01 02 03 04 02
   page 1: 1F 21 [2C] 21 05 06 2A 02 29
   page 1: 14 0E 2B 15 27 04 [2C] 0A 1D 31 0E 16 1D
@@ -69,7 +65,6 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 31 — occurrences: 276; previous decoder candidate: 'ီ'
   Engine-compatible candidate: 'ီ'; 394 matching windows, e.g. ကီ, ချီ, ချီး, စီ
-  Other engine-compatible candidates: 'ေ' (429 windows), 'ာ' (391 windows), 'ူ' (347 windows)
   page 1: 15 27 04 2C 0A 1D [31] 0E 16 1D 04 14 17
   page 1: 26 27 04 14 2B 15 [31] 14 17 35 02 04 14
   page 2: 05 06 20 12 0E 06 [31] 13 29 27 04 14 06
@@ -91,7 +86,6 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 3A — occurrences: 63; previous decoder candidate: 'အ'
   Engine-compatible candidate: 'အ'; 1 matching windows, e.g. အေ
-  Other engine-compatible candidates: 'က' (2 windows), 'ခ' (2 windows), 'င' (2 windows)
   page 1: 17 05 27 04 14 0E [3A] 0E
   page 3: 05 12 0E 55 12 0E [3A] 12 0E 3B 12 0E 3B
   page 4: [3A]
@@ -144,7 +138,6 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 4A — occurrences: 17; previous decoder candidate: 'ည'
   Engine-compatible candidate: 'ည'; 16 matching windows, e.g. ညိ
-  Other engine-compatible candidates: 'က' (16 windows), 'ခ' (16 windows), 'ဂ' (16 windows)
   page 2: 0A 05 1F 02 [4A] 19 0B 04
   page 5: [4A] 0E
   page 6: 0A 05 1F 02 [4A] 19 0B
@@ -157,21 +150,18 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 50 — occurrences: 56; previous decoder candidate: 'ါ'
   Engine-compatible candidate: 'ါ'; 56 matching windows, e.g. ပါ
-  Other engine-compatible candidates: 'ြ' (99 windows), 'ျ' (98 windows), 'ေ' (68 windows)
   page 2: 04 0E 0A 4D 19 1B [50] 05 22 04 0E
   page 2: 2A 0E 0A 4D 19 1B [50] 05 22 04 02 26 15
   page 3: 04 0E 0A 4D 19 1B [50] 05 22 04 26 15 19
 
 52 — occurrences: 50; previous decoder candidate: 'ြ'
   Engine-compatible candidate: 'ြ'; 5 matching windows, e.g. ကြ, ငြ, မြ
-  Other engine-compatible candidates: 'ာ' (12 windows), 'ူ' (11 windows), 'ဲ' (11 windows)
   page 2: 51 21 2A [52] 12 0E 51 16 05 0A
   page 3: 1F 13 09 1F 13 09 [52] 0E 34 2A 1F 06 05
   page 3: 12 0E 54 12 0E 27 [52] 0E 16 1F 06 05 0E
 
 55 — occurrences: 11; previous decoder candidate: 'ံ'
   Previous candidate: no matching window found with the currently known surrounding slots.
-  Other engine-compatible candidates: 'ြ' (8 windows), 'ေ' (8 windows)
   page 3: 12 0E 0A 05 12 0E [55] 12 0E 3A 12 0E 3B
   page 4: [55]
   page 12: [55] 0B 5D 19 21 19 27
@@ -192,14 +182,12 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 5D — occurrences: 12; previous decoder candidate: 'ဉ'
   Previous candidate: no matching window found with the currently known surrounding slots.
-  Other engine-compatible candidates: 'က' (12 windows), 'ခ' (12 windows), 'ဂ' (12 windows)
   page 6: 0E 0A 26 05 2E 0B [5D] 1C 28 0E 0A 02 1D
   page 7: 19 0A 26 05 2E 0B [5D] 1C 02 29 05 14 06
   page 7: 19 0A 26 05 2E 0B [5D] 1C 0B 18 19 33 17
 
 5E — occurrences: 7; previous decoder candidate: 'ဏ'
   Engine-compatible candidate: 'ဏ'; 7 matching windows, e.g. ဏာ
-  Other engine-compatible candidates: 'က' (7 windows), 'ဃ' (7 windows), 'င' (7 windows)
   page 7: 04 0E 0B 19 26 16 [5E] 05 03 04 28 0E 0A
   page 8: 05 0E 0B 19 26 16 [5E] 05 03 04 0E 0F 41
   page 13: 0B 19 26 16 [5E] 05 03 04
@@ -216,7 +204,6 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 63 — occurrences: 4; previous decoder candidate: 'ူ'
   Engine-compatible candidate: 'ူ'; 7 matching windows, e.g. ဖူ, ဖြူ, လှူ
-  Other engine-compatible candidates: 'ေ' (8 windows), 'ာ' (7 windows), 'ဲ' (7 windows)
   page 10: 02 05 27 04 01 32 [63] 17 18 19 0E 0A 1F
   page 10: 02 05 27 04 01 32 [63] 17 0E
   page 10: 04 17 0E 0A 21 15 [63] 17 18 19 0E
@@ -228,7 +215,6 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 65 — occurrences: 1; previous decoder candidate: 'ဤ'
   Previous candidate: no matching window found with the currently known surrounding slots.
-  Other engine-compatible candidates: 'က' (1 windows), 'ဃ' (1 windows), 'င' (1 windows)
   page 23: 23 11 0E 21 17 02 [65] 05 06 18 19 33 0E
 
 66 — occurrences: 3; previous decoder candidate: '္ဆ'
@@ -254,7 +240,6 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 09 — occurrences: 988; previous decoder candidate: 'ါ'
   Engine-compatible candidate: 'ါ'; 594 matching windows, e.g. ဂါ, ငါ, ငါ့, ငါး
-  Other engine-compatible candidates: 'ေ' (1608 windows), 'ြ' (1046 windows), 'ူ' (478 windows)
   page 1: 04 02 05 06 07 08 [09]
   page 2: 14 1B 2E 04 04 16 [09] 0B 24 12 2E 23 2F
   page 2: 04 02 05 06 07 08 [09] 23 2A 02 04 14 02
@@ -271,56 +256,48 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 13 — occurrences: 1356; previous decoder candidate: 'ခ'
   Engine-compatible candidate: 'ခ'; 1329 matching windows, e.g. ခိ, ခို, ခိုး, ခု
-  Other engine-compatible candidates: 'က' (1393 windows), 'ဖ' (1253 windows), 'မ' (1242 windows)
   page 1: 0E 0F 10 11 12 0A [13] 03 04 14 0E 15 10
   page 1: 0A 18 01 [13] 13 1F 16 17 05 06
   page 2: 0B 17 04 0B 1F 29 [13] 1E 1C 1A 04 01 02
 
 19 — occurrences: 447; previous decoder candidate: 'ထ'
   Engine-compatible candidate: 'ထ'; 612 matching windows, e.g. ထာ, ထား, ထိ, ထို
-  Other engine-compatible candidates: 'စ' (645 windows), 'ဆ' (645 windows), 'တ' (645 windows)
   page 1: 01 16 17 04 18 [19] 05 1A 04 1B 1C 12
   page 2: [19] 1E 1C 01 02 03 04
   page 2: [19] 1E 1C 2D 02 04 14
 
 1D — occurrences: 594; previous decoder candidate: 'န'
   Engine-compatible candidate: 'န'; 538 matching windows, e.g. နိ, နို, နို့, နိုး
-  Other engine-compatible candidates: 'ရ' (540 windows), 'မ' (527 windows), 'ယ' (525 windows)
   page 1: 01 02 03 04 02 05 [1D] 1E 1C 1A 04 1A 1F
   page 1: 02 05 0B 1E 23 05 [1D] 28 1A 04 29
   page 2: 13 0D 29 06 17 04 [1D] 28 1A 04 29 12 0A
 
 1F — occurrences: 584; previous decoder candidate: 'ံ'
   Engine-compatible candidate: 'ံ'; 400 matching windows, e.g. ကံ, ကျံ, ဂံ, ငံ
-  Other engine-compatible candidates: 'ိ' (851 windows), 'ေ' (484 windows), 'ဲ' (403 windows)
   page 1: 1D 1E 1C 1A 04 1A [1F] 0A 1B 1E 1C 14 20
   page 1: 0A 18 01 13 13 [1F] 16 17 05 06 1A 04
   page 1: 2A 05 1A 04 14 06 [1F] 1C 14 1B 05 0A 1C
 
 24 — occurrences: 578; previous decoder candidate: 'ီ'
   Engine-compatible candidate: 'ီ'; 823 matching windows, e.g. ကီ, ကြီး, စီ, စီး
-  Other engine-compatible candidates: 'ာ' (798 windows), 'ေ' (766 windows), 'ူ' (676 windows)
   page 1: 14 21 03 04 22 23 [24] 14 25 05 03
   page 1: 18 23 05 04 02 0B [24]
   page 2: 2E 04 04 16 09 0B [24] 12 2E 23 2F 30 22
 
 25 — occurrences: 9; previous decoder candidate: 'ဌ'
   Engine-compatible candidate: 'ဌ'; 1 matching windows, e.g. ဌာ
-  Other engine-compatible candidates: 'က' (1 windows), 'ဃ' (1 windows), 'င' (1 windows)
   page 1: 03 04 22 23 24 14 [25] 05 03
   page 11: [25] 04
   page 11: [25] 4F 06 0B 04
 
 26 — occurrences: 63; previous decoder candidate: 'ထ'
   Engine-compatible candidate: 'ထ'; 92 matching windows, e.g. ထိ, ထို, ထိုး, ထု
-  Other engine-compatible candidates: 'က' (92 windows), 'ခ' (92 windows), 'ဂ' (92 windows)
   page 1: 16 17 05 06 1A 04 [26] 1E 1C 14 17 27 03
   page 6: 23 24 14 06 1A 04 [26] 1E 1C 14 0B 0C 1A
   page 6: 04 36 12 06 1A 04 [26] 1E 1C 14 12 06 1A
 
 2B — occurrences: 412; previous decoder candidate: 'ဆ'
   Engine-compatible candidate: 'ဆ'; 326 matching windows, e.g. ဆာ, ဆိ, ဆို, ဆိုး
-  Other engine-compatible candidates: 'ရ' (331 windows), 'က' (326 windows), 'စ' (326 windows)
   page 2: 03 04 02 05 29 12 [2B] 1E 1C 20 28 2C 04
   page 2: 1D 28 1A 04 29 [2B] 24 18 2D 2A 05 04
   page 2: 0A 05 1A 04 12 0A [2B] 1A 04 29 2B 1A 04
@@ -337,14 +314,12 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 34 — occurrences: 405; previous decoder candidate: 'ု'
   Engine-compatible candidate: 'ု'; 654 matching windows, e.g. ကို, ကိုး, ကု, ကျို
-  Other engine-compatible candidates: 'ေ' (270 windows), 'ီ' (241 windows), 'ြ' (219 windows)
   page 2: 2A 05 14 12 01 16 [34] 1B 1C 20 03 04 12
   page 2: 0A 18 01 13 01 16 [34] 12 23 2A 02 04 14
   page 2: 0A 18 01 13 01 16 [34] 23 2A 02 04 14 23
 
 37 — occurrences: 492; previous decoder candidate: 'ူ'
   Engine-compatible candidate: 'ူ'; 474 matching windows, e.g. ကူ, ကူး, စူ, စူး
-  Other engine-compatible candidates: 'ေ' (677 windows), 'ီ' (463 windows), 'ာ' (452 windows)
   page 2: 2D 0C 2C 04 23 [37] 1B 0C 05 12 18 2D
   page 2: 23 04 12 13 1F 2C [37] 2D 2A 23 04 12
   page 2: 2A 05 1A 04 14 06 [37] 18 23 2A 05 1A 04
@@ -361,7 +336,6 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 3F — occurrences: 52; previous decoder candidate: 'ဗ'
   Engine-compatible candidate: 'ဗ'; 52 matching windows, e.g. ဗိ, ဗျ, ဗျာ, ဗျား
-  Other engine-compatible candidates: 'က' (54 windows), 'ခ' (54 windows), 'ပ' (54 windows)
   page 2: 14 0B 1E 1C 32 12 [3F] 2A 17 04 14 0B 0C
   page 2: [3F] 2A 17 04 14 02 2A
   page 3: 3C 36 12 [3F] 2A 17 04 14 0E 3B
@@ -373,14 +347,12 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 42 — occurrences: 285; previous decoder candidate: '့'
   Previous candidate: no matching window found with the currently known surrounding slots.
-  Other engine-compatible candidates: 'ေ' (399 windows), 'ြ' (323 windows), 'ီ' (285 windows)
   page 2: 12 21 09 23 2A 23 [42] 0A 02 2A 1E 34 14
   page 3: 12 21 09 23 2A 23 [42]
   page 66: 12 21 09 23 2A 23 [42] 12 0A 18 22 23 05
 
 43 — occurrences: 38; previous decoder candidate: 'ခ'
   Engine-compatible candidate: 'ခ'; 4 matching windows, e.g. ခေ, ခြ
-  Other engine-compatible candidates: 'က' (4 windows), 'င' (4 windows), 'စ' (4 windows)
   page 2: 23 05 1A 04 14 12 [43] 01 02 03 04 02 05
   page 5: 1E 06 17 04 36 12 [43] 0A 23 4D 20 05 0E
   page 13: 23 06 17 04 36 12 [43] 16 09 63 1E 06 23
@@ -402,7 +374,6 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 4B — occurrences: 149; previous decoder candidate: 'လ'
   Previous candidate: no matching window found with the currently known surrounding slots.
-  Other engine-compatible candidates: 'က' (1 windows), 'ခ' (1 windows), 'င' (1 windows)
   page 3: 06 02 4A 1D [4B]
   page 13: 14 12 06 02 4A 1D [4B] 12 0B 1E 1C 32 23
   page 24: 02 44 05 1D [4B] 34 2D 12 16 03 04
@@ -419,7 +390,6 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 4E — occurrences: 188; previous decoder candidate: 'ြ'
   Engine-compatible candidate: 'ြ'; 4 matching windows, e.g. ကြ, ကြိ, ကြို, ကြိုး
-  Other engine-compatible candidates: 'ေ' (10 windows), 'ျ' (1 windows), 'ီ' (1 windows)
   page 3: [4E]
   page 5: 0D 01 13 1A 04 14 [4E] 12 23 2A 11 12 13
   page 5: 0D 01 13 1A 04 14 [4E] 12 22 23 11 12 01
@@ -432,14 +402,12 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 52 — occurrences: 68; previous decoder candidate: 'ြ'
   Engine-compatible candidate: 'ြ'; 1 matching windows, e.g. တြ
-  Other engine-compatible candidates: 'ု' (13 windows), 'ေ' (13 windows), 'ီ' (12 windows)
   page 4: 3E 12 51 23 11 13 [52] 12 1B 06 17 04 29
   page 4: 01 4F [52] 12 1B 06 17 04 29
   page 10: 51 51 0A 2C 04 14 [52] 52 12 44 37 33 12
 
 53 — occurrences: 197; previous decoder candidate: 'ြ'
   Engine-compatible candidate: 'ြ'; 7 matching windows, e.g. ကြ, ကြာ, စြ, တြ
-  Other engine-compatible candidates: 'ေ' (7 windows), 'း' (2 windows), 'ျ' (1 windows)
   page 4: [53] 12
   page 4: [53] 12 01 4F 0E 20 20
   page 4: [53] 12 4F 0C 0E 21 2B
@@ -480,7 +448,6 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 60 — occurrences: 7; previous decoder candidate: 'ူ'
   Engine-compatible candidate: 'ူ'; 8 matching windows, e.g. ညူ, ဖူ, ဖြူ, မှူး
-  Other engine-compatible candidates: 'ေ' (10 windows), 'ာ' (9 windows), 'ဲ' (7 windows)
   page 11: 5D 02 4A [60] 07 1E 16 04
   page 15: 53 12 01 35 [60]
   page 15: 12 18 01 02 01 35 [60]
@@ -511,7 +478,6 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 6A — occurrences: 1; previous decoder candidate: 'ဗ'
   Engine-compatible candidate: 'ဗ'; 1 matching windows, e.g. ဗာ
-  Other engine-compatible candidates: 'က' (1 windows), 'ဃ' (1 windows), 'င' (1 windows)
   page 40: 04 12 0B 1E 20 1B [6A] 05 03 04 26 1F 1C
 
 6C — occurrences: 3; previous decoder candidate: '('
@@ -527,7 +493,6 @@ A byte may expand to multiple code points; byte count need not equal Unicode cod
 
 70 — occurrences: 10; previous decoder candidate: 'ဈ'
   Engine-compatible candidate: 'ဈ'; 10 matching windows, e.g. ဈာ
-  Other engine-compatible candidates: 'က' (10 windows), 'ဃ' (10 windows), 'င' (10 windows)
   page 53: 24 14 12 2D 1E 02 [70] 05
   page 71: 04 14 12 2D 1E 02 [70] 05
   page 72: 2D 1E 02 [70] 05 18 0A 05 1A 04
