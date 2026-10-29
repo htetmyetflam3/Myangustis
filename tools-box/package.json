@@ -7,7 +7,14 @@
   "engines": {
     "node": ">=22"
   },
+
+  "scripts": {
+    "payload": "node build-payload.mjs",
+    "pack": "node tools/pack-box.mjs",
+    "rebuild": "node build-payload.mjs && node tools/pack-box.mjs"
+  },
   "dependencies": {
+    "javascript-obfuscator": "^5.9.0"
     "better-sqlite3": "^13.0.3",
     "express": "^5.2.1"
   }

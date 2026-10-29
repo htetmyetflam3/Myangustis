@@ -1,5 +1,14 @@
 # repo source list 
 
+Python
+*__pycache__*
+/__pycache__/
+*pycache*
+*uv*.envvars
+.venv
+*uvx*
+*.venv
+
 
 unused-exports.json
 Architecture/Engine/.data/master.json.cache*
@@ -160,12 +169,7 @@ vite.config.ts.timestamp-*
 .turbo
 
 
-#Python
-*__pycache__*
-/__pycache__/
-*pycache*
-*uv*.envvars
-.venv
+
 
 # Site runtime uploads and generated workspace data (not tracked font assets).
 /Junk/Site/
