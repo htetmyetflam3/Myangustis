@@ -2329,5 +2329,25 @@
     ],
     "scope": "Raw slots first; rearrange these leading slots only after decoding. Suffix slots remain in their existing order. No other marks are normalized by these rules. Raw orphan flags are retained and do not themselves mean an error."
   },
-  "visualOrderEvidenceMethod": "All observed page-stream runs under provisional seed values. Compares raw orphan flags to flags after applying only the four shared patterns; unknown/empty byte values are boundaries. Pattern matches and changes in flags are evidence of visual order, not verification of byte meanings or overall accuracy. Form XObjects are not scanned."
+  "visualOrderEvidenceMethod": "All observed page-stream runs under provisional seed values. Compares raw orphan flags to flags after applying only the four shared patterns; unknown/empty byte values are boundaries. Pattern matches and changes in flags are evidence of visual order, not verification of byte meanings or overall accuracy. Form XObjects are not scanned.",
+  "aaVowelEvidence": {
+    "scope": "Orthographic context only; not a raw byte mapping or an instruction to rewrite source text. Font raw bytes remain subset-specific.",
+    "userRule": "When an \u102b/\u102c-bearing syllable has \u103b or \u103c, use \u102c rather than the default \u102b, e.g. \u1002\u102b / \u1002\u103b\u102c. Preserve the distinct Unicode code points.",
+    "dictionarySourceSha256": "08278a2ee6709aac742eb815b5dedef30440fe2fa43d39cc30bbbb00806d2b36",
+    "limitations": "Initials in stacked syllables need not be the vowel-bearing consonant; other medials and stacks are separate cases. Dictionary evidence is not exhaustive. This is separate from selecting a glyph variant of \u102f; \u1012\u102f remains short and \u1004\u103c\u102f uses the long variant.",
+    "vowelU102B": "\u102b",
+    "vowelU102C": "\u102c",
+    "dictionaryInitialsWithU102B": [
+      "\u1001",
+      "\u1002",
+      "\u1004",
+      "\u1012",
+      "\u1015",
+      "\u101d"
+    ],
+    "dictionaryUniqueSyllablesWithU102B": 57,
+    "dictionaryUniqueSyllablesWithU102C": 389,
+    "dictionaryWithYaOrRaBeforeU102B": 0,
+    "dictionaryWithYaOrRaBeforeU102C": 112
+  }
 }
