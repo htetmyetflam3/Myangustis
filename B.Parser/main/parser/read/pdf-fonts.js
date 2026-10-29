@@ -92,7 +92,13 @@ export function encodeRawByteSlots(slots, profile, { byteChoices = {} } = {}) {
     // select only bytes valid after the preceding raw base.
     const available = (choices.get(value) || []).filter((candidate) => {
       const restriction = rules.restrictedBytes?.[candidate];
-      return !restriction || restriction.precedingBytes.includes(output.at(-1));
+      if (!restriction) return true;
+      const previous = output.at(-1);
+      if (previous === undefined) return false;
+      if (restriction.precedingBytes && !restriction.precedingBytes.includes(previous)) return false;
+      const upper = byteValues.get(previous);
+      if (restriction.requiresPrecedingConsonant && !/^[\u1000-\u1021]$/u.test(upper || "")) return false;
+      return !(restriction.excludedPrecedingValues || []).includes(upper);
     });
     let hex = byteChoices[i];
     if (u && value === u.unicode) {
@@ -103,10 +109,6 @@ export function encodeRawByteSlots(slots, profile, { byteChoices = {} } = {}) {
     if (hex === undefined && available.length === 1) [hex] = available;
     if (!hex || !available.includes(hex)) {
       throw new Error(`Unresolved raw glyph for slot ${i} (${JSON.stringify(value)}); candidates: ${available.join(", ") || "none"}`);
-    }
-    const restriction = rules.restrictedBytes?.[hex];
-    if (restriction && !restriction.precedingBytes.includes(output.at(-1))) {
-      throw new Error(`Raw glyph ${hex} is not valid after ${output.at(-1) || "the start"}`);
     }
     output.push(hex);
   }

@@ -64,6 +64,8 @@
         "57": "\u1007",
         "59": "\u100c",
         "5A": "[",
+        "5C": "\u1039\u1010",
+        "5F": "\u1039\u1010",
         "60": "\u104f",
         "67": "\u104c"
       },
@@ -71,6 +73,10 @@
         "\u104d": [
           "2F",
           "4F"
+        ],
+        "\u1039\u1010": [
+          "5C",
+          "5F"
         ],
         "\u104c": [
           "30",
@@ -720,27 +726,6 @@
           "reviewedValue": "\u103d\u103e",
           "observedOccurrences": 11
         },
-        "5C": {
-          "reason": "observed after \u1010; exact value and relationship to 5F not yet established",
-          "currentOutput": "",
-          "observedOccurrences": 2,
-          "contextEvidence": {
-            "wordCandidates": [
-              {
-                "word": "\u1000\u1010\u1039\u1010\u102c\u1038",
-                "raw": "17 0B 5C 05 14",
-                "pageExample": 6
-              },
-              {
-                "word": "\u1000\u103c\u101c\u1010\u1039\u1010\u1036\u1037",
-                "raw": "3E 17 21 0B 5C 20 33",
-                "pageExample": 17
-              }
-            ],
-            "possibleValue": "\u1039\u1010",
-            "status": "Unresolved: candidate words appear to require \u1039\u1010 after \u1010, conflicting with the user-confirmed 0B 5F-only writing rule for \u1010\u1039\u1010."
-          }
-        },
         "5D": {
           "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
           "currentOutput": "\u1009",
@@ -765,18 +750,6 @@
             "raw": "0B 19 26 16 5E 05 03 04",
             "pageExample": 7,
             "rawMatches": 6
-          }
-        },
-        "5F": {
-          "reason": "reviewed value conflicts with current output",
-          "currentOutput": "\u1006",
-          "reviewedValue": "\u1039\u1010",
-          "observedOccurrences": 53,
-          "contextConflict": {
-            "raw": "02 2B 5F 1F 21 14",
-            "wordCandidate": "\u1019\u1014\u1039\u1010\u101c\u1031\u1038",
-            "pageExample": 9,
-            "status": "Observed raw context conflicts with restricting 5F to a same-consonant stack. Retain the user-confirmed writing rule; do not infer a different-byte mapping without resolving the evidence."
           }
         },
         "61": {
@@ -972,7 +945,6 @@
         "33": "\u1037",
         "3E": "\u103c",
         "4B": "\u103d\u103e",
-        "5F": "\u1039\u1010",
         "1C": "\u102f",
         "03": "\u1014",
         "0A": "\u1021",
@@ -1029,10 +1001,11 @@
             ]
           },
           "5F": {
-            "precedingBytes": [
-              "0B"
+            "requiresPrecedingConsonant": true,
+            "excludedPrecedingValues": [
+              "\u1010"
             ],
-            "basis": "User specifies 5F for the repeated \u1010\u1039\u1010 stack; different upper and lower consonants use a separate glyph. This writing restriction does not resolve conflicting source observations."
+            "basis": "User specifies 5F as \u1039\u1010 when the upper consonant is not \u1010."
           },
           "08": {
             "precedingBytes": [
@@ -1057,9 +1030,15 @@
               "0B"
             ],
             "basis": "Context-specific stack pair supported by the observed upper/lower raw-byte context; not generalized to other upper consonants."
+          },
+          "5C": {
+            "precedingBytes": [
+              "0B"
+            ],
+            "basis": "User specifies 5C as \u1039\u1010 when the upper consonant is \u1010."
           }
         },
-        "sameConsonantStacks": "A confirmed duplicate-stack byte is valid only with its matching upper consonant. A stack with a different upper consonant uses a different byte, which must be identified separately."
+        "sameConsonantStacks": "For lower \u1010, write 5C after \u1010 and 5F after a different upper consonant. Reading maps both bytes to \u1039\u1010; retain observed source variants."
       },
       "visualOrderEvidence": {
         "rawOrphanFlags": 1839,
@@ -1202,6 +1181,28 @@
               }
             ],
             "matchingWindows": 20
+          }
+        },
+        "5C": {
+          "value": "\u1039\u1010",
+          "status": "user-confirmed for repeated \u1010\u1039\u1010",
+          "word": "\u1000\u1010\u1039\u1010\u102c\u1038",
+          "raw": "17 0B 5C 05 14",
+          "pageExample": 6,
+          "observedOccurrences": 2
+        },
+        "5F": {
+          "value": "\u1039\u1010",
+          "status": "user-confirmed after a different upper consonant",
+          "word": "\u1019\u1014\u1039\u1010\u101c\u1031\u1038",
+          "raw": "02 2B 5F 1F 21 14",
+          "pageExample": 9,
+          "observedOccurrences": 53,
+          "observedOtherContext": {
+            "word": "\u1019\u1031\u1010\u1039\u1010\u102c",
+            "raw": "1F 02 0B 5F 05",
+            "pageExample": 7,
+            "status": "The source also contains 0B 5F. Decode the observed byte as \u1039\u1010; select 5C for repeated \u1010\u1039\u1010 when writing, per the user rule."
           }
         }
       },
@@ -2223,7 +2224,13 @@
           "reason": "reviewed value conflicts with current output",
           "currentOutput": "\u1046",
           "reviewedValue": "\u1039\u1010",
-          "observedOccurrences": 48
+          "observedOccurrences": 48,
+          "resolutionEvidence": {
+            "method": "Observed repeated \u1010 in the source word, applying the user-requested upper-consonant distinction.",
+            "word": "\u1019\u1031\u1010\u1039\u1010\u102c",
+            "raw": "18 02 0B 64 05",
+            "pageExample": 12
+          }
         },
         "66": {
           "reason": "candidate revised using full-word context; previous decoder output differs",
@@ -2280,7 +2287,7 @@
           "observedOccurrences": 3,
           "reviewedValue": "\u1039\u1010",
           "resolutionEvidence": {
-            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "method": "Observed different-upper \u1014\u1039\u1010 in the source word, applying the user-requested upper-consonant distinction.",
             "word": "\u1019\u1014\u1039\u1010\u101c\u1031\u1038",
             "raw": "02 1D 6C 18 2D 14",
             "pageExample": 40,
@@ -2617,7 +2624,7 @@
             "precedingBytes": [
               "0B"
             ],
-            "basis": "Context-specific stack pair supported by the observed upper/lower raw-byte context; not generalized to other upper consonants."
+            "basis": "Book 2 observed 0B 64 in \u1019\u1031\u1010\u1039\u1010\u102c: 64 is the repeated \u1010 stack."
           },
           "6A": {
             "precedingBytes": [
@@ -2626,10 +2633,11 @@
             "basis": "Context-specific stack pair supported by the observed upper/lower raw-byte context; not generalized to other upper consonants."
           },
           "6C": {
-            "precedingBytes": [
-              "1D"
+            "requiresPrecedingConsonant": true,
+            "excludedPrecedingValues": [
+              "\u1010"
             ],
-            "basis": "Context-specific stack pair supported by the observed upper/lower raw-byte context; not generalized to other upper consonants."
+            "basis": "Apply the user-requested same/different upper rule to book 2; 1D 6C is observed in \u1019\u1014\u1039\u1010\u101c\u1031\u1038. Other upper consonants have not been separately observed."
           },
           "6D": {
             "precedingBytes": [

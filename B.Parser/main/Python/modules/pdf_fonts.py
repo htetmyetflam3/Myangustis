@@ -969,10 +969,22 @@ def encode_raw_byte_slots(slots, profile, *, byte_choices=None):
             '\u103b' in preceding or '\u103c' in preceding for preceding in slots[:index])
         value = '\u102c' if slot == '\u102b' and has_medial else slot
         # Resolve competing stack bytes by their permitted upper consonant.
-        available = [candidate for candidate in choices.get(value, [])
-                     if not rules.get('restrictedBytes', {}).get(candidate)
-                     or (output and output[-1] in
-                         rules['restrictedBytes'][candidate]['precedingBytes'])]
+        def allowed(candidate):
+            restriction = rules.get('restrictedBytes', {}).get(candidate)
+            if not restriction:
+                return True
+            if not output:
+                return False
+            previous = output[-1]
+            allowed_bytes = restriction.get('precedingBytes')
+            if allowed_bytes is not None and previous not in allowed_bytes:
+                return False
+            upper = byte_values.get(previous, '')
+            if restriction.get('requiresPrecedingConsonant') and not re.fullmatch(r'[\u1000-\u1021]', upper):
+                return False
+            return upper not in restriction.get('excludedPrecedingValues', [])
+
+        available = [candidate for candidate in choices.get(value, []) if allowed(candidate)]
         code = byte_choices.get(index)
         if u and value == u['unicode']:
             required = u['long'] if needs_long else u['short']
@@ -983,9 +995,6 @@ def encode_raw_byte_slots(slots, profile, *, byte_choices=None):
             code = available[0]
         if code not in available:
             raise ValueError(f'Unresolved raw glyph for slot {index} ({value!r}); candidates: {", ".join(available) or "none"}')
-        restriction = rules.get('restrictedBytes', {}).get(code)
-        if restriction and (not output or output[-1] not in restriction['precedingBytes']):
-            raise ValueError(f'Raw glyph {code} is not valid after {output[-1] if output else "the start"}')
         output.append(code)
     return bytes(int(code, 16) for code in output)
 
