@@ -114,6 +114,15 @@
               "\u1016\u103c",
               "\u1019\u103c"
             ]
+          },
+          "reviewedValue": "\u103c",
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "resolutionEvidence": {
+            "method": "Full source title, using the user-confirmed repeated-consonant and vowel rules; raw pre-base medial is reordered only after byte decoding. Known values and ToUnicode-derived seeds remain font-subset scoped.",
+            "word": "\u1019\u103c\u1014\u103a\u1019\u102c\u101e\u1012\u1039\u1012\u102b",
+            "raw": "21 2C 2F 24 2C 27 2B 40 51 52",
+            "pageExample": 3,
+            "rawMatches": 20
           }
         },
         "24": {
@@ -231,6 +240,15 @@
               "\u100c\u102c",
               "\u100f\u102c"
             ]
+          },
+          "reviewedValue": "\u102c",
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "resolutionEvidence": {
+            "method": "Full source title, using the user-confirmed repeated-consonant and vowel rules; raw pre-base medial is reordered only after byte decoding. Known values and ToUnicode-derived seeds remain font-subset scoped.",
+            "word": "\u1019\u103c\u1014\u103a\u1019\u102c\u101e\u1012\u1039\u1012\u102b",
+            "raw": "21 2C 2F 24 2C 27 2B 40 51 52",
+            "pageExample": 3,
+            "rawMatches": 20
           }
         },
         "2A": {
@@ -593,6 +611,15 @@
               "\u1001\u102b",
               "\u1015\u102b"
             ]
+          },
+          "reviewedValue": "\u102b",
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "resolutionEvidence": {
+            "method": "Full source title, using the user-confirmed repeated-consonant and vowel rules; raw pre-base medial is reordered only after byte decoding. Known values and ToUnicode-derived seeds remain font-subset scoped.",
+            "word": "\u1019\u103c\u1014\u103a\u1019\u102c\u101e\u1012\u1039\u1012\u102b",
+            "raw": "21 2C 2F 24 2C 27 2B 40 51 52",
+            "pageExample": 3,
+            "rawMatches": 20
           }
         },
         "55": {
@@ -808,8 +835,16 @@
               "raw": "36 37 38 34 39 27 [2F]"
             }
           ],
-          "reason": "multiple observed bytes share this output",
-          "engineCandidateCount": 112
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "engineCandidateCount": 112,
+          "reviewedValue": "\u1014",
+          "resolutionEvidence": {
+            "method": "Full source title, using the user-confirmed repeated-consonant and vowel rules; raw pre-base medial is reordered only after byte decoding. Known values and ToUnicode-derived seeds remain font-subset scoped.",
+            "word": "\u1019\u103c\u1014\u103a\u1019\u102c\u101e\u1012\u1039\u1012\u102b",
+            "raw": "21 2C 2F 24 2C 27 2B 40 51 52",
+            "pageExample": 3,
+            "rawMatches": 20
+          }
         },
         "30": {
           "currentOutput": "\u1014",
@@ -956,8 +991,19 @@
               "raw": "2F 24 2C 27 2B 40 [51] 52 3A 25 21 43 21"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 29
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "engineCandidateCount": 29,
+          "reviewedValue": "\u1039\u1012",
+          "resolutionEvidence": {
+            "method": "Full source title, using the user-confirmed repeated-consonant and vowel rules; raw pre-base medial is reordered only after byte decoding. Known values and ToUnicode-derived seeds remain font-subset scoped.",
+            "word": "\u1019\u103c\u1014\u103a\u1019\u102c\u101e\u1012\u1039\u1012\u102b",
+            "raw": "21 2C 2F 24 2C 27 2B 40 51 52",
+            "pageExample": 3,
+            "rawMatches": 20,
+            "precedingBytesObserved": {
+              "40": 22
+            }
+          }
         },
         "67": {
           "currentOutput": "\u1039\u1001",
@@ -1157,7 +1203,12 @@
         ]
       },
       "resolvedForReview": {
-        "24": "\u103a"
+        "24": "\u103a",
+        "21": "\u103c",
+        "2F": "\u1014",
+        "27": "\u102c",
+        "51": "\u1039\u1012",
+        "52": "\u102b"
       },
       "engineSeedSupportedBytes": 19,
       "visualOrderEvidence": {
@@ -1255,6 +1306,16 @@
                 "ordered": "\u1019\u103b"
               }
             ]
+          }
+        }
+      },
+      "writingRules": {
+        "restrictedBytes": {
+          "51": {
+            "precedingBytes": [
+              "40"
+            ],
+            "basis": "Same-consonant stack in the named source word; other preceding contexts are not generalized."
           }
         }
       }
@@ -2425,8 +2486,21 @@
               "raw": "2C 3D 2A 26 4C 68 [7D] 36 23 29 2A 2B 3B"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 35
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "engineCandidateCount": 35,
+          "reviewedValue": "\u1039\u1005",
+          "resolutionEvidence": {
+            "method": "Named dictionary word and source raw window support this glyph; possible substring boundaries and inherited provisional seed values still require review.",
+            "word": "\u101e\u1005\u1039\u1005\u102c",
+            "raw": "2C 46 7D 2F",
+            "pageExample": 17,
+            "rawMatches": 1,
+            "precedingBytesObserved": {
+              "46": 80,
+              "68": 2
+            },
+            "limitation": "Some occurrences follow other preceding bytes; do not infer that the same writing glyph is valid for a different upper consonant."
+          }
         },
         "7F": {
           "currentOutput": "\u1039\u1010",
@@ -2686,7 +2760,8 @@
         ]
       },
       "resolvedForReview": {
-        "2F": "\u102c"
+        "2F": "\u102c",
+        "7D": "\u1039\u1005"
       },
       "engineSeedSupportedBytes": 22,
       "visualOrderEvidence": {
@@ -2784,6 +2859,16 @@
                 "ordered": "\u1000\u103b"
               }
             ]
+          }
+        }
+      },
+      "writingRules": {
+        "restrictedBytes": {
+          "7D": {
+            "precedingBytes": [
+              "46"
+            ],
+            "basis": "Same-consonant stack in the named source word; other preceding contexts are not generalized."
           }
         }
       }
@@ -4281,8 +4366,21 @@
               "raw": "3D 39 [7B] 42 2C 2D 3A 27 4B"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 35
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "engineCandidateCount": 35,
+          "reviewedValue": "\u1039\u1005",
+          "resolutionEvidence": {
+            "method": "Named dictionary word and source raw window support this glyph; possible substring boundaries and inherited provisional seed values still require review.",
+            "word": "\u101e\u1005\u1039\u1005\u102c",
+            "raw": "37 39 7B 38",
+            "pageExample": 93,
+            "rawMatches": 1,
+            "precedingBytesObserved": {
+              "39": 172,
+              "73": 2
+            },
+            "limitation": "Some occurrences follow other preceding bytes; do not infer that the same writing glyph is valid for a different upper consonant."
+          }
         },
         "7C": {
           "currentOutput": "\u1039\u1019",
@@ -4301,8 +4399,19 @@
               "raw": "23 41 40 3B [7C] 38 39 38 3B"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 69
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "engineCandidateCount": 69,
+          "reviewedValue": "\u1039\u1019",
+          "resolutionEvidence": {
+            "method": "Named dictionary word and source raw window support this glyph; possible substring boundaries and inherited provisional seed values still require review.",
+            "word": "\u101c\u102d\u1019\u1039\u1019\u102c",
+            "raw": "41 40 3B 7C 38",
+            "pageExample": 52,
+            "rawMatches": 52,
+            "precedingBytesObserved": {
+              "3B": 54
+            }
+          }
         },
         "7D": {
           "currentOutput": "\u1039\u1000",
@@ -4540,7 +4649,9 @@
         "3E": "\u102b",
         "49": "\u103b",
         "4B": "\u103c",
-        "35": "\u1030"
+        "35": "\u1030",
+        "7B": "\u1039\u1005",
+        "7C": "\u1039\u1019"
       },
       "engineSeedSupportedBytes": 23,
       "visualOrderEvidence": {
@@ -4638,6 +4749,22 @@
                 "ordered": "\u1001\u103b"
               }
             ]
+          }
+        }
+      },
+      "writingRules": {
+        "restrictedBytes": {
+          "7B": {
+            "precedingBytes": [
+              "39"
+            ],
+            "basis": "Same-consonant stack in the named source word; other preceding contexts are not generalized."
+          },
+          "7C": {
+            "precedingBytes": [
+              "3B"
+            ],
+            "basis": "Same-consonant stack in the named source word; other preceding contexts are not generalized."
           }
         }
       }
@@ -6710,8 +6837,19 @@
               "raw": "40 2C 36 28 60 4B [61] 56"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 33
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "engineCandidateCount": 33,
+          "reviewedValue": "\u1039\u1005",
+          "resolutionEvidence": {
+            "method": "Named dictionary word and source raw window support this glyph; possible substring boundaries and inherited provisional seed values still require review.",
+            "word": "\u101e\u1005\u1039\u1005\u102c",
+            "raw": "2F 4B 61 3A",
+            "pageExample": 120,
+            "rawMatches": 4,
+            "precedingBytesObserved": {
+              "4B": 152
+            }
+          }
         },
         "74": {
           "currentOutput": "\u101b",
@@ -6886,8 +7024,19 @@
               "raw": "2D 3C 35 32 [83] 3A 28"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 70
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "engineCandidateCount": 70,
+          "reviewedValue": "\u1039\u1019",
+          "resolutionEvidence": {
+            "method": "Named dictionary word and source raw window support this glyph; possible substring boundaries and inherited provisional seed values still require review.",
+            "word": "\u101e\u1019\u1039\u1019\u1010",
+            "raw": "2F 32 83 25",
+            "pageExample": 158,
+            "rawMatches": 1,
+            "precedingBytesObserved": {
+              "32": 22
+            }
+          }
         },
         "84": {
           "currentOutput": "",
@@ -7010,7 +7159,9 @@
         "3A": "\u102c",
         "3E": "\u103c",
         "2D": "\u1038",
-        "66": "\u1030"
+        "66": "\u1030",
+        "61": "\u1039\u1005",
+        "83": "\u1039\u1019"
       },
       "engineSeedSupportedBytes": 24,
       "visualOrderEvidence": {
@@ -7108,6 +7259,22 @@
                 "ordered": "\u1016\u103b"
               }
             ]
+          }
+        }
+      },
+      "writingRules": {
+        "restrictedBytes": {
+          "61": {
+            "precedingBytes": [
+              "4B"
+            ],
+            "basis": "Same-consonant stack in the named source word; other preceding contexts are not generalized."
+          },
+          "83": {
+            "precedingBytes": [
+              "32"
+            ],
+            "basis": "Same-consonant stack in the named source word; other preceding contexts are not generalized."
           }
         }
       }
@@ -8372,8 +8539,21 @@
               "raw": "3C 50 [5E] 31 27 28 63 32 27"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 35
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "engineCandidateCount": 35,
+          "reviewedValue": "\u1039\u1005",
+          "resolutionEvidence": {
+            "method": "Named dictionary word and source raw window support this glyph; possible substring boundaries and inherited provisional seed values still require review.",
+            "word": "\u1000\u102d\u1005\u1039\u1005",
+            "raw": "32 38 50 5E",
+            "pageExample": 161,
+            "rawMatches": 12,
+            "precedingBytesObserved": {
+              "5D": 2,
+              "50": 204
+            },
+            "limitation": "Some occurrences follow other preceding bytes; do not infer that the same writing glyph is valid for a different upper consonant."
+          }
         },
         "5F": {
           "currentOutput": "\u1040",
@@ -8476,8 +8656,19 @@
               "raw": "34 43 2B [6D] 3F 6E 39"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 51
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "engineCandidateCount": 51,
+          "reviewedValue": "\u1039\u1010",
+          "resolutionEvidence": {
+            "method": "Named dictionary word and source raw window support this glyph; possible substring boundaries and inherited provisional seed values still require review.",
+            "word": "\u101e\u1010\u1039\u1010\u102d",
+            "raw": "3E 2B 6D 38",
+            "pageExample": 163,
+            "rawMatches": 2,
+            "precedingBytesObserved": {
+              "2B": 31
+            }
+          }
         },
         "73": {
           "currentOutput": "\u101b",
@@ -8584,8 +8775,19 @@
               "raw": "43 38 36 [80] 35 3B 39"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 69
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "engineCandidateCount": 69,
+          "reviewedValue": "\u1039\u1019",
+          "resolutionEvidence": {
+            "method": "Named dictionary word and source raw window support this glyph; possible substring boundaries and inherited provisional seed values still require review.",
+            "word": "\u101c\u102d\u1019\u1039\u1019\u102c",
+            "raw": "43 38 36 80 35",
+            "pageExample": 174,
+            "rawMatches": 42,
+            "precedingBytesObserved": {
+              "36": 43
+            }
+          }
         },
         "81": {
           "currentOutput": "\u1039\u1002",
@@ -8735,7 +8937,10 @@
         "35": "\u102c",
         "28": "\u1038",
         "65": "\u1030",
-        "40": "\u103c"
+        "40": "\u103c",
+        "5E": "\u1039\u1005",
+        "6D": "\u1039\u1010",
+        "80": "\u1039\u1019"
       },
       "engineSeedSupportedBytes": 22,
       "visualOrderEvidence": {
@@ -8833,6 +9038,28 @@
                 "ordered": "\u1001\u103b"
               }
             ]
+          }
+        }
+      },
+      "writingRules": {
+        "restrictedBytes": {
+          "5E": {
+            "precedingBytes": [
+              "50"
+            ],
+            "basis": "Same-consonant stack in the named source word; other preceding contexts are not generalized."
+          },
+          "6D": {
+            "precedingBytes": [
+              "2B"
+            ],
+            "basis": "Same-consonant stack in the named source word; other preceding contexts are not generalized."
+          },
+          "80": {
+            "precedingBytes": [
+              "36"
+            ],
+            "basis": "Same-consonant stack in the named source word; other preceding contexts are not generalized."
           }
         }
       }
@@ -9053,7 +9280,16 @@
             }
           ],
           "orphanFlags": 58,
-          "engineCandidateCount": 133
+          "engineCandidateCount": 133,
+          "reviewedValue": "\u103a",
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "resolutionEvidence": {
+            "method": "Full source title, using the user-confirmed repeated-consonant and vowel rules; raw pre-base medial is reordered only after byte decoding. Known values and ToUnicode-derived seeds remain font-subset scoped.",
+            "word": "\u1019\u103c\u1014\u103a\u1019\u102c\u101e\u1012\u1039\u1012\u102b",
+            "raw": "4A 31 2A 2B 31 32 3E 79 81 47",
+            "pageExample": 217,
+            "rawMatches": 15
+          }
         },
         "2C": {
           "currentOutput": "\u1038",
@@ -9407,6 +9643,15 @@
               "\u1012\u102b",
               "\u1015\u102b"
             ]
+          },
+          "reviewedValue": "\u102b",
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "resolutionEvidence": {
+            "method": "Full source title, using the user-confirmed repeated-consonant and vowel rules; raw pre-base medial is reordered only after byte decoding. Known values and ToUnicode-derived seeds remain font-subset scoped.",
+            "word": "\u1019\u103c\u1014\u103a\u1019\u102c\u101e\u1012\u1039\u1012\u102b",
+            "raw": "4A 31 2A 2B 31 32 3E 79 81 47",
+            "pageExample": 217,
+            "rawMatches": 15
           }
         },
         "48": {
@@ -10023,8 +10268,16 @@
               "raw": "45 38 4A 31 [2A] 2B 31 32 33 32 46"
             }
           ],
-          "reason": "multiple observed bytes share this output",
-          "engineCandidateCount": 127
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "engineCandidateCount": 127,
+          "reviewedValue": "\u1014",
+          "resolutionEvidence": {
+            "method": "Full source title, using the user-confirmed repeated-consonant and vowel rules; raw pre-base medial is reordered only after byte decoding. Known values and ToUnicode-derived seeds remain font-subset scoped.",
+            "word": "\u1019\u103c\u1014\u103a\u1019\u102c\u101e\u1012\u1039\u1012\u102b",
+            "raw": "4A 31 2A 2B 31 32 3E 79 81 47",
+            "pageExample": 217,
+            "rawMatches": 15
+          }
         },
         "3B": {
           "currentOutput": "\u101b",
@@ -10283,8 +10536,19 @@
               "raw": "46 31 24 [7F] 32"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 51
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "engineCandidateCount": 51,
+          "reviewedValue": "\u1039\u1010",
+          "resolutionEvidence": {
+            "method": "Named dictionary word and source raw window support this glyph; possible substring boundaries and inherited provisional seed values still require review.",
+            "word": "\u101e\u1010\u1039\u1010\u1019",
+            "raw": "3E 24 7F 31",
+            "pageExample": 230,
+            "rawMatches": 1,
+            "precedingBytesObserved": {
+              "24": 89
+            }
+          }
         },
         "81": {
           "currentOutput": "\u1039\u1012",
@@ -10303,8 +10567,21 @@
               "raw": "2A 2B 31 32 3E 79 [81] 47"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 30
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "engineCandidateCount": 30,
+          "reviewedValue": "\u1039\u1012",
+          "resolutionEvidence": {
+            "method": "Full source title, using the user-confirmed repeated-consonant and vowel rules; raw pre-base medial is reordered only after byte decoding. Known values and ToUnicode-derived seeds remain font-subset scoped.",
+            "word": "\u1019\u103c\u1014\u103a\u1019\u102c\u101e\u1012\u1039\u1012\u102b",
+            "raw": "4A 31 2A 2B 31 32 3E 79 81 47",
+            "pageExample": 217,
+            "rawMatches": 15,
+            "precedingBytesObserved": {
+              "79": 17,
+              "4E": 19
+            },
+            "limitation": "Some occurrences follow other preceding bytes; do not infer that the same writing glyph is valid for a different upper consonant."
+          }
         },
         "83": {
           "currentOutput": "\u1039\u1002",
@@ -10568,7 +10845,12 @@
         "2C": "\u1038",
         "4A": "\u103c",
         "5A": "\u1030",
-        "4C": "\u102f"
+        "4C": "\u102f",
+        "2A": "\u1014",
+        "2B": "\u103a",
+        "81": "\u1039\u1012",
+        "47": "\u102b",
+        "7F": "\u1039\u1010"
       },
       "engineSeedSupportedBytes": 23,
       "visualOrderEvidence": {
@@ -10666,6 +10948,22 @@
                 "ordered": "\u1001\u103b"
               }
             ]
+          }
+        }
+      },
+      "writingRules": {
+        "restrictedBytes": {
+          "81": {
+            "precedingBytes": [
+              "79"
+            ],
+            "basis": "Same-consonant stack in the named source word; other preceding contexts are not generalized."
+          },
+          "7F": {
+            "precedingBytes": [
+              "24"
+            ],
+            "basis": "Same-consonant stack in the named source word; other preceding contexts are not generalized."
           }
         }
       }
@@ -10885,7 +11183,16 @@
             }
           ],
           "orphanFlags": 1,
-          "engineCandidateCount": 125
+          "engineCandidateCount": 125,
+          "reviewedValue": "\u103a",
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "resolutionEvidence": {
+            "method": "Full source title, using the user-confirmed repeated-consonant and vowel rules; raw pre-base medial is reordered only after byte decoding. Known values and ToUnicode-derived seeds remain font-subset scoped.",
+            "word": "\u1019\u103c\u1014\u103a\u1019\u102c\u101e\u1012\u1039\u1012\u102b",
+            "raw": "2F 30 2B 2C 30 31 39 48 7B 5B",
+            "pageExample": 295,
+            "rawMatches": 5
+          }
         },
         "2D": {
           "currentOutput": "\u1038",
@@ -10936,6 +11243,15 @@
               "\u1012\u103c",
               "\u1015\u103c"
             ]
+          },
+          "reviewedValue": "\u103c",
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "resolutionEvidence": {
+            "method": "Full source title, using the user-confirmed repeated-consonant and vowel rules; raw pre-base medial is reordered only after byte decoding. Known values and ToUnicode-derived seeds remain font-subset scoped.",
+            "word": "\u1019\u103c\u1014\u103a\u1019\u102c\u101e\u1012\u1039\u1012\u102b",
+            "raw": "2F 30 2B 2C 30 31 39 48 7B 5B",
+            "pageExample": 295,
+            "rawMatches": 5
           }
         },
         "31": {
@@ -10967,6 +11283,15 @@
               "\u1007\u102c",
               "\u1009\u102c"
             ]
+          },
+          "reviewedValue": "\u102c",
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "resolutionEvidence": {
+            "method": "Full source title, using the user-confirmed repeated-consonant and vowel rules; raw pre-base medial is reordered only after byte decoding. Known values and ToUnicode-derived seeds remain font-subset scoped.",
+            "word": "\u1019\u103c\u1014\u103a\u1019\u102c\u101e\u1012\u1039\u1012\u102b",
+            "raw": "2F 30 2B 2C 30 31 39 48 7B 5B",
+            "pageExample": 295,
+            "rawMatches": 5
           }
         },
         "35": {
@@ -11426,6 +11751,15 @@
               "\u1012\u102b",
               "\u1015\u102b"
             ]
+          },
+          "reviewedValue": "\u102b",
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "resolutionEvidence": {
+            "method": "Full source title, using the user-confirmed repeated-consonant and vowel rules; raw pre-base medial is reordered only after byte decoding. Known values and ToUnicode-derived seeds remain font-subset scoped.",
+            "word": "\u1019\u103c\u1014\u103a\u1019\u102c\u101e\u1012\u1039\u1012\u102b",
+            "raw": "2F 30 2B 2C 30 31 39 48 7B 5B",
+            "pageExample": 295,
+            "rawMatches": 5
           }
         },
         "5E": {
@@ -11712,8 +12046,16 @@
               "raw": "32 31 29 28 2F 30 [2B] 2C 30 31 32 33 31"
             }
           ],
-          "reason": "multiple observed bytes share this output",
-          "engineCandidateCount": 131
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "engineCandidateCount": 131,
+          "reviewedValue": "\u1014",
+          "resolutionEvidence": {
+            "method": "Full source title, using the user-confirmed repeated-consonant and vowel rules; raw pre-base medial is reordered only after byte decoding. Known values and ToUnicode-derived seeds remain font-subset scoped.",
+            "word": "\u1019\u103c\u1014\u103a\u1019\u102c\u101e\u1012\u1039\u1012\u102b",
+            "raw": "2F 30 2B 2C 30 31 39 48 7B 5B",
+            "pageExample": 295,
+            "rawMatches": 5
+          }
         },
         "38": {
           "currentOutput": "\u101b",
@@ -11948,8 +12290,19 @@
               "raw": "25 [6E] 29 28 43 84 29 28"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 50
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "engineCandidateCount": 50,
+          "reviewedValue": "\u1039\u1010",
+          "resolutionEvidence": {
+            "method": "Named dictionary word and source raw window support this glyph; possible substring boundaries and inherited provisional seed values still require review.",
+            "word": "\u101e\u1010\u1039\u1010\u102d",
+            "raw": "39 25 6E 35",
+            "pageExample": 297,
+            "rawMatches": 11,
+            "precedingBytesObserved": {
+              "25": 262
+            }
+          }
         },
         "71": {
           "currentOutput": "\u1039\u1010",
@@ -12008,8 +12361,21 @@
               "raw": "2B 2C 30 31 39 48 [7B] 5B 29 28 24 25 26"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 30
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "engineCandidateCount": 30,
+          "reviewedValue": "\u1039\u1012",
+          "resolutionEvidence": {
+            "method": "Full source title, using the user-confirmed repeated-consonant and vowel rules; raw pre-base medial is reordered only after byte decoding. Known values and ToUnicode-derived seeds remain font-subset scoped.",
+            "word": "\u1019\u103c\u1014\u103a\u1019\u102c\u101e\u1012\u1039\u1012\u102b",
+            "raw": "2F 30 2B 2C 30 31 39 48 7B 5B",
+            "pageExample": 295,
+            "rawMatches": 5,
+            "precedingBytesObserved": {
+              "54": 7,
+              "48": 12
+            },
+            "limitation": "Some occurrences follow other preceding bytes; do not infer that the same writing glyph is valid for a different upper consonant."
+          }
         },
         "7E": {
           "currentOutput": "\u100b",
@@ -12088,8 +12454,21 @@
               "raw": "28 33 3E 29 28 32 [85] 29 28 28 33 42 29"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 35
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "engineCandidateCount": 35,
+          "reviewedValue": "\u1039\u1005",
+          "resolutionEvidence": {
+            "method": "Named dictionary word and source raw window support this glyph; possible substring boundaries and inherited provisional seed values still require review.",
+            "word": "\u1000\u102d\u1005\u1039\u1005",
+            "raw": "33 35 32 85",
+            "pageExample": 295,
+            "rawMatches": 8,
+            "precedingBytesObserved": {
+              "32": 242,
+              "5A": 6
+            },
+            "limitation": "Some occurrences follow other preceding bytes; do not infer that the same writing glyph is valid for a different upper consonant."
+          }
         },
         "86": {
           "currentOutput": "\u1039\u1006",
@@ -12308,8 +12687,19 @@
               "raw": "28 28 3F 28 72 30 [91] 29 28 33 30 91 7F"
             }
           ],
-          "reason": "multiple code points",
-          "engineCandidateCount": 69
+          "reason": "Full raw word and surrounding slots support this value; preserve as contextual review evidence.",
+          "engineCandidateCount": 69,
+          "reviewedValue": "\u1039\u1019",
+          "resolutionEvidence": {
+            "method": "Named dictionary word and source raw window support this glyph; possible substring boundaries and inherited provisional seed values still require review.",
+            "word": "\u1013\u1019\u1039\u1019",
+            "raw": "72 30 91",
+            "pageExample": 297,
+            "rawMatches": 1,
+            "precedingBytesObserved": {
+              "30": 10
+            }
+          }
         },
         "93": {
           "currentOutput": "\u1039\u101c",
@@ -12637,7 +13027,16 @@
         ]
       },
       "resolvedForReview": {
-        "35": "\u102d"
+        "35": "\u102d",
+        "2F": "\u103c",
+        "2B": "\u1014",
+        "2C": "\u103a",
+        "31": "\u102c",
+        "7B": "\u1039\u1012",
+        "5B": "\u102b",
+        "6E": "\u1039\u1010",
+        "85": "\u1039\u1005",
+        "91": "\u1039\u1019"
       },
       "engineSeedSupportedBytes": 22,
       "visualOrderEvidence": {
@@ -12735,6 +13134,34 @@
                 "ordered": "\u1000\u103b"
               }
             ]
+          }
+        }
+      },
+      "writingRules": {
+        "restrictedBytes": {
+          "7B": {
+            "precedingBytes": [
+              "48"
+            ],
+            "basis": "Same-consonant stack in the named source word; other preceding contexts are not generalized."
+          },
+          "6E": {
+            "precedingBytes": [
+              "25"
+            ],
+            "basis": "Same-consonant stack in the named source word; other preceding contexts are not generalized."
+          },
+          "85": {
+            "precedingBytes": [
+              "32"
+            ],
+            "basis": "Same-consonant stack in the named source word; other preceding contexts are not generalized."
+          },
+          "91": {
+            "precedingBytes": [
+              "30"
+            ],
+            "basis": "Same-consonant stack in the named source word; other preceding contexts are not generalized."
           }
         }
       }
