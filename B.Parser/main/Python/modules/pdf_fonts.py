@@ -962,7 +962,12 @@ def encode_raw_byte_slots(slots, profile, *, byte_choices=None):
         any(mark in slot for mark in u.get('longWhenContains', []) for slot in slots)))
     byte_choices = byte_choices or {}
     output = []
-    for index, value in enumerate(slots):
+    for index, slot in enumerate(slots):
+        # Ra may precede the base in glyph order. Only preceding ya/ra in
+        # this single cluster selects ာ rather than ါ.
+        has_medial = base_count == 1 and any(
+            '\u103b' in preceding or '\u103c' in preceding for preceding in slots[:index])
+        value = '\u102c' if slot == '\u102b' and has_medial else slot
         available = choices.get(value, [])
         code = byte_choices.get(index)
         if u and value == u['unicode']:

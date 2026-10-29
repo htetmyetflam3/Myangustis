@@ -83,7 +83,11 @@ export function encodeRawByteSlots(slots, profile, { byteChoices = {} } = {}) {
     (u.longWhenContains || []).some((mark) => slots.some((s) => s.includes(mark))));
   const output = [];
   for (let i = 0; i < slots.length; i += 1) {
-    const value = slots[i];
+    // A preceding ya/ra in this one cluster selects ာ, not ါ. Glyph-order
+    // ra may precede the base, so inspect the preceding slots rather than
+    // assuming logical Unicode order.
+    const hasMedial = baseCount === 1 && slots.slice(0, i).some((s) => /[ျြ]/u.test(s));
+    const value = slots[i] === "ါ" && hasMedial ? "ာ" : slots[i];
     const available = choices.get(value) || [];
     let hex = byteChoices[i];
     if (u && value === u.unicode) {

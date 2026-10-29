@@ -4,9 +4,10 @@ import zlib from "node:zlib";
 import { ValueError, pyTruthy, pyInt, pyFloat, fromHexStrict, pyStripBytes } from "../core/pylib.js";
 import { loadMapJson, mapNameForPath } from "../core/json-map.js";
 import { MAX_PAGES, positiveLimit } from "../core/limits.js";
+import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../codepage/registry.js";
 import {
   Lexer, PdfName, PdfHexBytes, isNumeric, toNumber,
-  asDocumentDecoding, FontResourceLoader, UnsetFontDecoder, pageFontDecoders,
+  asDocumentDecoding, FontResourceLoader, LegacyAyarMap, UnsetFontDecoder, pageFontDecoders,
 } from "./pdf-fonts.js";
 
 
@@ -688,7 +689,7 @@ export function collapseOverprint(text) {
 }
 
 
-export function legacyAyarToUnicode(text) {
+export function legacyAyarToUnicode(text, { applyAaVowelRule = true } = {}) {
   text = text.replace(/\u200b/g, "");
 
 
@@ -719,7 +720,10 @@ export function legacyAyarToUnicode(text) {
 
 
 
-  return fixDigitConsonantConfusion(text);
+  text = fixDigitConsonantConfusion(text);
+  // In these legacy layouts, ya/ra uses ာ rather than ါ. Do this after
+  // visual-order conversion and leave all other marks in their original order.
+  return applyAaVowelRule ? text.replace(/([က-အ][ျြ][ျြွှ]*ေ?)ါ/g, "$1ာ") : text;
 }
 
 
@@ -993,7 +997,12 @@ export function extractPageLines(objects, pageNum, pageGen, decoding) {
     let maxSize = -Infinity;
     for (const [, s] of ordered) if (s > maxSize) maxSize = s;
     let joined = ordered.map(([, , t]) => t).join("");
-    if (doc.legacyTextFix) joined = legacyAyarToUnicode(joined);
+    if (doc.legacyTextFix) {
+      const page = doc.legacyCodePage;
+      const applyAaVowelRule = (page == null && doc.map instanceof LegacyAyarMap)
+        || page === AYAR_LEGACY_CODE_PAGE || page === WININNWA_LEGACY_CODE_PAGE;
+      joined = legacyAyarToUnicode(joined, { applyAaVowelRule });
+    }
     lines.push([ordered[0][0], currentY, maxSize, joined]);
   };
 

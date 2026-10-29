@@ -660,7 +660,7 @@ def _collapse_overprint(text):
     return text
 
 
-def legacy_ayar_to_unicode(text):
+def legacy_ayar_to_unicode(text, *, apply_aa_vowel_rule=True):
     """Put Ayar's visual/legacy order into normal Myanmar code-point order.
 
     This is intentionally small and conservative.  It mirrors the established
@@ -722,7 +722,18 @@ def legacy_ayar_to_unicode(text):
     # cause, and patching one word of one document was never a fix.
     # A digit cannot carry a mark; restore the consonant so the marks that
     # follow have a base to attach to.
-    return fix_digit_consonant_confusion(text)
+    text = fix_digit_consonant_confusion(text)
+    # In these legacy layouts, ya/ra uses ာ rather than ါ. Apply this only
+    # after visual-order conversion, without moving the other marks.
+    if apply_aa_vowel_rule:
+        text = re.sub(r"([က-အ][ျြ][ျြွှ]*ေ?)ါ", r"\1ာ", text)
+    return text
+
+
+def _aa_vowel_rule_for_legacy(doc):
+    page = doc.legacy_code_page
+    return ((page is None and isinstance(doc.map, LegacyAyarMap)) or
+            page is LEGACY_CODE_PAGES['ayar'] or page is LEGACY_CODE_PAGES['wininnwa'])
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1101,16 +1112,18 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
                             cur_line.sort(key=lambda p: p[0])   # x only; stable = stream order
                             _j = ''.join(t for _, _, t in cur_line)
                             if doc.legacy_text_fix:
-                                _j = legacy_ayar_to_unicode(_j)
+                                _j = legacy_ayar_to_unicode(_j, apply_aa_vowel_rule=_aa_vowel_rule_for_legacy(doc))
                             lines.append((cur_line[0][0], cur_y,
                                           max(s for _, s, _ in cur_line), _j))
                         cur_line, cur_y = [], y
                     cur_line.append((x, size, text))
                 if cur_line:
                     cur_line.sort(key=lambda p: p[0])   # x only; stable = stream order
+                    joined = ''.join(t for _, _, t in cur_line)
+                    if doc.legacy_text_fix:
+                        joined = legacy_ayar_to_unicode(joined, apply_aa_vowel_rule=_aa_vowel_rule_for_legacy(doc))
                     lines.append((cur_line[0][0], cur_y,
-                                  max(s for _, s, _ in cur_line),
-                                  ''.join(t for _, _, t in cur_line)))
+                                  max(s for _, s, _ in cur_line), joined))
             return lines, page_w, page_h
 
     pieces.sort(key=lambda p: (-p[0], p[1]))
@@ -1134,7 +1147,7 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
         ordered = sorted(current_line, key=lambda p: p[0])
         joined = ''.join(t for _, _, t in ordered)
         if doc.legacy_text_fix:
-            joined = legacy_ayar_to_unicode(joined)
+            joined = legacy_ayar_to_unicode(joined, apply_aa_vowel_rule=_aa_vowel_rule_for_legacy(doc))
         lines.append((ordered[0][0], current_y,
                       max(s for _, s, _ in ordered), joined))
 
