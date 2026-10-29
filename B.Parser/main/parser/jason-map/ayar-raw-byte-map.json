@@ -1122,7 +1122,105 @@
         ]
       },
       "resolvedForReview": {},
-      "engineSeedSupportedBytes": 19
+      "engineSeedSupportedBytes": 19,
+      "visualOrderEvidence": {
+        "rawOrphanFlags": 121,
+        "reorderedOrphanFlags": 63,
+        "patterns": {
+          "e_ra_base": {
+            "matches": 31,
+            "examples": [
+              {
+                "page": 4,
+                "raw": "25 21 43",
+                "visual": "\u1031\u103c\u1001",
+                "ordered": "\u1001\u103c\u1031"
+              },
+              {
+                "page": 5,
+                "raw": "25 66 37",
+                "visual": "\u1031\u103c\u1000",
+                "ordered": "\u1000\u103c\u1031"
+              },
+              {
+                "page": 5,
+                "raw": "25 21 22",
+                "visual": "\u1031\u103c\u1015",
+                "ordered": "\u1015\u103c\u1031"
+              }
+            ]
+          },
+          "ra_base": {
+            "matches": 100,
+            "examples": [
+              {
+                "page": 1,
+                "raw": "21 22",
+                "visual": "\u103c\u1015",
+                "ordered": "\u1015\u103c"
+              },
+              {
+                "page": 1,
+                "raw": "21 2C",
+                "visual": "\u103c\u1019",
+                "ordered": "\u1019\u103c"
+              },
+              {
+                "page": 1,
+                "raw": "36 37",
+                "visual": "\u103c\u1000",
+                "ordered": "\u1000\u103c"
+              }
+            ]
+          },
+          "e_base_ya": {
+            "matches": 8,
+            "examples": [
+              {
+                "page": 3,
+                "raw": "25 37 4F",
+                "visual": "\u1031\u1000\u103b",
+                "ordered": "\u1000\u103b\u1031"
+              },
+              {
+                "page": 3,
+                "raw": "25 43 4F",
+                "visual": "\u1031\u1001\u103b",
+                "ordered": "\u1001\u103b\u1031"
+              },
+              {
+                "page": 4,
+                "raw": "25 37 4F",
+                "visual": "\u1031\u1000\u103b",
+                "ordered": "\u1000\u103b\u1031"
+              }
+            ]
+          },
+          "base_ya": {
+            "matches": 88,
+            "examples": [
+              {
+                "page": 2,
+                "raw": "2C 4F",
+                "visual": "\u1019\u103b",
+                "ordered": "\u1019\u103b"
+              },
+              {
+                "page": 3,
+                "raw": "43 4F",
+                "visual": "\u1001\u103b",
+                "ordered": "\u1001\u103b"
+              },
+              {
+                "page": 3,
+                "raw": "2C 4F",
+                "visual": "\u1019\u103b",
+                "ordered": "\u1019\u103b"
+              }
+            ]
+          }
+        }
+      }
     },
     "164ab2dc98515900ba126fe7043f0fa455ed0472f32a68fbce5d41a6565584fb": {
       "example": "mm-grammar.pdf /TT6 (RNKHKA+Arlarwade)",
@@ -2518,7 +2616,105 @@
         ]
       },
       "resolvedForReview": {},
-      "engineSeedSupportedBytes": 22
+      "engineSeedSupportedBytes": 22,
+      "visualOrderEvidence": {
+        "rawOrphanFlags": 3243,
+        "reorderedOrphanFlags": 2096,
+        "patterns": {
+          "e_ra_base": {
+            "matches": 239,
+            "examples": [
+              {
+                "page": 9,
+                "raw": "3B 30 36",
+                "visual": "\u1031\u103c\u1019",
+                "ordered": "\u1019\u103c\u1031"
+              },
+              {
+                "page": 9,
+                "raw": "3B 34 35",
+                "visual": "\u1031\u103c\u1000",
+                "ordered": "\u1000\u103c\u1031"
+              },
+              {
+                "page": 9,
+                "raw": "3B 30 4C",
+                "visual": "\u1031\u103c\u1015",
+                "ordered": "\u1015\u103c\u1031"
+              }
+            ]
+          },
+          "ra_base": {
+            "matches": 1527,
+            "examples": [
+              {
+                "page": 9,
+                "raw": "30 31",
+                "visual": "\u103c\u1016",
+                "ordered": "\u1016\u103c"
+              },
+              {
+                "page": 9,
+                "raw": "34 35",
+                "visual": "\u103c\u1000",
+                "ordered": "\u1000\u103c"
+              },
+              {
+                "page": 9,
+                "raw": "30 36",
+                "visual": "\u103c\u1019",
+                "ordered": "\u1019\u103c"
+              }
+            ]
+          },
+          "e_base_ya": {
+            "matches": 224,
+            "examples": [
+              {
+                "page": 9,
+                "raw": "3B 28 45",
+                "visual": "\u1031\u1001\u103b",
+                "ordered": "\u1001\u103b\u1031"
+              },
+              {
+                "page": 13,
+                "raw": "3B 35 45",
+                "visual": "\u1031\u1000\u103b",
+                "ordered": "\u1000\u103b\u1031"
+              },
+              {
+                "page": 14,
+                "raw": "3B 35 45",
+                "visual": "\u1031\u1000\u103b",
+                "ordered": "\u1000\u103b\u1031"
+              }
+            ]
+          },
+          "base_ya": {
+            "matches": 791,
+            "examples": [
+              {
+                "page": 9,
+                "raw": "28 45",
+                "visual": "\u1001\u103b",
+                "ordered": "\u1001\u103b"
+              },
+              {
+                "page": 9,
+                "raw": "36 45",
+                "visual": "\u1019\u103b",
+                "ordered": "\u1019\u103b"
+              },
+              {
+                "page": 9,
+                "raw": "35 45",
+                "visual": "\u1000\u103b",
+                "ordered": "\u1000\u103b"
+              }
+            ]
+          }
+        }
+      }
     },
     "b89b5fe3daba90ad860720610d39142ea965ac5a83ce889084c6c75afa9858e3": {
       "example": "mm-grammar.pdf /TT13 (VWCXUX+Arlarwade)",
@@ -4036,7 +4232,105 @@
         ]
       },
       "resolvedForReview": {},
-      "engineSeedSupportedBytes": 23
+      "engineSeedSupportedBytes": 23,
+      "visualOrderEvidence": {
+        "rawOrphanFlags": 6681,
+        "reorderedOrphanFlags": 4663,
+        "patterns": {
+          "e_ra_base": {
+            "matches": 481,
+            "examples": [
+              {
+                "page": 46,
+                "raw": "36 56 3A",
+                "visual": "\u1031\u103c\u1000",
+                "ordered": "\u1000\u103c\u1031"
+              },
+              {
+                "page": 47,
+                "raw": "36 56 3A",
+                "visual": "\u1031\u103c\u1000",
+                "ordered": "\u1000\u103c\u1031"
+              },
+              {
+                "page": 48,
+                "raw": "36 4B 2A",
+                "visual": "\u1031\u103c\u1001",
+                "ordered": "\u1001\u103c\u1031"
+              }
+            ]
+          },
+          "ra_base": {
+            "matches": 3540,
+            "examples": [
+              {
+                "page": 46,
+                "raw": "4B 4C",
+                "visual": "\u103c\u1016",
+                "ordered": "\u1016\u103c"
+              },
+              {
+                "page": 46,
+                "raw": "56 3A",
+                "visual": "\u103c\u1000",
+                "ordered": "\u1000\u103c"
+              },
+              {
+                "page": 46,
+                "raw": "4B 2A",
+                "visual": "\u103c\u1001",
+                "ordered": "\u1001\u103c"
+              }
+            ]
+          },
+          "e_base_ya": {
+            "matches": 339,
+            "examples": [
+              {
+                "page": 46,
+                "raw": "36 2A 49",
+                "visual": "\u1031\u1001\u103b",
+                "ordered": "\u1001\u103b\u1031"
+              },
+              {
+                "page": 48,
+                "raw": "36 3A 49",
+                "visual": "\u1031\u1000\u103b",
+                "ordered": "\u1000\u103b\u1031"
+              },
+              {
+                "page": 49,
+                "raw": "36 3A 49",
+                "visual": "\u1031\u1000\u103b",
+                "ordered": "\u1000\u103b\u1031"
+              }
+            ]
+          },
+          "base_ya": {
+            "matches": 1402,
+            "examples": [
+              {
+                "page": 46,
+                "raw": "48 49",
+                "visual": "\u1017\u103b",
+                "ordered": "\u1017\u103b"
+              },
+              {
+                "page": 46,
+                "raw": "3B 49",
+                "visual": "\u1019\u103b",
+                "ordered": "\u1019\u103b"
+              },
+              {
+                "page": 46,
+                "raw": "2A 49",
+                "visual": "\u1001\u103b",
+                "ordered": "\u1001\u103b"
+              }
+            ]
+          }
+        }
+      }
     },
     "4c50ba818d91e8762ea8217586e7a2440747c464b433964e49e3af5dee970db6": {
       "example": "mm-grammar.pdf /TT20 (EECKXI+Arlarwade)",
@@ -4779,7 +5073,87 @@
         ]
       },
       "resolvedForReview": {},
-      "engineSeedSupportedBytes": 13
+      "engineSeedSupportedBytes": 13,
+      "visualOrderEvidence": {
+        "rawOrphanFlags": 24,
+        "reorderedOrphanFlags": 15,
+        "patterns": {
+          "e_ra_base": {
+            "matches": 1,
+            "examples": [
+              {
+                "page": 112,
+                "raw": "29 37 38",
+                "visual": "\u1031\u103c\u1000",
+                "ordered": "\u1000\u103c\u1031"
+              }
+            ]
+          },
+          "ra_base": {
+            "matches": 13,
+            "examples": [
+              {
+                "page": 112,
+                "raw": "35 36",
+                "visual": "\u103c\u1016",
+                "ordered": "\u1016\u103c"
+              },
+              {
+                "page": 112,
+                "raw": "35 3A",
+                "visual": "\u103c\u1015",
+                "ordered": "\u1015\u103c"
+              },
+              {
+                "page": 112,
+                "raw": "35 32",
+                "visual": "\u103c\u1001",
+                "ordered": "\u1001\u103c"
+              }
+            ]
+          },
+          "e_base_ya": {
+            "matches": 4,
+            "examples": [
+              {
+                "page": 112,
+                "raw": "29 44 25",
+                "visual": "\u1031\u101c\u103b",
+                "ordered": "\u101c\u103b\u1031"
+              },
+              {
+                "page": 112,
+                "raw": "29 32 25",
+                "visual": "\u1031\u1001\u103b",
+                "ordered": "\u1001\u103b\u1031"
+              }
+            ]
+          },
+          "base_ya": {
+            "matches": 35,
+            "examples": [
+              {
+                "page": 112,
+                "raw": "24 25",
+                "visual": "\u1019\u103b",
+                "ordered": "\u1019\u103b"
+              },
+              {
+                "page": 112,
+                "raw": "32 25",
+                "visual": "\u1001\u103b",
+                "ordered": "\u1001\u103b"
+              },
+              {
+                "page": 112,
+                "raw": "38 25",
+                "visual": "\u1000\u103b",
+                "ordered": "\u1000\u103b"
+              }
+            ]
+          }
+        }
+      }
     },
     "4d6aa345dd1b88e650c0b700cd51b336bf0d0ba7016b559ca9f5f562b1ab46ea": {
       "example": "mm-grammar.pdf /TT27 (LRIIGK+Arlarwade)",
@@ -6190,7 +6564,105 @@
         ]
       },
       "resolvedForReview": {},
-      "engineSeedSupportedBytes": 24
+      "engineSeedSupportedBytes": 24,
+      "visualOrderEvidence": {
+        "rawOrphanFlags": 4548,
+        "reorderedOrphanFlags": 3267,
+        "patterns": {
+          "e_ra_base": {
+            "matches": 358,
+            "examples": [
+              {
+                "page": 113,
+                "raw": "39 3E 2A",
+                "visual": "\u1031\u103c\u1001",
+                "ordered": "\u1001\u103c\u1031"
+              },
+              {
+                "page": 113,
+                "raw": "39 4C 3B",
+                "visual": "\u1031\u103c\u1000",
+                "ordered": "\u1000\u103c\u1031"
+              },
+              {
+                "page": 114,
+                "raw": "39 3E 4F",
+                "visual": "\u1031\u103c\u1015",
+                "ordered": "\u1015\u103c\u1031"
+              }
+            ]
+          },
+          "ra_base": {
+            "matches": 2486,
+            "examples": [
+              {
+                "page": 113,
+                "raw": "3E 4A",
+                "visual": "\u103c\u1016",
+                "ordered": "\u1016\u103c"
+              },
+              {
+                "page": 113,
+                "raw": "4C 3B",
+                "visual": "\u103c\u1000",
+                "ordered": "\u1000\u103c"
+              },
+              {
+                "page": 113,
+                "raw": "3E 4F",
+                "visual": "\u103c\u1015",
+                "ordered": "\u1015\u103c"
+              }
+            ]
+          },
+          "e_base_ya": {
+            "matches": 185,
+            "examples": [
+              {
+                "page": 114,
+                "raw": "39 2A 33",
+                "visual": "\u1031\u1001\u103b",
+                "ordered": "\u1001\u103b\u1031"
+              },
+              {
+                "page": 115,
+                "raw": "39 2A 33",
+                "visual": "\u1031\u1001\u103b",
+                "ordered": "\u1001\u103b\u1031"
+              },
+              {
+                "page": 117,
+                "raw": "39 3B 33",
+                "visual": "\u1031\u1000\u103b",
+                "ordered": "\u1000\u103b\u1031"
+              }
+            ]
+          },
+          "base_ya": {
+            "matches": 1148,
+            "examples": [
+              {
+                "page": 113,
+                "raw": "32 33",
+                "visual": "\u1019\u103b",
+                "ordered": "\u1019\u103b"
+              },
+              {
+                "page": 113,
+                "raw": "2A 33",
+                "visual": "\u1001\u103b",
+                "ordered": "\u1001\u103b"
+              },
+              {
+                "page": 113,
+                "raw": "4A 33",
+                "visual": "\u1016\u103b",
+                "ordered": "\u1016\u103b"
+              }
+            ]
+          }
+        }
+      }
     },
     "a7c9e0380ddaa992b8544130db21696438cbe6ec1b0afd8f262c9fc699623437": {
       "example": "mm-grammar.pdf /TT35 (IWBEFM+Arlarwade)",
@@ -7573,7 +8045,105 @@
         ]
       },
       "resolvedForReview": {},
-      "engineSeedSupportedBytes": 22
+      "engineSeedSupportedBytes": 22,
+      "visualOrderEvidence": {
+        "rawOrphanFlags": 4527,
+        "reorderedOrphanFlags": 3440,
+        "patterns": {
+          "e_ra_base": {
+            "matches": 307,
+            "examples": [
+              {
+                "page": 160,
+                "raw": "42 40 25",
+                "visual": "\u1031\u103c\u1001",
+                "ordered": "\u1001\u103c\u1031"
+              },
+              {
+                "page": 160,
+                "raw": "42 51 32",
+                "visual": "\u1031\u103c\u1000",
+                "ordered": "\u1000\u103c\u1031"
+              },
+              {
+                "page": 161,
+                "raw": "42 40 3C",
+                "visual": "\u1031\u103c\u1015",
+                "ordered": "\u1015\u103c\u1031"
+              }
+            ]
+          },
+          "ra_base": {
+            "matches": 2384,
+            "examples": [
+              {
+                "page": 160,
+                "raw": "40 3C",
+                "visual": "\u103c\u1015",
+                "ordered": "\u1015\u103c"
+              },
+              {
+                "page": 160,
+                "raw": "40 4F",
+                "visual": "\u103c\u1016",
+                "ordered": "\u1016\u103c"
+              },
+              {
+                "page": 160,
+                "raw": "51 32",
+                "visual": "\u103c\u1000",
+                "ordered": "\u1000\u103c"
+              }
+            ]
+          },
+          "e_base_ya": {
+            "matches": 132,
+            "examples": [
+              {
+                "page": 160,
+                "raw": "42 43 30",
+                "visual": "\u1031\u101c\u103b",
+                "ordered": "\u101c\u103b\u1031"
+              },
+              {
+                "page": 161,
+                "raw": "42 43 30",
+                "visual": "\u1031\u101c\u103b",
+                "ordered": "\u101c\u103b\u1031"
+              },
+              {
+                "page": 161,
+                "raw": "42 32 30",
+                "visual": "\u1031\u1000\u103b",
+                "ordered": "\u1000\u103b\u1031"
+              }
+            ]
+          },
+          "base_ya": {
+            "matches": 1536,
+            "examples": [
+              {
+                "page": 160,
+                "raw": "2F 30",
+                "visual": "\u1017\u103b",
+                "ordered": "\u1017\u103b"
+              },
+              {
+                "page": 160,
+                "raw": "36 30",
+                "visual": "\u1019\u103b",
+                "ordered": "\u1019\u103b"
+              },
+              {
+                "page": 160,
+                "raw": "25 30",
+                "visual": "\u1001\u103b",
+                "ordered": "\u1001\u103b"
+              }
+            ]
+          }
+        }
+      }
     },
     "3da8a08e4a4bf0a6629f4efa1e5c0af7ce1d1349edf6580e2c74a33b56eea0ec": {
       "example": "mm-grammar.pdf /TT41 (FPRRRK+Arlarwade)",
@@ -9133,7 +9703,105 @@
         ]
       },
       "resolvedForReview": {},
-      "engineSeedSupportedBytes": 23
+      "engineSeedSupportedBytes": 23,
+      "visualOrderEvidence": {
+        "rawOrphanFlags": 6345,
+        "reorderedOrphanFlags": 4721,
+        "patterns": {
+          "e_ra_base": {
+            "matches": 484,
+            "examples": [
+              {
+                "page": 210,
+                "raw": "46 4A 34",
+                "visual": "\u1031\u103c\u1015",
+                "ordered": "\u1015\u103c\u1031"
+              },
+              {
+                "page": 212,
+                "raw": "46 5E 42",
+                "visual": "\u1031\u103c\u1000",
+                "ordered": "\u1000\u103c\u1031"
+              },
+              {
+                "page": 213,
+                "raw": "46 5E 42",
+                "visual": "\u1031\u103c\u1000",
+                "ordered": "\u1000\u103c\u1031"
+              }
+            ]
+          },
+          "ra_base": {
+            "matches": 4045,
+            "examples": [
+              {
+                "page": 210,
+                "raw": "4A 4B",
+                "visual": "\u103c\u1016",
+                "ordered": "\u1016\u103c"
+              },
+              {
+                "page": 210,
+                "raw": "4A 29",
+                "visual": "\u103c\u1001",
+                "ordered": "\u1001\u103c"
+              },
+              {
+                "page": 210,
+                "raw": "5E 42",
+                "visual": "\u103c\u1000",
+                "ordered": "\u1000\u103c"
+              }
+            ]
+          },
+          "e_base_ya": {
+            "matches": 210,
+            "examples": [
+              {
+                "page": 213,
+                "raw": "46 42 2F",
+                "visual": "\u1031\u1000\u103b",
+                "ordered": "\u1000\u103b\u1031"
+              },
+              {
+                "page": 217,
+                "raw": "46 42 2F",
+                "visual": "\u1031\u1000\u103b",
+                "ordered": "\u1000\u103b\u1031"
+              },
+              {
+                "page": 218,
+                "raw": "46 3A 2F",
+                "visual": "\u1031\u101c\u103b",
+                "ordered": "\u101c\u103b\u1031"
+              }
+            ]
+          },
+          "base_ya": {
+            "matches": 1922,
+            "examples": [
+              {
+                "page": 210,
+                "raw": "2E 2F",
+                "visual": "\u1017\u103b",
+                "ordered": "\u1017\u103b"
+              },
+              {
+                "page": 210,
+                "raw": "31 2F",
+                "visual": "\u1019\u103b",
+                "ordered": "\u1019\u103b"
+              },
+              {
+                "page": 210,
+                "raw": "29 2F",
+                "visual": "\u1001\u103b",
+                "ordered": "\u1001\u103b"
+              }
+            ]
+          }
+        }
+      }
     },
     "ab7518c9f0347ee639244fe89fce37115fb9f4fd0fa5b7b065c08ff104bb4c25": {
       "example": "mm-grammar.pdf /TT49 (LOZWCO+Arlarwade)",
@@ -11070,7 +11738,105 @@
         ]
       },
       "resolvedForReview": {},
-      "engineSeedSupportedBytes": 22
+      "engineSeedSupportedBytes": 22,
+      "visualOrderEvidence": {
+        "rawOrphanFlags": 4140,
+        "reorderedOrphanFlags": 2798,
+        "patterns": {
+          "e_ra_base": {
+            "matches": 365,
+            "examples": [
+              {
+                "page": 279,
+                "raw": "41 2F 52",
+                "visual": "\u1031\u103c\u1015",
+                "ordered": "\u1015\u103c\u1031"
+              },
+              {
+                "page": 279,
+                "raw": "41 2F 2A",
+                "visual": "\u1031\u103c\u1001",
+                "ordered": "\u1001\u103c\u1031"
+              },
+              {
+                "page": 280,
+                "raw": "41 56 33",
+                "visual": "\u1031\u103c\u1000",
+                "ordered": "\u1000\u103c\u1031"
+              }
+            ]
+          },
+          "ra_base": {
+            "matches": 2634,
+            "examples": [
+              {
+                "page": 279,
+                "raw": "2F 30",
+                "visual": "\u103c\u1019",
+                "ordered": "\u1019\u103c"
+              },
+              {
+                "page": 279,
+                "raw": "2F 52",
+                "visual": "\u103c\u1015",
+                "ordered": "\u1015\u103c"
+              },
+              {
+                "page": 279,
+                "raw": "56 33",
+                "visual": "\u103c\u1000",
+                "ordered": "\u1000\u103c"
+              }
+            ]
+          },
+          "e_base_ya": {
+            "matches": 184,
+            "examples": [
+              {
+                "page": 279,
+                "raw": "41 33 3D",
+                "visual": "\u1031\u1000\u103b",
+                "ordered": "\u1000\u103b\u1031"
+              },
+              {
+                "page": 280,
+                "raw": "41 33 3D",
+                "visual": "\u1031\u1000\u103b",
+                "ordered": "\u1000\u103b\u1031"
+              },
+              {
+                "page": 280,
+                "raw": "41 2A 3D",
+                "visual": "\u1031\u1001\u103b",
+                "ordered": "\u1001\u103b\u1031"
+              }
+            ]
+          },
+          "base_ya": {
+            "matches": 1548,
+            "examples": [
+              {
+                "page": 279,
+                "raw": "30 3D",
+                "visual": "\u1019\u103b",
+                "ordered": "\u1019\u103b"
+              },
+              {
+                "page": 279,
+                "raw": "2A 3D",
+                "visual": "\u1001\u103b",
+                "ordered": "\u1001\u103b"
+              },
+              {
+                "page": 279,
+                "raw": "33 3D",
+                "visual": "\u1000\u103b",
+                "ordered": "\u1000\u103b"
+              }
+            ]
+          }
+        }
+      }
     },
     "b353b9e2e602b1a65ec182154e49d8d71d9ec9d613718f0dbf01ba02918b4a55": {
       "example": "mm-grammar.pdf /TT59 (ZUMCYJ+Arlarwade)",
@@ -11879,7 +12645,80 @@
         ]
       },
       "resolvedForReview": {},
-      "engineSeedSupportedBytes": 16
+      "engineSeedSupportedBytes": 16,
+      "visualOrderEvidence": {
+        "rawOrphanFlags": 51,
+        "reorderedOrphanFlags": 38,
+        "patterns": {
+          "e_ra_base": {
+            "matches": 9,
+            "examples": [
+              {
+                "page": 412,
+                "raw": "27 2B 2D",
+                "visual": "\u1031\u103c\u1001",
+                "ordered": "\u1001\u103c\u1031"
+              },
+              {
+                "page": 412,
+                "raw": "27 2B 35",
+                "visual": "\u1031\u103c\u1019",
+                "ordered": "\u1019\u103c\u1031"
+              },
+              {
+                "page": 412,
+                "raw": "27 2B 2C",
+                "visual": "\u1031\u103c\u1015",
+                "ordered": "\u1015\u103c\u1031"
+              }
+            ]
+          },
+          "ra_base": {
+            "matches": 20,
+            "examples": [
+              {
+                "page": 412,
+                "raw": "2B 2C",
+                "visual": "\u103c\u1015",
+                "ordered": "\u1015\u103c"
+              },
+              {
+                "page": 412,
+                "raw": "2B 2D",
+                "visual": "\u103c\u1001",
+                "ordered": "\u1001\u103c"
+              },
+              {
+                "page": 412,
+                "raw": "2B 28",
+                "visual": "\u103c\u1016",
+                "ordered": "\u1016\u103c"
+              }
+            ]
+          },
+          "e_base_ya": {
+            "matches": 0,
+            "examples": []
+          },
+          "base_ya": {
+            "matches": 35,
+            "examples": [
+              {
+                "page": 412,
+                "raw": "35 36",
+                "visual": "\u1019\u103b",
+                "ordered": "\u1019\u103b"
+              },
+              {
+                "page": 412,
+                "raw": "37 36",
+                "visual": "\u1000\u103b",
+                "ordered": "\u1000\u103b"
+              }
+            ]
+          }
+        }
+      }
     },
     "286c99574ea17ff9806328746e5d56fa4f3399863d44978413ba5ffc458eed59": {
       "example": "mm-grammar.pdf /TT62 (RXGFSZ+Arlarwade)",
@@ -13216,7 +14055,105 @@
         ]
       },
       "resolvedForReview": {},
-      "engineSeedSupportedBytes": 21
+      "engineSeedSupportedBytes": 21,
+      "visualOrderEvidence": {
+        "rawOrphanFlags": 696,
+        "reorderedOrphanFlags": 562,
+        "patterns": {
+          "e_ra_base": {
+            "matches": 70,
+            "examples": [
+              {
+                "page": 418,
+                "raw": "36 4C 3B",
+                "visual": "\u1031\u103c\u1015",
+                "ordered": "\u1015\u103c\u1031"
+              },
+              {
+                "page": 418,
+                "raw": "36 67 22",
+                "visual": "\u1031\u103c\u1000",
+                "ordered": "\u1000\u103c\u1031"
+              },
+              {
+                "page": 419,
+                "raw": "36 4C 3B",
+                "visual": "\u1031\u103c\u1015",
+                "ordered": "\u1015\u103c\u1031"
+              }
+            ]
+          },
+          "ra_base": {
+            "matches": 451,
+            "examples": [
+              {
+                "page": 417,
+                "raw": "2D 22",
+                "visual": "\u103c\u1000",
+                "ordered": "\u1000\u103c"
+              },
+              {
+                "page": 417,
+                "raw": "4C 3B",
+                "visual": "\u103c\u1015",
+                "ordered": "\u1015\u103c"
+              },
+              {
+                "page": 417,
+                "raw": "59 3B",
+                "visual": "\u103c\u1015",
+                "ordered": "\u1015\u103c"
+              }
+            ]
+          },
+          "e_base_ya": {
+            "matches": 15,
+            "examples": [
+              {
+                "page": 418,
+                "raw": "36 22 4B",
+                "visual": "\u1031\u1000\u103b",
+                "ordered": "\u1000\u103b\u1031"
+              },
+              {
+                "page": 422,
+                "raw": "36 25 4B",
+                "visual": "\u1031\u101c\u103b",
+                "ordered": "\u101c\u103b\u1031"
+              },
+              {
+                "page": 423,
+                "raw": "36 3B 4B",
+                "visual": "\u1031\u1015\u103b",
+                "ordered": "\u1015\u103b\u1031"
+              }
+            ]
+          },
+          "base_ya": {
+            "matches": 238,
+            "examples": [
+              {
+                "page": 417,
+                "raw": "4A 4B",
+                "visual": "\u1001\u103b",
+                "ordered": "\u1001\u103b"
+              },
+              {
+                "page": 417,
+                "raw": "22 4B",
+                "visual": "\u1000\u103b",
+                "ordered": "\u1000\u103b"
+              },
+              {
+                "page": 417,
+                "raw": "32 4B",
+                "visual": "\u1019\u103b",
+                "ordered": "\u1019\u103b"
+              }
+            ]
+          }
+        }
+      }
     },
     "f7e6dc277e5783f5dfbddc1b023ed3bf98e0a0ab60a17d1a446c6c143c29d924": {
       "example": "mm-grammar.pdf /TT65 (CYTAKH+Arlarwade)",
@@ -14547,11 +15484,167 @@
         ]
       },
       "resolvedForReview": {},
-      "engineSeedSupportedBytes": 21
+      "engineSeedSupportedBytes": 21,
+      "visualOrderEvidence": {
+        "rawOrphanFlags": 611,
+        "reorderedOrphanFlags": 498,
+        "patterns": {
+          "e_ra_base": {
+            "matches": 70,
+            "examples": [
+              {
+                "page": 432,
+                "raw": "36 37 38",
+                "visual": "\u1031\u103c\u1015",
+                "ordered": "\u1015\u103c\u1031"
+              },
+              {
+                "page": 432,
+                "raw": "36 47 24",
+                "visual": "\u1031\u103c\u1000",
+                "ordered": "\u1000\u103c\u1031"
+              },
+              {
+                "page": 433,
+                "raw": "36 37 38",
+                "visual": "\u1031\u103c\u1015",
+                "ordered": "\u1015\u103c\u1031"
+              }
+            ]
+          },
+          "ra_base": {
+            "matches": 408,
+            "examples": [
+              {
+                "page": 432,
+                "raw": "37 38",
+                "visual": "\u103c\u1015",
+                "ordered": "\u1015\u103c"
+              },
+              {
+                "page": 432,
+                "raw": "47 24",
+                "visual": "\u103c\u1000",
+                "ordered": "\u1000\u103c"
+              },
+              {
+                "page": 432,
+                "raw": "50 24",
+                "visual": "\u103c\u1000",
+                "ordered": "\u1000\u103c"
+              }
+            ]
+          },
+          "e_base_ya": {
+            "matches": 15,
+            "examples": [
+              {
+                "page": 432,
+                "raw": "36 24 3C",
+                "visual": "\u1031\u1000\u103b",
+                "ordered": "\u1000\u103b\u1031"
+              },
+              {
+                "page": 436,
+                "raw": "36 3F 3C",
+                "visual": "\u1031\u101c\u103b",
+                "ordered": "\u101c\u103b\u1031"
+              },
+              {
+                "page": 437,
+                "raw": "36 38 3C",
+                "visual": "\u1031\u1015\u103b",
+                "ordered": "\u1015\u103b\u1031"
+              }
+            ]
+          },
+          "base_ya": {
+            "matches": 228,
+            "examples": [
+              {
+                "page": 432,
+                "raw": "24 3C",
+                "visual": "\u1000\u103b",
+                "ordered": "\u1000\u103b"
+              },
+              {
+                "page": 432,
+                "raw": "3D 3C",
+                "visual": "\u1001\u103b",
+                "ordered": "\u1001\u103b"
+              },
+              {
+                "page": 432,
+                "raw": "41 3C",
+                "visual": "\u1019\u103b",
+                "ordered": "\u1019\u103b"
+              }
+            ]
+          }
+        }
+      }
     }
   },
   "engineEvidence": {
     "referenceSyllablesChecked": 1223,
     "method": "Complete matches in the manifest-verified Engine walker with equal reference Unicode and mapped-code-point counts. Counts are matching raw windows, not independent occurrences. They depend on the provisional surrounding seed and are supporting evidence only; multiple candidate values remain possible."
-  }
+  },
+  "visualOrderRules": {
+    "layouts": [
+      "ayar",
+      "wininnwa"
+    ],
+    "rules": [
+      {
+        "visual": [
+          "\u103c",
+          "base"
+        ],
+        "logical": [
+          "base",
+          "\u103c"
+        ]
+      },
+      {
+        "visual": [
+          "\u1031",
+          "\u103c",
+          "base",
+          "suffix"
+        ],
+        "logical": [
+          "base",
+          "\u103c",
+          "\u1031",
+          "suffix"
+        ]
+      },
+      {
+        "visual": [
+          "base",
+          "\u103b"
+        ],
+        "logical": [
+          "base",
+          "\u103b"
+        ]
+      },
+      {
+        "visual": [
+          "\u1031",
+          "base",
+          "\u103b",
+          "suffix"
+        ],
+        "logical": [
+          "base",
+          "\u103b",
+          "\u1031",
+          "suffix"
+        ]
+      }
+    ],
+    "scope": "Raw slots first; rearrange these leading slots only after decoding. Suffix slots remain in their existing order. No other marks are normalized by these rules. Raw orphan flags are retained and do not themselves mean an error."
+  },
+  "visualOrderEvidenceMethod": "All observed page-stream runs under provisional seed values. Compares raw orphan flags to flags after applying only the four shared patterns; unknown/empty byte values are boundaries. Pattern matches and changes in flags are evidence of visual order, not verification of byte meanings or overall accuracy. Form XObjects are not scanned."
 }

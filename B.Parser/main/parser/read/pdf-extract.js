@@ -708,7 +708,8 @@ export function legacyAyarToUnicode(text) {
     /([က-အ][ါ-ှ]*)(င်္)(?![က-အ])/g,
     "$2$1",
   );
-  text = text.replace(/(ေ)([ျွဲှ္ြ]+)/g, "$2$1");
+  // Pair the immediate ya/ra with the base; preserve the remaining marks.
+  text = text.replace(/([က-အ၀၇၈])(ေ)([ျြ])/g, "$1$3$2");
   text = text.replace(/([က-အ])([က-အ])(င်္)/g, "$1$3$2");
 
 

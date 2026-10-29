@@ -705,7 +705,9 @@ def legacy_ayar_to_unicode(text):
     text = re.sub(r"([\u1000-\u1021][\u102b-\u103e]*)"
                   r"(\u1004\u103a\u1039)(?![\u1000-\u1021])",
                   r"\2\1", text)
-    text = re.sub(r"(ေ)([ျွဲှ္ြ]+)", r"\2\1", text)
+    # Only pair the immediately following ya/ra with its base; leave the
+    # remaining marks in their original order.
+    text = re.sub(r"([က-အ၀၇၈])(ေ)([ျြ])", r"\1\3\2", text)
     text = re.sub(r"([က-အ])([က-အ])(င်္)", r"\1\3\2", text)
     # Ayar writes ဦး as ဦး in a number of older subsets.
     text = text.replace("ဦး", "ဦး")

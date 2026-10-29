@@ -1,3 +1,12 @@
+SHARED AYAR / WININNWA VISUAL ORDER
+ြ + base → base + ြ
+ေ + ြ + base + suffix → base + ြ + ေ + suffix
+base + ျ stays unchanged
+ေ + base + ျ + suffix → base + ျ + ေ + suffix
+The original orphan flags are from raw visual order and are not proof of an error. Evidence below uses provisional candidate byte readings.
+
+Matched raw patterns: e_ra_base=2415, ra_base=17608, e_base_ya=1316, base_ya=8971
+
 Ayar-compatible raw-byte review — mm-grammar.pdf
 
 Each subset has its own raw byte numbering. These are candidate readings from the existing Ayar decoder; they are not independently verified.

@@ -524,6 +524,104 @@
             ]
           }
         }
+      },
+      "visualOrderEvidence": {
+        "rawOrphanFlags": 1839,
+        "reorderedOrphanFlags": 1182,
+        "patterns": {
+          "e_ra_base": {
+            "matches": 192,
+            "examples": [
+              {
+                "page": 1,
+                "raw": "1F 01 13",
+                "visual": "\u1031\u103c\u1001",
+                "ordered": "\u1001\u103c\u1031"
+              },
+              {
+                "page": 2,
+                "raw": "1F 01 13",
+                "visual": "\u1031\u103c\u1001",
+                "ordered": "\u1001\u103c\u1031"
+              },
+              {
+                "page": 2,
+                "raw": "1F 01 02",
+                "visual": "\u1031\u103c\u1019",
+                "ordered": "\u1019\u103c\u1031"
+              }
+            ]
+          },
+          "ra_base": {
+            "matches": 966,
+            "examples": [
+              {
+                "page": 1,
+                "raw": "01 02",
+                "visual": "\u103c\u1019",
+                "ordered": "\u1019\u103c"
+              },
+              {
+                "page": 1,
+                "raw": "01 1B",
+                "visual": "\u103c\u1015",
+                "ordered": "\u1015\u103c"
+              },
+              {
+                "page": 1,
+                "raw": "01 13",
+                "visual": "\u103c\u1001",
+                "ordered": "\u1001\u103c"
+              }
+            ]
+          },
+          "e_base_ya": {
+            "matches": 168,
+            "examples": [
+              {
+                "page": 1,
+                "raw": "1F 17 29",
+                "visual": "\u1031\u1000\u103b",
+                "ordered": "\u1000\u103b\u1031"
+              },
+              {
+                "page": 2,
+                "raw": "1F 17 29",
+                "visual": "\u1031\u1000\u103b",
+                "ordered": "\u1000\u103b\u1031"
+              },
+              {
+                "page": 2,
+                "raw": "1F 13 29",
+                "visual": "\u1031\u1001\u103b",
+                "ordered": "\u1001\u103b\u1031"
+              }
+            ]
+          },
+          "base_ya": {
+            "matches": 601,
+            "examples": [
+              {
+                "page": 1,
+                "raw": "13 29",
+                "visual": "\u1001\u103b",
+                "ordered": "\u1001\u103b"
+              },
+              {
+                "page": 1,
+                "raw": "02 29",
+                "visual": "\u1019\u103b",
+                "ordered": "\u1019\u103b"
+              },
+              {
+                "page": 1,
+                "raw": "17 29",
+                "visual": "\u1000\u103b",
+                "ordered": "\u1000\u103b"
+              }
+            ]
+          }
+        }
       }
     },
     "31e1447e813a2b15bee4bc4b1be515764554378cfd254ee45d9f9c0a7eda686b": {
@@ -1072,7 +1170,163 @@
         "17": "\u100a",
         "2D": "\u101c",
         "3E": "\u104c"
+      },
+      "visualOrderEvidence": {
+        "rawOrphanFlags": 4258,
+        "reorderedOrphanFlags": 3011,
+        "patterns": {
+          "e_ra_base": {
+            "matches": 327,
+            "examples": [
+              {
+                "page": 1,
+                "raw": "18 01 13",
+                "visual": "\u1031\u103c\u1001",
+                "ordered": "\u1001\u103c\u1031"
+              },
+              {
+                "page": 2,
+                "raw": "18 01 13",
+                "visual": "\u1031\u103c\u1001",
+                "ordered": "\u1001\u103c\u1031"
+              },
+              {
+                "page": 2,
+                "raw": "18 01 02",
+                "visual": "\u1031\u103c\u1019",
+                "ordered": "\u1019\u103c\u1031"
+              }
+            ]
+          },
+          "ra_base": {
+            "matches": 2879,
+            "examples": [
+              {
+                "page": 1,
+                "raw": "01 02",
+                "visual": "\u103c\u1019",
+                "ordered": "\u1019\u103c"
+              },
+              {
+                "page": 1,
+                "raw": "01 16",
+                "visual": "\u103c\u1015",
+                "ordered": "\u1015\u103c"
+              },
+              {
+                "page": 1,
+                "raw": "22 23",
+                "visual": "\u103c\u1000",
+                "ordered": "\u1000\u103c"
+              }
+            ]
+          },
+          "e_base_ya": {
+            "matches": 141,
+            "examples": [
+              {
+                "page": 1,
+                "raw": "18 23 2A",
+                "visual": "\u1031\u1000\u103b",
+                "ordered": "\u1000\u103b\u1031"
+              },
+              {
+                "page": 2,
+                "raw": "18 23 2A",
+                "visual": "\u1031\u1000\u103b",
+                "ordered": "\u1000\u103b\u1031"
+              },
+              {
+                "page": 2,
+                "raw": "18 2D 2A",
+                "visual": "\u1031\u101c\u103b",
+                "ordered": "\u101c\u103b\u1031"
+              }
+            ]
+          },
+          "base_ya": {
+            "matches": 1388,
+            "examples": [
+              {
+                "page": 2,
+                "raw": "23 2A",
+                "visual": "\u1000\u103b",
+                "ordered": "\u1000\u103b"
+              },
+              {
+                "page": 2,
+                "raw": "02 2A",
+                "visual": "\u1019\u103b",
+                "ordered": "\u1019\u103b"
+              },
+              {
+                "page": 2,
+                "raw": "2D 2A",
+                "visual": "\u101c\u103b",
+                "ordered": "\u101c\u103b"
+              }
+            ]
+          }
+        }
       }
     }
-  }
+  },
+  "visualOrderRules": {
+    "layouts": [
+      "ayar",
+      "wininnwa"
+    ],
+    "rules": [
+      {
+        "visual": [
+          "\u103c",
+          "base"
+        ],
+        "logical": [
+          "base",
+          "\u103c"
+        ]
+      },
+      {
+        "visual": [
+          "\u1031",
+          "\u103c",
+          "base",
+          "suffix"
+        ],
+        "logical": [
+          "base",
+          "\u103c",
+          "\u1031",
+          "suffix"
+        ]
+      },
+      {
+        "visual": [
+          "base",
+          "\u103b"
+        ],
+        "logical": [
+          "base",
+          "\u103b"
+        ]
+      },
+      {
+        "visual": [
+          "\u1031",
+          "base",
+          "\u103b",
+          "suffix"
+        ],
+        "logical": [
+          "base",
+          "\u103b",
+          "\u1031",
+          "suffix"
+        ]
+      }
+    ],
+    "scope": "Raw slots first; rearrange these leading slots only after decoding. Suffix slots remain in their existing order. No other marks are normalized by these rules. Raw orphan flags are retained and do not themselves mean an error."
+  },
+  "visualOrderEvidenceMethod": "All observed page-stream runs under provisional seed values. Compares raw orphan flags to flags after applying only the four shared patterns; unknown/empty byte values are boundaries. Pattern matches and changes in flags are evidence of visual order, not verification of byte meanings or overall accuracy. Form XObjects are not scanned."
 }
