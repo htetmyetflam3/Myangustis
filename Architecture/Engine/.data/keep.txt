@@ -1,2 +1,4 @@
 deleted the encrypted master.json 
 before rebuild encrypted version master.json got more entry to add.remind me and ask me what to ask before h actually build encrypted master.json
+
+make sure to place key file in commit else ill need to rebuild as i dont have key to add in .env
