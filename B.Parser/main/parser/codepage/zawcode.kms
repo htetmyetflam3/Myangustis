@@ -1,7 +1,8 @@
 /* Linga build of the ZawCode Keymagic layout, integrated with the INPUT cmap
-   (Myanmar3/MyanmarText) of ယဲ့နင် စာစဉ် a ၁.merged.merged.pdf -- see
-   zawcode-layout.mjs / zawcode-cmap.json. Layout spec: type the Zawgyi key
-   sequence, output Unicode (upstream: thantthet/keymagic-keyboards ZawCode). */
+   (Myanmar3/MyanmarText) of ယဲ့နင် စာစဉ် a ၁.merged.merged.pdf. See
+   zawcode-layout.js and the repository-root archive at
+   tools-box/archive/parser-maps/zawcode-cmap.json. Layout spec: type the Zawgyi
+   key sequence, output Unicode (upstream: thantthet/keymagic-keyboards ZawCode). */
 /*
 @NAME = "ဇော်ကုဒ်"
 @FONTFAMILY = "Myanmar3"
