@@ -28,6 +28,8 @@
       "bytes": {
         "02": "\u1019",
         "06": "\u101e",
+        "07": "\u1012",
+        "08": "\u1039\u1012",
         "0B": "\u1010",
         "0F": "(",
         "10": "\u1041",
@@ -474,52 +476,6 @@
           "currentOutput": "\u1014",
           "observedOccurrences": 788
         },
-        "07": {
-          "reason": "current output overlaps another observed byte; held for review",
-          "currentOutput": "\u1012",
-          "observedOccurrences": 190,
-          "reviewedValue": "\u1012",
-          "resolutionEvidence": {
-            "word": "\u1012\u102f\u1010\u102d\u101a",
-            "raw": "07 18 0B 19 22",
-            "pageExample": 9,
-            "rawMatches": 17,
-            "method": "known short-u 18, known \u1010/\u102d/\u101a, the master dictionary word, and the rendered source page"
-          }
-        },
-        "08": {
-          "reason": "not one code point",
-          "currentOutput": "\u1039\u1012",
-          "observedOccurrences": 22,
-          "reviewedValue": "\u1039\u1012",
-          "resolutionEvidence": {
-            "method": "Dictionary-word matches in raw-byte windows using surrounding mapped slots. Windows can overlap or match substrings; boundaries and inherited mappings are not independently verified. Context-supported only.",
-            "examples": [
-              {
-                "page": 1,
-                "raw": "06 07 08 09",
-                "words": [
-                  "\u101e\u1012\u1039\u1012\u102b"
-                ]
-              },
-              {
-                "page": 1,
-                "raw": "06 07 08 09 03 1D 04 14",
-                "words": [
-                  "\u101e\u1012\u1039\u1012\u102b\u1014\u100a\u103a\u1038"
-                ]
-              },
-              {
-                "page": 2,
-                "raw": "06 07 08 09",
-                "words": [
-                  "\u101e\u1012\u1039\u1012\u102b"
-                ]
-              }
-            ],
-            "matchingWindows": 20
-          }
-        },
         "0A": {
           "reason": "current output overlaps another observed byte; held for review",
           "currentOutput": "\u1021",
@@ -919,7 +875,6 @@
         "1D": "\u100a",
         "2B": "\u1014",
         "30": "\u104c",
-        "07": "\u1012",
         "39": "\u103b\u103e",
         "20": "\u1036",
         "2A": "\u1030",
@@ -930,7 +885,6 @@
         "63": "\u1030",
         "4C": "\u102b\u103a",
         "09": "\u102b",
-        "08": "\u1039\u1012",
         "40": "\u1039\u1001",
         "35": "\u103b\u103d",
         "3C": "\u100f",
@@ -966,6 +920,12 @@
               "0B"
             ],
             "basis": "User specifies 5F for the repeated \u1010\u1039\u1010 stack; different upper and lower consonants use a separate glyph. This writing restriction does not resolve conflicting source observations."
+          },
+          "08": {
+            "precedingBytes": [
+              "07"
+            ],
+            "basis": "The user-confirmed repeated \u1012 stack; all 22 observed page-stream occurrences follow 07."
           }
         },
         "sameConsonantStacks": "A confirmed duplicate-stack byte is valid only with its matching upper consonant. A stack with a different upper consonant uses a different byte, which must be identified separately."
@@ -1065,6 +1025,52 @@
                 "ordered": "\u1000\u103b"
               }
             ]
+          }
+        }
+      },
+      "confirmedEvidence": {
+        "07": {
+          "value": "\u1012",
+          "status": "confirmed",
+          "observedOccurrences": 190,
+          "evidence": {
+            "word": "\u1012\u102f\u1010\u102d\u101a",
+            "raw": "07 18 0B 19 22",
+            "pageExample": 9,
+            "rawMatches": 17,
+            "method": "known short-u 18, known \u1010/\u102d/\u101a, the master dictionary word, and the rendered source page"
+          }
+        },
+        "08": {
+          "value": "\u1039\u1012",
+          "status": "confirmed",
+          "observedOccurrences": 22,
+          "evidence": {
+            "method": "User-confirmed repeated consonant in \u101e\u1012\u1039\u1012\u102b: 07 is the upper \u1012 and 08 is one raw glyph expanding to U+1039 U+1012 (\u1039\u1012).",
+            "examples": [
+              {
+                "page": 1,
+                "raw": "06 07 08 09",
+                "words": [
+                  "\u101e\u1012\u1039\u1012\u102b"
+                ]
+              },
+              {
+                "page": 1,
+                "raw": "06 07 08 09 03 1D 04 14",
+                "words": [
+                  "\u101e\u1012\u1039\u1012\u102b\u1014\u100a\u103a\u1038"
+                ]
+              },
+              {
+                "page": 2,
+                "raw": "06 07 08 09",
+                "words": [
+                  "\u101e\u1012\u1039\u1012\u102b"
+                ]
+              }
+            ],
+            "matchingWindows": 20
           }
         }
       }

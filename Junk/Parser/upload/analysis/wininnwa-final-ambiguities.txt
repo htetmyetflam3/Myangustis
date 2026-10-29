@@ -1,7 +1,7 @@
 WinInnwa: raw font-subset mapping review
 
 Status: partial and not wired as a production replacement. Raw page content streams only; Form XObjects are not covered.
-Direct seed values may come from the offline PDF ToUnicode bridge and are not universal verification.
+Some direct seed values come from the offline PDF ToUnicode bridge and are not universal verification; separately identified confirmed entries are not provisional seeds.
 Context-supported values are provisional. Dictionary matches can overlap or occur inside longer words; they may inherit other provisional slot values.
 Counts below are raw-byte occurrences, not independent words. Raw windows have not been reordered. Pre-base marks may legitimately have orphan flags.
 The decoder skips ToUnicode at runtime; the reports do not establish complete coverage or writing-shape rules.
@@ -9,7 +9,10 @@ The decoder skips ToUnicode at runtime; the reports do not establish complete co
 ==============================================================================
 bg-mlc-1-1.pdf /F4
 SHA-256: 9b3622c34d21de53fb2a6dacd19e698f05dc46e2d32091ddefe42e23ab7916f2
-Direct seeds: 39; review resolutions: 47; unresolved byte slots: 19
+Direct entries: 41; review resolutions: 45; unresolved byte slots: 19
+
+CONFIRMED: 07 = ဒ; 08 = ္ဒ (a single raw glyph expanding to two Unicode code points).
+  သဒ္ဒါ = 06 07 08 09 (page 1). The two consonants are both ဒ.
 
 USER-CONFIRMED WRITING RULE: Book1 17 25 = က္က; 0B 5F = တ္တ.
 Same-consonant stack bytes are not assumed valid after different upper consonants.
@@ -21,8 +24,6 @@ CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   03 = 'န'
   04 = '်'
   05 = 'ာ'
-  07 = 'ဒ'  ဒုတိယ / 07 18 0B 19 22 (page 9)
-  08 = '္ဒ'  candidate window သဒ္ဒါ / 06 07 08 09 (page 1)
   09 = 'ါ'  candidate window ပါသည် / 1B 09 06 1D 04 (page 1)
   0A = 'အ'
   0C = 'ွ'
