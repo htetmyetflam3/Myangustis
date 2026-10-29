@@ -19,9 +19,12 @@ Two execution modes share the same building blocks:
 
 import os
 import re
+import hashlib
+import json
 import difflib
 import math
 import tempfile
+from functools import lru_cache
 from pathlib import Path
 
 from paths import find_model_path
@@ -33,6 +36,7 @@ from decrypt import (
 )
 from rabbit import Rabbit
 from cleanup import cleanup_text, order_text
+from legacy_order import count_zawcode_evidence, reorder_zawcode_text
 from docx_extract import extract_docx_paragraphs
 from mm_score import score_text
 from pdf_extract import (
@@ -62,6 +66,24 @@ from render import _write_docx_layout, _write_pdf
 # Pages probed with direct Identity-H decoding before deciding whether the
 # document needs the ToUnicode / embedded-font-cmap fallback path.
 _DETECT_PROBE_PAGES = 20
+
+
+@lru_cache(maxsize=1)
+def _zawcode_data():
+    path = Path(__file__).resolve().parents[2] / 'parser/jason-map/zawcode-draft-glyphs.json'
+    with path.open(encoding='utf-8') as source:
+        return json.load(source)
+
+
+def _has_zawcode_profile(objects, profiles):
+    for num, gen in find_font_streams(objects):
+        try:
+            data = get_stream(objects, num, gen)
+        except Exception:  # an unrelated malformed font is not a draft match
+            continue
+        if data and hashlib.sha256(data).hexdigest() in profiles:
+            return True
+    return False
 
 
 def _norm_category(category):
@@ -165,7 +187,7 @@ def load_detector():
 #  STREAMING path — one page at a time, flat memory, single pass
 # ═══════════════════════════════════════════════════════════════════════════
 
-def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None):
+def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout=None):
     """Stream per-page layout: returns ``(metadata, npages, iterator)``.
 
     The iterator yields one dict per page, ONE PAGE AT A TIME:
@@ -189,6 +211,12 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None):
        ``cmap`` table, are built ONCE and then every page is streamed through
        them.
     """
+    setting = os.environ.get('PRASER_ZAWCODE_DRAFT', '').lower()
+    layout = text_layout if text_layout is not None else (
+        'zawcode' if setting in ('1', 'true', 'yes', 'on') else
+        'off' if setting in ('0', 'false', 'no', 'off') else 'auto')
+    if layout not in ('auto', 'off', 'zawcode'):
+        raise ValueError(f'Unsupported text layout: {layout}')
     with open(pdf_path, "rb") as f:
         raw = f.read()
     # Byte-level pre-processing (modules/decrypt.py, mirroring the JS
@@ -212,7 +240,7 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None):
     npages = len(all_pages)
     log(f"[+] Total pages: {npages}")
 
-    def _page(idx, code_to_uni):
+    def _page(idx, code_to_uni, text_path=None):
         pnum, pgen = all_pages[idx]
         # A page carrying an /Image XObject used to be emitted EMPTY, on the
         # assumption that it was a scan. That is the wrong test: a page with a
@@ -223,7 +251,10 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None):
         # Extract the text either way and keep the flag for the DOCX writer;
         # a genuine scan simply yields no text and is unaffected.
         has_img = page_has_images(objects, pnum, pgen)
+        stats = getattr(code_to_uni, 'zawcode_stats', None)
+        before = stats['glyphs'] if stats is not None else 0
         lines, w, h = extract_page_lines(objects, pnum, pgen, code_to_uni)
+        used_draft_font = stats is not None and stats['glyphs'] > before
         return {
             "idx": idx,
             "lines": lines,
@@ -233,9 +264,64 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None):
             # How the glyph ids became characters, carried to the report
             # because the cmap fork below needs it (JS: pg.decodeKind).
             "decode_kind": getattr(code_to_uni, "kind", None),
+            "text_path": None if text_path == 'zawcode' and not used_draft_font else text_path,
         }
 
     def gen():
+        if layout != 'off':
+            data = _zawcode_data()
+            profiles = data['profiles']
+            profile_present = _has_zawcode_profile(objects, profiles)
+            if not profile_present and layout == 'zawcode':
+                raise RuntimeError('ZawCode draft has no matching embedded-font profile for this PDF')
+            if profile_present:
+                stats = {'glyphs': 0, 'strong': 0, 'page': 0, 'pages': set(), 'collecting': True}
+                decoding = DocumentDecoding('cmap', {})
+                decoding.trust_font_tounicode = True
+                decoding.zawcode_profiles = profiles
+                decoding.zawcode_templates = data.get('templates', {})
+                decoding.zawcode_stats = stats
+
+                def order_draft(text):
+                    if stats['collecting']:
+                        count = count_zawcode_evidence(text)
+                        stats['strong'] += count
+                        if count:
+                            stats['pages'].add(stats['page'])
+                    return reorder_zawcode_text(text)
+
+                decoding.zawcode_order = order_draft
+                probe_n = min(_DETECT_PROBE_PAGES, npages)
+                probe = []
+                for idx in range(probe_n):
+                    stats['page'] = idx
+                    probe.append(_page(idx, decoding, 'zawcode'))
+                if layout == 'zawcode' and not stats['glyphs']:
+                    raise RuntimeError('ZawCode draft profile is not used in the first probe pages')
+                if stats['glyphs'] and (layout == 'zawcode' or
+                                        (stats['strong'] >= 2 and len(stats['pages']) >= 2)):
+                    stats['collecting'] = False
+                    log('[+] ZawCode draft: font-scoped glyphs; unknown codes remain visible')
+                    fallback, fallback_index = None, 0
+
+                    def fallback_page(index):
+                        nonlocal fallback, fallback_index
+                        if fallback is None:
+                            _, _, fallback = stream_pdf_pages(pdf_path, detector=detector,
+                                                              text_layout='off')
+                        current = None
+                        while fallback_index <= index:
+                            current = next(fallback)
+                            fallback_index += 1
+                        return current
+
+                    for item in probe:
+                        yield item if item['text_path'] else fallback_page(item['idx'])
+                    for idx in range(probe_n, npages):
+                        item = _page(idx, decoding, 'zawcode')
+                        yield item if item['text_path'] else fallback_page(idx)
+                    return
+
         # --- Pass 1: model-first direct (Identity-H) decoding -------------
         # The codes ARE the code points; simple fonts on the same page still
         # go through their own declared encoding, so Latin resources are not
@@ -438,7 +524,7 @@ def _cmap_fork(cat, raw, decode_kind, idx, category, log):
 
 
 def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
-                       want_layout=False):
+                       want_layout=False, *, text_layout=None):
     """Single-pass streaming pipeline. Returns ``(metadata, npages, iterator)``.
 
     The iterator yields one dict per page and keeps only ONE page alive at a
@@ -456,12 +542,21 @@ def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
     x/y/font-size and the page MediaBox so the writer can reproduce the page
     exactly; for .txt/.pdf those fields are dropped to keep memory minimal.
     """
-    metadata, npages, pages = stream_pdf_pages(pdf_path, detector=detector, log=log)
+    metadata, npages, pages = stream_pdf_pages(pdf_path, detector=detector, log=log,
+                                                text_layout=text_layout)
 
     def reports():
         for pg in pages:
             idx = pg["idx"]
             raw = pg["text"]
+            if pg.get('text_path') == 'zawcode':
+                # Profiled runs have already been ordered during line assembly.
+                rep = {'page': idx + 1, 'category': 'UNICODE', 'prob': 0.0,
+                       'text': raw, 'n_changes': 0, 'text_path': 'zawcode'}
+                if want_layout:
+                    rep.update({'lines': pg['lines'], 'wh': pg['wh'], 'has_img': pg['has_img']})
+                yield rep
+                continue
             category, prob = detector.detect(raw)
             cat = _norm_category(category)
             cat = _cmap_fork(cat, raw, pg.get("decode_kind"), idx, category, log)
@@ -665,7 +760,7 @@ def render_texts(out_path, pages, counts, pdf_path):
     return out_path
 
 
-def process_pdf_bytes(data, detector, filename="upload.pdf", log=lambda m: None):
+def process_pdf_bytes(data, detector, filename="upload.pdf", log=lambda m: None, *, text_layout=None):
     """Run the streaming pipeline on raw PDF bytes (API preview job).
 
     Single pass, layout kept: the job carries per-page reports (base/clean
@@ -678,16 +773,21 @@ def process_pdf_bytes(data, detector, filename="upload.pdf", log=lambda m: None)
     try:
         # apply_cleanup=False here: the apply decision comes at finalize time.
         metadata, npages, reports_iter = process_pdf_stream(
-            tmp_path, detector, False, log=log, want_layout=True)
+            tmp_path, detector, False, log=log, want_layout=True, text_layout=text_layout)
         reports = []
         pages = []
         counts = {"ZAWGYI": 0, "UNICODE": 0, "UNKNOWN": 0}
+        encoding_path = None
         for rep in reports_iter:
             cat = rep["category"]
-            base = rep["text"]          # converted base (no cleanup yet)
-            clean = _cleanup_for(cat, base)   # UNICODE only
+            base = rep["text"]
+            path = rep.get('text_path')
+            clean = None if path == 'zawcode' else _cleanup_for(cat, base)
+            if path:
+                encoding_path = path
             reports.append({"page": rep["page"], "category": cat,
-                            "prob": rep["prob"], "base": base, "clean": clean})
+                            "prob": rep["prob"], "base": base, "clean": clean,
+                            **({'text_path': path} if path else {})})
             pages.append({"text": base, "lines": rep["lines"], "wh": rep["wh"],
                           "has_img": rep["has_img"]})
             counts[cat] = counts.get(cat, 0) + 1
@@ -706,6 +806,7 @@ def process_pdf_bytes(data, detector, filename="upload.pdf", log=lambda m: None)
         "metadata": {},
         "changes": changes,
         "pages": pages,
+        **({'encoding_path': encoding_path} if encoding_path else {}),
     }
 
 
@@ -779,12 +880,12 @@ def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: Non
     }
 
 
-def process_bytes(data, kind, detector, filename=None, log=lambda m: None):
+def process_bytes(data, kind, detector, filename=None, log=lambda m: None, *, text_layout=None):
     """One entry for both server-side formats: kind = 'pdf' | 'docx'."""
     kind = (kind or "").lower()
     if kind == "pdf":
         return process_pdf_bytes(data, detector,
-                                 filename=filename or "upload.pdf", log=log)
+                                 filename=filename or "upload.pdf", log=log, text_layout=text_layout)
     if kind == "docx":
         return process_docx_bytes(data, detector,
                                   filename=filename or "upload.docx", log=log)

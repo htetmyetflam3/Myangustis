@@ -815,6 +815,24 @@ function documentLoader(doc, objects) {
 const CONTENTS_REF_RE = /\/Contents\s+(\d+)\s+\d+\s+R/;
 const CONTENTS_ARR_RE = /\/Contents\s*\[([\s\S]*?)\]/;
 
+// Keep adjacent runs of the profiled font together across text operations
+// and pieces, but never apply its ordering to another font resource.
+function joinDraftRuns(pieces, order) {
+  let selected = null;
+  let pending = "";
+  let out = "";
+  const flush = () => { out += selected ? order(pending) : pending; pending = ""; };
+  for (const [, , text, runs] of pieces) {
+    for (const [isDraft, part] of (runs ?? [[false, text]])) {
+      if (!part) continue;
+      if (selected !== null && selected !== isDraft) flush();
+      selected = isDraft;
+      pending += part;
+    }
+  }
+  flush();
+  return out;
+}
 
 export function extractPageLines(objects, pageNum, pageGen, decoding) {
   const doc = asDocumentDecoding(decoding);
@@ -853,6 +871,7 @@ export function extractPageLines(objects, pageNum, pageGen, decoding) {
 
     let inBlock = false;
     let blockTexts = [];
+    let blockRuns = [];
     let blockXy = null;
     let blockSize = null;
     let textXy = [0.0, 0.0];
@@ -873,6 +892,7 @@ export function extractPageLines(objects, pageNum, pageGen, decoding) {
         if (!inBlock) {
           inBlock = true;
           blockTexts = [];
+          blockRuns = [];
           blockXy = null;
           blockSize = null;
 
@@ -928,9 +948,11 @@ export function extractPageLines(objects, pageNum, pageGen, decoding) {
 
           let text = blockTexts.join("");
           if (doc.legacyTextFix) text = collapseOverprint(text);
-          pieces.push([blockXy[1], blockXy[0], blockSize === null ? 12.0 : blockSize, text]);
+          pieces.push([blockXy[1], blockXy[0], blockSize === null ? 12.0 : blockSize, text,
+            doc.zawcodeOrder ? blockRuns : null]);
         }
         blockTexts = [];
+        blockRuns = [];
         continue;
       }
 
@@ -943,7 +965,9 @@ export function extractPageLines(objects, pageNum, pageGen, decoding) {
 
           const arg = decoder instanceof UnsetFontDecoder || !(shown instanceof PdfHexBytes)
             ? shown : shown.s;
-          blockTexts.push(decoder.decode(arg));
+          const text = decoder.decode(arg);
+          blockTexts.push(text);
+          if (doc.zawcodeOrder) blockRuns.push([decoder.zawcodeGlyphs != null, text]);
         }
       }
     }
@@ -996,7 +1020,9 @@ export function extractPageLines(objects, pageNum, pageGen, decoding) {
     const ordered = [...currentLine].sort((p, q) => p[0] - q[0]);
     let maxSize = -Infinity;
     for (const [, s] of ordered) if (s > maxSize) maxSize = s;
-    let joined = ordered.map(([, , t]) => t).join("");
+    let joined = doc.zawcodeOrder
+      ? joinDraftRuns(ordered, doc.zawcodeOrder)
+      : ordered.map(([, , t]) => t).join("");
     if (doc.legacyTextFix) {
       const page = doc.legacyCodePage;
       const applyAaVowelRule = (page == null && doc.map instanceof LegacyAyarMap)
@@ -1006,13 +1032,13 @@ export function extractPageLines(objects, pageNum, pageGen, decoding) {
     lines.push([ordered[0][0], currentY, maxSize, joined]);
   };
 
-  for (const [y, x, size, text] of pieces) {
+  for (const [y, x, size, text, runs] of pieces) {
     if (Math.abs(y - currentY) > 3) {
       flush();
       currentLine = [];
       currentY = y;
     }
-    currentLine.push([x, size, text]);
+    currentLine.push([x, size, text, runs]);
   }
   if (currentLine.length) flush();
 

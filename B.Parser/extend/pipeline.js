@@ -8,6 +8,9 @@ import { findModelPath } from "../_path.js";
 import { ZawgyiDetector } from "../main/parser/text/detector.js";
 import { decryptPdf, isEncryptedPdf, hasObjectStreams, expandObjectStreams } from "../main/parser/read/decrypt.js";
 import { Rabbit } from "../main/parser/text/rabbit.js";
+import { createHash } from "node:crypto";
+import { countZawCodeEvidence, reorderZawCodeText } from "../main/parser/text/legacy-order.js";
+import zawCodeDraft from "../main/parser/jason-map/zawcode-draft-glyphs.json" with { type: "json" };
 import { cleanupText, orderText } from "../main/parser/text/normalize.js";
 import { extractDocxParagraphs, extractDocxImages, validateDocxArchive } from "../main/parser/read/docx-extract.js";
 import { extractDocxParagraphsExternal } from "../main/parser/read/docx-external.js";
@@ -83,7 +86,11 @@ export function loadDetector() {
 }
 
 
-export function streamPdfPages(source, detector = null, log = () => {}, { vectorLayout = null, provenance = null } = {}) {
+export function streamPdfPages(source, detector = null, log = () => {}, { vectorLayout = null, provenance = null, textLayout = null } = {}) {
+  const setting = String(process.env.PRASER_ZAWCODE_DRAFT ?? "");
+  const layout = textLayout ?? (/^(1|true|yes|on)$/iu.test(setting) ? "zawcode"
+    : /^(0|false|no|off)$/iu.test(setting) ? "off" : "auto");
+  if (!["auto", "off", "zawcode"].includes(layout)) throw new Error(`Unsupported text layout: ${layout}`);
   const input = Buffer.isBuffer(source) || source instanceof Uint8Array
     ? (Buffer.isBuffer(source) ? source : Buffer.from(source))
     : fs.readFileSync(source);
@@ -123,7 +130,7 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
   }
   log(`[+] Total pages: ${npages}`);
 
-  const page = (idx, codeToUni) => {
+  const page = (idx, codeToUni, textPath = null) => {
     const [pnum, pgen] = allPages[idx];
 
 
@@ -134,7 +141,9 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
 
 
     const hasImg = pageHasImages(objects, pnum, pgen);
+    const before = codeToUni?.zawcodeStats?.glyphs ?? 0;
     const [lines, w, h] = extractPageLines(objects, pnum, pgen, codeToUni);
+    const usedDraftFont = (codeToUni?.zawcodeStats?.glyphs ?? 0) > before;
     return {
       idx,
       lines,
@@ -145,13 +154,74 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
 
 
       decodeKind: codeToUni && typeof codeToUni === "object" ? codeToUni.kind : null,
+      textPath: textPath === ZawCODE_PATH && !usedDraftFont ? null : textPath,
     };
   };
 
   function* generate() {
-
-
-
+    if (layout !== "off") {
+      const profilePresent = findFontStreams(objects).some(([num, gen]) => {
+        try {
+          const bytes = getStream(objects, num, gen);
+          return bytes && Object.hasOwn(zawCodeDraft.profiles, createHash("sha256").update(bytes).digest("hex"));
+        } catch { return false; }
+      });
+      if (!profilePresent && layout === "zawcode") {
+        throw new RuntimeError("ZawCode draft has no matching embedded-font profile for this PDF");
+      }
+      if (profilePresent) {
+        const stats = { glyphs: 0, strong: 0, page: 0, pages: new Set(), collecting: true };
+        const decoding = new DocumentDecoding("cmap", new Map());
+        decoding.trustFontToUnicode = true; // only the fingerprinted resource bypasses its ToUnicode
+        decoding.zawcodeProfiles = zawCodeDraft.profiles;
+        decoding.zawcodeTemplates = zawCodeDraft.templates;
+        decoding.zawcodeStats = stats;
+        decoding.zawcodeOrder = (text) => {
+          if (stats.collecting) {
+            const count = countZawCodeEvidence(text);
+            stats.strong += count;
+            if (count) stats.pages.add(stats.page);
+          }
+          return reorderZawCodeText(text);
+        };
+        const probeN = Math.min(DETECT_PROBE_PAGES, npages);
+        const probe = [];
+        for (let idx = 0; idx < probeN; idx += 1) {
+          stats.page = idx;
+          probe.push(page(idx, decoding, ZawCODE_PATH));
+        }
+        if (layout === "zawcode" && !stats.glyphs) {
+          throw new RuntimeError("ZawCode draft profile is not used in the first probe pages");
+        }
+        if (stats.glyphs && (layout === "zawcode" || (stats.strong >= 2 && stats.pages.size >= 2))) {
+          stats.collecting = false;
+          note(provenance, { codepage: { chosen: ZawCODE_PATH, draft: true, source: "font-scoped raw glyph profile" } });
+          log("[+] ZawCode draft: font-scoped glyphs; unknown codes remain visible");
+          let fallback = null;
+          let fallbackIndex = 0;
+          const fallbackPage = (idx) => {
+            if (!fallback) {
+              [, , fallback] = streamPdfPages(input, detector, () => {},
+                { vectorLayout, textLayout: "off" });
+            }
+            let current;
+            while (fallbackIndex <= idx) {
+              const next = fallback.next();
+              if (next.done) throw new RuntimeError("Fallback page stream ended early");
+              current = next.value;
+              fallbackIndex += 1;
+            }
+            return current;
+          };
+          for (const item of probe) yield item.textPath ? item : fallbackPage(item.idx);
+          for (let idx = probeN; idx < npages; idx += 1) {
+            const item = page(idx, decoding, ZawCODE_PATH);
+            yield item.textPath ? item : fallbackPage(idx);
+          }
+          return;
+        }
+      }
+    }
 
     const direct = new DocumentDecoding("identity");
     if (detector !== null) {
@@ -511,6 +581,17 @@ export function countDiffLines(base, clean) {
 export function processPageRecord(pg, detector, applyCleanup, log = () => {}, wantLayout = false) {
   const idx = pg.idx;
   const raw = pg.text;
+  if (pg.textPath === ZawCODE_PATH) {
+    // Profiled runs were already ordered once, while assembling each line.
+    const rep = { page: idx + 1, category: "UNICODE", prob: 0,
+      text: raw, nChanges: 0, textPath: ZawCODE_PATH };
+    if (wantLayout) {
+      rep.lines = pg.lines;
+      rep.wh = pg.wh;
+      rep.hasImg = pg.hasImg;
+    }
+    return rep;
+  }
   const [category, prob] = detector.detect(raw);
   let cat = normCategory(category);
 
@@ -680,6 +761,7 @@ export function processPdfBytes(data, detector, filename = "upload.pdf", log = (
   const pages = [];
   const counts = { ZAWGYI: 0, UNICODE: 0, UNKNOWN: 0 };
   let textChars = 0;
+  let encodingPath = null;
   for (const rep of reportsIter) {
     const cat = rep.category;
     const base = rep.text;
@@ -687,14 +769,17 @@ export function processPdfBytes(data, detector, filename = "upload.pdf", log = (
     if (textChars > MAX_TEXT_CHARS) {
       throw new RuntimeError(`Extracted text exceeds the ${MAX_TEXT_CHARS} character cap`);
     }
-    const clean = cleanupFor(cat, base);
-    reports.push({ page: rep.page, category: cat, prob: rep.prob, base, clean });
+    const clean = rep.textPath === ZawCODE_PATH ? null : cleanupFor(cat, base);
+    if (rep.textPath) encodingPath = rep.textPath;
+    reports.push({ page: rep.page, category: cat, prob: rep.prob, base, clean,
+      ...(rep.textPath ? { textPath: rep.textPath } : {}) });
     pages.push({ text: base, lines: rep.lines, wh: rep.wh, hasImg: rep.hasImg });
     counts[cat] = (counts[cat] ?? 0) + 1;
   }
   const changes = collectChanges(reports);
   return {
     filename, kind: "pdf", reports, counts, metadata: {}, changes, pages, npages,
+    ...(encodingPath ? { encodingPath } : {}),
   };
 }
 

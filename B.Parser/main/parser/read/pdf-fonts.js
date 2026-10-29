@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { pyChr } from "../core/pylib.js";
 import { BASE_ENCODINGS, GLYPH_NAME_TO_UNICODE } from "./pdf-encodings.js";
 import { isLegacyFontName } from "../codepage/names.js";
@@ -919,6 +920,7 @@ export class FontDecoder {
   constructor(name, {
     subtype = "", baseFont = "", isCid = false, cmap = null, toUnicode = null,
     encoding = null, hasEncoding = false, ownGids = null, doc = null, cidToGid = null,
+    zawcodeGlyphs = null,
   } = {}) {
     this.name = name;
     this.subtype = subtype;
@@ -929,6 +931,7 @@ export class FontDecoder {
     this.encoding = encoding || new Map();
     this.hasEncoding = hasEncoding;
     this.ownGids = ownGids || new Map();
+    this.zawcodeGlyphs = zawcodeGlyphs;
     this.doc = doc !== null ? doc : new DocumentDecoding("none");
     this._cidToGid = cidToGid;
   }
@@ -980,6 +983,10 @@ export class FontDecoder {
 
 
   _docLookup(key, cid = null) {
+    if (this.zawcodeGlyphs !== null) {
+      const hit = this.zawcodeGlyphs.get(key);
+      return hit === undefined ? null : hit;
+    }
     if (this.doc.map === IDENTITY) return mapCode(IDENTITY, key);
     if (this.doc.keyKind === "gid" && this.ownGids.size) {
       const hit = this.ownGids.get(key);
@@ -1088,6 +1095,9 @@ export class FontDecoder {
 
   decode(data) {
     if (!data) return "";
+    if (this.zawcodeGlyphs !== null && this.doc.zawcodeStats) {
+      this.doc.zawcodeStats.glyphs += Math.floor(data.length / 2);
+    }
     let out = "";
     if (this.isCid) {
       for (const [code, cid] of this.cmap.iterCodes(data)) {
@@ -1174,8 +1184,6 @@ export function buildFontDecoder(loader, name, entry, doc) {
   const subtype = font.get("Subtype") instanceof PdfName ? String(loader.resolve(font.get("Subtype"))) : "";
   const baseFontVal = loader.resolve(font.get("BaseFont"));
   const baseFont = baseFontVal !== undefined && baseFontVal !== null ? String(baseFontVal) : "";
-  const toUnicode = loader.tounicodeOf(font);
-
   if (subtype === "Type0") {
     const encodingRaw = font.get("Encoding");
     const encoding = loader.resolve(encodingRaw);
@@ -1194,15 +1202,45 @@ export function buildFontDecoder(loader, name, entry, doc) {
       const resolved = loader.resolve(descendants[0]);
       if (resolved instanceof Map) descendant = resolved;
     }
-    const ownGids = loader.reversedFontCmap(descendant.get("FontDescriptor"));
+    const descriptor = descendant.get("FontDescriptor");
+    let zawcodeGlyphs = null;
+    if (doc.zawcodeProfiles && encoding instanceof PdfName && String(encoding) === "Identity-H") {
+      const cidMap = loader.resolve(descendant.get("CIDToGIDMap"));
+      const identityGids = cidMap == null || (cidMap instanceof PdfName && String(cidMap) === "Identity");
+      const resolved = loader.resolve(descriptor);
+      const program = identityGids && resolved instanceof Map ? loader.streamOf(resolved.get("FontFile2")) : null;
+      const digest = program ? createHash("sha256").update(program).digest("hex") : null;
+      const profile = digest && doc.zawcodeProfiles[digest];
+      if (profile) {
+        const template = profile.template ? doc.zawcodeTemplates?.[profile.template] : profile;
+        if (!template) throw new Error(`Missing ZawCode draft template for ${digest}`);
+        const alternatives = { ...(template.alternatives ?? {}), ...(profile.alternatives ?? {}) };
+        const glyphs = { ...(template.glyphs ?? {}), ...(profile.glyphs ?? {}) };
+        const orderGlyphs = { ...(template.orderGlyphs ?? {}), ...(profile.orderGlyphs ?? {}) };
+        zawcodeGlyphs = new Map(Object.entries(glyphs)
+          .filter(([gid]) => !Object.hasOwn(alternatives, gid))
+          .map(([gid, value]) => [Number.parseInt(gid, 16), value]));
+        for (const [gid, entry] of Object.entries(orderGlyphs)) {
+          if (Object.hasOwn(alternatives, gid)) continue;
+          const key = Number.parseInt(gid, 16);
+          if (zawcodeGlyphs.has(key) && zawcodeGlyphs.get(key) !== entry.slot) zawcodeGlyphs.delete(key);
+          else zawcodeGlyphs.set(key, entry.slot);
+        }
+      }
+    }
+    // A matched profile reads raw GIDs only. Other font resources retain
+    // their own ToUnicode/encoding rather than inheriting this profile.
+    const toUnicode = zawcodeGlyphs === null ? loader.tounicodeOf(font) : null;
+    const ownGids = zawcodeGlyphs === null ? loader.reversedFontCmap(descriptor) : new Map();
     return new FontDecoder(name, {
-      subtype, baseFont, isCid: true, cmap, toUnicode, ownGids, doc,
+      subtype, baseFont, isCid: true, cmap, toUnicode, ownGids, doc, zawcodeGlyphs,
       cidToGid: loader.cidToGid(descendant),
     });
   }
 
   const [encoding, declared] = buildSimpleEncoding(font.get("Encoding"), (v) => loader.resolve(v));
   const ownGids = loader.reversedFontCmap(font.get("FontDescriptor"));
+  const toUnicode = loader.tounicodeOf(font);
   return new FontDecoder(name, {
     subtype, baseFont, isCid: false, toUnicode, encoding, hasEncoding: declared, ownGids, doc,
   });

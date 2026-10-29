@@ -60,6 +60,7 @@ primitives it needs are injected through :class:`FontResourceLoader`, which
 keeps the import graph acyclic (``pdf_fonts`` <- ``pdf_extract``).
 """
 
+import hashlib
 import re
 import struct
 import unicodedata
@@ -1065,7 +1066,7 @@ class DocumentDecoding:
 
     __slots__ = ("kind", "map", "key_kind", "trust_font_tounicode",
                  "legacy_text_fix", "legacy_code_page", "loader", "_decoders",
-                 "_page_fonts")
+                 "_page_fonts", "zawcode_profiles", "zawcode_templates", "zawcode_order", "zawcode_stats")
 
     def __init__(self, kind, mapping=None, legacy_code_page=None):
         self.kind = kind
@@ -1089,6 +1090,10 @@ class DocumentDecoding:
         self.loader = None
         self._decoders = {}
         self._page_fonts = {}
+        self.zawcode_profiles = None
+        self.zawcode_templates = None
+        self.zawcode_order = None
+        self.zawcode_stats = None
 
     def reset_font_cache(self):
         """Drop cached decoders.
@@ -1294,11 +1299,12 @@ class FontDecoder:
     """Decodes shown strings for ONE ``/Font`` resource."""
 
     __slots__ = ("name", "subtype", "is_cid", "cmap", "to_unicode", "encoding",
-                 "has_encoding", "own_gids", "doc", "_cid_to_gid", "base_font")
+                 "has_encoding", "own_gids", "doc", "_cid_to_gid", "base_font",
+                 "zawcode_glyphs")
 
     def __init__(self, name, subtype="", base_font="", is_cid=False, cmap=None,
                  to_unicode=None, encoding=None, has_encoding=False,
-                 own_gids=None, doc=None, cid_to_gid=None):
+                 own_gids=None, doc=None, cid_to_gid=None, zawcode_glyphs=None):
         self.name = name
         self.subtype = subtype
         self.base_font = base_font
@@ -1308,6 +1314,7 @@ class FontDecoder:
         self.encoding = encoding or {}
         self.has_encoding = has_encoding
         self.own_gids = own_gids or {}
+        self.zawcode_glyphs = zawcode_glyphs
         self.doc = doc if doc is not None else DocumentDecoding("none")
         self._cid_to_gid = cid_to_gid
 
@@ -1348,6 +1355,8 @@ class FontDecoder:
 
     def _doc_lookup(self, key):
         """Document-level map lookup, own-font glyph map first."""
+        if self.zawcode_glyphs is not None:
+            return self.zawcode_glyphs.get(key)
         if self.doc.map is IDENTITY:
             return map_code(IDENTITY, key)
         if self.doc.key_kind == "gid" and self.own_gids:
@@ -1390,6 +1399,8 @@ class FontDecoder:
         """Decode a shown string (``bytes``) with this font's rules."""
         if not data:
             return ""
+        if self.zawcode_glyphs is not None and self.doc.zawcode_stats is not None:
+            self.doc.zawcode_stats['glyphs'] += len(data) // 2
         out = []
         if self.is_cid:
             for code, cid, _width in self.cmap.iter_codes(data):
@@ -1417,8 +1428,6 @@ def build_font_decoder(loader, name, entry, doc):
         return FontDecoder(name, doc=doc)
     subtype = str(loader.resolve(font.get("Subtype")) or "")
     base_font = str(loader.resolve(font.get("BaseFont")) or "")
-    to_unicode = loader.tounicode_of(font)
-
     if subtype == "Type0":
         encoding = loader.resolve(font.get("Encoding"))
         if isinstance(encoding, Name):
@@ -1434,14 +1443,43 @@ def build_font_decoder(loader, name, entry, doc):
             resolved = loader.resolve(descendants[0])
             if isinstance(resolved, dict):
                 descendant = resolved
-        own_gids = loader.reversed_font_cmap(descendant.get("FontDescriptor"))
+        descriptor = descendant.get("FontDescriptor")
+        zawcode_glyphs = None
+        if doc.zawcode_profiles and isinstance(encoding, Name) and str(encoding) == 'Identity-H':
+            cid_map = loader.resolve(descendant.get('CIDToGIDMap'))
+            identity_gids = cid_map is None or (isinstance(cid_map, Name) and str(cid_map) == 'Identity')
+            resolved = loader.resolve(descriptor)
+            program = loader.stream_of(resolved.get('FontFile2')) if identity_gids and isinstance(resolved, dict) else None
+            digest = hashlib.sha256(program).hexdigest() if program else None
+            profile = doc.zawcode_profiles.get(digest)
+            if profile:
+                template = (doc.zawcode_templates or {}).get(profile['template']) if profile.get('template') else profile
+                if template is None:
+                    raise ValueError(f'Missing ZawCode draft template for {digest}')
+                alternatives = {**template.get('alternatives', {}), **profile.get('alternatives', {})}
+                glyphs = {**template.get('glyphs', {}), **profile.get('glyphs', {})}
+                order_glyphs = {**template.get('orderGlyphs', {}), **profile.get('orderGlyphs', {})}
+                zawcode_glyphs = {int(gid, 16): value for gid, value in glyphs.items()
+                                  if gid not in alternatives}
+                for gid, item in order_glyphs.items():
+                    if gid in alternatives:
+                        continue
+                    key, slot = int(gid, 16), item['slot']
+                    if key in zawcode_glyphs and zawcode_glyphs[key] != slot:
+                        del zawcode_glyphs[key]
+                    else:
+                        zawcode_glyphs[key] = slot
+        # The matching resource bypasses ToUnicode. Other fonts keep their own.
+        to_unicode = loader.tounicode_of(font) if zawcode_glyphs is None else None
+        own_gids = loader.reversed_font_cmap(descriptor) if zawcode_glyphs is None else {}
         return FontDecoder(
             name, subtype=subtype, base_font=base_font, is_cid=True, cmap=cmap,
-            to_unicode=to_unicode, own_gids=own_gids, doc=doc,
+            to_unicode=to_unicode, own_gids=own_gids, doc=doc, zawcode_glyphs=zawcode_glyphs,
             cid_to_gid=loader.cid_to_gid(descendant))
 
     encoding, declared = build_simple_encoding(font.get("Encoding"), loader.resolve)
     own_gids = loader.reversed_font_cmap(font.get("FontDescriptor"))
+    to_unicode = loader.tounicode_of(font)
     return FontDecoder(
         name, subtype=subtype, base_font=base_font, is_cid=False,
         to_unicode=to_unicode, encoding=encoding, has_encoding=declared,

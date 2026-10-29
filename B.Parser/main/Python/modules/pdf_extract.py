@@ -866,6 +866,24 @@ def _shown_strings(op, operands):
     return []
 
 
+def _join_draft_runs(pieces, order):
+    """Order adjacent profiled runs together, never other font resources."""
+    out, pending, selected = [], [], None
+    for _, _, text, runs in pieces:
+        for is_draft, part in (runs if runs is not None else [(False, text)]):
+            if not part:
+                continue
+            if selected is not None and selected != is_draft:
+                value = ''.join(pending)
+                out.append(order(value) if selected else value)
+                pending = []
+            selected = is_draft
+            pending.append(part)
+    value = ''.join(pending)
+    out.append(order(value) if selected else value)
+    return ''.join(out)
+
+
 def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=False):
     """Extract text lines WITH layout: ``(lines, page_w, page_h)``.
 
@@ -903,7 +921,7 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
         if ca:
             streams = [int(x) for x in re.findall(r'(\d+)\s+\d+\s+R', ca.group(1))]
 
-    pieces = []  # list of (y, x, size, text)
+    pieces = []  # list of (y, x, size, text, optional font runs)
 
     # The active text font survives BT/ET boundaries and, because a page's
     # content streams are one stream logically, the stream boundary too. The
@@ -919,6 +937,7 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
 
         in_block = False
         block_texts = []
+        block_runs = []
         block_xy = None
         block_size = None
         text_xy = (0.0, 0.0)
@@ -937,6 +956,7 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
                 if not in_block:
                     in_block = True
                     block_texts = []
+                    block_runs = []
                     block_xy = None
                     block_size = None
                     # BT resets the text matrix to the identity, i.e. the
@@ -1002,14 +1022,18 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
                         text = _collapse_overprint(text)
                     pieces.append((block_xy[1], block_xy[0],
                                    12.0 if block_size is None else block_size,
-                                   text))
+                                   text, block_runs if doc.zawcode_order else None))
                 block_texts = []
+                block_runs = []
                 continue
 
             if op in ("Tj", "TJ", "'", '"'):
                 decoder = active if active is not None else unset_font
                 for shown in _shown_strings(op, operands):
-                    block_texts.append(decoder.decode(shown))
+                    text = decoder.decode(shown)
+                    block_texts.append(text)
+                    if doc.zawcode_order:
+                        block_runs.append((decoder.zawcode_glyphs is not None, text))
 
     # PDF producers often draw the same glyph run several times with tiny
     # sub-point offsets to create a faux-bold/outline effect.  Those are visual
@@ -1028,9 +1052,9 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
     # farther away than that.
     unique_pieces = []
     for piece in pieces:
-        y, x, size, text = piece
+        y, x, size, text, _runs = piece
         drop = False
-        for k, (old_y, old_x, old_size, old_text) in enumerate(unique_pieces):
+        for k, (old_y, old_x, old_size, old_text, _old_runs) in enumerate(unique_pieces):
             if abs(x - old_x) > 1.0 or abs(y - old_y) > 1.0:
                 continue
             if text == old_text or text in old_text:
@@ -1094,8 +1118,8 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
             best = max(clusters, key=len)
             if len(best) >= max(5, int(0.5 * len(mixed_bands))):
                 c = sum(best) / len(best)
-                left = sum(len(t) for _, x, _, t in pieces if x < c)
-                right = sum(len(t) for _, x, _, t in pieces if x >= c)
+                left = sum(len(t) for _, x, _, t, _ in pieces if x < c)
+                right = sum(len(t) for _, x, _, t, _ in pieces if x >= c)
                 tot = left + right
                 if tot and 0.25 <= left / tot <= 0.75:
                     bounds = [c]
@@ -1106,31 +1130,33 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
                 col_pieces = [p for p in pieces if sum(1 for b in bounds if p[1] >= b) == c]
                 col_pieces.sort(key=lambda p: (-p[0], p[1]))
                 cur_line, cur_y = [], None
-                for y, x, size, text in col_pieces:
+                for y, x, size, text, runs in col_pieces:
                     if cur_y is None or abs(y - cur_y) > 3:
                         if cur_line:
                             cur_line.sort(key=lambda p: p[0])   # x only; stable = stream order
-                            _j = ''.join(t for _, _, t in cur_line)
+                            _j = (_join_draft_runs(cur_line, doc.zawcode_order) if doc.zawcode_order
+                                  else ''.join(t for _, _, t, _ in cur_line))
                             if doc.legacy_text_fix:
                                 _j = legacy_ayar_to_unicode(_j, apply_aa_vowel_rule=_aa_vowel_rule_for_legacy(doc))
                             lines.append((cur_line[0][0], cur_y,
-                                          max(s for _, s, _ in cur_line), _j))
+                                          max(s for _, s, _, _ in cur_line), _j))
                         cur_line, cur_y = [], y
-                    cur_line.append((x, size, text))
+                    cur_line.append((x, size, text, runs))
                 if cur_line:
                     cur_line.sort(key=lambda p: p[0])   # x only; stable = stream order
-                    joined = ''.join(t for _, _, t in cur_line)
+                    joined = (_join_draft_runs(cur_line, doc.zawcode_order) if doc.zawcode_order
+                              else ''.join(t for _, _, t, _ in cur_line))
                     if doc.legacy_text_fix:
                         joined = legacy_ayar_to_unicode(joined, apply_aa_vowel_rule=_aa_vowel_rule_for_legacy(doc))
                     lines.append((cur_line[0][0], cur_y,
-                                  max(s for _, s, _ in cur_line), joined))
+                                  max(s for _, s, _, _ in cur_line), joined))
             return lines, page_w, page_h
 
     pieces.sort(key=lambda p: (-p[0], p[1]))
 
     lines = []          # (x, y, size, text), top-to-bottom
     current_y = pieces[0][0]
-    current_line = []   # (x, size, text)
+    current_line = []   # (x, size, text, optional font runs)
 
     def flush():
         # Sort by x ONLY, and rely on the sort being stable: two pieces drawn
@@ -1145,18 +1171,19 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
         # stranding the ha at the end of the line: 'ရိသည်။ှ'. Stream order
         # puts it back on its base: 'ရှိသည်။'.
         ordered = sorted(current_line, key=lambda p: p[0])
-        joined = ''.join(t for _, _, t in ordered)
+        joined = (_join_draft_runs(ordered, doc.zawcode_order) if doc.zawcode_order
+                  else ''.join(t for _, _, t, _ in ordered))
         if doc.legacy_text_fix:
             joined = legacy_ayar_to_unicode(joined, apply_aa_vowel_rule=_aa_vowel_rule_for_legacy(doc))
         lines.append((ordered[0][0], current_y,
-                      max(s for _, s, _ in ordered), joined))
+                      max(s for _, s, _, _ in ordered), joined))
 
-    for y, x, size, text in pieces:
+    for y, x, size, text, runs in pieces:
         if abs(y - current_y) > 3:
             flush()
             current_line = []
             current_y = y
-        current_line.append((x, size, text))
+        current_line.append((x, size, text, runs))
 
     if current_line:
         flush()

@@ -1,36 +1,71 @@
-ZawCode: leading-slot order, source evidence
+ZawCode draft: font-scoped extraction and leading-slot order
 
-Source: ယဲ့နင် စာစဉ် a ၁.merged.merged.pdf, pages 1–200 of 4,414.
-Selected F1 embedded font SHA-256:
+Source: ယဲ့နင် စာစဉ် a ၁.merged.merged.pdf (4,414 pages).
+Reference F1 embedded font SHA-256:
 5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9
 
-This source uses two-byte Identity-H codes with an Identity CID-to-GID map;
-they are glyph IDs, not the ASCII slots in zawcode-layout.js. The evidence
-uses that font's cmap and direct GSUB single substitutions without /ToUnicode.
-These are provisional readings, not proof that a font name identifies the
-keyboard layout. The sample includes page content streams only, not Form
-XObjects. Raw evidence is kept separately from the ordered Unicode slots.
+The reference uses two-byte Identity-H codes with an Identity CID-to-GID
+map; these are glyph IDs, not the ASCII slots in zawcode-layout.js. The
+first-200-page order report labels glyphs from cmap and direct GSUB single
+substitutions, without /ToUnicode. The draft profile also includes bounded
+single-substitution chains and non-joiner ligatures, plus four separately
+documented order glyphs inferred from source contexts. All readings remain
+provisional; font identity alone does not prove a keyboard layout.
+
+The PDF has 11 separately hashed Myanmar3 subsets that qualified for this
+draft. Each has the same derived candidates, identical GSUB table and
+context-slot outlines as the reference, and independent leading-order evidence
+on at least two sampled pages. Their hashes, page ranges, evidence and raw
+examples are in zawcode-font-profiles.json; no subset is selected by name.
+The runtime JSON uses one shared template plus a profile for each SHA-256.
+A profile can override glyphs, orderGlyphs or alternatives individually;
+conflicts and alternatives remain unresolved rather than being guessed.
 
 Examples (four hex digits per raw PDF code):
   page 1: 00E4 00EE 007E 00DF 006D 00E9 00E8
           ေ + ြ + ပ + ာ + င + ် + း → ပြောင်း
-  page 4: 00EE 006A 006D 00E9 00E8
-          ြ + ခ + င + ် + း → ခြင်း
+  page 2: 00F6 006A 006D 00E9 00E8
+          ြွ + ခ + င + ် + း → ခြွင်း
+  page 2: 00E4 0079 00EB → ေ + တ + ွ → တွေ
+  page 3: 00E4 0082 00F8 00DF 00E9
+          ေ + မ + ျှ + ာ + ် → မျှော်
   page 12: 00E4 0069 00EA 00DF 00E9
            ေ + က + ျ + ာ + ် → ကျော်
 
-The first 200 pages contain 265 ေ+ြ+base, 1,606 ြ+base, 229
-ေ+base+ျ, and 4,133 ေ+base occurrences in this subset. These pattern
-counts overlap; they are not independent words. The separate bounded
-lookahead for a later ျ was requested earlier but had no matching example in
-this 200-page sample. It stops at another base, stack, non-mark or eight-slot
-boundary. Only the leading positions are changed; the suffix is preserved.
-A compound ZawCode keyboard slot starting with ျ keeps its other marks after
-ေ. No general rule for a syllable containing both ြ and ျ has been inferred.
+The 14 investigated glyph IDs, their provisional Unicode readings, example
+words, physical PDF pages and exact raw sequences are listed in
+zawcode-14-glyph-words.txt. They are separate from the four unresolved IDs.
 
-Of 104,626 raw glyph occurrences sampled, 6,961 had no cmap/direct-single
-reading and remain unresolved. Other font subsets and pages remain unreviewed.
-The helper is partial and is not wired into the production extraction path.
+The original 200-page report has 265 ေ+ြ+base, 1,606 ြ+base,
+229 ေ+base+ျ, and 4,133 other ေ+base occurrences. These pattern
+counts overlap. The separately confirmed bounded lookahead for a later ျ
+had no matching example in this sample; it stops at a base, stack, ြ,
+non-mark, or eight-slot boundary. A compound medial stays together; other
+suffix slots retain their relative order. A combined ြ+ျ cluster found
+within the bounded window is preserved as-is; no combined rule is inferred.
 
-Reproduce the evidence (fontTools is required):
-  python tools-box/python/zawcode-order-evidence.py 'Junk/Parser/upload/pdf/ယဲ့နင် စာစဉ် a ၁.merged.merged.pdf' --font-sha256 5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9 --pages 200 --output zawcode-order-evidence.json
+Draft runtime behavior:
+  • Auto-select when a profile matches and at least two ေ+ြ+base
+    occurrences appear on two of the first 20 pages. Other PDFs use the
+    existing path. The heuristic is evidence, not a layout guarantee.
+  • PRASER_ZAWCODE_DRAFT=1 explicitly selects a profile when used on the
+    probe pages; =0 disables the automatic draft. Library callers can set
+    textLayout/text_layout to zawcode, auto, or off.
+  • Decode selected resources from their own raw glyph profile, bypassing
+    their /ToUnicode; preserve unknown or ambiguous codes as [XXXX]. Reorder
+    only adjacent profiled runs, once, during line assembly. Pages without a
+    profiled font use the existing extraction path. Generic cleanup/repair
+    does not change the profiled draft output.
+
+A full source-stream pass found profiled font runs on 3,580 pages, with
+1,907,430 decoded code points. Four unresolved glyph IDs produced 110
+visible placeholders: 00FC (69), 00FE (31), 00FD (7), and 00F2 (3). Raw
+windows and surrounding provisional text are in zawcode-draft-coverage.json.
+The other 834 pages did not use a profiled font; they include different
+MyanmarText subsets and remain outside this draft. The existing path can
+still produce poor text there. Counts are not an accuracy guarantee, and
+Form XObjects are outside the page-stream evidence.
+
+Reproduce the source evidence and installed provisional profile (fontTools
+required; do not replace the output path when also requesting coverage):
+  python tools-box/python/zawcode-order-evidence.py 'Junk/Parser/upload/pdf/ယဲ့နင် စာစဉ် a ၁.merged.merged.pdf' --font-sha256 5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9 --pages 200 --output Junk/Parser/upload/analysis/zawcode-order-evidence.json --profile-output B.Parser/main/parser/jason-map/zawcode-draft-glyphs.json --profile-inventory-output Junk/Parser/upload/analysis/zawcode-font-profiles.json --coverage-output Junk/Parser/upload/analysis/zawcode-draft-coverage.json --context-gids 00E2 00E3 00ED 00EF 00F0 00F1 00F4 00F6 00F7 00F8 0102 00D6 00D7 00EB

@@ -158,16 +158,20 @@ export function createSourceRunner({ kind, method, docxImages = false, pdfImages
 
 
 
-    const dictData = dictionaryOnce();
-    const words = dictionaryWords(dictData);
+    const chosenPath = provenance?.codepage?.chosen ?? job.encodingPath ?? null;
+    const isDraft = provenance?.codepage?.draft === true;
+    const dictData = isDraft ? null : dictionaryOnce();
+    const words = isDraft ? new Set() : dictionaryWords(dictData);
     const standalone = dictData?.mapData?.newClause?.standalone || [];
     const { pages: repairedPages, totals: repairTotals } = repairPages(
       buildFinalPages(job, true),
       words,
     );
-    const chosenPath = provenance?.codepage?.chosen ?? null;
-    const { report, scanLog, scanSummary, scanTotals } = scanPathVerdict(repairedPages, outPath, chosenPath);
-    const pages = repairFromScanVerdict(repairedPages, report, words, { path: chosenPath, standalone });
+    const { report, scanLog, scanSummary, scanTotals } = isDraft
+      ? { report: null, scanLog: null, scanSummary: [], scanTotals: null }
+      : scanPathVerdict(repairedPages, outPath, chosenPath);
+    const pages = isDraft ? repairedPages
+      : repairFromScanVerdict(repairedPages, report, words, { path: chosenPath, standalone });
     const scanRepairPages = pages.reduce(
       (n, page, i) => n + ((page?.text || "") !== (repairedPages[i]?.text || "") ? 1 : 0),
       0,
