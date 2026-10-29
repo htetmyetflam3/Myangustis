@@ -16,13 +16,9 @@ The old decoder readings below are candidate hints, not independently verified. 
 A byte may expand to multiple code points; byte count need not equal Unicode code-point count.
 
 === bg-mlc-1-1.pdf /F4 ===
-40 bytes still unresolved
+39 bytes still unresolved
 
-07 — occurrences: 190; previous decoder candidate: 'ဒ'
-  Engine-compatible candidate: 'ဒ'; 67 matching windows, e.g. ဒိ, ဒု, ဒေ, ဒြ
-  page 1: 02 03 04 02 05 06 [07] 08 09
-  page 1: 02 03 04 02 05 06 [07] 08 09 17 18 19 0E
-  page 1: 02 03 04 02 05 06 [07] 08 09 0E 0A 0B 0C
+Resolved 07 = ဒ from the full word ဒုတိယ: 07 18 0B 19 22 (17 raw occurrences, including page 9). 18 is the short ု. The rendered source and master dictionary support the word; no hypothetical က/ခ/င substitution is needed.
 
 08 — occurrences: 22; previous decoder candidate: '္ဒ'
   page 1: 03 04 02 05 06 07 [08] 09

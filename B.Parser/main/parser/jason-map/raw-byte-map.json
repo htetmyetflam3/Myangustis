@@ -254,7 +254,15 @@
         "07": {
           "reason": "current output overlaps another observed byte; held for review",
           "currentOutput": "\u1012",
-          "observedOccurrences": 190
+          "observedOccurrences": 190,
+          "reviewedValue": "\u1012",
+          "resolutionEvidence": {
+            "word": "\u1012\u102f\u1010\u102d\u101a",
+            "raw": "07 18 0B 19 22",
+            "pageExample": 9,
+            "rawMatches": 17,
+            "method": "known short-u 18, known \u1010/\u102d/\u101a, the master dictionary word, and the rendered source page"
+          }
         },
         "08": {
           "reason": "not one code point",
@@ -503,7 +511,8 @@
         "0A": "\u1021",
         "1D": "\u100a",
         "2B": "\u1014",
-        "30": "\u104c"
+        "30": "\u104c",
+        "07": "\u1012"
       },
       "writingRules": {
         "uVariants": {
@@ -515,7 +524,8 @@
             "\u103b",
             "\u100a"
           ],
-          "longInPaliOrStack": true
+          "longInPaliOrStack": true,
+          "scope": "Choose within the same syllable or stacked cluster, not from the containing Pali word. \u1012\u102f is short; a following \u1000\u1039\u1001 does not change it."
         },
         "restrictedBytes": {
           "25": {

@@ -899,6 +899,88 @@ LEGACY_CODE_PAGES = {
 }
 
 
+def decode_raw_byte_slots(data, profile):
+    """Decode one selected byte-font profile without /ToUnicode or fallback.
+
+    A byte can expand to multiple Unicode code points, but remains one slot.
+    An unresolved byte raises instead of being silently dropped or guessed.
+    """
+    if not isinstance(data, (bytes, bytearray, memoryview)):
+        raise TypeError("Expected raw PDF bytes")
+    table = {}
+    for source in (profile.get("bytes", {}), profile.get("resolvedForReview", {})):
+        for code, text in source.items():
+            if not re.fullmatch(r"[0-9A-F]{2}", code) or not isinstance(text, str) or not text:
+                raise ValueError(f"Invalid raw byte entry {code}")
+            byte = int(code, 16)
+            if byte in table and table[byte] != text:
+                raise ValueError(f"Conflicting raw byte entry {code}")
+            table[byte] = text
+    result = []
+    for offset, byte in enumerate(data):
+        if byte not in table:
+            raise ValueError(f"Unmapped raw PDF byte {byte:02X} at offset {offset}")
+        result.append(table[byte])
+    return result
+
+
+def decode_raw_bytes(data, profile):
+    return ''.join(decode_raw_byte_slots(data, profile))
+
+
+def encode_raw_byte_slots(slots, profile, *, byte_choices=None):
+    """Encode one cluster; a later stacked syllable cannot alter its u shape."""
+    if not isinstance(slots, (list, tuple)) or any(
+            not isinstance(slot, str) or not slot for slot in slots):
+        raise TypeError("Expected non-empty Unicode slots")
+    choices = {}
+    byte_values = {}
+    for source in (profile.get('bytes', {}), profile.get('resolvedForReview', {})):
+        for code, text in source.items():
+            if not re.fullmatch(r'[0-9A-F]{2}', code) or not isinstance(text, str) or not text:
+                raise ValueError(f'Invalid raw byte entry {code}')
+            if code in byte_values and byte_values[code] != text:
+                raise ValueError(f'Conflicting raw byte entry {code}')
+            byte_values[code] = text
+            available = choices.setdefault(text, [])
+            if code not in available:
+                available.append(code)
+    rules = profile.get('writingRules', {})
+    u = rules.get('uVariants')
+
+    def starts_with_base(slot):
+        if slot.startswith('\u1004\u103a\u1039'):
+            return False
+        code = ord(slot[0])
+        return 0x1000 <= code <= 0x1021 or 0x1023 <= code <= 0x102a or code in (0x103f, 0x104e)
+
+    base_count = sum(starts_with_base(slot) for slot in slots)
+    if base_count > 1 or (u and u['unicode'] in slots and base_count != 1):
+        raise ValueError('Encode one syllable/cluster at a time for contextual glyph selection')
+    needs_long = bool(u and (
+        (u.get('longInPaliOrStack') and any('\u1039' in slot for slot in slots)) or
+        any(mark in slot for mark in u.get('longWhenContains', []) for slot in slots)))
+    byte_choices = byte_choices or {}
+    output = []
+    for index, value in enumerate(slots):
+        available = choices.get(value, [])
+        code = byte_choices.get(index)
+        if u and value == u['unicode']:
+            required = u['long'] if needs_long else u['short']
+            if code is not None and code != required:
+                raise ValueError(f'Raw glyph {code} violates the u-shape rule')
+            code = required
+        if code is None and len(available) == 1:
+            code = available[0]
+        if code not in available:
+            raise ValueError(f'Unresolved raw glyph for slot {index} ({value!r}); candidates: {", ".join(available) or "none"}')
+        restriction = rules.get('restrictedBytes', {}).get(code)
+        if restriction and (not output or output[-1] not in restriction['precedingBytes']):
+            raise ValueError(f'Raw glyph {code} is not valid after {output[-1] if output else "the start"}')
+        output.append(code)
+    return bytes(int(code, 16) for code in output)
+
+
 class LegacyAyarMap(dict):
     """Marker for a map whose decoded text is in Ayar legacy order."""
 

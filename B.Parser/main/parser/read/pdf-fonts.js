@@ -9,6 +9,101 @@ import { parseTtfGsubReverse, parseTtfVariantSlots } from "../core/ttf-gsub.js";
 
 
 
+// Decode a selected single-byte font profile without consulting /ToUnicode.
+// Unreviewed bytes are errors, not ASCII fallbacks or silently dropped text.
+export function decodeRawByteSlots(data, profile) {
+  if (!(data instanceof Uint8Array) && typeof data !== "string") {
+    throw new TypeError("Expected raw bytes or a byte string");
+  }
+  const table = new Map();
+  for (const source of [profile?.bytes, profile?.resolvedForReview]) {
+    if (!source || typeof source !== "object") continue;
+    for (const [hex, text] of Object.entries(source)) {
+      if (!/^[0-9A-F]{2}$/u.test(hex) || typeof text !== "string" || !text.length) {
+        throw new TypeError(`Invalid raw byte entry ${hex}`);
+      }
+      const byte = Number.parseInt(hex, 16);
+      if (table.has(byte) && table.get(byte) !== text) {
+        throw new Error(`Conflicting raw byte entry ${hex}`);
+      }
+      table.set(byte, text);
+    }
+  }
+  const codes = typeof data === "string" ? Array.from(data, (c) => c.codePointAt(0)) : data;
+  const result = [];
+  for (let i = 0; i < codes.length; i += 1) {
+    const byte = codes[i];
+    if (byte > 255 || !table.has(byte)) {
+      const hex = byte.toString(16).toUpperCase().padStart(2, "0");
+      throw new Error(`Unmapped raw PDF byte ${hex} at offset ${i}`);
+    }
+    result.push(table.get(byte));
+  }
+  return result;
+}
+
+export function decodeRawBytes(data, profile) {
+  return decodeRawByteSlots(data, profile).join("");
+}
+
+// Input slots are already in glyph order and belong to one syllable/cluster.
+// A later stacked syllable cannot change this cluster's u shape. This does not
+// reorder Unicode text or guess between unverified alternatives.
+export function encodeRawByteSlots(slots, profile, { byteChoices = {} } = {}) {
+  if (!Array.isArray(slots) || slots.some((s) => typeof s !== "string" || !s.length)) {
+    throw new TypeError("Expected non-empty Unicode slots");
+  }
+  const choices = new Map();
+  const byteValues = new Map();
+  for (const source of [profile?.bytes, profile?.resolvedForReview]) {
+    for (const [hex, text] of Object.entries(source || {})) {
+      if (!/^[0-9A-F]{2}$/u.test(hex) || typeof text !== "string" || !text.length) {
+        throw new TypeError(`Invalid raw byte entry ${hex}`);
+      }
+      if (byteValues.has(hex) && byteValues.get(hex) !== text) {
+        throw new Error(`Conflicting raw byte entry ${hex}`);
+      }
+      byteValues.set(hex, text);
+      const list = choices.get(text) || [];
+      if (!list.includes(hex)) list.push(hex);
+      choices.set(text, list);
+    }
+  }
+  const rules = profile?.writingRules || {};
+  const u = rules.uVariants;
+  const baseCount = slots.filter((slot) => {
+    if (slot.startsWith("\u1004\u103A\u1039")) return false;
+    const c = slot.codePointAt(0);
+    return (c >= 0x1000 && c <= 0x1021) || (c >= 0x1023 && c <= 0x102A) || c === 0x103F || c === 0x104E;
+  }).length;
+  if (baseCount > 1 || (u && slots.includes(u.unicode) && baseCount !== 1)) {
+    throw new Error("Encode one syllable/cluster at a time for contextual glyph selection");
+  }
+  const needsLongU = u && ((u.longInPaliOrStack && slots.some((s) => s.includes("\u1039"))) ||
+    (u.longWhenContains || []).some((mark) => slots.some((s) => s.includes(mark))));
+  const output = [];
+  for (let i = 0; i < slots.length; i += 1) {
+    const value = slots[i];
+    const available = choices.get(value) || [];
+    let hex = byteChoices[i];
+    if (u && value === u.unicode) {
+      const required = needsLongU ? u.long : u.short;
+      if (hex !== undefined && hex !== required) throw new Error(`Raw glyph ${hex} violates the u-shape rule`);
+      hex = required;
+    }
+    if (hex === undefined && available.length === 1) [hex] = available;
+    if (!hex || !available.includes(hex)) {
+      throw new Error(`Unresolved raw glyph for slot ${i} (${JSON.stringify(value)}); candidates: ${available.join(", ") || "none"}`);
+    }
+    const restriction = rules.restrictedBytes?.[hex];
+    if (restriction && !restriction.precedingBytes.includes(output.at(-1))) {
+      throw new Error(`Raw glyph ${hex} is not valid after ${output.at(-1) || "the start"}`);
+    }
+    output.push(hex);
+  }
+  return Uint8Array.from(output, (hex) => Number.parseInt(hex, 16));
+}
+
 export class PdfName {
   constructor(v) { this.v = v; }
   toString() { return this.v; }
