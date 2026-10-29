@@ -1,7 +1,7 @@
 Ayar: raw font-subset mapping review
 
 Status: partial and not wired as a production replacement. Raw page content streams only; Form XObjects are not covered.
-Direct seed values may come from the offline PDF ToUnicode bridge and are not universal verification.
+Some direct values are offline ToUnicode seeds; their meanings are not automatically verified. User-confirmed values are identified separately.
 Context-supported values are provisional. Dictionary matches can overlap or occur inside longer words; they may inherit other provisional slot values.
 Counts below are raw-byte occurrences, not independent words. Raw windows have not been reordered. Pre-base marks may legitimately have orphan flags.
 The decoder skips ToUnicode at runtime; the reports do not establish complete coverage or writing-shape rules.
@@ -9,7 +9,7 @@ The decoder skips ToUnicode at runtime; the reports do not establish complete co
 ==============================================================================
 mm-grammar.pdf /TT2 (EHUJNE+Arlarwade)
 SHA-256: 3a59ab947871b19d1eaaebc827995f2eb13177771af040c03436e5425392350f
-Direct seeds: 47; review resolutions: 1; unresolved byte slots: 41
+Direct entries: 47; review resolutions: 1; unresolved byte slots: 41
 
 CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   24 = '်'  candidate window ခင် / 43 28 24 (page 2)
@@ -175,7 +175,7 @@ UNRESOLVED (the legacy output is not an answer):
 ==============================================================================
 mm-grammar.pdf /TT6 (RNKHKA+Arlarwade)
 SHA-256: 164ab2dc98515900ba126fe7043f0fa455ed0472f32a68fbce5d41a6565584fb
-Direct seeds: 56; review resolutions: 1; unresolved byte slots: 51
+Direct entries: 56; review resolutions: 1; unresolved byte slots: 51
 
 CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   2F = 'ာ'  candidate window သာဓက / 2C 2F 3E 35 (page 9)
@@ -380,7 +380,7 @@ UNRESOLVED (the legacy output is not an answer):
 ==============================================================================
 mm-grammar.pdf /TT13 (VWCXUX+Arlarwade)
 SHA-256: b89b5fe3daba90ad860720610d39142ea965ac5a83ce889084c6c75afa9858e3
-Direct seeds: 54; review resolutions: 7; unresolved byte slots: 49
+Direct entries: 54; review resolutions: 7; unresolved byte slots: 49
 
 CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   2D = 'း'  candidate window ကား / 3A 38 2D (page 46)
@@ -582,7 +582,7 @@ UNRESOLVED (the legacy output is not an answer):
 ==============================================================================
 mm-grammar.pdf /TT20 (EECKXI+Arlarwade)
 SHA-256: 4c50ba818d91e8762ea8217586e7a2440747c464b433964e49e3af5dee970db6
-Direct seeds: 40; review resolutions: 0; unresolved byte slots: 29
+Direct entries: 40; review resolutions: 0; unresolved byte slots: 29
 
 CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
 
@@ -693,7 +693,7 @@ UNRESOLVED (the legacy output is not an answer):
 ==============================================================================
 mm-grammar.pdf /TT27 (LRIIGK+Arlarwade)
 SHA-256: 4d6aa345dd1b88e650c0b700cd51b336bf0d0ba7016b559ca9f5f562b1ab46ea
-Direct seeds: 58; review resolutions: 4; unresolved byte slots: 46
+Direct entries: 58; review resolutions: 4; unresolved byte slots: 46
 
 CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   2D = 'း'  candidate window သား / 2F 3A 2D (page 114)
@@ -888,7 +888,7 @@ UNRESOLVED (the legacy output is not an answer):
 ==============================================================================
 mm-grammar.pdf /TT35 (IWBEFM+Arlarwade)
 SHA-256: a7c9e0380ddaa992b8544130db21696438cbe6ec1b0afd8f262c9fc699623437
-Direct seeds: 54; review resolutions: 7; unresolved byte slots: 43
+Direct entries: 54; review resolutions: 7; unresolved byte slots: 43
 
 CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   28 = 'း'  candidate window အား / 24 35 28 (page 160)
@@ -1072,7 +1072,7 @@ UNRESOLVED (the legacy output is not an answer):
 ==============================================================================
 mm-grammar.pdf /TT41 (FPRRRK+Arlarwade)
 SHA-256: 3da8a08e4a4bf0a6629f4efa1e5c0af7ce1d1349edf6580e2c74a33b56eea0ec
-Direct seeds: 58; review resolutions: 5; unresolved byte slots: 51
+Direct entries: 58; review resolutions: 5; unresolved byte slots: 51
 
 CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   2C = 'း'  candidate window သား / 3E 32 2C (page 212)
@@ -1285,7 +1285,7 @@ UNRESOLVED (the legacy output is not an answer):
 ==============================================================================
 mm-grammar.pdf /TT49 (LOZWCO+Arlarwade)
 SHA-256: ab7518c9f0347ee639244fe89fce37115fb9f4fd0fa5b7b065c08ff104bb4c25
-Direct seeds: 55; review resolutions: 1; unresolved byte slots: 72
+Direct entries: 55; review resolutions: 1; unresolved byte slots: 72
 
 CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   35 = 'ိ'  candidate window အထိ / 24 4F 35 (page 279)
@@ -1581,7 +1581,7 @@ UNRESOLVED (the legacy output is not an answer):
 ==============================================================================
 mm-grammar.pdf /TT59 (ZUMCYJ+Arlarwade)
 SHA-256: b353b9e2e602b1a65ec182154e49d8d71d9ec9d613718f0dbf01ba02918b4a55
-Direct seeds: 32; review resolutions: 0; unresolved byte slots: 32
+Direct entries: 32; review resolutions: 0; unresolved byte slots: 32
 
 CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
 
@@ -1706,7 +1706,7 @@ UNRESOLVED (the legacy output is not an answer):
 ==============================================================================
 mm-grammar.pdf /TT62 (RXGFSZ+Arlarwade)
 SHA-256: 286c99574ea17ff9806328746e5d56fa4f3399863d44978413ba5ffc458eed59
-Direct seeds: 48; review resolutions: 0; unresolved byte slots: 50
+Direct entries: 48; review resolutions: 0; unresolved byte slots: 50
 
 CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
 
@@ -1914,7 +1914,7 @@ UNRESOLVED (the legacy output is not an answer):
 ==============================================================================
 mm-grammar.pdf /TT65 (CYTAKH+Arlarwade)
 SHA-256: f7e6dc277e5783f5dfbddc1b023ed3bf98e0a0ab60a17d1a446c6c143c29d924
-Direct seeds: 47; review resolutions: 3; unresolved byte slots: 47
+Direct entries: 47; review resolutions: 3; unresolved byte slots: 47
 
 CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   2C = 'း'  candidate window ကား / 24 39 2C (page 432)

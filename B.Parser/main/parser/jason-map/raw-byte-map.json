@@ -50,7 +50,6 @@
         "34": "\u101f",
         "36": "\u1002",
         "38": "\u1049",
-        "3B": "\u1025",
         "3D": "\u1006",
         "41": "\u1045",
         "42": "\u1044",
@@ -58,7 +57,7 @@
         "4D": "\u1013",
         "4E": "\u1017",
         "4F": "\u104d",
-        "51": "=",
+        "51": "\u2018",
         "53": "\u1020",
         "54": "\u1003",
         "56": "\u1027",
@@ -69,6 +68,10 @@
         "67": "\u104c"
       },
       "alternateBytes": {
+        "\u104d": [
+          "2F",
+          "4F"
+        ],
         "\u104c": [
           "30",
           "67"
@@ -77,7 +80,8 @@
           "01",
           "3E",
           "45",
-          "62"
+          "62",
+          "66"
         ],
         "\u102f": [
           "18",
@@ -309,7 +313,16 @@
         "2F": {
           "currentOutput": "\u103b\u103d",
           "observedOccurrences": 35,
-          "orphanFlags": 8
+          "orphanFlags": 8,
+          "reviewedValue": "\u104d",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u1014\u102c\u1038\u101c\u100a\u103a\u104d",
+            "raw": "03 05 14 21 1D 04 0E 2F",
+            "pageExample": 1,
+            "rawMatches": 1
+          }
         },
         "31": {
           "currentOutput": "\u102e",
@@ -347,7 +360,16 @@
         "37": {
           "currentOutput": "\u1004\u103a\u1039",
           "observedOccurrences": 40,
-          "orphanFlags": 0
+          "orphanFlags": 0,
+          "reviewedValue": "\u1004\u103a\u1039",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u101e\u1004\u103a\u1039\u1000\u1031\u1010",
+            "raw": "06 1F 17 37 0B",
+            "pageExample": 1,
+            "rawMatches": 18
+          }
         },
         "3E": {
           "currentOutput": "\u103c",
@@ -419,12 +441,30 @@
         "52": {
           "currentOutput": "\u103c",
           "observedOccurrences": 50,
-          "orphanFlags": 5
+          "orphanFlags": 5,
+          "reviewedValue": "\u2019",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u2018\u1005\u102c\u1021\u102f\u1015\u103a\u2019",
+            "raw": "51 16 05 0A 18 1B 04 52",
+            "pageExample": 2,
+            "rawMatches": 1
+          }
         },
         "55": {
           "currentOutput": "\u1036",
           "observedOccurrences": 11,
-          "orphanFlags": 7
+          "orphanFlags": 7,
+          "reviewedValue": "\u1023",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u1023\u1010\u1039\u1011\u102d\u101c\u102d\u1004\u103a",
+            "raw": "55 0B 5D 19 21 19 27 04",
+            "pageExample": 12,
+            "rawMatches": 7
+          }
         },
         "58": {
           "currentOutput": "\u103b\u103e",
@@ -636,19 +676,43 @@
           "observedOccurrences": 71
         },
         "47": {
-          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
           "currentOutput": "\u1043",
-          "observedOccurrences": 23
+          "observedOccurrences": 23,
+          "reviewedValue": "\u1039\u1017",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u101e\u1019\u1039\u1017\u1014\u1039\u1013",
+            "raw": "06 02 47 2B 48",
+            "pageExample": 2,
+            "rawMatches": 20
+          }
         },
         "48": {
-          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
           "currentOutput": "\u2014",
-          "observedOccurrences": 24
+          "observedOccurrences": 24,
+          "reviewedValue": "\u1039\u1013",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u101e\u1019\u1039\u1017\u1014\u1039\u1013",
+            "raw": "06 02 47 2B 48",
+            "pageExample": 2,
+            "rawMatches": 20
+          }
         },
         "4A": {
-          "reason": "current output overlaps another observed byte; held for review",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
           "currentOutput": "\u100a",
-          "observedOccurrences": 17
+          "observedOccurrences": 17,
+          "reviewedValue": "\u100d",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u1021\u102c\u1019\u1031\u100d\u102d\u1010\u103a",
+            "raw": "0A 05 1F 02 4A 19 0B 04",
+            "pageExample": 2,
+            "rawMatches": 13
+          }
         },
         "4B": {
           "reason": "reviewed value conflicts with current output",
@@ -678,9 +742,17 @@
           }
         },
         "5D": {
-          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
           "currentOutput": "\u1009",
-          "observedOccurrences": 12
+          "observedOccurrences": 12,
+          "reviewedValue": "\u1039\u1011",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u1021\u101b\u102c\u101d\u1010\u1039\u1011\u102f",
+            "raw": "0A 26 05 2E 0B 5D 1C 28",
+            "pageExample": 6,
+            "rawMatches": 2
+          }
         },
         "5E": {
           "reason": "candidate revised using full-word context; previous decoder output differs",
@@ -771,9 +843,17 @@
           "observedOccurrences": 1
         },
         "66": {
-          "reason": "not one code point",
+          "reason": "Full source word and surrounding raw slots support this reading.",
           "currentOutput": "\u1039\u1006",
-          "observedOccurrences": 3
+          "observedOccurrences": 3,
+          "reviewedValue": "\u103c",
+          "resolutionEvidence": {
+            "method": "Source word context; the single raw byte may expand to multiple Unicode code points.",
+            "word": "\u1019\u103c\u1031\u1000\u103c\u102e\u1038",
+            "raw": "1F 66 02 45 17 31 14",
+            "pageExample": 31,
+            "rawMatches": 2
+          }
         },
         "68": {
           "reason": "current output overlaps another observed byte; held for review",
@@ -802,6 +882,30 @@
           ],
           "evidence": "Used as a numeral and in Burmese words; the raw glyph alone cannot choose.",
           "observedOccurrences": 433
+        },
+        "3B": {
+          "reason": "Same raw glyph is used in contexts requiring \u1009 and \u1025; choose from word context rather than assuming one Unicode value.",
+          "currentOutput": "\u1025",
+          "candidateValues": [
+            "\u1009",
+            "\u1025"
+          ],
+          "observedOccurrences": 78,
+          "contextEvidence": {
+            "examples": [
+              {
+                "word": "\u1015\u1009\u1039\u1005\u1019",
+                "raw": "1B 3B 49 02",
+                "pageExample": 9
+              },
+              {
+                "word": "\u1025",
+                "raw": "3B",
+                "pageExample": 4
+              }
+            ],
+            "status": "context-dependent; no unconditional raw-byte value"
+          }
         }
       },
       "candidateAlternates": {
@@ -894,7 +998,16 @@
         "5E": "\u1039\u1006",
         "64": "\u1039\u101c",
         "69": "\u1039\u1002",
-        "3A": "\u1024"
+        "3A": "\u1024",
+        "2F": "\u104d",
+        "37": "\u1004\u103a\u1039",
+        "47": "\u1039\u1017",
+        "48": "\u1039\u1013",
+        "4A": "\u100d",
+        "52": "\u2019",
+        "55": "\u1023",
+        "5D": "\u1039\u1011",
+        "66": "\u103c"
       },
       "writingRules": {
         "uVariants": {
@@ -926,6 +1039,24 @@
               "07"
             ],
             "basis": "The user-confirmed repeated \u1012 stack; all 22 observed page-stream occurrences follow 07."
+          },
+          "47": {
+            "precedingBytes": [
+              "02"
+            ],
+            "basis": "Context-specific stack pair supported by the observed upper/lower raw-byte context; not generalized to other upper consonants."
+          },
+          "48": {
+            "precedingBytes": [
+              "2B"
+            ],
+            "basis": "Context-specific stack pair supported by the observed upper/lower raw-byte context; not generalized to other upper consonants."
+          },
+          "5D": {
+            "precedingBytes": [
+              "0B"
+            ],
+            "basis": "Context-specific stack pair supported by the observed upper/lower raw-byte context; not generalized to other upper consonants."
           }
         },
         "sameConsonantStacks": "A confirmed duplicate-stack byte is valid only with its matching upper consonant. A stack with a different upper consonant uses a different byte, which must be identified separately."
@@ -1073,6 +1204,16 @@
             "matchingWindows": 20
           }
         }
+      },
+      "contextEvidence": {
+        "51": {
+          "value": "\u2018",
+          "previousOutput": "=",
+          "word": "\u2018\u1005\u102c\u1021\u102f\u1015\u103a\u2019",
+          "raw": "51 16 05 0A 18 1B 04 52",
+          "pageExample": 2,
+          "method": "Source uses paired quotation marks; raw 51 opens and 52 closes the examples."
+        }
       }
     },
     "31e1447e813a2b15bee4bc4b1be515764554378cfd254ee45d9f9c0a7eda686b": {
@@ -1092,7 +1233,6 @@
         "20": "\u101b",
         "23": "\u1000",
         "2C": "\u101a",
-        "2E": "\u1025",
         "31": "\u1013",
         "35": "\u1016",
         "38": "\u103f",
@@ -1105,7 +1245,7 @@
         "47": "\u1047",
         "49": "\u1049",
         "4F": "\u2014",
-        "51": "=",
+        "51": "\u2018",
         "57": "/",
         "5B": "\u1027",
         "5C": "\u104d",
@@ -1117,6 +1257,10 @@
         "6E": "\u104f"
       },
       "alternateBytes": {
+        "\u104d": [
+          "33",
+          "5C"
+        ],
         "\u1020": [
           "30",
           "63"
@@ -1132,6 +1276,10 @@
         "\u1037": [
           "29",
           "32"
+        ],
+        "\u1039\u1010": [
+          "64",
+          "6C"
         ],
         "\u1014": [
           "03",
@@ -1340,7 +1488,16 @@
         "33": {
           "currentOutput": "\u103b\u103d",
           "observedOccurrences": 98,
-          "orphanFlags": 8
+          "orphanFlags": 8,
+          "reviewedValue": "\u104d",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u1014\u102c\u1038\u101c\u100a\u103a\u104d",
+            "raw": "03 05 14 2D 17 04 33",
+            "pageExample": 2,
+            "rawMatches": 1
+          }
         },
         "34": {
           "currentOutput": "\u102f",
@@ -1416,7 +1573,16 @@
         "41": {
           "currentOutput": "\u1004\u103a\u1039",
           "observedOccurrences": 118,
-          "orphanFlags": 0
+          "orphanFlags": 0,
+          "reviewedValue": "\u1004\u103a\u1039",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u101e\u1004\u103a\u1039\u1000\u1031\u1010",
+            "raw": "06 18 23 41 0B",
+            "pageExample": 3,
+            "rawMatches": 16
+          }
         },
         "42": {
           "currentOutput": "\u1037",
@@ -1434,7 +1600,17 @@
         "4C": {
           "currentOutput": "\u102d\u1036",
           "observedOccurrences": 252,
-          "orphanFlags": 0
+          "orphanFlags": 0,
+          "reviewedValue": "\u1039\u1005",
+          "reason": "Full source word and surrounding raw slots support this reading.",
+          "resolutionEvidence": {
+            "method": "Source word context; the single raw byte may expand to multiple Unicode code points.",
+            "word": "\u1015\u1005\u1039\u1005\u100a\u103a\u1038",
+            "raw": "16 1B 4C 17 04 14",
+            "pageExample": 3,
+            "rawMatches": 223,
+            "limitation": "Also observed three times after byte 2E in \u1015\u1009\u1039\u1005\u1019, conflicting with the stated different-upper-consonant writing rule; do not generalize its writing use."
+          }
         },
         "4E": {
           "currentOutput": "\u103c",
@@ -1477,7 +1653,16 @@
         "52": {
           "currentOutput": "\u103c",
           "observedOccurrences": 68,
-          "orphanFlags": 24
+          "orphanFlags": 24,
+          "reviewedValue": "\u2019",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u2018\u1000\u104a\u1001\u2019",
+            "raw": "51 23 11 13 52",
+            "pageExample": 4,
+            "rawMatches": 1
+          }
         },
         "53": {
           "currentOutput": "\u103c",
@@ -1563,14 +1748,30 @@
           }
         },
         "0E": {
-          "reason": "current output overlaps another observed byte; held for review",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
           "currentOutput": "(",
-          "observedOccurrences": 1239
+          "observedOccurrences": 1239,
+          "reviewedValue": "(",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u1021\u1010\u103d\u1032(\u1042)",
+            "raw": "0A 0B 0C 0D 0E 0F 10",
+            "pageExample": 1,
+            "rawMatches": 4
+          }
         },
         "10": {
-          "reason": "current output overlaps another observed byte; held for review",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
           "currentOutput": ")",
-          "observedOccurrences": 1236
+          "observedOccurrences": 1236,
+          "reviewedValue": ")",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u1021\u1010\u103d\u1032(\u1042)",
+            "raw": "0A 0B 0C 0D 0E 0F 10",
+            "pageExample": 1,
+            "rawMatches": 4
+          }
         },
         "11": {
           "reason": "current decoder conflicts with observed glyph/context",
@@ -1689,9 +1890,17 @@
           }
         },
         "25": {
-          "reason": "current output overlaps another observed byte; held for review",
+          "reason": "Full source word and surrounding raw slots support this reading.",
           "currentOutput": "\u100c",
-          "observedOccurrences": 9
+          "observedOccurrences": 9,
+          "reviewedValue": "\u100c",
+          "resolutionEvidence": {
+            "method": "Source word context; the single raw byte may expand to multiple Unicode code points.",
+            "word": "\u100c\u102c\u1014",
+            "raw": "25 05 03",
+            "pageExample": 1,
+            "rawMatches": 1
+          }
         },
         "26": {
           "reason": "legacy bridge has no mapping; current fallback is not verified",
@@ -1789,9 +1998,17 @@
           "observedOccurrences": 2196
         },
         "39": {
-          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "reason": "Full source word and surrounding raw slots support this reading.",
           "currentOutput": "\u100c",
-          "observedOccurrences": 2
+          "observedOccurrences": 2,
+          "reviewedValue": "\u1009\u102c",
+          "resolutionEvidence": {
+            "method": "Source word context; the single raw byte may expand to multiple Unicode code points.",
+            "word": "\u1009\u102c\u100f\u103a\u101b\u100a\u103a",
+            "raw": "39 3A 04 20 17 04",
+            "pageExample": 2,
+            "rawMatches": 2
+          }
         },
         "3A": {
           "reason": "candidate revised using full-word context; previous decoder output differs",
@@ -1854,14 +2071,31 @@
           "observedOccurrences": 129
         },
         "4A": {
-          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
           "currentOutput": " ",
-          "observedOccurrences": 150
+          "observedOccurrences": 150,
+          "reviewedValue": "\u1039\u1017",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u101e\u1019\u1039\u1017\u1014\u1039\u1013",
+            "raw": "06 02 4A 1D 4B",
+            "pageExample": 3,
+            "rawMatches": 147,
+            "limitation": "149 of 150 occurrences follow 02; one follows 1D. Writing is restricted to the directly supported 02 pair until that observation is resolved."
+          }
         },
         "4B": {
-          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
           "currentOutput": "\u101c",
-          "observedOccurrences": 149
+          "observedOccurrences": 149,
+          "reviewedValue": "\u1039\u1013",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u101e\u1019\u1039\u1017\u1014\u1039\u1013",
+            "raw": "06 02 4A 1D 4B",
+            "pageExample": 3,
+            "rawMatches": 147
+          }
         },
         "4D": {
           "reason": "candidate revised using full-word context; previous decoder output differs",
@@ -1968,9 +2202,17 @@
           "observedOccurrences": 1
         },
         "61": {
-          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
           "currentOutput": "\u1048",
-          "observedOccurrences": 72
+          "observedOccurrences": 72,
+          "reviewedValue": "\u1039\u1015",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u1021\u1013\u102d\u1015\u1039\u1015\u102c\u101a\u103a",
+            "raw": "0A 31 1E 16 61 05 2C 04",
+            "pageExample": 11,
+            "rawMatches": 50
+          }
         },
         "62": {
           "reason": "legacy bridge has no mapping; current fallback is not verified",
@@ -2020,19 +2262,43 @@
           "observedOccurrences": 5
         },
         "6A": {
-          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
           "currentOutput": "\u1017",
-          "observedOccurrences": 1
+          "observedOccurrences": 1,
+          "reviewedValue": "\u1039\u1006",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u1010\u102d\u101b\u1005\u1039\u1006\u102c\u1014\u103a",
+            "raw": "0B 1E 20 1B 6A 05 03 04",
+            "pageExample": 40,
+            "rawMatches": 1
+          }
         },
         "6C": {
-          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
           "currentOutput": "(",
-          "observedOccurrences": 3
+          "observedOccurrences": 3,
+          "reviewedValue": "\u1039\u1010",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u1019\u1014\u1039\u1010\u101c\u1031\u1038",
+            "raw": "02 1D 6C 18 2D 14",
+            "pageExample": 40,
+            "rawMatches": 2
+          }
         },
         "6D": {
-          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
           "currentOutput": ")",
-          "observedOccurrences": 1
+          "observedOccurrences": 1,
+          "reviewedValue": "\u1039\u1018",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u1000\u1019\u1039\u1018\u102c\u1037",
+            "raw": "23 02 6D 05 29",
+            "pageExample": 47,
+            "rawMatches": 1
+          }
         },
         "6F": {
           "reason": "legacy bridge has no mapping; current fallback is not verified",
@@ -2040,9 +2306,17 @@
           "observedOccurrences": 1
         },
         "70": {
-          "reason": "legacy bridge has no mapping; current fallback is not verified",
+          "reason": "Full raw-word or punctuation context supports this value; historical legacy output is not the resolution.",
           "currentOutput": "\u1008",
-          "observedOccurrences": 10
+          "observedOccurrences": 10,
+          "reviewedValue": "\u1039\u1019",
+          "resolutionEvidence": {
+            "method": "Named word or punctuation context with known raw slots; visual-order preposed or kinzi glyphs are not separate words. Exact raw sequence counts can include repeated PDF text.",
+            "word": "\u101c\u102d\u1019\u1039\u1019\u102c",
+            "raw": "2D 1E 02 70 05",
+            "pageExample": 53,
+            "rawMatches": 10
+          }
         },
         "71": {
           "reason": "legacy bridge has no mapping; current fallback is not verified",
@@ -2058,6 +2332,30 @@
           ],
           "evidence": "Used as a numeral and in Burmese words; the raw glyph alone cannot choose.",
           "observedOccurrences": 1512
+        },
+        "2E": {
+          "reason": "Same raw glyph is used in contexts requiring \u1009 and \u1025; choose from word context rather than assuming one Unicode value.",
+          "currentOutput": "\u1025",
+          "candidateValues": [
+            "\u1009",
+            "\u1025"
+          ],
+          "observedOccurrences": 154,
+          "contextEvidence": {
+            "examples": [
+              {
+                "word": "\u1015\u1009\u1039\u1005\u1019",
+                "raw": "16 2E 4C 02",
+                "pageExample": 6
+              },
+              {
+                "word": "\u1025\u1000\u1039\u1000\u1020",
+                "raw": "2E 23 2F 30",
+                "pageExample": 2
+              }
+            ],
+            "status": "context-dependent; no unconditional raw-byte value"
+          }
         }
       },
       "candidateAlternates": {
@@ -2170,7 +2468,22 @@
         "30": "\u1020",
         "3A": "\u100f",
         "42": "\u100f\u1039\u100d",
-        "54": "\u103b\u103d"
+        "54": "\u103b\u103d",
+        "0E": "(",
+        "10": ")",
+        "33": "\u104d",
+        "41": "\u1004\u103a\u1039",
+        "4A": "\u1039\u1017",
+        "4B": "\u1039\u1013",
+        "52": "\u2019",
+        "61": "\u1039\u1015",
+        "6A": "\u1039\u1006",
+        "6C": "\u1039\u1010",
+        "6D": "\u1039\u1018",
+        "70": "\u1039\u1019",
+        "25": "\u100c",
+        "39": "\u1009\u102c",
+        "4C": "\u1039\u1005"
       },
       "visualOrderEvidence": {
         "rawOrphanFlags": 4258,
@@ -2267,6 +2580,74 @@
                 "ordered": "\u101c\u103b"
               }
             ]
+          }
+        }
+      },
+      "contextEvidence": {
+        "51": {
+          "value": "\u2018",
+          "previousOutput": "=",
+          "word": "\u2018\u1000\u104a\u1001\u2019",
+          "raw": "51 23 11 13 52",
+          "pageExample": 4,
+          "method": "Source uses paired quotation marks; raw 51 opens and 52 closes the examples."
+        }
+      },
+      "writingRules": {
+        "restrictedBytes": {
+          "4A": {
+            "precedingBytes": [
+              "02"
+            ],
+            "basis": "Context-specific stack pair supported by the observed upper/lower raw-byte context; not generalized to other upper consonants."
+          },
+          "4B": {
+            "precedingBytes": [
+              "1D"
+            ],
+            "basis": "Context-specific stack pair supported by the observed upper/lower raw-byte context; not generalized to other upper consonants."
+          },
+          "61": {
+            "precedingBytes": [
+              "16"
+            ],
+            "basis": "Context-specific stack pair supported by the observed upper/lower raw-byte context; not generalized to other upper consonants."
+          },
+          "64": {
+            "precedingBytes": [
+              "0B"
+            ],
+            "basis": "Context-specific stack pair supported by the observed upper/lower raw-byte context; not generalized to other upper consonants."
+          },
+          "6A": {
+            "precedingBytes": [
+              "1B"
+            ],
+            "basis": "Context-specific stack pair supported by the observed upper/lower raw-byte context; not generalized to other upper consonants."
+          },
+          "6C": {
+            "precedingBytes": [
+              "1D"
+            ],
+            "basis": "Context-specific stack pair supported by the observed upper/lower raw-byte context; not generalized to other upper consonants."
+          },
+          "6D": {
+            "precedingBytes": [
+              "02"
+            ],
+            "basis": "Context-specific stack pair supported by the observed upper/lower raw-byte context; not generalized to other upper consonants."
+          },
+          "70": {
+            "precedingBytes": [
+              "02"
+            ],
+            "basis": "Context-specific stack pair supported by the observed upper/lower raw-byte context; not generalized to other upper consonants."
+          },
+          "4C": {
+            "precedingBytes": [
+              "1B"
+            ],
+            "basis": "Repeated \u1005 stack supported by \u1015\u1005\u1039\u1005\u100a\u103a\u1038; different-upper-consonant source observation remains unresolved."
           }
         }
       }

@@ -88,7 +88,12 @@ export function encodeRawByteSlots(slots, profile, { byteChoices = {} } = {}) {
     // assuming logical Unicode order.
     const hasMedial = baseCount === 1 && slots.slice(0, i).some((s) => /[ျြ]/u.test(s));
     const value = slots[i] === "ါ" && hasMedial ? "ာ" : slots[i];
-    const available = choices.get(value) || [];
+    // When the same Unicode stack has different upper-consonant glyphs,
+    // select only bytes valid after the preceding raw base.
+    const available = (choices.get(value) || []).filter((candidate) => {
+      const restriction = rules.restrictedBytes?.[candidate];
+      return !restriction || restriction.precedingBytes.includes(output.at(-1));
+    });
     let hex = byteChoices[i];
     if (u && value === u.unicode) {
       const required = needsLongU ? u.long : u.short;

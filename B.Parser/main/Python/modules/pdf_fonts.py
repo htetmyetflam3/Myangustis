@@ -968,7 +968,11 @@ def encode_raw_byte_slots(slots, profile, *, byte_choices=None):
         has_medial = base_count == 1 and any(
             '\u103b' in preceding or '\u103c' in preceding for preceding in slots[:index])
         value = '\u102c' if slot == '\u102b' and has_medial else slot
-        available = choices.get(value, [])
+        # Resolve competing stack bytes by their permitted upper consonant.
+        available = [candidate for candidate in choices.get(value, [])
+                     if not rules.get('restrictedBytes', {}).get(candidate)
+                     or (output and output[-1] in
+                         rules['restrictedBytes'][candidate]['precedingBytes'])]
         code = byte_choices.get(index)
         if u and value == u['unicode']:
             required = u['long'] if needs_long else u['short']
