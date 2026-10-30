@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 """Download the books in mangled-pdf-names.txt from the scraper VPS.
 
-This is standalone and follows tools-box/python/vps.py's SSH defaults:
-  alias: hostingervps       private key: ~/.ssh/mylinux
+SSH settings come from your existing .env: SSH_HOST, SSH_USER, SSH_PORT,
+SSH_KEY and SSH_DIR. The current directory's .env is used by default; point
+--env to it if it is elsewhere. Process environment variables and explicit
+command-line options override file values, as in the scraper configuration.
 
 Examples:
-  python3 download-mangled-pdfs.py --representatives
-  python3 download-mangled-pdfs.py --book=1704101675047 --book=-1708528931770
-  python3 download-mangled-pdfs.py --remote-dir '~/pdfs/convertable' --dest ./pdfs
-  python3 download-mangled-pdfs.py --ledger /path/to/uploaded-host.txt
+  python3 download-mangled-pdfs.py --env /path/to/.env --representatives
+  python3 download-mangled-pdfs.py --env /path/to/.env --book=1704101675047
+  python3 download-mangled-pdfs.py --env /path/to/.env --dest ./pdfs
+  python3 download-mangled-pdfs.py --env /path/to/.env --ledger /path/to/uploaded-host.txt
   python3 download-mangled-pdfs.py --dry-run
 
 With no selection option, every PDF name in the flat list is requested. The
-list appends .pdf to exact dataset book names; original extension case is
-not known. The representative option requests eight starting PDFs instead. Without a local
-uploader ledger, the script searches the given remote directory recursively
-for matching PDF filenames. The default directory matches the scraper's
-SSH_DIR=pdfs default; pass --remote-dir if your archive is elsewhere.
+list appends .pdf to exact dataset book names; original extension case is not
+known. The representative option requests eight starting PDFs instead. Without
+a local uploader ledger, the script searches SSH_DIR recursively for matching
+PDF filenames; --remote-dir can override SSH_DIR for a particular run.
 
 Every download is checked against the original PDF SHA-256 from the dataset.
 Existing local files are never overwritten. Nothing on the VPS is modified.
@@ -35,6 +36,7 @@ import subprocess
 import sys
 import tempfile
 from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 
 # Filled from the verified public dataset, not from font/keyboard guesses.
@@ -175,6 +177,75 @@ class DownloadError(Exception):
     pass
 
 
+@dataclass(frozen=True)
+class SSHConfig:
+    host: str
+    user: str
+    port: int
+    key: Path | None
+    directory: str
+
+
+def env_values(path: Path, *, required: bool) -> dict[str, str]:
+    """Read only SSH settings; never print or persist the file contents."""
+    try:
+        lines = path.expanduser().read_text(encoding="utf-8-sig").splitlines()
+    except FileNotFoundError:
+        if required:
+            raise DownloadError(f"Environment file not found: {path}") from None
+        return {}
+    values: dict[str, str] = {}
+    for number, line in enumerate(lines, 1):
+        entry = line.strip()
+        if entry.startswith("export "):
+            entry = entry[7:].lstrip()
+        if not entry or entry.startswith("#") or "=" not in entry:
+            continue
+        name, value = entry.split("=", 1)
+        name = name.strip()
+        if name not in {"SSH_HOST", "SSH_USER", "SSH_PORT", "SSH_KEY", "SSH_DIR"}:
+            continue
+        value = value.strip()
+        if value[:1] in ('"', "'"):
+            closing = value.find(value[0], 1)
+            if closing < 0:
+                raise DownloadError(f"Unterminated quoted {name} in {path} at line {number}")
+            value = value[1:closing]
+        else:
+            value = value.split("#", 1)[0].strip()
+        values[name] = value
+    return values
+
+
+def load_config(args: argparse.Namespace) -> SSHConfig:
+    path = args.env if args.env is not None else Path(".env")
+    values = env_values(path, required=args.env is not None)
+
+    def setting(name: str, override: str | None = None, default: str = "") -> str:
+        if override is not None:
+            return override.strip()
+        return os.environ.get(name, "").strip() or values.get(name, "").strip() or default
+
+    host = setting("SSH_HOST", args.host)
+    user = setting("SSH_USER", args.user)
+    directory = setting("SSH_DIR", args.remote_dir)
+    if not host or not user or not directory:
+        raise DownloadError(f"Set SSH_HOST, SSH_USER and SSH_DIR in {path} or the environment")
+    if any(item.startswith("-") or any(ch.isspace() or ch == "\x00" for ch in item)
+           for item in (host, user)):
+        raise DownloadError("SSH_HOST and SSH_USER must be single valid SSH arguments")
+    if any(ch in directory for ch in "\x00\r\n"):
+        raise DownloadError("SSH_DIR contains invalid characters")
+    try:
+        port = int(setting("SSH_PORT", args.port, "22"))
+        if not 1 <= port <= 65535:
+            raise ValueError
+    except ValueError:
+        raise DownloadError("SSH_PORT must be a number from 1 to 65535") from None
+    key = setting("SSH_KEY", args.key)
+    return SSHConfig(host, user, port, Path(key).expanduser() if key else None, directory)
+
+
 def digest_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -203,18 +274,20 @@ def names_from(path: Path) -> list[str]:
     return names
 
 
-def ssh_args(host: str, key: Path, command: str) -> list[str]:
-    # Match vps.py; never disable host-key checks or ask for a password.
-    return [
-        "ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=20",
-        "-o", "ServerAliveInterval=30", "-i", str(key),
-        "-o", "IdentitiesOnly=yes", host, command,
+def ssh_args(config: SSHConfig, command: str) -> list[str]:
+    # Follow vps.py's non-interactive SSH behavior without changing host-key checks.
+    argv = [
+        "ssh", "-p", str(config.port), "-o", "BatchMode=yes", "-o", "ConnectTimeout=20",
+        "-o", "ServerAliveInterval=30", "-l", config.user,
     ]
+    if config.key:
+        argv.extend(["-i", str(config.key), "-o", "IdentitiesOnly=yes"])
+    return [*argv, config.host, command]
 
 
-def ssh(host: str, key: Path, command: str, stdout=subprocess.PIPE) -> subprocess.CompletedProcess:
+def ssh(config: SSHConfig, command: str, stdout=subprocess.PIPE) -> subprocess.CompletedProcess:
     try:
-        return subprocess.run(ssh_args(host, key, command), stdout=stdout, stderr=subprocess.PIPE, check=False)
+        return subprocess.run(ssh_args(config, command), stdout=stdout, stderr=subprocess.PIPE, check=False)
     except FileNotFoundError as error:
         raise DownloadError("ssh not found; install an OpenSSH client") from error
 
@@ -224,12 +297,12 @@ def failure(result: subprocess.CompletedProcess) -> str:
     return stderr[-1] if stderr else f"ssh exit {result.returncode}"
 
 
-def home_directory(host: str, key: Path) -> str:
-    if not key.is_file():
-        raise DownloadError(f"SSH key file not found: {key}")
-    result = ssh(host, key, 'printf "%s" "$HOME"')
+def home_directory(config: SSHConfig) -> str:
+    if config.key and not config.key.is_file():
+        raise DownloadError(f"SSH key file not found: {config.key}")
+    result = ssh(config, 'printf "%s" "$HOME"')
     if result.returncode:
-        raise DownloadError(f"Cannot connect to {host}: {failure(result)}")
+        raise DownloadError(f"Cannot connect to SSH_HOST: {failure(result)}")
     home = os.fsdecode(result.stdout).strip()
     if not home.startswith("/") or "\n" in home:
         raise DownloadError("The VPS did not return a usable absolute home directory")
@@ -258,13 +331,13 @@ def ledger_paths(path: Path, selected: list[str], home: str) -> dict[str, list[s
     return {name: hashes[PDF_SHA256[name]] for name in selected}
 
 
-def discover_paths(host: str, key: Path, directory: str, selected: list[str]) -> dict[str, list[str]]:
+def discover_paths(config: SSHConfig, directory: str, selected: list[str]) -> dict[str, list[str]]:
     # NUL delimiters keep spaces and non-ASCII filenames intact. `find` is
     # read-only and does not follow symlinked directories.
     command = f"find {shlex.quote(directory)} -type f -iname '*.pdf' -print0"
-    result = ssh(host, key, command)
+    result = ssh(config, command)
     if result.returncode:
-        raise DownloadError(f"Cannot search the remote PDF directory: {failure(result)}")
+        raise DownloadError(f"Cannot search SSH_DIR on the VPS: {failure(result)}")
     wanted = set(selected)
     found: dict[str, list[str]] = defaultdict(list)
     for raw in result.stdout.split(b"\x00"):
@@ -298,7 +371,7 @@ def install_without_overwrite(temp: Path, target: Path) -> None:
             raise
 
 
-def download_one(host: str, key: Path, name: str, candidates: list[str], dest: Path) -> bool:
+def download_one(config: SSHConfig, name: str, candidates: list[str], dest: Path) -> bool:
     expected = PDF_SHA256[name]
     target = dest / f"{name}.pdf"
     if target.exists():
@@ -316,7 +389,7 @@ def download_one(host: str, key: Path, name: str, candidates: list[str], dest: P
         temp = Path(temp_name)
         try:
             with os.fdopen(fd, "wb") as output:
-                result = ssh(host, key, f"cat -- {shlex.quote(remote)}", stdout=output)
+                result = ssh(config, f"cat -- {shlex.quote(remote)}", stdout=output)
             if result.returncode:
                 print(f"ERROR reading {remote}: {failure(result)}", file=sys.stderr)
                 continue
@@ -344,10 +417,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--list", type=Path, default=DEFAULT_LIST, help="flat PDF-name list (default: alongside script)")
     parser.add_argument("--dest", type=Path, default=Path("downloaded-pdfs"), help="local directory (default: ./downloaded-pdfs)")
-    parser.add_argument("--remote-dir", default="~/pdfs/convertable", help="VPS directory containing PDFs (default: ~/pdfs/convertable)")
+    parser.add_argument("--env", type=Path, help="path to existing .env (default: ./.env)")
+    parser.add_argument("--remote-dir", help="override SSH_DIR from the environment/.env")
     parser.add_argument("--ledger", type=Path, help="local scraper uploaded-host.txt: find remote paths by PDF hash instead")
-    parser.add_argument("--host", default="hostingervps", help="SSH alias (default: hostingervps, as in vps.py)")
-    parser.add_argument("--key", type=Path, default=Path.home() / ".ssh" / "mylinux", help="SSH private key file")
+    parser.add_argument("--host", help="override SSH_HOST from the environment/.env")
+    parser.add_argument("--user", help="override SSH_USER from the environment/.env")
+    parser.add_argument("--port", help="override SSH_PORT from the environment/.env")
+    parser.add_argument("--key", help="override SSH_KEY from the environment/.env")
     selection = parser.add_mutually_exclusive_group()
     selection.add_argument("--representatives", action="store_true", help="download the eight starting examples only")
     selection.add_argument("--book", action="append", help="select one book name or PDF filename; repeat (use --book=NAME)")
@@ -368,16 +444,17 @@ def main() -> int:
                 print(f"{name}\t{PDF_SHA256[name]}")
             print(f"{len(names)} selected; dry run did not connect to the VPS.", file=sys.stderr)
             return 0
-        home = home_directory(args.host, args.key.expanduser())
+        config = load_config(args)
+        home = home_directory(config)
         if args.ledger:
             paths = ledger_paths(args.ledger, names, home)
         else:
-            paths = discover_paths(args.host, args.key.expanduser(), remote_path(args.remote_dir, home), names)
+            paths = discover_paths(config, remote_path(config.directory, home), names)
         failures = 0
         for index, name in enumerate(names, 1):
             print(f"[{index}/{len(names)}] {name}", flush=True)
             try:
-                if not download_one(args.host, args.key.expanduser(), name, paths[name], args.dest):
+                if not download_one(config, name, paths[name], args.dest):
                     failures += 1
             except OSError as error:
                 failures += 1
