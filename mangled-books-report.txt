@@ -1,36 +1,72 @@
 MANGLED-BOOK REVIEW — GROUPED BY VISIBLE TEXT SYMPTOM
 Dataset SHA-256: 7014c9a29d2d61dcaa4b4dcbeb863ba9fb4c6b0d36ae19bcfbaf22e55c6d79e8
-Rows inspected: 306; flagged for review: 116; invalid/missing PDF hashes: 0.
+Rows inspected: 306; flagged for review: 167; invalid/missing PDF hashes: 0.
 Source: htetmyetflam3/scraper, revision 9a296cded8f0a267f4cb6b996c5bb37c6c60c9ee (verified file hash).
 A flagged passage does not mean the whole book is broken. Unflagged books are not certified clean.
 Groups can overlap. Similar symptoms do not prove the same font, PDF bytes, or cause.
 No original PDFs were inspected or verified by this report; the PDF hashes come from the dataset.
-Method: five 2,000-character windows spaced across each text, plus its first 12,000 characters
-for exact repetition and first 3,000 characters for unusual ASCII headings. Not every character is scanned.
+Method: whole extracted texts are counted for selected Latin, Myanmar-mark, A/U, other-script,
+private-use, paired-Latin and control patterns. Other rules use five 2,000-character windows,
+the first 12,000 characters for repetition/numbered layout, or the first 3,000 for ASCII headings.
+This is not an exhaustive detector for every possible problem or a font/encoding classification.
 Text lines below are up to the first three non-empty LF-delimited lines, JSON quoted to preserve spaces
 and expose control characters; line numbers refer to the original text. No spelling is changed.
 
-STARTING PDF SELECTION (8 distinct hashes; one preferred representative per group)
-These are starting points only: other PDFs in a group may use different fonts or need separate checks.
-  duplicate: "1704101675047" | 996c78a372e1bcd0ab27eb8e3b619c51216c00c84e1937ae0a4a1511b2b7cd43 | Adjacent repeated Burmese phrases
-  latin-mixed: "1681774700481" | cc54c33946db95c3fcb36969a09d243c87096f6b94c8e5524dc97a0eaf64153b | Dense extended-Latin characters mixed into Burmese
-  mark-order: "1706300888234" | 7becbb64de7b47145158d808f5498053e653e4f5aa823a3560ee429c4207dbd0 | Suspicious Myanmar mark ordering
-  missing-marks: "-1708528931770" | f9e1f34c38c180bd6b280436c916acf17f20941d89e8c1da6f4cec507d1a7292 | Very few Myanmar vowel/medial marks, without dense extended Latin
-  ascii-au: "1704101675047" | 996c78a372e1bcd0ab27eb8e3b619c51216c00c84e1937ae0a4a1511b2b7cd43 | Repeated A/U embedded next to Burmese
-  foreign-script: "-1758614468061" | 2a30c3a85ad1c4312382a226912b48e2c41178a9afd997f0149670eaff3673ec | Unexpected other-script characters in the samples
-  private-use: "1706303571424" | 895c872e9f7f725e52347eb03ffe920d7a6806deb378c5d4c4fc55908ad5f1b8 | Private-use characters in the samples
-  fragmented: "-1707218535397" | 3413b2b23db159c85370e4797095ec472ab4dc86a93d0cb1246213289d5e1c2e | Fragmented or disordered Burmese
-  ascii-heading: "1702975118935" | 167771967b783b6fb55142c47f73ef4b174f5ebd542276378499474ef3d72044 | Unusual ASCII strings near the beginning
+CURATED PDF SELECTION (39 distinct hashes across visible subtypes)
+The groups are represented, not proven equivalent: other PDFs can use different fonts or need separate checks.
+  "1704101675047" | 996c78a372e1bcd0ab27eb8e3b619c51216c00c84e1937ae0a4a1511b2b7cd43 | duplicate, mark-order, ascii-au | Repeated heading plus A/U next to Myanmar characters.
+  "1681774700481" | cc54c33946db95c3fcb36969a09d243c87096f6b94c8e5524dc97a0eaf64153b | latin-mixed | Dense é/è/â/à-like characters mixed with Myanmar.
+  "-1708528931770" | f9e1f34c38c180bd6b280436c916acf17f20941d89e8c1da6f4cec507d1a7292 | duplicate, missing-marks, ascii-au | Very few Myanmar marks and frequent adjacent B/D/R/A-style letters.
+  "-1758614468061" | 2a30c3a85ad1c4312382a226912b48e2c41178a9afd997f0149670eaff3673ec | foreign-script | Other-script characters in a short title followed by readable Burmese.
+  "1706303571424" | 895c872e9f7f725e52347eb03ffe920d7a6806deb378c5d4c4fc55908ad5f1b8 | private-use | Long repeated run of private-use characters in a page header.
+  "-1707218535397" | 3413b2b23db159c85370e4797095ec472ab4dc86a93d0cb1246213289d5e1c2e | fragmented | Many short, fragmented Myanmar tokens and isolated marks.
+  "1702975118935" | 167771967b783b6fb55142c47f73ef4b174f5ebd542276378499474ef3d72044 | duplicate, ascii-au, ascii-heading | Keyboard-like ASCII heading, repeated title and embedded A/U.
+  "1712821408320" | 46a083b83ee6d17f511b5b044ed967c716e7e7143dc113982dacfa1b4f7090b7 | latin-paired | Frequent Ò/Ó around Burmese passages.
+  "applied-hvac-system-in-marine-offshore-1703603560839" | 145a9800168def71eeffd0cd649fa624509b6eac578af5f9e81594cf865dfb07 | control-chars | Technical text with many C1 controls in a garbled-looking passage.
+  "1693107457569" | c7c6f007a90a544c683ec3f9725f8fa8e801bec1ec23137bbc20bafe161b67f5 | numbered-layout | Numbered contents-like lines with text and page numbers apparently interleaved.
+  "1706300888234" | 7becbb64de7b47145158d808f5498053e653e4f5aa823a3560ee429c4207dbd0 | mark-order | Many selected pre-vowel/mark sequences, including ေ် and ေိ.
+  "36-short-stories-of-jue-1708877870919" | b8b18d260cd2802332a964260db22686d9ce4a86d838f769137a91d1efd2c84d | ascii-au, ascii-heading | A/E/I/U adjacent to Myanmar, not only A/U.
+  "curiosity-science-magazine-year-2-issue-2-1696435557299" | a77c4e81c6465a033467d527c50552dbe53ba29d5fa07ff31dbb8b10a9cdfc12 | latin-mixed | Dense ǻ/Ǯ/Ǻ/ǳ-style characters mixed with Myanmar.
+  "1706118392082" | 53a6a711a4ab30fdc5bf800d274f40b70acc4d5070135eaba6ca32a7f99b3b68 | duplicate, ascii-heading, control-chars | Doubled individual characters in a heading and C0 controls.
+  "best-theory-of-physical-education-1693147797764" | b829b7791baff78020ccfe3093a5fbd2f46f85672b2181a08e57c66d194502b1 | foreign-script | Arabic-range ھ repeatedly embedded in Myanmar text.
+  "1699176399227" | f00590f1203cb695702ae49d4d110f1747efe91d388f1877a14f20b7c043a3b8 | private-use | Private-use U+F22F inside Myanmar words, unlike a private-use heading.
+  "-1758614352663" | cf9477ecfd358982d7e33d2eb21e2e0a62c7f1d1c986a3995e488531e0d7827f | fragmented | Particularly dense short-token fragmentation and isolated marks.
+  "1705152502270" | 0ed4f55a509ae508cc0b9ff511edf7425fb475bc34a3e2f9e3cdbc3ee67bfdfa | duplicate, ascii-heading | A long multiword heading repeated without separators.
+  "1706119141337" | c71400fc897dcecbe8113a88bc27d2661545f8e5467b1e71a58c9a7e75d7e83b | latin-paired | Frequent Ô/Õ around Burmese dialogue, distinct from Ò/Ó.
+  "anawrahta-the-founder-of-the-bagan-empire-1783991149510" | d6f60429d99d4b554da68b110ac0d486a6fa24bdcd8e4fcffd401892e69cdf77 | foreign-script, ascii-heading, control-chars | Dense Samaritan/NKo-range characters mixed with keyboard-like ASCII.
+  "-1759341726906" | 979daff6007030888c8f8646ab277ffac4e2b34ba682d8c32646d09300ee0faf | mark-order, control-chars, numbered-layout | Frequent mark sequences, controls and a long numbered contents line.
+  "curiosity-science-magazine-year-2-issue-4-1696435591836" | 958d3844ca63a1f06eb17173ebe60760777ae48eae181ec74e22fb6dd87ab469 | latin-mixed, private-use, ascii-heading | Both ǻ-series and é-series text, plus a private-use name.
+  "1792041524361" | 50ec584aa42586f5306bd1e109ac960e9aa863a256a0fd28422390965f9328e7 | duplicate, missing-marks, ascii-heading | Mark-poor text with repeated fragments and mixed ASCII characters.
+  "1693064173472" | 52fd6d97651bcedc4e88ccf18785ffa0fd54d38f97cca6b3cd0020206835ab4c | foreign-script | Greek capital Β repeatedly inserted between Myanmar words.
+  "1706118210298" | 10f7b1fa18deef62d4060e09b34229663b7e5aeaba1177533933d2b37abc3dbe | duplicate, ascii-heading | Fourfold individual letters and an eightfold repeated Burmese heading.
+  "1784999368188" | c92f8ec930cb6837037443dc2542bf18f46d40bb1225844262d012b72811ccfa | mark-order, control-chars | C1 controls within Burmese text alongside unusual mark sequences.
+  "1708961902669" | 8371a6d6a6a6bf10489ca7fb780dc74cd9b84a41d1202e54475700c8e3b5db5a | latin-mixed | An extended-Latin mixture with comparatively prominent ß/è.
+  "chinese-stories-part-3-4-1705386897174" | 72ff88fca9353b299eae834fa89d9322a98810141ab1598f0af869171d915cac | duplicate, mark-order | Spaced repeated heading and varied pre-vowel/mark sequences.
+  "at-away-1681716501732" | 01dcdc879c6c0aa8613d5b771706c337a754ae1b5b51ff1b6b11de5f87ff69b0 | foreign-script, latin-paired | Greek and CJK-like characters in repeated page/footer material.
+  "1689959710117" | 49a94a490cbd276b03af7ed48db25ffeb0b09855c513b52b742b92934984c442 | private-use | Isolated U+F0B7 private-use markers in Myanmar contents-like text.
+  "-1758699987420" | a8d00a63cadd6c9f1e6f54c75e4d36bae3486d8b42ac8e8db814f1acddc588ab | mark-order, fragmented | Fragmented Myanmar tokens with a sampled mark-order signal.
+  "100-short-stories-1783992392966" | d27c8ae38329d0b164b2e82bb1c02173b7025e6c28610e7e63c1e68218225c48 | fragmented | Fragmented text beginning with isolated and short Myanmar tokens.
+  "1706302190221" | 80a28041b27a5db83fac17ef11a8cf1d664c8a8083d255d258facc7a6cb5f082 | latin-mixed | A separate long example of the é/è extended-Latin mixture.
+  "-1706804477315" | 547849b879467dfee7ad6b9a3f10156c21b86671044d1a785e51eefd0e63c8f7 | fragmented | Short-token fragmentation with a different opening and isolated marks.
+  "1785661897658" | b6336154d19f7292dd8c5bfe49ccd87103aeed8eadb7927428a08b6c1e5ab815 | duplicate, ascii-heading | Eightfold individual letters in a heading and repeated Burmese names.
+  "1693245630110" | 853d9c207e8e1403e1bc2c5ac319ccf74cc8f520f6da675a1610dabbea108c86 | mark-order | A different balance of pre-vowel and vowel/mark sequences.
+  "1784274916692" | 20c7a6a0e3ea3063f87d1b55d9a7d6ac68e40181da3e6b8a773fbaa3bad9decd | duplicate | A complete multiword title repeated with spaces between copies.
+  "1706085249444" | 89800d6c2e5af45d2e71f41844a532aa2d8056c69a83041175eb02fd568a373a | ascii-heading | Repeated keyboard-like ASCII and a template marker; may be intentional.
+  "1693904077870" | 3ad5c61f0547a392207613258cc6a9443e74a012263f9b8ff6133fe9b3facc19 | ascii-heading, control-chars | Form-feed/C1 controls in a header alongside keyboard-like ASCII.
 
-The flat list (mangled-pdf-names.txt) and standalone VPS downloader are at the repository root.
-The list appends .pdf to each exact dataset book name; the original file-extension case has not
-been verified. The downloader searches .pdf names case-insensitively and verifies the PDF hash.
-The downloader reads SSH_HOST, SSH_USER, SSH_PORT, SSH_KEY and SSH_DIR from your existing .env.
+See representative-pdf-types.txt for all 39 selected PDFs, hashes and excerpts.
+representative-pdf-names.txt is the bounded selection; mangled-pdf-names.txt is the larger review index,
+not a list of confirmed errors or mandatory downloads. The index appends .pdf to dataset book names;
+original extension case is unverified. The downloader verifies the dataset hash after transfer.
+It reads SSH_HOST, SSH_USER, SSH_PORT, SSH_KEY and SSH_DIR from your existing .env.
 SSH_DIR is searched recursively; no fixed VPS directory or SSH alias is assumed.
-From the directory containing those two files, download just the starting examples with:
-  python3 download-mangled-pdfs.py --env /path/to/.env --representatives
-Or use the uploader's local uploaded-host.txt ledger to find remote paths by hash:
-  python3 download-mangled-pdfs.py --env /path/to/.env --representatives --ledger /path/to/uploaded-host.txt
+By default it requests the 39 selected PDFs outside the repository and never uses Git:
+  python3 download-mangled-pdfs.py --env /path/to/.env
+Use --limit 10 for the first batch, --offset 10 --limit 10 for the next, or --book=NAME for one PDF.
+Use --sizes-only to check located candidates' sizes without downloading; paths are not hash-verified.
+Use --all only if you explicitly want the entire review index. Actual PDF sizes are unknown here.
+If names were changed, use --ledger /path/to/uploaded-host.txt or --search-by-hash; the latter
+reads every remote PDF and may be slow, but transfers only hashes before downloading matches.
 The downloader verifies PDF SHA-256 and never overwrites existing files. A ledger entry is not
 proof that a remote file still exists. The VPS connection has not been tested in this sandbox.
 
@@ -106,7 +142,7 @@ Many extended-Latin characters immediately touch Myanmar characters; this is a v
   row 266: "h1-n1-1688180802659" | bda5a6ba9487170f4b4b276cf58b3005c2899b374fb7693ad067286a15a3cac2
   row 268: "h1-n1-1716537335159" | f70065d5f86e612e2f3ec39eda3f32822c52a91f8499cf55ad088221127dea24
 
-[mark-order] Suspicious Myanmar mark ordering (10 books)
+[mark-order] Suspicious Myanmar mark ordering (11 books)
 Repeated occurrences of selected U+1031/mark sequences; this is a review heuristic, not a complete Myanmar grammar or a correction.
   row 2: "-1759341726906" | 979daff6007030888c8f8646ab277ffac4e2b34ba682d8c32646d09300ee0faf
   row 37: "1693245630110" | 853d9c207e8e1403e1bc2c5ac319ccf74cc8f520f6da675a1610dabbea108c86
@@ -117,10 +153,11 @@ Repeated occurrences of selected U+1031/mark sequences; this is a review heurist
   row 131: "1758724351533" | 035769972042db727f9767441b761757e37208b4fea35c9396478db7780d6547
   row 175: "1784999368188" | c92f8ec930cb6837037443dc2542bf18f46d40bb1225844262d012b72811ccfa
   row 233: "chinese-stories-part-3-4-1705386897174" | 72ff88fca9353b299eae834fa89d9322a98810141ab1598f0af869171d915cac
+  row 269: "hacker-handbook-1790571086574" | d68b851baec2dd61c298e6b791611d5ed68711b00c3a2f1023e826e0cf723256
   row 292: "-1758699987420" | a8d00a63cadd6c9f1e6f54c75e4d36bae3486d8b42ac8e8db814f1acddc588ab
 
 [missing-marks] Very few Myanmar vowel/medial marks, without dense extended Latin (2 books)
-A low mark-to-base ratio in the samples; some text may be in another language or omit marks intentionally, so review the excerpts.
+A low mark-to-base ratio in the samples or full text; some text may be in another language or omit marks intentionally, so review the excerpts.
   row 0: "-1708528931770" | f9e1f34c38c180bd6b280436c916acf17f20941d89e8c1da6f4cec507d1a7292
   row 207: "1792041524361" | 50ec584aa42586f5306bd1e109ac960e9aa863a256a0fd28422390965f9328e7
 
@@ -144,16 +181,20 @@ Repeated A or U directly adjacent to Myanmar characters; some books also have du
   row 234: "city-poems-1706870169476" | 0dfb86575e4ad22604bdc1733570b3bce3a17700b1f4ccb8870a08331f9ba510
   row 269: "hacker-handbook-1790571086574" | d68b851baec2dd61c298e6b791611d5ed68711b00c3a2f1023e826e0cf723256
 
-[foreign-script] Unexpected other-script characters in the samples (4 books)
-Arabic/Samaritan-range characters or many Greek capital betas; multilingual content and intentional symbols are possible.
+[foreign-script] Other-script characters in or near Burmese (5 books)
+U+0600–U+083F or Greek characters in the text; multilingual content and intentional symbols are possible.
   row 1: "-1758614468061" | 2a30c3a85ad1c4312382a226912b48e2c41178a9afd997f0149670eaff3673ec
   row 35: "1693064173472" | 52fd6d97651bcedc4e88ccf18785ffa0fd54d38f97cca6b3cd0020206835ab4c
   row 220: "anawrahta-the-founder-of-the-bagan-empire-1783991149510" | d6f60429d99d4b554da68b110ac0d486a6fa24bdcd8e4fcffd401892e69cdf77
+  row 225: "at-away-1681716501732" | 01dcdc879c6c0aa8613d5b771706c337a754ae1b5b51ff1b6b11de5f87ff69b0
   row 227: "best-theory-of-physical-education-1693147797764" | b829b7791baff78020ccfe3093a5fbd2f46f85672b2181a08e57c66d194502b1
 
-[private-use] Private-use characters in the samples (1 books)
+[private-use] Private-use characters (4 books)
 A private-use character needs the original font or other evidence to interpret; it is not automatically an unknown glyph.
+  row 24: "1689959710117" | 49a94a490cbd276b03af7ed48db25ffeb0b09855c513b52b742b92934984c442
+  row 50: "1699176399227" | f00590f1203cb695702ae49d4d110f1747efe91d388f1877a14f20b7c043a3b8
   row 98: "1706303571424" | 895c872e9f7f725e52347eb03ffe920d7a6806deb378c5d4c4fc55908ad5f1b8
+  row 251: "curiosity-science-magazine-year-2-issue-4-1696435591836" | 958d3844ca63a1f06eb17173ebe60760777ae48eae181ec74e22fb6dd87ab469
 
 [fragmented] Fragmented or disordered Burmese (23 books)
 Many very short Myanmar tokens plus isolated marks, a broad review signal that can also occur in verse, tables or OCR/layout extraction.
@@ -217,6 +258,82 @@ Keyboard-like strings, repeated letters, or low-vowel mixed-case strings in the 
   row 278: "heartache-1691950053296" | 6fd9600b38768240eef4998c22bdb0ca515514a78942279d40965af14cc9ecd2
   row 280: "his-famous-novels-with-a-brandy-1706018918977" | a1ab1bbae04af952b58d289ec9e3ecea447582377822086cf632838f25d6c34c
 
+[latin-paired] Paired accented-Latin markers (47 books)
+At least 25 each of Ò and Ó, or of Ô and Õ; some occur around Burmese passages like quotation marks. They could also be intentional text or decoration.
+  row 10: "1681716042142" | 83ea2d8bdf45859cc3e6e48a1626a3e226932472dfb6e6fc2ae31655f3d5e827
+  row 14: "1683082497742" | a301c7739318272df4fdf1e3c19e4d973f870b2f4244af55903e85882b38c840
+  row 15: "1683900729176" | c6047d09615927313c2abd2e758b6f2d92c07fa413891e770b0879b599a1af03
+  row 22: "1689564403074" | c72e5d5b30ce092b4cbf9269eeb065038ad3c4cda7ef9eb2d6621a32141a20bb
+  row 27: "1690911230429" | 2a693d7d1013d37a6e9ad0766d576fd441c25b9efd3e3c1b75190d95acd9ac15
+  row 32: "1691448988172" | 5570b7f647ac4f5c8c9129ba4573a93d169ca2cd2b69c813237ec68a9d395d4c
+  row 44: "1694508363864" | 4da677a8da3c247bb1a3e535c3afead9a726d07c196ae1a1f76d7d11b4d359ca
+  row 49: "1698055104078" | b558dc3e6e27146076c5231a897cdce270185ad5cc39dd3fd026318187121991
+  row 59: "1703270109879" | 1a4387d0e45eae2c2ca8e06768b64a35010f842cc6289fa45e3eac17e45d4fbf
+  row 61: "1703524837273" | 903db33bbaa5d410383d544ef03d9d0adf2cbb7eaa420e4af7e7cf113fdbd196
+  row 69: "1706036024958" | 3888a57258e62e92c111ae19702e35f4ab63372bce3f27eb19c52feae56794a1
+  row 74: "1706115383096" | be8720d17999e4f5e590c17ee2f87371ce5018085d9543f1b68617bea9e8f0ec
+  row 80: "1706119140545" | 83b1ee5e6f01068ca5deab7e9b2ea78a817bab84489fd80d56142da2401d2f66
+  row 81: "1706119141337" | c71400fc897dcecbe8113a88bc27d2661545f8e5467b1e71a58c9a7e75d7e83b
+  row 82: "1706119156858" | 3d0541ad300de483300692241fb9e8bf75a6b4131ac3b673ef3db91b4273516b
+  row 83: "1706176961593" | 58a98abe48049bfc99f33742f745e7507a692ed235d2081bb3279cf9ed3a8571
+  row 85: "1706301383341" | 86768933e3a41698946f357be91739e5c2cec10fe53b6198b05dd9c756056015
+  row 107: "1706494294594" | 8b7a2b8daa3f1e370a77ee137d92d0441284cc9bd36cd90db5c4c99c9d3d398d
+  row 122: "1712821408320" | 46a083b83ee6d17f511b5b044ed967c716e7e7143dc113982dacfa1b4f7090b7
+  row 123: "1714041032569" | b666e484a3f09470b7e43949ba51e1916bcff5134a77650e9dc55f85f0614f4f
+  row 124: "1716336222602" | 798495aab8de16c968ece5bcbee34ccb9aa201d10595cf638371e2d480f502c7
+  row 130: "1758701152750" | 5b86257ccfa857e55c7af6a671fa716514ebbd28fbf2236f3ba509bb8fe020c0
+  row 139: "1758980446382" | a544cf89ef351b988dc0c5442f3619ef31434a670633cfedc4bd8bced78cda86
+  row 140: "1758987502476" | 11d0c9d856ad020c529d6a58c0228f2b957dcf3eeb6b5f3dd563a067a52826a2
+  row 145: "1759598726360" | f949c27bb3addf0fdd0fe1f1fd1f4d804baeb465b914f002ec9241bb6d6fd140
+  row 153: "1761410353665" | fc03ac451b1ecfa18384c856c3410883322a7a9e2887dbef534127b87a89db05
+  row 161: "1773705881963" | 9625383d833af522aec0ecd1e8617c19f5f465d4288253dcc0bc49be35ae1746
+  row 164: "1775189898005" | 1629bc0a5ec8c71478ff59ad92d6743058180f6de849875215f145dfa2c48885
+  row 166: "1783948012042" | 602840d11c2ead4054cf00338933cc48bbd5f5018ce87d1ea9cc792d7789af60
+  row 167: "1783952099463" | 39bf26f9ecf4bd60060b1a0c3b2529acd45d05fed0c82aea695077e98cb71b9d
+  row 178: "1785589730113" | e3dad51edb2daf00a8db781d0b91a86c781b95a0b264052b5be32e57d67f08a1
+  row 185: "1785685700221" | 8131420fb798f3e8965dc19170d4c7f07528259c37857c15cfab26a415a8b131
+  row 196: "1789702727965" | e3dd911beba97bfe30022ffc2a0dfaf86aca1548b9663d3639a0c6484ab16f1f
+  row 216: "a-coat-1680281236656" | ee94fe10d4d66269c87864dd9a65c13f071017fcc9b456067f19f72aebe58f40
+  row 218: "a-portrait-outline-of-sai-hte-sai-1759432455621" | e49c2257c0f516e4626ceb7b63bc0db8eb1325bcd97525d1fda5480c9f57866d
+  row 221: "android-mobile-repair-guide-1680791177349" | ac4a264beeaa8c92763dce8d6cc9744a05b5964fa500b7e961a087bf358b260a
+  row 225: "at-away-1681716501732" | 01dcdc879c6c0aa8613d5b771706c337a754ae1b5b51ff1b6b11de5f87ff69b0
+  row 228: "bob-priest-world-top-comedy-short-stories-1706312521763" | 025465aa716b368842cb4c1085db41d3b26f483c1e7875b831b0bfa352aa2b07
+  row 230: "chillers-and-chilled-water-systems-1785673326897" | b55416c65067c0b6f337d5ea370346e4a671dd4c0eef45c063e6a60e610cb54a
+  row 242: "curiosity-science-magazine-year-1-issue-3-1691666171451" | 4f1316ad7f8b2698721646fdd9287789a2689a48cf9c29396fba918e78108404
+  row 246: "curiosity-science-magazine-year-1-issue-7-1787061931055" | e62158933d3eec51c065368fe0783aefae9f14bf878bda823d476c8b01fea6b8
+  row 248: "curiosity-science-magazine-year-1-issue-9-1696435525386" | d75b9ae2cd4b4f2f46391f70ddcaf514b6c108744a24ff369a0f1e187389ddef
+  row 252: "dhamma-satkyar-1696943133253" | 1f41b9d0a2baad5b841b9c3c068b9c8b049cc056cea2a574156ff5d7890fd680
+  row 256: "fear-and-your-life-1760260200746" | aaac05609518858573d8a047a905473079430e58713e9a6cd7e1877f3e5c6ea2
+  row 258: "focus-youth-magazine-1706129290509" | ee6a05680d24deceb665bd40823aae9c1293aabcf347935066c5b4177b3360fb
+  row 279: "heartbeat-1786762037941" | f7b2d9f0f984e93aa5fa5f7cfc39dfdfa9c25952b57dd478e7e0f7ca7e20c350
+  row 281: "ho-chi-minh-1707836407447" | 5dc31c0980dc242d70ecd27defc9a8a5f43254ba4d618259d809b1ed3bee630d
+
+[control-chars] Repeated control or replacement characters (8 books)
+At least 30 C0/C1 control characters or U+FFFD, excluding tabs, CR and LF; a form feed can be an intentional page break.
+  row 2: "-1759341726906" | 979daff6007030888c8f8646ab277ffac4e2b34ba682d8c32646d09300ee0faf
+  row 41: "1693904077870" | 3ad5c61f0547a392207613258cc6a9443e74a012263f9b8ff6133fe9b3facc19
+  row 77: "1706118392082" | 53a6a711a4ab30fdc5bf800d274f40b70acc4d5070135eaba6ca32a7f99b3b68
+  row 131: "1758724351533" | 035769972042db727f9767441b761757e37208b4fea35c9396478db7780d6547
+  row 155: "1761689865836" | ac8f11673538fb7c1256f1bffd3f34ecd36004ee527f270a5ccbdc1bba0cdc10
+  row 175: "1784999368188" | c92f8ec930cb6837037443dc2542bf18f46d40bb1225844262d012b72811ccfa
+  row 220: "anawrahta-the-founder-of-the-bagan-empire-1783991149510" | d6f60429d99d4b554da68b110ac0d486a6fa24bdcd8e4fcffd401892e69cdf77
+  row 224: "applied-hvac-system-in-marine-offshore-1703603560839" | 145a9800168def71eeffd0cd649fa624509b6eac578af5f9e81594cf865dfb07
+
+[numbered-layout] Long numbered contents-like line (12 books)
+A long line near the start containing the Burmese contents label, many Myanmar letters and numbers; it may be an ordinary contents list rather than a reading-order problem.
+  row 2: "-1759341726906" | 979daff6007030888c8f8646ab277ffac4e2b34ba682d8c32646d09300ee0faf
+  row 36: "1693107457569" | c7c6f007a90a544c683ec3f9725f8fa8e801bec1ec23137bbc20bafe161b67f5
+  row 118: "1707666661680" | 023d001e2aadd106b889babf73dec3d3b4c1a3d66d68622cda7637ecdff3543b
+  row 119: "1707666773664" | a74cff9e4c1d423663b7579d58b18211c6d26059307d5deb2e2b4e472d67701a
+  row 129: "1758620453187" | 6889e38f449b050bafa96f9a347009d3846ac01c18b823377c6f95c7292748b4
+  row 138: "1758980418795" | 84266fb92b23582d793e244ddca76608b9aea2c91b33d9b81073ed29541e244f
+  row 196: "1789702727965" | e3dd911beba97bfe30022ffc2a0dfaf86aca1548b9663d3639a0c6484ab16f1f
+  row 222: "animal-cycle-1784260642033" | efc0cd81f8d0a7a20df9dd70efe604f2a44e3767bcd0f2563b443325a2c40a10
+  row 231: "chinese-stories-2-1705316817328" | 87d96bf2559f38f9e17d0478d4f6cb80fd5c757be7df84cabac8cf80768bd47c
+  row 232: "chinese-stories-part-1-1705317289776" | 8a90c838a0e3d7ae5174b34df7f18e5c0ab7434e4fb176e42380bc45a36940ff
+  row 252: "dhamma-satkyar-1696943133253" | 1f41b9d0a2baad5b841b9c3c068b9c8b049cc056cea2a574156ff5d7890fd680
+  row 275: "heads-of-japan-1785609388123" | 899d526e48eaf6c504632f9ad808dbcf2fda6bd35a30d84e8835562f540dfb15
+
 BOOK DETAILS — FIRST THREE NON-EMPTY LINES AND OBSERVED SIGNALS
 
 Book: "-1708528931770"
@@ -246,12 +363,16 @@ Signal [foreign-script]: 11 other-script and 0 Greek beta characters in samples;
 Book: "-1759341726906"
 Dataset row: 2
 PDF SHA-256: 979daff6007030888c8f8646ab277ffac4e2b34ba682d8c32646d09300ee0faf
-Groups: mark-order
+Groups: mark-order, control-chars, numbered-layout
 Text line 1: "မာတိကာ စဉ် အေကြာင်းအရာ စာမျက်နှာ (က)  စပါးမျိုး ၁။ မိုးစပါးနှငေ့် နွစပါးအေကြာင်းသေိကာင်းစရာ ၁   ၂။ တစ်ဧကအထွက်နှုနြ်းမင့်မားသည့် စပါးမျိုးများအစားထိုးစိုက်ပျေိုးရး ၄   ၃။ ေခတ်သစ်စပါး ရောကျာ်-၁ (အိုင်အာ-၈) မှ သည် ၆   ၄။  မြစိမေ်းရာင် စပါးတစေ်ခတ် ဆန်းသစေ်စခဲ့သည် ၈   ၅။ မျေိုးကာင်းမျိုးသန့်ကိုစိုက်ပျိုး စပါးအထွက်နှင့် ဝငေ်ငွတိုး ၁၀   ၆။ ေဒသေရေမြနှင့် ကိုက်ညီသညေ့် နွစပါးမျေိုးကာင်းကေို ရွးချယ်စိုက်ပျိုး ၁၃   ၇။ ေမျှာ်လင့်အားထား အထွကေ်ကာငေ်းတာငေ်ပါ်စပါး ၁၇   ၈။ ကိုယ်အားကိုယ်ကိုး၍ မျိုးသန့်ပွားများ ကိုယ့်မျိုးကိုယ်ထားနည်း ၂၀   (ခ) စိုက်ချိန် ၉။ သီးနှံစိုက်စွမ်းအား မြင့်မေားရး မိုးစပါးစိုက်ချိန်မှန်ကေိုရွး ၂၆   ၁၀။ ေနွစပါးအထွက်တေိုးရး စိုက်ချိန်မှန်ကေိုရွး ၃၀   (ဂ) စိုက်ပျိုးနည်းစနစ် ၁၁။ ေနွစပါးအထွက်နှုန်းမြင့်မေားရး စိုက်ပျိုးနည်းစနစ်မှန်ကေိုရွး ၃၄   ၁၂။ စပါးတိုက်ရိုက်မျေိုးစ့ချ အေခြာက်စိုက်နည်း ၃၉   ၁၃။ အစိုတမန်းပြငေ် နွစပါးတိုက်ရိုက်မျေိုးစ့ချစိုက်နည်းစနစ် ၄၂   (ဃ) ပျိုးသက် ၁၄။ ဆင်းသွယ်လတ်စပါးမျိုးနှင့် ပျိုးသက်အကyီးဆုံးထားရှိ စိုက်ပျိုးနိုင်မှု ၄၆   (င) ေကာက်ကွက် ၁၅။ ေမျှာ်မှန်းသည့် ပန်းတိုင်စပါးအထွကေ် ကာက်ကွက်မှန်သညေ့် သာ့ချက် ၄၈   (စ) ေြမဩဇာ ၁၆။ စပါးစိုက်ပျိုးရာတွငြေ် မဩဇာကို အကျိုးရှိစွာသုံးစွဲပါ ၅၂   (ဆ) စပေါးပါင်းမြက် ၁၇။ စပါးစိုက်ခငေ်းပါင်းနှိမ်နင်းနည်း ၅၇   ၁၈။ စပါးအတွက် ဘက်စေုံပါင်းမြက်ကာကွယ်နှိမ်နင်းနည်းစနစ် ၆၀   ၁၉။ ေနွစပါးအထွက်နှုန်းမကျဆငေ်းရေး ပါင်းမြက်ကာကွယ်နှိမ်နငေ်းပး ၆၂   ၂၀။ ေနွစပါးစိုက်ပျိုးရာတွငေ် ပါင်းမြက်အဟန့်အတားနည်းလမ်းစုံဖြင့် ဖယ်ရှား ၆၅ "
 Text line 3: " (ဇ) ရိတ်သိမ်းချိန် ၂၁။ စပါးမျိုးအလိုက် အထွက်စွမ်းရည်အပြည့်အဝရရှေိရး ရိတ်သိမ်းချိန်မှန်၍ ၇၀    ေခြွေလှ့နည်းစနစ်မှနေ်စလို (စျ) စပါးအထွက်တေိုးရး ၂၂။ စပါးပန်းတိုင်အထွက်နှုန်းရရှေိရး ပြုပြငေ်ဆာင်ရွက်ရန် နည်းစနစ်များ ၇၄   ၂၃။ စပါးပင်သဘာဝ ကyီးထွားမှုကာလကိုမူတည် တိုးမြှင့်အထွက်စွမ်းရည် ၈၀   ၂၄။ ေနွစပါးအထွက်တေိုးရး လိုက်နောဆာင်ရွက်ရန် နည်းစနစ်များ ၈၄   (ည) သီးနှံပုံစံ ၂၅။ စပါးအေခြခံ သီးထပ်သီးနှံပုံစံ ၈၇   ၂၆။ မိုးနညေ်းဒသအတွက် နှစ်သီးစားသီးထပ်သီးနှံပုံစံ ၉၀   ၂၇။ မိုးဦးမေိုးနှာင်းယာသီးနြှေံ မလပ်မထားအကျိုးများ ၉၄   ၂၈။  ပြည်ပပို့ကုန်ပဲမျိုးစုံ သီးထပ်စိုက်ပျေိုးမြဆီလွှာဖွံ့ဖြိုး ၉၉   ၂၉။  ပြည်တွင်းစားသုံးဆီဖူလေုံရး ၁၀၃   ၃၀။ ဆီထွကေ်နကြာ စိုက်ပျိုးပါ ၁၀၉   (ဋ) ဟင်းသီးဟင်းရွက်နှင့် သစ်သီးဝလံ ၃၁။ ခရမ်းချဉ်နှင့် ငြုပ်စိုက်ခင်း လိုအပ်သည့်အာဟာရြေ မဩဇာထည့်သွင်း ၁၁၃   ၃၂။  ပြုစေုစာငေ့်ရှာက်နည်းစနစ်မှန် သရက်သီးအရည်အေသွေးကာငေ်းစရန် ၁၁၆   (ဌ) ဗီဇပြုပြင်သီးနှံ ၃၃။ တရုတ်ပြည်သူ့သမ္မတနိုင်ငံ၏ ပထမဦးဆုံးဗီဇပြုပြင်စပါးမျိုး ၁၁၈   ၃၄။ ဗီဇပြုပြင်သီးနှံများအေပါ် ဖွံ့ဖြိုးပြီးနိုင်ငံများ၏ ေလ့လာဆန်းစစ်မှု ၁၁၉   (ဍ) ေရွှရတုမှတ်စု ၃၅။  ကyုံေတွ့ခဲ့ရသမျှ စိုက်ပျေိုးရးဘဝ ၁၂၁        "
 Text line 5: "၁ "
 Signal [mark-order]: 215 selected mark sequences in samples; character offset 62
   Sample: "က)  စပါးမျိုး ၁။ မိုးစပါးနှငေ့် နွစပါးအေကြာင်းသေိကာင်းစရာ ၁   ၂။ တစ်ဧကအထွက်နှုနြ်းမင့်"
+Signal [control-chars]: 31 controls or replacement characters in full text; character offset 19623
+  Sample: "ာ မြန်မာ့လယ်ယာစိုက်ပျေိုးရးက\u0094ကို မြစိမေ်းရာင်စပါးဖြင့် တစေ်ခတ်ဆန်းသစေ်စခဲ့သည်။       "
+Signal [numbered-layout]: long numbered contents-like line in first 12,000 characters; character offset 0
+  Sample: "မာတိကာ စဉ် အေကြာင်းအရာ စာမျက်နှာ (က)  စပါးမျိုး ၁။ မိုးစပါးနှငေ့် နွစပါးအေကြာင်းသေိကာင်းစရာ ၁   ၂။ တစ်ဧကအထွက်နှုနြ်းမင့်မားသည့် စပါးမျိုးများအစားထိုးစိုက်ပျေိုးရး ၄   ၃။ ေခတ်သစ"
 
 Book: "1680800753958"
 Dataset row: 6
@@ -262,6 +383,16 @@ Text line 6: " )"
 Text line 7: "၂"
 Signal [duplicate]: at least 3 consecutive copies; character offset 2293
   Sample: "စာရေးသူ၏အမှာစာစာရေးသူ၏အမှာစာစာရေးသူ၏အမှာစာစာရေးသူ၏အမှာစာ"
+
+Book: "1681716042142"
+Dataset row: 10
+PDF SHA-256: 83ea2d8bdf45859cc3e6e48a1626a3e226932472dfb6e6fc2ae31655f3d5e827
+Groups: latin-paired
+Text line 1: "mmcybermedia.com                                                                          "
+Text line 3: "မဟာဆွေ - ဝတ္ထုတိုပေါင်းချုပ်(၃) "
+Text line 5: "ပုံနှိပ်မှတ်တမ်း "
+Signal [latin-paired]: full-text counts Ò/Ó=1337/1333, Ô/Õ=17/17; character offset 1849
+  Sample: "်သည် အိုးတည်နစ် နစ်တော့လေရာ Òကယ်တော်မူပါ၊ လုပ်ကြပါဦးÓ နှင့် ကုန်းအော်ကြ၊ ခြေမကိုင်မိ၊"
 
 Book: "1681774700481"
 Dataset row: 11
@@ -276,12 +407,24 @@ Signal [latin-mixed]: 3284 Myanmar/extended-Latin adjacencies in samples; charac
 Book: "1683082497742"
 Dataset row: 14
 PDF SHA-256: a301c7739318272df4fdf1e3c19e4d973f870b2f4244af55903e85882b38c840
-Groups: ascii-heading
+Groups: ascii-heading, latin-paired
 Text line 1: "qwertyuiopasdfghjklz"
 Text line 3: "MMMTEASHOP.COM "
 Text line 17: "       ««    ချစ် û1ÿ0 û1ÿ0 - 6  7  8    »» "
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 0
   Sample: "qwertyuiopasdfghjklz\n\nMMMTEASHOP.COM \n \n \n \n \n \n \n \n \n                      "
+Signal [latin-paired]: full-text counts Ò/Ó=623/623, Ô/Õ=0/0; character offset 8688
+  Sample: "့တစ်ယောက် \nမတူကွဲပြားကြသည့် Òဟန်Ó။ \n \nယင်းတို့ကို သုမောင်က တကွဲစီပင် ကွဲနေသော်ငြား ပု"
+
+Book: "1683900729176"
+Dataset row: 15
+PDF SHA-256: c6047d09615927313c2abd2e758b6f2d92c07fa413891e770b0879b599a1af03
+Groups: latin-paired
+Text line 1: "Typing-lucky82 "
+Text line 16: "1 "
+Text line 19: "Typing-lucky82 "
+Signal [latin-paired]: full-text counts Ò/Ó=406/406, Ô/Õ=21/21; character offset 1673
+  Sample: "ီ တစ်ကွက်စီ \nပြန်၍မြင်လာ၏။ \nÒမေမေ မတရားဘူးÓ \nအတိတ်များအားလုံးသည် အနာဂတ်အကြောင်းအရာတို"
 
 Book: "1683988423841"
 Dataset row: 16
@@ -313,6 +456,36 @@ Text line 5: "ကျွန်မနှင်မူယာသည် ကိုး�
 Signal [ascii-au]: 176 adjacent A/U occurrences in samples; character offset 98
   Sample: "သူ့မျက်နှာလှုပ်ရှားလိုက်သည့်Aခါ ထိုစိန်နားကပ်လေးက Aလင်းရောင်ဖြာကာ လက်ခနဲလက်ခနဲဖြစ်သွာ"
 
+Book: "1689564403074"
+Dataset row: 22
+PDF SHA-256: c72e5d5b30ce092b4cbf9269eeb065038ad3c4cda7ef9eb2d6621a32141a20bb
+Groups: latin-paired
+Text line 1: "ကောင်းထက်ညွန့် မာတိကာ "
+Text line 2: "AIR CONDITIONING AND MECHANICAL VENTILATION "
+Text line 3: "VOLUME ONE "
+Signal [latin-paired]: full-text counts Ò/Ó=365/300, Ô/Õ=5/23; character offset 14849
+  Sample: "တော့သည့် လေဟာနယ်(vacuum)ကို ÒPerfect Vacuum´\n(absolute vacuum)ဟု ခေါ်သည်။ ဖိအားလုံးဝမ"
+
+Book: "1689959710117"
+Dataset row: 24
+PDF SHA-256: 49a94a490cbd276b03af7ed48db25ffeb0b09855c513b52b742b92934984c442
+Groups: private-use
+Text line 1: "1TOMORROW NEWS JOURNALအင်းစိန်ထောင်အတွင်းမှဂန္တဝင်လူမိုက်ကြီးများအကြောင်း-ဆုံးဇော်သက်ထွေး"
+Text line 3: "2) အင်းစိန်ထောင်အတွင်းမှဂန္တဝင်လူမိုက်ကြီးများအကြောင်းအပိုင်း(၀၁)၀၂သေဒဏ်ကြိုးလွတ်မြဂေါင်သို့မဟုတ်ဥပစ္ဆေဒကကံကိုမရှောင်လွှဲနိုင်သူ၀၃ငရှဉ့်ကိုစတီးဝပ်အချုပ်ကိုမျက်လှည့်ပြခဲ့သူ၀၄နေဝင်ချိန်၀၅ဘယ်သူသတ်တာလဲ၀၆မက်ပင်လိုင်၀၇ကျော်သူကိုမြွေဖြူလေးနှင့်စိုးမြတ်တို့၏လျှိုက်ဇာတ်လမ်း၀၈၀၉ကျေးဇူးပြန်ဆပ်ခဲ့တဲ့စိုးမြတ်ကြီး၁၀နဲ့မူဆာဘယ်သူကသွေးပိုရဲသလည်း၁၁အင်းစိန်ထောင်တွင်းနိုင်ကျဉ်းအစာငတ်ခံဆန္ဒပြပွဲ၁၂ဗိုလ်ကံ၁၃ဝင်းတင်၁၄အင်းစိန်ထောင်ထဲကလက်ဝှေ့ပွဲ၁၅အသားမည်းပေမယ့်အသဲဖြူတဲ့စိန်ကုလား၁၆ဂဠုန်စီမံချက်ကြောင့်ပျက်ခဲ့ရသူရေဘဲဘိုနီ၁၇၈၈အရေးအခင်းကြောင့်ဒုတိယအကြိမ်ထောက်ထဲရောက်ခဲ့ရသူ၁၈လူသတ်ချိန်တစ်နာရီသုံးမောင်း၁၉လူ့အသည်းစားတဲ့ရေဖျံဘဂျမ်း"
+Text line 5: "3 အင်းစိန်ထောင်အတွင်းမှဂန္တဝင်လူမိုက်ကြီးများအကြောင်းအပိုင်း(၂၀)သစ္စာရှိသောလူမိုက်ကြီးဗိုက်ထောက်ကျော်ဝနဲ့ပီတာ၂၁စိန်ဝင်းကိုဘယ်သူလက်သပ်မွေးထားတာလဲ၂၂မှိုဘယ်နေရာမှာပွင့်သလဲ၂၃ဇာတ်သိမ်း"
+Signal [private-use]: 22 private-use characters in full text; character offset 6286
+  Sample: "က်ကြီးများအကြောင်းအပိုင်း(၂)1သေဒဏ်ကနေသေဒဏ်ကြိုးလွတ်မြဂေါင်ပဲသေဒဏ်တိုက်မှာရှိတဲ့အကျဉ်"
+
+Book: "1690911230429"
+Dataset row: 27
+PDF SHA-256: 2a693d7d1013d37a6e9ad0766d576fd441c25b9efd3e3c1b75190d95acd9ac15
+Groups: latin-paired
+Text line 1: "June 9, "
+Text line 3: "2011 "
+Text line 7: "http://mmteashop.com"
+Signal [latin-paired]: full-text counts Ò/Ó=25/25, Ô/Õ=0/0; character offset 4403
+  Sample: "ာနေကြ \nhttp://mmteashop.com\nÒဒါဆို ÉÉ လူကြီးမင်းက ကျွန်တော့် အဖေပေါ့၊ တွေ့ရတာ \nဝမ်းသာ"
+
 Book: "1691340688985"
 Dataset row: 30
 PDF SHA-256: 544df179b17d24d66576b23ba84ce92ed7ec0da5279ed59c1c54771c3588eef2
@@ -322,6 +495,16 @@ Text line 3: "E-စáèကရကéဆàâသညéမìß  -  "
 Text line 5: "E-စáèကရကéဆàâသညéမìß လøပéစစéပစÃညéèကàရàယßတစéခâîဖစéðပáè ၎ငéèအတëငéèသàâç äဆèရညéတစéမêàăèမêàăèကàâ ထညéçသëငéè "
 Signal [latin-mixed]: 2992 Myanmar/extended-Latin adjacencies in samples; character offset 1
   Sample: "သတàîပăဖëယé E-စáèကရကé အĈÎရßယé \n \nE-စáèကရကéဆàâသညéမìß  -  \n \nE"
+
+Book: "1691448988172"
+Dataset row: 32
+PDF SHA-256: 5570b7f647ac4f5c8c9129ba4573a93d169ca2cd2b69c813237ec68a9d395d4c
+Groups: latin-paired
+Text line 1: "MCM  PDF  TEAM "
+Text line 3: "  ငွေဇင်ယော် "
+Text line 4: "ညီစေမင်း "
+Signal [latin-paired]: full-text counts Ò/Ó=980/968, Ô/Õ=108/105; character offset 3007
+  Sample: "ရာ ကျွနု်ပ်တို့ ကောလိပ်သို့ Òလူ ၁၅၀ ပါလာရင် မှောက်သာမှောက်ခဲ့ကြဗျို့။ ပြင်ဘက်ကျ တုန်း"
 
 Book: "1692171082250"
 Dataset row: 33
@@ -342,6 +525,16 @@ Text line 3: "လမင်းတရာΒလက်ရွေးစဉ်ကဗျ�
 Text line 4: "Editor and Publisher"
 Signal [foreign-script]: 0 other-script and 283 Greek beta characters in samples; character offset 8
   Sample: "သက္ကရာဇ်Β၂၀၀၂Βမေလ၊Β၂၅Βရက်မှာΒလမင်းတရာစာပေဆက်ဆံရေးကထုတ်ဝေခဲ့တဲ့Βစွ"
+
+Book: "1693107457569"
+Dataset row: 36
+PDF SHA-256: c7c6f007a90a544c683ec3f9725f8fa8e801bec1ec23137bbc20bafe161b67f5
+Groups: numbered-layout
+Text line 1: "10| Pageဟောပြောခွေနဲ့ရောဂါပေါင်းစုံရဲ့အဖြေည်သူရနိုင်တဲ့စွက်စာကိုယ်ခံအားယံကြံ့ခိုင်နေရာများ(CLOSEDGRU)memory stick than than , Thyroid, ost                                  မာတိကာ၁၀. ဆရာမကြီးရဲ့-------------------------------------------------------70၂လူတွေမေးမေးနေတဲ့......၃ဆေးမသောက်ပဲပျောက်ရန်၁၄ကျန်းမာတက်စေဖို့စားနည်းသောက်နည်းအရွက်ကြိတ်နည်းအရိုးပြုတ်နည်း11၅လူတိုင်းသောက်သင့်တာတွေ50၆3အူby manwe၇ဆေးမသောက်ရတဲ့သဘာဝနည်း20၈ကင်ဆာအကြောင်းသိကောင်းစရာအပိုင်းမှ21ကင်ဆာကိုအောင်နိုင်သူ9ရင်သားကင်ဆာ4အဆင့်လျာကင်ဆာ60အသဲကင်ဆာသားဥအိမ်ကာကွယ်မယ်ကျနော်ဖြစ်လျင်၉ဆီးလမ်းကြောင်းပိုးဝင်အယ်ဇိုင်းမားဒီမန်တီးယားပါကင်ဆန်အာရုံကြောအယ်ဇိုင်းမား"
+Text line 3: "92| Pageမာတိကာ-------------------------------------------------------------------------လေဖြတ်ပီးသောက်ရန်ဆေးကာလမှာခန္ဓာကိုယ်ကြီးဘယ်လိုစာင့်ရှာက်79ကျနော်အာရုံကြောရာဂါတွေဖြစ်တဲ့81၁၁. ဆံပင်ကျွတ်ခြင်းဘောက်ထဝက်ခြံပျောက်ခြင်းအလာဂျီဗောက်ထတာမပျောက်ဘူးလားPsoriasis, autoimmune disease6ယားယံခြင်းစစ်ဆေးချက်၁၃မျိုးဖြစ်ရပ်မှန်(hypothyroid)(hyperthyroid)၁၂သိုင်းရွိုက်အဖြေဖတ်နည်းသိုင်းရွိက်၄15မခွဲခင်ဖတ်ဖို့Hyperthyroid101သိုင်းရွိုက်ဟော်မုန်းနည်းတဲ့ရောဂါဖြစ်လျင်113များတဲ့SLE, Sjogren, AutoimmuneSLE, Autoimmuneလေးဘက်နာSjogren Autoimmune2412အရိုးကျီးပေါင်းအဆစ်အမြစ်ကိုက်ခဲ၅ဆီးချိုသွေးတိုးပျောက်ပုံနှလုံး30ခြေလက်ထုံကျင်ဆီးချိုရောဂါဆရာမကြီးရဲ့14"
+Text line 5: "3| Pageမာတိကာ၁၉၆. ခေါင်းကိုက်ခြင်း-------------------------------------------------------------------------15181ကျနော်ခါင်းကိုက်ရောဂါဖစ်ခဲ့လျင်160၇မျက်စိပါဝါလျော့အောင်ကုမရတဲ့62၂၃19၈အသဲB ပိုး70အဆီဖုံးခြင်း176C ဖြစ်လျင်ကျောက်ကပ်ဝတုပ်ကွေးရင်ကြပ်ပန်းနာရင်သားသားအိမ်သားဥအိမ်ဆီးကြိတ်ဆနွင်းချစ်သူအသားလုံးကင်ဆာကာကွယ်ရန်Iodoral206အစာအိမ်အူလမ်းကြောင်းရာဂါတွေဖြစ်တဲ့4အူနံရံကျန်းမာလိုသူများအတွက်၄သည်းခြေကျောက်၅Autism စိတ်ရောဂါ"
+Signal [numbered-layout]: long numbered contents-like line in first 12,000 characters; character offset 0
+  Sample: "10| Pageဟောပြောခွေနဲ့ရောဂါပေါင်းစုံရဲ့အဖြေည်သူရနိုင်တဲ့စွက်စာကိုယ်ခံအားယံကြံ့ခိုင်နေရာများ(CLOSEDGRU)memory stick than than , Thyroid, ost                                  မာတိ"
 
 Book: "1693245630110"
 Dataset row: 37
@@ -368,12 +561,14 @@ Signal [ascii-au]: 159 adjacent A/U occurrences in samples; character offset 158
 Book: "1693904077870"
 Dataset row: 41
 PDF SHA-256: 3ad5c61f0547a392207613258cc6a9443e74a012263f9b8ff6133fe9b3facc19
-Groups: ascii-heading
-Text line 1: "mmcyberme\fiacom "
+Groups: ascii-heading, control-chars
+Text line 1: "mmcyberme\fia\u008acom "
 Text line 2: " qGefZk "
 Text line 4: "ppfa&;အယူအဆဒဿန SUN TZU ART of WAR မောင်ကြည်သန့်မြန်မာပြန်သည်။  "
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 103
-  Sample: "့မြန်မာပြန်သည်။  \nthatsoeoo jrefrmqkdufbmrS pm7kdufwifay;ygonf/ \n    \n\nmmcyberme\fiacom \n   \nမာတိကာ"
+  Sample: "့မြန်မာပြန်သည်။  \nthatsoeoo jrefrmqkdufbmrS pm7kdufwifay;ygonf/ \n    \n\nmmcyberme\fia\u008acom \n   \nမာတိကာ"
+Signal [control-chars]: 80 controls or replacement characters in full text; character offset 9
+  Sample: "mmcyberme\fia\u008acom \n qGefZk \n \nppfa&;အယူအဆဒဿန SUN TZU ART of WAR မော"
 
 Book: "1693914057531"
 Dataset row: 42
@@ -387,6 +582,16 @@ Signal [duplicate]: at least 3 consecutive copies; character offset 4412
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 27
   Sample: "mmcybermedia\tcom  \nuudk,dk,fpfpGrGrf;f;uudk,dk,fpfpjjzziihf hf \nBBuuD;D;yyGmGm;;aa&&;;  \naarrmmiifa"
 
+Book: "1694508363864"
+Dataset row: 44
+PDF SHA-256: 4da677a8da3c247bb1a3e535c3afead9a726d07c196ae1a1f76d7d11b4d359ca
+Groups: latin-paired
+Text line 1: "Page | 1 "
+Text line 3: "ပုံနှိပ်မှတ်တမ်း "
+Text line 4: "စာမူခွင့်ပြုချက်အမှတ် "
+Signal [latin-paired]: full-text counts Ò/Ó=33/24, Ô/Õ=31/31; character offset 29785
+  Sample: "့ရတဲ့ ရန်ကုန်အကြောင်း \n(၁) \nÔရန်ကုန်Õ \nÔမဟာရန်ကုနÕ တဲ့လေ ... \nရန်အပေါင်း ကုန်စင်တဲ့ အ"
+
 Book: "1697083096373"
 Dataset row: 47
 PDF SHA-256: f95dbe30f2cca3ec4a857bbc65c3464e6efa80ff3b150e058c81558c6b2aa576
@@ -398,6 +603,26 @@ Signal [ascii-au]: 174 adjacent A/U occurrences in samples; character offset 265
   Sample: "ရဲ့ မြန်မာပြည်မြောက်ပိုင်းစာAုပ်ဟာ ဆရာ့ရဲ့ masterpiece Aကောင်းဆုံး လက်ရာလို့ဆိုရင် မမ"
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 100
   Sample: " \njj\n\njj\n    \njrefrmqkdufbm pmtkyfpifrefbmrsm;rS pm&dkuf? pmppfNyD; yD'Dtufzf txd \nBudK;yrf;vkyfaqmifxm;"
+
+Book: "1698055104078"
+Dataset row: 49
+PDF SHA-256: b558dc3e6e27146076c5231a897cdce270185ad5cc39dd3fd026318187121991
+Groups: latin-paired
+Text line 1: "mmcybermedia.com  ကို sayathan ရိုက်တင်ပြီးကိုညီစေမင်းစာစစ်သည်။  design by wannar "
+Text line 6: "- 1 - | Page72 "
+Text line 9: "mmcybermedia.com  ကို sayathan ရိုက်တင်ပြီးကိုညီစေမင်းစာစစ်သည်။  design by wannar "
+Signal [latin-paired]: full-text counts Ò/Ó=320/317, Ô/Õ=40/39; character offset 1245
+  Sample: "းသည်။ ကွယ်လွန်သူ \nဖခင်ကြီးက Òမုံရွာသားမှန်လျှင် လယ်တီစာတော့ တီးမိခေါက်မိ \nဘာသာပြန်သူ၏"
+
+Book: "1699176399227"
+Dataset row: 50
+PDF SHA-256: f00590f1203cb695702ae49d4d110f1747efe91d388f1877a14f20b7c043a3b8
+Groups: private-use
+Text line 1: "ကျနော်သူပုန်ဖြစ်လာပုံ "
+Text line 2: "(The Making of a rebel) "
+Text line 4: "ခွန်းဆေ "
+Signal [private-use]: 32 private-use characters in full text; character offset 5944
+  Sample: "ာကို တွေ့ရပါတယ်။⤠  \n \nအခုစာရှုသူများဖတ်ရှုရမှာကတော့ ကျနော်တို့တိုင်းပြည်ရဲ့ခေါင်းဆေ"
 
 Book: "1702644363071"
 Dataset row: 53
@@ -437,6 +662,16 @@ Signal [ascii-au]: 140 adjacent A/U occurrences in samples; character offset 278
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 0
   Sample: "rdk;pGefwrGwf \narmifay:xGef;        Bannar in the sky By Jame Ramsay "
 
+Book: "1703270109879"
+Dataset row: 59
+PDF SHA-256: 1a4387d0e45eae2c2ca8e06768b64a35010f842cc6289fa45e3eac17e45d4fbf
+Groups: latin-paired
+Text line 1: "မျက်နှာဖုံးCHEN HMINE AUNGကွန်ပျူတာစာစီSynergyစာအုပ်ချုပ်မေသူဝင်းထုတ်ဝေသူဦးကျော်ဟင်း၊ ယုံကြည်ချက်စာပေ၊အမှတ်-၁၁၁၊ ၃၃-လမ်း၊ ကျောက်တံတားမြို့နယ်၊ ရန်ကုန်မြို့။အဖုံး/အတွင်းပုံနှိပ်ရွှေရောင်လင်းပုံနှိပ်တိုက်အမှတ်-၈၈၊ ၅၁-လမ်း၊ ၁ ရပ်ကွက်၊ ပုဇွန်တောင်မြို့နယ်၊ ရန်ကုန်မြို့။တန်ဖိုး၂၀၀၀-ကျပ်ဤစာအုပ်ဘဝတစ်ခုကို တင်ပြရာ၌ ကာယကံရှင်ကိုယ်တိုင် ရေးပုံတွေးပုံထက် ကာယကံရှင်၏ ရင်ထဲရှိတာကို ယူ၍ စာရေးဆရာ တစ်ဦးတစ်ယောက်၏ ရေးပုံ၊ တွေးပုံမျိုးက ပိုမို ပြည့်စုံ ခိုင်လုံနိုင်ပေသည်။ဤအချက်ကို လက်ခံထားသော မြသန်းသည် ထောင်ထဲတွင် သူ့ဇာတ်ကောင် ကျော်မောင်ကို သွား၍ တွေ့ခဲ့ရသည်။ တွေ့ဆုံပြီးသည့်နောက် ကျော်မောင့်ရင်ထဲရှိသမျှ ကျော်မောင်ကိုယ်တိုင် ပြောသမျှကို ဇာတ်ကွက်ဆင်ကာ ရေးသားခဲ့လေသည်။ သမ္မတဟောင်းအိမ်ကို ကျူးကျော် ဖောက်ထွင်းခန်း၌ စာဖတ်သူ၏ စိတ်ကို အမိအရ ဖမ်းချုပ်ထားသည်ကို ခံစားရပေသည်။ ထို့အတူ ကျော်မောင့်စရိုက်ကိုလည်း သမ္မတဟောင်းနှင့် မျက်နှာချင်းအဆုံ၌ ကွင်းကွင်းကွက်ကွက် မြင်လာအောင် တင်ပြနိုင်ပေသည်။ ဤအခန်း၌ စာဖတ်သူ၏ ရင်ထဲတွင် ကျော်မောင့်ကို လူဆိုးဟု ထင်မလား … ။ သို့မဟုတ် ရဲတင်းသူဟု မြင်မလား … ။ မလိမ်မိုး မလိမ်မာ အမိုက်အမဲလေးဟု ကရုဏာသက်မည်လား … ။ စာဖတ်သူသည် ထိုအခန်းကို ဖတ်နေစဉ် အဖြေကို မိမိဘာသာ မရှာဘဲ ရသွားနိုင်ပေသည်။ရှုမဝစာတည်းအဖွဲ့(၁၉၆၀၊ အောက်တိုဘာ)"
+Text line 2: "2"
+Text line 4: "စာဖတ်သူသို့Òအမှောင်ရိပ်ဝယ်Ó မှာ ဒုစရိုက်လောကထဲမှ ရုန်းမထွက်နိုင်သော တကယ့်လူဆိုး တစ်ယောက်အကြောင်း ဆရာမြသန်းတင့် မြသန်း ကလောင်အမည်ဖြင့် ရေးခဲ့သော လက်ရာဖြစ်သည်။ ၁၉၆၀ တွင် ရှုမဝစာအုပ်တိုက်က ပထမအကြိမ် ပုံနှိပ်ခဲ့သည်။ ယခု ၎င်း ၁၉၆၀ တွင် ထုတ်ဝေစဉ်ကအတိုင်း အပိုအလိုမရှိ ပြန်လည် ထုတ်ဝေလိုက်ပါသည်။ ဆင်းရဲနိမ့်ကျသော ဘဝမှာ ကြီးပြင်း၍ လောင်းကစား ပတ်ဝန်းကျင်တွင် ကျင်လည်ခဲ့ရသော ကျော်မောင်မှာ ဖဲရှုံးလျှင် မိခင်၏ငွေကြေး ပစ္စည်းများကို ခိုးယူခဲ့ရာမှ နောက်ပိုင်းတွင် သူခိုးကြီးဘဝသို့ တစ်စတစ်စ ရောက်ရှိသွားတော့သည်။ ခဏခဏ ထောင်ကျခဲ့ရပြီး အမှောင်လောကတွင် နာမည်ကြီး ဖောက်ထွင်းဝိဇ္ဇာတစ်ယောက် ဖြစ်လာခဲ့တော့သည်။ နောက်ဆုံးတွင် နိုင်ငံတော်သမ္မတကြီး၏ အိမ်ကို ဖောက်ထွင်းခိုးယူမှုဖြင့် ထောင်ကျသွားခဲ့သည်။သို့သော် ကျော်မောင်မှာ အမှောင်လောကမှာ တကယ်တမ်း ပျော်မွေ့ခဲ့သူ မဟုတ်ပါ။ အမှောင်ရိပ်မှ လွတ်မြောက်လိုသော ဆန္ဒများ အကြိမ်ကြိမ် ဖြစ်ပေါ်ခဲ့သည်။ သူကြုံခဲ့ရသော အချစ်ဇာတ်လမ်းများတွင် ရမ္မက်နှင့်ယှဉ်သော အချစ်တုနှင့် ရင်ထဲက နှစ်နှစ်ကာကာချစ်သော အချစ်စစ်တို့ကို ခွဲခြားသိမြင်လာရာ၊ သူချစ်မြတ်နိုးလှသူ၏ တိုက်တွန်းမှုနှင့် မိခင်၏ ဆုံးမမှုကြောင့် လည်းကောင်း၊ ဝရမ်းပြေးဘဝကို မုန်းတီး၍ ကိုယ်တိုင် ပြုပြင်လိုစိတ်ကြောင့် လည်းကောင်း၊ အမှောင်လောကနှင့် အဆက်ဖြတ်လိုသော ဆန္ဒများ ဖြစ်ပေါ်ခဲ့သည်။Òချစ်ရသူနှင့် လွတ်လွတ်လပ်လပ် ပျော်ပျော်ရွှင်ရွှင် နေနိုင်ဖို့မူ ငွေရှိရန်လိုသည်။ ငွေကို ဖြစ်သည့်နည်းဖြင့် ရှာရမည်Ó ဟူသော အတွေးအခေါ်၏ မောင်းနှင်မှုကြောင့် လည်းကောင်း၊ ဖြတ်လမ်းက သူဌေးဖြစ်ချင်သော ဆန္ဒနှင့် အမှောင်လောကသားတို့၏ ဆွဲဆောင်မှုကြောင့် လည်းကောင်း၊ ဒုစရိုက်နည်းဖြင့် ငွေရှာခဲ့ရာ ငွေတွေတော့ ရပါသည်၊ သို့သော် ပျော်ရွှင်မှုကိုကား မရခဲ့ရရှာချေ။ ကျော်မောင်မှာ ပြစ်မှုကြီးဖြင့် ထောင်ကျခဲ့ရခြင်းဖြစ်ရာ၊ ထောင်မှလွတ်သည်အထိ သူ့ကို စောင့်နေမည်ဆိုသော သူ ချစ်မြတ်နိုးလှသော ချစ်သူနှင့် ပေါင်းရပါဦးမည်လား။ စိတ်ဝင်စားဖွယ်ရာ တကယ့်ဇာတ်လမ်းတစ်ခုဖြစ်ရာ စာဖတ်သူများကို အစအဆုံး ဆွဲခေါ်သွားမည့် ဝတ္ထုဖြစ်ပါကြောင်း။Synergy Publicationsမြသန်း၏အမှာကျဉ်းမြောင်း မဲမှောင်သော အကျဉ်းထောင်နံရံအတွင်းမှာ ကျွန်တော်သည် ကျော်မောင်နှင့် တွေ့ခဲ့ရ၏။ ကျွန်တော်နှင့် တွေ့စတုန်းက ကျော်မောင်သည် လေးလံလှသော သံခြေကျဉ်းကြီးများကို ဝတ်ကာ ခြေထောက်နှစ်ဖက်ကို သံစို့ကြီးများ ခတ်၍ ထားပေသည်။ သူ့မျက်လုံးများသည် အမြဲတစေ မှုန်ငေး၍လည်း နေတတ်ပေသည်။ ကျွန်တော်ကား ကျော်မောင်ဟုသာ သိသော်လည်း စကားစမြည် မပြောဖူးခဲ့သေးပေ။"
+Signal [latin-paired]: full-text counts Ò/Ó=895/893, Ô/Õ=5/5; character offset 1140
+  Sample: "၊ အောက်တိုဘာ)\n2\n\nစာဖတ်သူသို့Òအမှောင်ရိပ်ဝယ်Ó မှာ ဒုစရိုက်လောကထဲမှ ရုန်းမထွက်နိုင်သော "
+
 Book: "1703521227806"
 Dataset row: 60
 PDF SHA-256: 851e314ed72049984182d6d95b1b95972daa74acb1c7b8f107c092d5bb6736ec
@@ -446,6 +681,16 @@ Text line 2: "rS"
 Text line 3: "ewfbk&m;rsm;ESifh ewfbk&m;rrsm;"
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 30
   Sample: "d'@m&D\nrS\newfbk&m;rsm;ESifh ewfbk&m;rrsm;\nMichelle M. Houle\narmifopfpdrf;\nqDavsmfatmif bmomjyefqd"
+
+Book: "1703524837273"
+Dataset row: 61
+PDF SHA-256: 903db33bbaa5d410383d544ef03d9d0adf2cbb7eaa420e4af7e7cf113fdbd196
+Groups: latin-paired
+Text line 1: "စာဖတ်ပရိသတ်များအား အစဉ်လေးစားလျက် É.. "
+Text line 2: "MCMPDF "
+Text line 3: "www.mmcybermedia.com "
+Signal [latin-paired]: full-text counts Ò/Ó=102/180, Ô/Õ=25/4; character offset 3840
+  Sample: "င်ရင်း၌ \nမွေးဖွားသောကြောင့် Òအမ္ဗပါလီ” အမည်တွင်သည်။ အရွယ်ရောက်သောအခါ \nအတိုင်းထက်အလွန်"
 
 Book: "1704101675047"
 Dataset row: 62
@@ -473,6 +718,16 @@ Signal [duplicate]: at least 3 consecutive copies; character offset 4336
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 151
   Sample: "တန်ဆောင်းပါးများ 2 | \nများ \nrrrrmwdummwdummwdummwdum        \npOf aqmif;yg;acgif;pOf a&;om;oltrnf pmrsufESm \n"
 
+Book: "1706036024958"
+Dataset row: 69
+PDF SHA-256: 3888a57258e62e92c111ae19702e35f4ab63372bce3f27eb19c52feae56794a1
+Groups: latin-paired
+Text line 1: "mmcybermedia.com "
+Text line 5: "MCM  PDF  Team  မှတင်ဆက်သော ÉÉ "
+Text line 7: "                   စိတ္တရလေခါ "
+Signal [latin-paired]: full-text counts Ò/Ó=1055/1051, Ô/Õ=99/98; character offset 2062
+  Sample: " ၂။ စိတြလေခါကို မွေးဖွားသူ \nÒမကောင်းမှုဟူသည်မှာ မည်သည့်အရာ ဖြစ်သနည်းÓ ဟူ၍ တစ်ယောက်သော"
+
 Book: "1706085249444"
 Dataset row: 70
 PDF SHA-256: 89800d6c2e5af45d2e71f41844a532aa2d8056c69a83041175eb02fd568a373a
@@ -482,6 +737,16 @@ Text line 2: "qwertyuiopasdfghjklzxcvbnmqwerty"
 Text line 3: "uiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmrtyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopas"
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 20
   Sample: "[Type text]aadsfafd\nqwertyuiopasdfghjklzxcvbnmqwerty\nuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuio"
+
+Book: "1706115383096"
+Dataset row: 74
+PDF SHA-256: be8720d17999e4f5e590c17ee2f87371ce5018085d9543f1b68617bea9e8f0ec
+Groups: latin-paired
+Text line 1: "http://ingahuu.blogspot.com "
+Text line 3: "သူ့မယား ငါ့မယား "
+Text line 4: "အခန်း(၁) "
+Signal [latin-paired]: full-text counts Ò/Ó=145/106, Ô/Õ=0/0; character offset 3670
+  Sample: "ှင့် စိတ်ဆိုးသလို မေးလေ၏။   Ò တစ်ခြားမဟုတ်ပါဘူး \nမယ်မှုန်ရယ် ၊ နင်က ဆူဖို့ မဟုတ်ပါဘူး"
 
 Book: "1706118210298"
 Dataset row: 75
@@ -508,7 +773,7 @@ Signal [ascii-au]: 153 adjacent A/U occurrences in samples; character offset 0
 Book: "1706118392082"
 Dataset row: 77
 PDF SHA-256: 53a6a711a4ab30fdc5bf800d274f40b70acc4d5070135eaba6ca32a7f99b3b68
-Groups: duplicate, ascii-heading
+Groups: duplicate, ascii-heading, control-chars
 Text line 1: "mmcybermedia\u0015com "
 Text line 3: "ကမ္ဘာကျော်စာရေးဆရာကြီးများ၏ စာရေးနည်းများ "
 Text line 4: "နှင့် "
@@ -516,6 +781,48 @@ Signal [duplicate]: at least 3 consecutive copies; character offset 665
   Sample: "ရှိတ်စပီးရှိတ်စပီးရှိတ်စပီးရှိတ်စပီး"
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 542
   Sample: "         \nttyyppiinngg  --  BBaabbyybbooyy339999            ccoovveerr  ddeessiiggnn  --  KKoo  MMyyoo  "
+Signal [control-chars]: 82 controls or replacement characters in full text; character offset 12
+  Sample: "mmcybermedia\u0015com \n \nကမ္ဘာကျော်စာရေးဆရာကြီးများ၏ စာရေးနည်းများ \nနှင့် "
+
+Book: "1706119140545"
+Dataset row: 80
+PDF SHA-256: 83b1ee5e6f01068ca5deab7e9b2ea78a817bab84489fd80d56142da2401d2f66
+Groups: latin-paired
+Text line 1: "MCM  PDF  TEAM "
+Text line 3: "  မသန်းသန်းနိုင် "
+Text line 4: "ကိုညီစေမင်း "
+Signal [latin-paired]: full-text counts Ò/Ó=89/89, Ô/Õ=1317/1267; character offset 178128
+  Sample: "တွင် ဂူးလ်ကုတ်ပြည်၏ မဟာရာဇာ Ôကဲ ကဲ ခင်ဗျားတို့ သွားချင်သွားနိုင်ပြီ။ သူနှင့် နှစ်ယောက"
+
+Book: "1706119141337"
+Dataset row: 81
+PDF SHA-256: c71400fc897dcecbe8113a88bc27d2661545f8e5467b1e71a58c9a7e75d7e83b
+Groups: latin-paired
+Text line 1: "MCM  PDF  TEAM "
+Text line 4: "  မသန်းသန်းနိုင် "
+Text line 5: "ကိုညီစေမင်း "
+Signal [latin-paired]: full-text counts Ò/Ó=1/1, Ô/Õ=1756/1533; character offset 2347
+  Sample: "င်သည်ကို \nတွေ့ရ၏။ \n         Ôအင်း၊ နောက်နှစ်ရက်လောက် ဆိုရင်တော့ ကျွန်တော်တို့တစ်တွေ အ"
+
+Book: "1706119156858"
+Dataset row: 82
+PDF SHA-256: 3d0541ad300de483300692241fb9e8bf75a6b4131ac3b673ef3db91b4273516b
+Groups: latin-paired
+Text line 1: "mmcybermedia.com                                                                                    "
+Text line 8: "1 | Page129 "
+Text line 11: " mmcybermedia.com                                                                                    "
+Signal [latin-paired]: full-text counts Ò/Ó=296/295, Ô/Õ=0/0; character offset 1642
+  Sample: " လုံးဝ ပျောက်သွားခဲ့ပြီ။ \n \nÒသူငယ်ချင်းÓ တစ်ယောက်က ခေါ်လိုက်သည်။ ပြီး တစ်ယောက်ပခုံး တ"
+
+Book: "1706176961593"
+Dataset row: 83
+PDF SHA-256: 58a98abe48049bfc99f33742f745e7507a692ed235d2081bb3279cf9ed3a8571
+Groups: latin-paired
+Text line 1: "ÒချီÓအားတိုးအောင် ကျင့်နည်းများ "
+Text line 2: "(A Method of Increasing Chi) "
+Text line 3: "U Pyi Thein "
+Signal [latin-paired]: full-text counts Ò/Ó=38/38, Ô/Õ=0/0; character offset 0
+  Sample: "ÒချီÓအားတိုးအောင် ကျင့်နည်းများ \n(A Method of Increasing "
 
 Book: "1706300888234"
 Dataset row: 84
@@ -530,12 +837,14 @@ Signal [mark-order]: 199 selected mark sequences in samples; character offset 25
 Book: "1706301383341"
 Dataset row: 85
 PDF SHA-256: 86768933e3a41698946f357be91739e5c2cec10fe53b6198b05dd9c756056015
-Groups: ascii-heading
+Groups: ascii-heading, latin-paired
 Text line 1: "jynfaxmifpkppfppfrl2"
 Text line 3: "3"
 Text line 4: "jynfaxmifpkppfppfrl"
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 96
   Sample: "ay:aponfh\nzuf'&,fv+yf&Sm;r+ rSwfwrf;rsm;\nqvdkif;vsefr+ef;\nနှင့်\npdkif;arm (ef)\nစုဆောင်းတင်ပြသည်\n"
+Signal [latin-paired]: full-text counts Ò/Ó=337/335, Ô/Õ=1/3; character offset 854
+  Sample: "ော(န်)\n“ပြည်ထောင်စု စစ်စစ်မူÓ \n၁၉၆၂ ခုနှစ် နိုင်ငံတော်အာဏာသိမ်းမှုကို ဖြစ်ပေါ်စေသော ဖ"
 
 Book: "1706302190221"
 Dataset row: 88
@@ -667,6 +976,16 @@ Text line 4: "vviifrfr,,mm;;[[mmoo  "
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 107
   Sample: " \ncciifafarrmmiifwfwkd;kd;((rrkd;kd;rrdwdwf)f)   \nttyyppiinngg--  tthhaannffaayy  \nppddff--  lluucc"
 
+Book: "1706494294594"
+Dataset row: 107
+PDF SHA-256: 8b7a2b8daa3f1e370a77ee137d92d0441284cc9bd36cd90db5c4c99c9d3d398d
+Groups: latin-paired
+Text line 1: "ပုံနှိပ်မှတ်တမ်း "
+Text line 4: " တမိုးထဲအောက်မှာ တက္ကသိုလ်အမှတ်တရ ကဗျာများစာအုပ်ကို မျက်နှာ ဖုံးဒီဇိုင်း "
+Text line 5: "နေဝင်းအောင်၊ အတွင်းသရုပ်ဖော်ပုံများကို ကိုအံ၊ ကိုရ၊ တင်မင်းထက်၊ တင်မျိုးထက်၊ သီဟတို့က "
+Signal [latin-paired]: full-text counts Ò/Ó=0/0, Ô/Õ=40/40; character offset 12979
+  Sample: "É \nစွန့်ပစ်ခံနေ့ရက်တွေလည်း \nÔÔ၂၄ÕÕ နာရီမြောက်မှာ ဘဝတစ်ပါး ပြောင်းသွား \nဟော သည်သီချင်း"
+
 Book: "1707195104410"
 Dataset row: 114
 PDF SHA-256: fcd07393aac07b0eeb23993528354d259459b002daedee14b36faafe031d8f5e
@@ -689,15 +1008,27 @@ Text line 4: "HHHHHသုတေသန ကောင်းကောင်းလု
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 2936
   Sample: "ိုးအစားများကို ရှာပါ။CASEIN PROTEINHHHHHနို့ပရိုတိန်း၏ အပိုင်းတစ်ပိုင်းဖြစ်သော Casein သည် အချိန်"
 
+Book: "1707666661680"
+Dataset row: 118
+PDF SHA-256: 023d001e2aadd106b889babf73dec3d3b4c1a3d66d68622cda7637ecdff3543b
+Groups: numbered-layout
+Text line 1: "10| Pageကျနော်သာသွးတိုးဖြစ်ခဲ့လျှင်၁၂၃                                  မာတိကာ. ကျနော်တို့ဂရုတွေအကြောင်း------------------------17ကျန်းမာလိုလျှင်နုပျိုသန်စွမ်းလိုလျှင်8ကျနော့ကိုဆးမျိုးပဲညွှန်းခိုင်းလျှင်19Medical Check up လုပ်လျှင်ကင်ဆာသိုင်းရွိုက်အဖြေမဖြစ်အောင်ကာကွယ်လိုလျှင်13ဖတ်ပုံ14သိုင်းရွိုက်ဟော်မုန်းနည်း(hypothyroid)သိုင်းရွိုက်ဟော်မုန်းများ(hyperthyroid)Hashimoto Thyroiditisဖစ်လျှင်ကျနော့်သိုင်းရွိုက်ထုတ်ထားလျှင်20၄ဆီးချိုကြောင့်သွးတိုးနှလုံးရောဂါ22ခထောက်ထုံနေလျှင်2324နှလုံးအားနည်း၊နှလုံးသွေးကြောကျဉ်း၊by pass or stents ထည့်25၅အရိုးအရွတ်အသက်ကြီးလျှင်မကျိုးလိုလျှင်27လးဘက်နာ"
+Text line 3: "29| Pageကျနော်သာဖြစ်ခဲ့လျှင်၁၂၃                                  မာတိကာ------------------------Goutပခုံးအရွတ်စုတ်ခဲ့လျှ30လက်ချောင်းတွေကွးပြီးပန်ဆန့်ရခက်နေလျှင်31autoimmune (လးဘက်နာကျီးပေါင်းတက်ခဲ့လျှင်နှင်းခူအရေပြား) လည်ပင်းနာဇက်ကြောလက်မောင်းကိုက်ခါးနာလျှင်ဒူးနာဖနောင့်နာအသဲခြောက်ခဖဝါးနာ33ဇက်နာ34၆. အသဲအဆီဖုံးအဆုတ်B ပိုးဝင်လျှင်C ရှိခဲ့လျှင်3536TB38ရင်ကြပ်ပန်းနာ39၇အစာအိမ်အိမ်အူလမ်းကြောင်းကျနော့သည်းခြေမှာသာကျာက်တည်နေခဲ့လျင်40ကျနော့်ထုတ်ထားလျှင်41ကာင်းချင်လျှင်43၈ဆီးကြိတ်ကျာက်ကပ်အားနည်းဖစ်ခဲ့လျင်44ရာဂါမဖြစ်ချင်လျှင်45ဆီးလမ်းကြောင်း46၉အာရုံကြောလမဖြတ်ချင်လျှင်48"
+Text line 5: "53| Pageကျနော်သာဖြစ်ခဲ့လျှင်၁၂၃                                  မာတိကာ--------------အာရုံကြော50လဖြတ်ခဲ့လျှင်51ခါင်းကိုက်ရောဂါ52၁၀. မျက်စိကွယ်နားလေးခဲ့လျှင်(Macular Degeneration)54မျက်စိမှုန်ခဲ့လျှင်55၁၁အော်တစ်ဇင်autism565860ဉာဏ်ကောင်းဖို့ကျနော့ကလေးကိုကျန်းမာဉာဏ်ကောင်းစေလိုလျှင်ဉာဏ်ကောင်းစေချင်လျှင်61ဉာဏ်ကောင်းချင်ရင်62တန်းဖြေရမည်ဆိုလျှင်63၁၃စိတ်ရောဂါစိတ်ကျရောဂါ(Depression)ကျနော်နှင့်စိတ်ဝေဒနာရှင်65၁၄အမျိုးသမီးများသားအိမ်သားဥအိမ်ရင်သားမှာအသားလုံး၊အရည်အိတ်ဖစ်လျှင်67သွးဆုံးလျှင်68"
+Signal [numbered-layout]: long numbered contents-like line in first 12,000 characters; character offset 0
+  Sample: "10| Pageကျနော်သာသွးတိုးဖြစ်ခဲ့လျှင်၁၂၃                                  မာတိကာ. ကျနော်တို့ဂရုတွေအကြောင်း------------------------17ကျန်းမာလိုလျှင်နုပျိုသန်စွမ်းလိုလျှင်8ကျနော့ကိ"
+
 Book: "1707666773664"
 Dataset row: 119
 PDF SHA-256: a74cff9e4c1d423663b7579d58b18211c6d26059307d5deb2e2b4e472d67701a
-Groups: ascii-au
+Groups: ascii-au, numbered-layout
 Text line 1: "လူဝင်စားခြင်းကို သိပ္ပံနည်းကျလက်ခံခြင်း Scientific Acceptability of Rebirth     Dr. Granville Dharmawardena Ph.D (Cambridge), M.I. Chem.C, C.,Chem, FIAutoE     ဘာသာပြန် - Aလှတရား "
 Text line 3: " ပုံနှိပ်မှတ်တမ်း မူရင်းစာAုပ် Scientific Acceptability of Rebirth  မူရင်း စာရေးသူ Dr. Granville Dharmawardena  ဘာသာပြန်သူ Aလှတရား www.ahlataya.blogspot.com  စာAုပ်AမျိုးAစား ဘာသာရေး၊ သိပ္ပံပညာ၊ ရူပဗေဒ၊ သုတေသန မျက်နှာဖုံး ဒီဇိုင်း ဟန်သစ်ငြိမ်၊ သင်ကာ Aတွင်း Aပြင်Aဆင် ဖွဲ့တည်ရာ မီဒီယာ Aကြိမ် ပထမ Aကြိမ် ထုတ်ဝေခြင်း ဇွန်လ၊ ၂၀၀၉  ထုတ်ဝေသူ ဖွဲ့တည်ရာ မီဒီယာ www.existencemediagroup.com  ဘာသာပြန်မူပိုင် Aလှတရား တန်ဖိုး ဓမ္မဒါန "
 Text line 5: "  မာတိကာ ကျမ်းUီးAမှာ 1 ဗုဒ္ဓဘာသာ သုတေသနဖောင်ဒေးရှင်း 3 လူဝင်စားခြင်းကို သိပ္ပံနည်းကျလက်ခံခြင်း 6 ရှေးရိုးသိပ္ပံ (၁၇ - ၁၉ ရာစု)  8 မော်ဒန်သိပ္ပံ မွေးဖွားခြင်း 17 သိပ္ပံနည်းကျ လက်ခံခြင်း 22 လူဝင်စားခြင်း သဘာဝဖြစ်စU်  25 လူဝင်စားခြင်းကို သိပ္ပံနည်းကျစမ်းသပ်ခြင်း 27 Aတိတ်ဘဝများကို Aလိုလိုမှတ်မိခြင်း 31 ကလေးပါရမီရှင်များနဲ့ Aတိတ်ဘဝက Aတွေ့Aကြုံဗဟုသုတများကို Aသုံးပြုနိုင်သူများ 34 နိဂုံးချုပ်သုံးသပ်ချက် 36  "
 Signal [ascii-au]: 248 adjacent A/U occurrences in samples; character offset 171
   Sample: "hem, FIAutoE     ဘာသာပြန် - Aလှတရား \n\n ပုံနှိပ်မှတ်တမ်း မူရင်းစာAုပ် Scientific Accep"
+Signal [numbered-layout]: long numbered contents-like line in first 12,000 characters; character offset 605
+  Sample: "  မာတိကာ ကျမ်းUီးAမှာ 1 ဗုဒ္ဓဘာသာ သုတေသနဖောင်ဒေးရှင်း 3 လူဝင်စားခြင်းကို သိပ္ပံနည်းကျလက်ခံခြင်း 6 ရှေးရိုးသိပ္ပံ (၁၇ - ၁၉ ရာစု)  8 မော်ဒန်သိပ္ပံ မွေးဖွားခြင်း 17 သိပ္ပံနည်းကျ လ"
 
 Book: "1708961902669"
 Dataset row: 121
@@ -708,6 +1039,36 @@ Text line 3: "ကဗêßတàâစâစညéèမĂ "
 Text line 4: "äန၀နéèသစé (အငéèစàနé)  ရညéမëနéသငéè  the earht "
 Signal [latin-mixed]: 1691 Myanmar/extended-Latin adjacencies in samples; character offset 1
   Sample: "ကဗêßတàâ စâစညéèမĂ                                           "
+
+Book: "1712821408320"
+Dataset row: 122
+PDF SHA-256: 46a083b83ee6d17f511b5b044ed967c716e7e7143dc113982dacfa1b4f7090b7
+Groups: latin-paired
+Text line 1: "Òဆုံစည်းပါရစေÓ"
+Text line 2: "၁။ မနေ့ညနေတုန်းကပေါ့ . . . သူနဲ့ ချိန်းပေးပါလို့ ကြယ်ကလေးကို ငါမှာနေမိတယ်။ "
+Text line 3: " ဘော်ငွေလ အသွင်တင့်လှသူရဲ့ ရှေ့တော်မှောက်၊ ကျွန်တော်မျိုး ခစားရောက်ပါပြီလို့ "
+Signal [latin-paired]: full-text counts Ò/Ó=2402/2397, Ô/Õ=131/128; character offset 0
+  Sample: "Òဆုံစည်းပါရစေÓ\n၁။ မနေ့ညနေတုန်းကပေါ့ . . . သူနဲ့ ချိန်းပေး"
+
+Book: "1714041032569"
+Dataset row: 123
+PDF SHA-256: b666e484a3f09470b7e43949ba51e1916bcff5134a77650e9dc55f85f0614f4f
+Groups: latin-paired
+Text line 1: "မာတိကာ "
+Text line 2: "ကဗျာ "
+Text line 3: "ထာဝရပါရမီဖြည့်ဖက် "
+Signal [latin-paired]: full-text counts Ò/Ó=46/2, Ô/Õ=66/66; character offset 37359
+  Sample: " သတိဝင်လာမိပါတော့တယ် ။  \n  \nÔဟေး… လူလေး အဖွားကို ကူပါအုံး..။Õ  \n \nလူငယ်လေး နှစ်ယောက် "
+
+Book: "1716336222602"
+Dataset row: 124
+PDF SHA-256: 798495aab8de16c968ece5bcbee34ccb9aa201d10595cf638371e2d480f502c7
+Groups: latin-paired
+Text line 1: "အစိမ်းရင့်ရောင် ရက်စွဲများ ထူးအိမ်သင် ကွယ်လွန်ခြင်း အမှတ်တရ "
+Text line 2: "Typing  - ဟိဏ်းဇော်အောင် / noel                                                                    1 "
+Text line 8: "http://mmteashop.com"
+Signal [latin-paired]: full-text counts Ò/Ó=658/645, Ô/Õ=241/241; character offset 649
+  Sample: "်နိုင်စွမ်းသော ဉာဏ်ပညာဖြင့် Òရာဇဝင်များရဲ့ သတို့သမီးÓ ကို ဖန်တီး မွေးဖွားခဲ့သူ É  မြတ"
 
 Book: "1758614515798"
 Dataset row: 125
@@ -749,10 +1110,30 @@ Text line 4: "îမနéမßအမညé    -   အäစçထâတéäîပßင
 Signal [latin-mixed]: 3235 Myanmar/extended-Latin adjacencies in samples; character offset 0
   Sample: "စàâကéပêàăèäရèဆàâငéရßအäလçအကêငéçäကßငéèမêßè \n (အäစçထâတéäîပßငé"
 
+Book: "1758620453187"
+Dataset row: 129
+PDF SHA-256: 6889e38f449b050bafa96f9a347009d3846ac01c18b823377c6f95c7292748b4
+Groups: numbered-layout
+Text line 1: "pdf mCmteamTyping -mgmyominn       Proof  ParkerDesign & PDF berhadစာဖတ်ပရိသတ်များကိုအစဉ်လေးစားလျှက်....MCMwww.mmcybermedia.com"
+Text line 3: "(mmcybermedia.com) comမှ စာရိုက်ပေးပါသည်။1mgmyominn    ည၏အိပ်ဖန်စောင့်များနှင့်နိုင်ငံတကာရသဝတ္ထုများဦးကျော်မြင့်တင်နွယ်မောင်၊ဒီပလိုမာဘွဲ့ကိုအဖေဦးဘလွန်း၊အမိဒေါ်လှကြည်တို့မှ၁၉၄၃ခုနှစ်၊ဒီဇင်ဘာ၂၃ရက်နေ့၌ပန်းတနော်မြို့တွင်မွေးဖွားသည်။မွေးချင်းစ်ယောက်အနက်အကြီးဆုံးသားဖြစ်သည်။ငယ်စဉ်ကဝိုင်အမ်ဘီအေကျောင်းတွင်ပညာသင်ကြားရရှိခဲ့သည်။၁၉၆၆ခုနှစ်တွင်အင်္ဂလိပ်စာအဓိကဖြင့်ရန်ကုန်ဝိဇ္ဇာသိပ္ပံတက္ကသိုလ်မှဘွဲ့၁၉၆၇၁၉၉၃ခုနှစ်အထိမြန်မာ့သတင်းစဉ်နိုင်ငံခြားသတင်းဌာနအယ်ဒီတာ၊စာတည်းမှူးတာဝန်များထမ်းဆောင်ခဲ့သည်။၁၉၆၈သတင်းပညာချက်ကိုစလိုဗက်နိုင်ငံမှလည်းကောင်း၊၁၉၇၉သတင်းစာဆရာသင်တန်းကိုသြစတေးလျနိုင်ငံဆစ်ဒနီမြို့တွင်လည်းကောင်းတက်ရောက်သင်ကြားအောင်မြင်ခဲ့သည်။၁၉၈၁ခုနှစ်မှစ၍စာပေလောကသို့ဝင်ရောက်ခဲ့သည်။စတင်ရေးသားထုတ်ဝေခဲ့သောကမ္ဘာအေစ္စရေးလျှို့ဝှက်ထောက်လှမ်းရေးအဖွဲ့အကြောင်းရေးသားထားသည့်' ခင်မော့ဆက်တို့ဘာသာပြန်စာအုပ်သည်ခုနစ်ကြိမ်တိုင်တိုင်ထုတ်ဝေခဲ့ရသည်။ဘာသာပြန်စာအုပ်ပေါင်းအုပ်ရေ၃၀ထုတ်ဝေခဲ့သည်။ဂျုပီတာ၊ကိုကိုကျော်၊ကျော်ဘောဂ၊ဂျော့ဘလွန်းကလောင်အမည်များဖြင့်မဂ္ဂဇင်း၊ဂျာနယ်တွင်ဝတ္ထုဆောင်းပါးများ၊ပညာပေးစာစောင်များတွင်ရသစာတန်းများ၊အိမ်ထောင်ရေးပြန်ဆိုရေးသားခဲ့သည်။သိပ္ပံမောင်ဝ၏ဆရာဇော်ဂျီ၏ကဗျာများကိုလည်းအင်္ဂလိပ်ဘာသာသို့အင်တာနေရှင်နယ်မဂ္ဂဇင်းတွင်အယ်ဒီတာအဖြစ်အလေးထားဆောင်ရွက်ခဲ့သည်။ပြီး၊မြန်မာတိုင်းကွယ်လွန်ချိန်အထိဆရာသည်အင်္ဂလိပ်ဘာသာရပ်နှင့်ဘာသာပြန်စာပေဖွံ့ဖြိုးရေးအတွက်စာရေးဆရာ၊ဆရာတင်နွယ်မောင်-၁၀၂၀၀၆UHC အထူးကုဆေးခန်း၌ကွယ်လွန်ခဲ့သည်။ကွယ်လွန်ချိန်တွင်အသက်၆၃နှစ်ရှိပြီးဇနီးဒေါ်တင်နွယ်၊ကထိကငြိသားကြီးမောင်မင်းစိုး၊သမီးကြီးဒေါက်တာသီတာစိုးနှင့်သမီးငယ်ကျန်ရစ်ခဲ့သည်။( ၂ဝဝ၆မာတိကာဆရာတက်တိုး၏အမှာနတ်နွယ်၏ဘာသာပြန်သူ၏. Night of the Hyenaမိခင်မေတ္တာ. A Single Crocusတစ်ပွင့်မာလာ. Where the sun Always Risesနေမင်းအမြဲထွက်သောနေရာ. I See an Angelနတ်သားကလေးကိုမြင်ရပါတယ်၁၅. An Affair to Rememberသတိရစရာဇာတ်လမ်းတစ်ပုဒ်. Giftfrom a Strangerအုတ်ဂူကလေး. House on the Lakeကန်ပေါ်ကအိမ်ကလေး. A Haven of Sunflowersနေကြာတိုင်းပြည်. Spring Thawနွေဦးကာလနှင်းပြယ်၁ဝ. Dose the Moon Make us Mad?ဖိုးလမင်းရယ်ချာချာလည်တို့ကိုရူးစေရော့သလား၁၁. May Month of Nightingalesနိုက်တင်ဂေးငှက်တို့၏၁၂. My Grandmother’s Laundryအဘွားလျှော်သောအဝတ်များ၁၃. Tell Me a Storyပုံပြောပြပါ၁၄A Houseful of Love and Laughter မေတ္တာတွေနဲ့ရယ်စရာတွေအိမ်တစ်လုံးအပြည့်. Waiting for a Breezeလေညင်းကလေးက…… ၁၆. Watches of the Night"
+Text line 5: "(mmcybermedia.com) comမှ စာရိုက်ပေးပါသည်။2mgmyominnဆရာတက်တိုး၏အမှာစကားအနည်းငယ်ကျွန်တော်၏တင်နွယ်မောင်ကိုသိသည်မှာသူသည်တက္ကသိုလ်ကျောင်းမှဘီအေအင်္ဂလိပ်စာ၌ဂုဏ်ထူးတန်းအောင်မြင်သညေ့်၁၉၆၆ခုနှစ်ကတည်းကပင်တိုင်ပင်ဖြစ်သည်။အချိန်တန်ကျောင်းပြီးတော့ကျောင်းမှထွက်၍စာနယ်ဇင်းလောကထဲသို့ရောက်လာသည်။တင်နွယ်မောင်သည်ပြန်ကြားရေးဝန်ကြီးဌာန၊မြန်မာ့သတင်းစဉ်၊နိုင်ငံခြားသတင်းဌာနခွဲတွင်လက်ထောက်အယ်ဒီတာအဖြစ်လက်အောက်တွင်ဆောင်ရွက်က်ခဲ့သည်။နိုင်ငံတော်အစိုးရပညာတော်သင်အဖြစ်ပြည်ပသို့သွားရောက်ပြီးသတင်းစာပညာဒီပလိုမာဘွဲ့များလရယူခဲ့သည်။နောက်ကျွန်ငြေိမ်းစားယူပြီးဖမ်းယူတည်းဖြတ်ဖြန့်ချိရေးဌာနတွင်အယ်ဒီတာအဖြစ်လည်းကောင်း၊အမှုဆောင်အယ်ဒီတာအဖြစ်လည်းကောင်း၊အဆင့်ဆင့်ဆောင်ရွက်ထိုနောက်ပိုင်းသတင်းဌာနမှထွက်၍ဘာသာပြန်စာရေးဆရာအဖြစ်စာရေးကာ‘ အင်တာနေရှင်နယ်’ ဘာသာပြန်မဂ္ဂဇင်းတွင်တာဝန်ခံအယ်ဒီတာအဖြစ်လျက်ရှိရာယခုအခါတွင်ကျွမ်းကျင်တန်သရွေ့ကျွမ်းကျင်ခဲ့လေရာထိုလုပ်ငန်းကိုတစ်စိုက်မတ်မတ်အဆက်မပြတ်လုပ်ဆောင်လာသောကြောင့်ဝါရင့်ဘာသာပြန်စားရေးဆရာတစ်ဦးဖြစ်လာခဲ့သည်။ဆိုထားသောကန်ပေါ်ကအိမ်ကလေးဘာသာပြန်စာစုသည်မြန်မာစာဖတ်ပရိသတ်အများစုကနားလည်ကြမည်ဖြစ်ပြီးသူလိုပင်ခံစားနှစ်သက်ကြလိမ့်မည်ဟုယုံကြည်ပါသည်။အခြားအခြားနိုင်ငံများ၌စာပေလောကတွင်ဘာသာပြန်စာပေသည်ပင်ကိုရေးစာပေတို့နှင့်ယှဉ်တွဲလျက်တိုင်းရင်းစာပေကိုအထောက်အကူပြုလျက်ရှိသည်။ကျွန်တော်တို့စာပေလောမျှော်လင့်သလောက်မပွားများ၊ကျယ်ပြန့်သေးချေ။သို့သော်အစတော့ရှိနေပါပြီ။ဆက်လိုက်ဖို့သာရှိပါသည်။အင်္ဂလိပ်ဘာသာ၊မြန်မာဘာသာတို့၌ပွမ်းတီးပြီးကျွမ်းကျင်တန်သလောက်ကျွမ်းကျင်သအလျောက်သူ၏ဘာသာပြန်လက်ရာများကိုစာဖတ်ပရိသတ်၏နှစ်သက်အားပေးမှုသည်တိုးတက်လျက်ရှိပြီးဟုကျွန်တော်ထင်မိပါသည်။အမှန်မှာတော့ပရိသတ်အများစုသိနေကြပြီဖြစ်၍မိတ်ပေးရန်အထူးတလည်မလိုတော့ပါ။သို့သော်တပဟာင်းတစ်ယောက်ပီပီကျွန်တော့်အားဆိုစေလိုသဖြင့်အိမ်ကလေးဘာသာပြန်လက်ရာကိုဖတ်ကြပါဟုသာကျွန်တော်တိုက်တွန်းလိုက်ပါသည်။အင်္ဂလိပ်နှင့်နှစ်ဘာသာပေးထားသောကြောင့်ဘာသာပြန်ပညာကိုလည်းလေ့လာနိုင်ကြမည်ထင်ပါသည်။                                                      ၂ဝဝဝ---၈x"
+Signal [numbered-layout]: long numbered contents-like line in first 12,000 characters; character offset 129
+  Sample: "(mmcybermedia.com) comမှ စာရိုက်ပေးပါသည်။1mgmyominn    ည၏အိပ်ဖန်စောင့်များနှင့်နိုင်ငံတကာရသဝတ္ထုများဦးကျော်မြင့်တင်နွယ်မောင်၊ဒီပလိုမာဘွဲ့ကိုအဖေဦးဘလွန်း၊အမိဒေါ်လှကြည်တို့မှ၁၉၄၃ခ"
+
+Book: "1758701152750"
+Dataset row: 130
+PDF SHA-256: 5b86257ccfa857e55c7af6a671fa716514ebbd28fbf2236f3ba509bb8fe020c0
+Groups: latin-paired
+Text line 1: "မာတိကာ "
+Text line 2: "စာမျက်နှာ "
+Text line 3: "အမှာစာ 1 "
+Signal [latin-paired]: full-text counts Ò/Ó=68/61, Ô/Õ=0/16; character offset 3235
+  Sample: "ြောင်းလဲဖို့ \nဆောင်ထားရမယ့် ÒDÓ ခြောက်လုံး 155 \n၃၅။ လူငယ်များရဲ့ အင်ဂျင်နီယာအိပ်မက်အတ"
+
 Book: "1758724351533"
 Dataset row: 131
 PDF SHA-256: 035769972042db727f9767441b761757e37208b4fea35c9396478db7780d6547
-Groups: duplicate, mark-order, ascii-heading
+Groups: duplicate, mark-order, ascii-heading, control-chars
 Text line 1: "mmcybermedia\u0018com "
 Text line 2: "rrrrrrrrssssssssuuuuuuuuffffrrrrffffrrrrjjjjjjjjrrrrrrrriiiiiiiiffff    ffff    rrrrrrrrmmmmmmmmvvvvvvvvddddeeeeddddeeeeffffrrrrffffrrrrSSSSLLLLSSSSLLLL;;;;;;;;        "
 Text line 3: "EEEEEEEESSSSiiiiSSSSiiiiffffhhhh    ffffhhhh            "
@@ -762,6 +1143,38 @@ Signal [mark-order]: 17 selected mark sequences in samples; character offset 144
   Sample: "းစျုံက်သုန်းရေးကို ရှေးရှုနြေီါ”  မှူးမတ်များ လျှောက်တင်ကြသည် ကာလိင်္ဂမင်းသည် သွေ့ခြော"
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 18
   Sample: "mmcybermedia\u0018com \nrrrrrrrrssssssssuuuuuuuuffffrrrrffffrrrrjjjjjjjjrrrrrrrriiiiiiiiffff    ffff    rrrrrrrrmmmmmmmmvvvvvvvvddddeeeeddddeeeeffff"
+Signal [control-chars]: 136 controls or replacement characters in full text; character offset 12
+  Sample: "mmcybermedia\u0018com \nrrrrrrrrssssssssuuuuuuuuffffrrrrffffrrrrjjjjjjjjrrr"
+
+Book: "1758980418795"
+Dataset row: 138
+PDF SHA-256: 84266fb92b23582d793e244ddca76608b9aea2c91b33d9b81073ed29541e244f
+Groups: numbered-layout
+Text line 1: "“ thanthannaing(mmcybermedia)မျက်နှာဖုံးခွင့်ပြုချက်အမှတ်စာရိုက်တင်ပေးပါသည်။Page-1သိဒ္ဓတ္ထဂျာမန်စာရေးဆရာကြီးဟာမန်ဟက်ရေးသား၍ပါရဂူမြန်မာပြန်သည်။ဤ”ကိုဦးမြင့်ဦး၊လင်းယုန်စာပေ၀၈၅၅) ပုံနှိပ်တိုက်၁၅၊အခန်း၃၊ကြို့ကုန်းရိပ်သာထုတ်ဝေ၍ဦးထွန်းထွန်း၊အောင်မြင့်ထွန်း၀၂၇၂၆၂၄၄ဘီလမ်း၄၀လူထုအတွင်းဝယ်စာမူ ၄၂၇၊၈၉၃၉၂၊ပဉ္စမအကြိမ်၁၉၉၀ပြည့်၊မတ်လယောမင်းကြီးစာပေကစတုတ္ထအကြိမ်၁၉၇၇ရတနာစာပေတတိယအကြိမ်၁၉၇၁လောကစာပေဒုတိယအကြိမ်၁၉၆၆ကျော်ညွန့်နှင့်အပေါင်းအသင်းပထမအကြိမ်၁၉၆၄ပုဂံစောင်ရေ,၀၀၀ပန်းချီဦးစံတိုးတန်ဖိုး၃၅ကျပ်ထုတ်ဝေသည်။၃၄၆၊အနောက်ရန်ကင်း၊ရန်ကင်းစာတိုက်၊၁၁၀၈၁ရန်ကုန်မာတိကာ၁၁။ဗြာဟ္မဏ၏သား၁၂။သမဏတို့နှင့်အတူ၃။ဂေါတမ၄။မှန်သောအမြင်၊ပွင့်သောမျက်လုံး၅။ကမလာ၆။၇။လောကသံသရာ၈။မြစ်ကမ်းပါး၌၉။ကူးတို့ဆရာ၁၀။သားငယ်ဥုံဂေါဝိန္ဒ"
+Text line 3: "                                             thanthannaing(mmcybermedia)နောက်ပိုင်းကျမှစာရိုက်တင်ပေးပါသည်။Page-2သိဒ္ဓတ္ထအကြောင်း“ ” ဟာမန်ဟက်၏ဘဝကိုမှန်းဆရေးသောလေ့လာကြည့်သည့်အခါပထမကမ္ဘာစစ်သည်သိသိသာသာတိုးတက်ပြောင်းလဲလာသည်ကိုတွေ့ရသည်။ဟက်ကိုယ်တိုင်ကသူ၏ဝေဖန်ရေးသည်အတ္ထုပ္ပတ္တိဆယ့်သုံးနှစ်အရွယ်၌ဒုတိယကမ္ဘာသူ့ကိုသူဒုတိယအကြိမ်အပြောင်းအလဲဖြစ်စေခဲ့သည်လုပ်မည်ဟုရေးသားလေသည်။အသက်စာရေးဆရာပထမအကြိမ်ဆုံးဖြတ်ခဲ့ဖူးသည်။) ဖြစ်လာသောအခါသူသည်ယခင်ကသူနှင့်လိုက်လျောညီထွေဖြစ်လာခဲ့သည့်ပတ်ဝန်းကျင်နှင့်အတိုက်အခံဖြစ်လာလေသည်။၁၉၁၄ခုနှစ်အထိမည်မည်ရရမဟုတ်သေးပေ။မာ့ဇ်စာင်၏အယ်ဒီတာအဖြစ်နှင့်ဝေဖန်ရေးကိုမူစတင်ရေးသားနေလေပြီ။သို့ရာတွင်ထိုအချိန်ကအစိုးရဝါဒကိုဦးတည်ချက်ထားခြင်းမျိုးမဟုတ်ဘဲပုဂ္ဂိုလ်ရေးလောက်ကိုသာအာရုံထားလေ၏။ယင်းအခြေအနေကိုတစ်မျိုးတစ်ဖုံပြောင်းလဲစေခဲ့လေသည်။ဟက်သည်၁၉၁၂စ်ကစပြီးဆွစ်ဇာလန်၌နေထိုင်ခဲ့သော်လည်းဂျာမန်နိုင်ငံသားတစ်ယောက်ဟုသာသဘောထားသည်။အမှန်မှာ၁၉၂၃ခုနှစ်ကျမှဆွစ်ဇာလန်နိုင်ငံသားအဖြစ်ခံယူလိုက်ခြင်းဖြစ်လေသည်။မဆွကဖြစ်သော်လည်းခုနှစ်တွင်ခံယူလေသည်။့ကြောင့်ကျွန်တော်၏သိဒ္ဓတ္ထဝတ္ထုမြန်မာပြန်ထွက်လာသောအခါဗန်ကောက်ရှိဆွစ်ဇ်သံရုံးကသူတို့နိုင်ငံသားဖြစ်၍သိဒ္ဓတ္ထမြန်မာပြန်ကိုအမျိုးသားပြတိုက်တွင်ထားလိုသောကြောင့်တစ်အုပ်တင်ပို့ပေးရန်မေတ္တာရပ်ခံခဲ့ဖူးသည်။သို့ဖြစ်၍သူ့ဂျာမန်ပရိသတ်ကစာဖတ်ပရိသတ်၏အကြားတွင်နားလည်မှုရှိသည်။စည်းလုံးညီညွတ်မှုရှိသည်ဟုပင်အထင်ရှိခဲ့သည်။၁၉၁၅ရေးသားသောသူ၏ငြိမ်းချမ်းရေးဆောင်းပါးများကိုပြင်းပြင်းထန်ထန်ဆန့်ကျင်သည်ကိုတွေ့ရသောအခါသူ့အယူအဆတက်တက်စင်လွဲနေကြောင်းသိရှိရလေ၏။သူ့မဂ္ဂဇင်းကိုလပေးနှစ်ပေးနှင့်ကြည့်သူများသည်ရပ်ပစ်လိုက်ကြလေ၏။စာအုပ်ထုတ်ဝေသူများကလည်းသူ့စာအုပ်များကိုမထုတ်ဝေကြတော့ပေ။ဂျာမန်သတင်းစာများကသစ္စာဖောက်ဟုသမုတ်ကြလေ၏။ဂျာမန်အုပ်ချုပ်ရေးပိုင်းပုဂ္ဂိုလ်များကလျစ်လျူရှုထားကြသော်လည်းမိမိ၏နိုင်ငံဟုပင်ယူဆထားသည့်ဂျာမန်နိုင်ငံအတွက်စွမ်းနိုင်သမျှအကျိုးပြုရန်ကြိုးစားခဲ့လေသည်။သူ၏ဆောင်းပါးတစ်ခု၌ကျွနု်ပ်သည်ဂျာမန်လူမျိုးဖြစ်သည်။ဂျာမန်ပြည်ကိုလိုလားသည်ရေးသားခဲ့လေသည်။သတင်းစာများနှင့်စာစောင်များ၌လူအချင်းချနားလည်ကြရန်၊ကရုဏာစိတ်ရှိကြရန်ဆက်ကာဆက်ကာဘာန်း၌ရှိသောကောင်စစ်ဝန်ရုံးဝင်ရောက်အလုပ်လုပ်ပြီးဆွစ်ဇာလန်နှင့်အခြားနေရာများတွင်ရှိသည့်စစ်သုံ့ပန်းများအတွက်အကျိုးဆောင်လုပ်ငန်းများကိုလုပ်ကိုင်လေသည်။ထုတ်ဝေလေသည်။၁၉၁၆ခုနှစ်၌ကိုယ်ရေးပြဿနာများဆက်ကာပေါ်လာခဲ့လေသည်။ပထမတွင်သူ၏ဖခင်ကွယ်လွန်သည်။သူ့ညီအသည်းအသန်ဖြစ်လာသည်။တစ်ချိန်တည်းမှာပင်သူ၏ဇနီးကိုစိတ္တဇဆေးရုံတင်ရလေသည်။"
+Text line 5: ") (Pictuthanthannaing(mmcybermedia)ယင်းပြဿနာမှာစာရိုက်တင်ပေးပါသည်။Page-3အထွေထွေနှင့်စစ်အခြေအနေကြောင့်ဟက်သည်ပင်စိတ်ထိခိုက်ပြီးစိတ်ရောဂါကိုဖြစ်လာလေသည်။သို့ဖြစ်၍သူ၏စာများ၌ဆရာဝန်များနှင့်ကုပစ်ရလေသည်။ယင်းအချိန်ကာလသည်ဟက်၏ဘဝနှင့်ဘဝအကွေ့ပင်ဝင်နေသူဖြစ်လေသည်။ကုသသောအခါစိတ်နှင့်ပတ်သက်သောအသိအမြင်သစ်များပေါ်လာလေသည်။မိမိ၏နှလုံးကိုဘဝနှင့်၏ယုံကြည်ချက်များကိုပြန်လည်ဆန်းစစ်ကြည့်သောအခါကြည့်လာသည်။ဂဃနဏယခင်အယူအဆထိုသဘောတရားများသည်အခေါင်းချည်း၊အကာချည်းဖြစ်နေသည်ကိုတွေ့ရသည်။စိတ်ကူးယဉ်ချက်နှင့်စစ်၏တကယ့်လက်တွေ့အဖြစ်မှန်၏ခြားနားချက်ကိုသိရှိပြီးနောက်ကမ္ဘာအေတွင်း၌လည်းသာမကဘဲမိမိကိုယ်အခြေအနေဖရိုဖရဲဖြစ်နေကြောင်းကိုသိရှိနားလည်သွားသည်။ကိုယ်အတွင်းကိုကြည့်လိုက်သောအခါအပြင်ဘက်ခရစ်ယာန်ဘာသာကဲ့သို့ပင်တိုက်ပွဲများရှိနေသည်ကိုထိုအခါသူသည်သူတစ်ပါးအားအပြစ်တင်ချင်စိတ်မရှိတော့ပေ။လက်ညှိုးထိုးလိုစိတ်စိတ်ကိုခွဲခြမ်းစိတ်ဖြာကြည့်သည့်မနောဝိဘဇ္ဇသဘောတရားသည်လုပ်ရပ်များကိုပြောင်းလဲစေခဲ့သည်။ဟက်အားယခင်ကထက်ကိုယ့်ကိုယ်ကိုထိုးဖောက်သိမြင်စေခဲ့ပြီးမိမိနှင့်လာကအဆိုးတွေ့ကြုံနေရခြင်း၌အပြစ်ဟုခံယူစေခဲ့သည်။နောက်ပိုင်းထင်ဟပ်လာသည်ကိုသို့ရာတွင်လက်ရာများသည်စိတ္တဗေဒအမြင်တစ်မျိုးတည်းဖြင့်သာတစ်ဘက်သတ်ကြည့်မြင်သုံးသပ်ထားသည်ဟုဆိုလျှင်ကားမှန်မည်မဟုတ်ပေ။သဘောကိုစိတ်ပါဝင်စားနေသည့်အချိန်၌ပင်သံသယဝါဒဝင်သင့်သလောက်အတွေ့အကြုံကိုဝတ္ထုများ၏ဘောင်အတွင်း၌အကျုံးဝင်ပါမူကားအသုံးချမည်ဖြစ်လေသည်။သူ၏အနုပညာသည်စိတ္ထဗေဒ၏သိပ္ပံနည်းကျသောရည်မှန်းချက်ကျော်လွန်သွားခွဲခြမ်းစိတ်ဖြာသူဝိဘဇ္ဇသမားအနေဖြင့်ရှေ့သို့တိုးရန်မဝံ့မရဲဖြစ်နေသည့်နယ်နိမိတ်အပိုင်းအခြား၌ကဗျာဆရာကရပ်တံ့မနေဟုဟက်ကဆိုထားလေသည်။ဟာမန်ဟက်သည်၁၉၁၁ခုနှစ်တွင်အရှေ့နိုင်ငံများသို့ခရီးထွက်ခဲ့လေသည်။“ပစ်ချာဘုတ်” ၁၉၂၆re Book)အောက်အော့ဖ်အင်ဒီယား၁၉၁၃) (Out of India)ဂျာနယ်တို့၌သူ၏ခရီးအတွေ့အကြုံများကိုတင်ပြထားသည်။အိန္ဒိယသည်ဟက်၏ပန်းတိုင်တစ်ခုဖြစ်သည်။အိန္ဒိယသို့ရောက်လိုသည့်အာသာဆန္ဒသည်ဟက်တွင်ငယ်စဉ်ကပင်ရှိလာခဲ့လေသည်။သူရေးသားသည့်တိုများနှင့်ဆောင်းပါးအချို့တွင်သူ့အဘိုးကအိန္ဒိယတွင်အနှစ်သုံးဆယ်ကြာမျှသာသနာပြုလုပ်ငန်းလုပ်ပြီးနောက်ပြန်လာသည့်အခါသယ်ဆောင်လာသည့်ပစ္စည်းများဝိုင်းရံနေသောသူငယ်ဘဝအကြောင်းကိုရေးသားထားလေသည်။စိတ်နှလုံးတွင်ငယ်စဉ်ဘဝကပင်သြဇာလွှမ်းမိုးနေသည်။ကျွနု်ပ်သည်အိန္ဒိယ၏နာမ်ပိုင်းဆိုင်ရာများနှင့်လည်းအကျွမ်းတဝင်ဖြစ်လာခဲ့သည်ဆိုထားလေသည်။သူငယ်စဉ်ကဂျာမဏီ၌အိန္ဒိယဘာသာစကားနှင့်ပတ်သက်၍ဆက်လက်၍သုတေသနလုပ်နေသောသူ့ကိုအားပေးအားမြှောက်ပြုလုပ်ခဲ့လေသည်။သူ၏ဖခင်ကလည်းနေထိုင်ခဲ့သည့်ရေးသားထားသည့်စာအုပ်များကိုထုတ်ဝေ"
+Signal [numbered-layout]: long numbered contents-like line in first 12,000 characters; character offset 0
+  Sample: "“ thanthannaing(mmcybermedia)မျက်နှာဖုံးခွင့်ပြုချက်အမှတ်စာရိုက်တင်ပေးပါသည်။Page-1သိဒ္ဓတ္ထဂျာမန်စာရေးဆရာကြီးဟာမန်ဟက်ရေးသား၍ပါရဂူမြန်မာပြန်သည်။ဤ”ကိုဦးမြင့်ဦး၊လင်းယုန်စာပေ၀၈၅၅) ပ"
+
+Book: "1758980446382"
+Dataset row: 139
+PDF SHA-256: a544cf89ef351b988dc0c5442f3619ef31434a670633cfedc4bd8bced78cda86
+Groups: latin-paired
+Text line 1: "] "
+Text line 4: "                                                                                                                                                                                                       mmcybermedia.com "
+Text line 6: "                                                   ပါရဂူ ပင်ကိုရေးနှင့် ဘာသာပြန် ဆိုခဲ့သည့် ကျမ်းစာ ဝတ္ထုပေါင်း ၉၀ ကျော် ရှိသည်။ "
+Signal [latin-paired]: full-text counts Ò/Ó=260/249, Ô/Õ=33/32; character offset 1279
+  Sample: "ော် နန္ဒမင်းသား အကြောင်းကို Òသုန္ဒရနန္ဒ \nပညာသင်သည်။ ၁၉၅၄ တွင် \nခေါ် ညီတော်မင်းနန်Ó အမ"
+
+Book: "1758987502476"
+Dataset row: 140
+PDF SHA-256: 11d0c9d856ad020c529d6a58c0228f2b957dcf3eeb6b5f3dd563a067a52826a2
+Groups: latin-paired
+Text line 1: "AKAR PHYOE KANBAUK "
+Text line 5: "မြန်မာစာ မတတ်သော မြန်မာများသာ ဖတ်ရန် "
+Text line 6: "အရှင် အကုသိုလ် "
+Signal [latin-paired]: full-text counts Ò/Ó=27/27, Ô/Õ=54/54; character offset 1583
+  Sample: "သည်။ \nဒူးဂဏန်းရေးနည်း ဟူသည် Ôက၊ ခÕ စသော အက္ခရာများ၏ နေ ရာတွင် Ô၁၊ ၂၊ ၃Õ စသော သင်္ချာက"
 
 Book: "1759199573598"
 Dataset row: 141
@@ -795,6 +1208,16 @@ Text line 3: "îမနéမßĈàâငéငæတရßèသãñကáèမêßè�
 Signal [latin-mixed]: 3359 Myanmar/extended-Latin adjacencies in samples; character offset 0
   Sample: "îပညéäထßငéစâသမ×တîမနéမßĈàâငéငæäတßé  \nîပညéäထßငéစâတရßèလôတéäတßé"
 
+Book: "1759598726360"
+Dataset row: 145
+PDF SHA-256: f949c27bb3addf0fdd0fe1f1fd1f4d804baeb465b914f002ec9241bb6d6fd140
+Groups: latin-paired
+Text line 1: "ကျောက်ဆစ်နှင်းဆီ ဝန်ရိုးစွန်း -  မင်းခိုက်စိုးစန်Typed by- G!VERProof and PDF - wannar"
+Text line 3: "   ဘဝဆိုတာ ဘယ်သူနဲ့ကန်ရမှန်းမသိတဲ့ ဘောလုံးပွဲတစ်ခုပေါ့ ကက်သရင်းနှင်းဆီရယ်. . .။ကိုယ်က အရံလူပါ။   ထိုင်ခုံမှာထိုင်ပြီး စောင့်နေခဲ့ရတယ်။ကိုယ့်ကို ဝင်ကန်ဖို့ ရွေးချယ်မယ့် နည်းပြကလည်း ဘယ်သူမှန်းမသိဘူး။( လူတွေအားလုံးရဲ့ မျက်နှာကိုပဲ ကိုယ်က အားကိုးတကြီးနဲ့ မော့မော့ကြည့်နေရတာ )ပြောပါ. . . ။  ငါ့ကို . . . ဘယ်တော့ရွေးချယ်မှာလဲ. . .။ကိုယ့်ကိုယ်ကိုလည်း မရေရာဘူး။  ဝင်ကန်ချင်စိတ်နဲ့ တက်ကြွ နေခဲ့တာလား . . .။ဒါလည်း မဟုတ်သေးဘူး။ဝင်မကန်ဘဲ ဒီအတိုင်း ငြိမ်ငြိမ် လေးထိုင်နေတာ ပိုကောင်းသလား . . .။ဒါလည်း မသေချာဘူး ။                 . . .        . . .        . . .ပွဲပြီးသွားတယ်။ပြီးတော့လည်း ပြီးတာပါပဲ ကက်သရင်းနှင်းဆီရယ်. . .။                                                                                 နရစိုး"
+Text line 4: "2"
+Signal [latin-paired]: full-text counts Ò/Ó=24/1, Ô/Õ=1338/1322; character offset 990
+  Sample: "ုန်က ညည်းညည်းညူညူဖြင့် . . .ÔÕ ကက်သရင်းရယ် . . .     နင်ကလည်း ညံ့လိုက်တာ။   ကိုယ်နေတဲ"
+
 Book: "1759845684572"
 Dataset row: 146
 PDF SHA-256: 382c058a0b1589f85f256da6bc38dfd7966658660328a97cbbf618f70183d487
@@ -807,17 +1230,29 @@ Signal [duplicate]: at least 3 consecutive copies; character offset 40
 Signal [ascii-au]: 184 adjacent A/U occurrences in samples; character offset 164
   Sample: "မှ ကလေးယူလို့ မဖြစ်ပါဘူး\"   Aချိန်က ညနေ လေးနာရီ။ လူနာကြည့်၍ Aကောင်းဆုံးAချိန်မျိုး ဖြ"
 
+Book: "1761410353665"
+Dataset row: 153
+PDF SHA-256: fc03ac451b1ecfa18384c856c3410883322a7a9e2887dbef534127b87a89db05
+Groups: latin-paired
+Text line 1: "မြနှောင်းညို "
+Text line 2: "ပန်းကြွေပွင့်ပုံပြင် "
+Text line 3: "(ဒုတိယအကြိမ်) "
+Signal [latin-paired]: full-text counts Ò/Ó=1804/1808, Ô/Õ=15/20; character offset 7079
+  Sample: "်း \nကျိန်းစပ်နေဆဲ ဖြစ်သည်။ \nÒဟိတ်Ó \nအဲသည်ဟိတ်ကြောင့် ဇင်ယော် လန့်ဖြတ်သွားပြီး အသံလာရာ"
+
 Book: "1761689865836"
 Dataset row: 155
 PDF SHA-256: ac8f11673538fb7c1256f1bffd3f34ecd36004ee527f270a5ccbdc1bba0cdc10
-Groups: duplicate, ascii-heading
-Text line 1: "mmcybermediacom "
+Groups: duplicate, ascii-heading, control-chars
+Text line 1: "mmcybermedia\u0094com "
 Text line 2: "rrrrrrrrddddccccddddccccssssssssrrrrrrrrffff;;;;ffff;;;;aaaaaaaa00000000        "
 Text line 3: "တစ္ဆေတွေတစ္ဆေတွေတစ္ဆေတွေတစ္ဆေတွေ ထစ်ချုန်းနေတဲ့မိုးတိမ်နှင့်ထစ်ချုန်းနေတဲ့မိုးတိမ်နှင့်ထစ်ချုန်းနေတဲ့မိုးတိမ်နှင့်ထစ်ချုန်းနေတဲ့မိုးတိမ်နှင့် "
 Signal [duplicate]: at least 3 consecutive copies; character offset 99
   Sample: "တစ္ဆေတွေတစ္ဆေတွေတစ္ဆေတွေတစ္ဆေတွေ"
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 18
-  Sample: "mmcybermediacom \nrrrrrrrrddddccccddddccccssssssssrrrrrrrrffff;;;;ffff;;;;aaaaaaaa00000000        \nတစ္ဆေတွေတစ္ဆေတွေတစ္ဆေတွေတစ္ဆေတွေ ထစ်ချုန်းနေတဲ့"
+  Sample: "mmcybermedia\u0094com \nrrrrrrrrddddccccddddccccssssssssrrrrrrrrffff;;;;ffff;;;;aaaaaaaa00000000        \nတစ္ဆေတွေတစ္ဆေတွေတစ္ဆေတွေတစ္ဆေတွေ ထစ်ချုန်းနေတဲ့"
+Signal [control-chars]: 121 controls or replacement characters in full text; character offset 12
+  Sample: "mmcybermedia\u0094com \nrrrrrrrrddddccccddddccccssssssssrrrrrrrrffff;;;;fff"
 
 Book: "1765481030976"
 Dataset row: 160
@@ -828,6 +1263,16 @@ Text line 2: "(၂၀၁၇ ခâĈìစé၊ îပညéäထdငéစâလôတ
 Text line 3: " ၁၃၇၉  ခâĈìစé၊                                ရကé "
 Signal [latin-mixed]: 3206 Myanmar/extended-Latin adjacencies in samples; character offset 2
   Sample: "စdäပĈìငçéအĈâပညdမãပàâငéခëငéçဥပäဒ \n(၂၀၁၇ ခâĈìစé၊ îပညéäထdငéစâလô"
+
+Book: "1773705881963"
+Dataset row: 161
+PDF SHA-256: 9625383d833af522aec0ecd1e8617c19f5f465d4288253dcc0bc49be35ae1746
+Groups: latin-paired
+Text line 1: "ဆူးပန်းခွေ သွယ်ဘယက်နှင့် ပေရွက်လိပ် နားတောင်းဆင် (ခင်ခင်ထူး)                  mmcybermedia.com                                                                          "
+Text line 3: "ဆူးပန်းခွေ သွယ်ဘယက်နှင့် ပေရွက်လိပ် နားတောင်းဆင် "
+Text line 4: "စာမူခွင့်ပြုချက်အမှတ် ၅ဝဝ၅၂ဝဝ၅၁၁ "
+Signal [latin-paired]: full-text counts Ò/Ó=2356/2354, Ô/Õ=120/117; character offset 11772
+  Sample: "ယ်က အပြေးရောက်လာကာ တားသည်။ \nÒဆရာမ...  ကန်ထဲ ဆင်းမလို့လား...  မလုပ်လိုက်ပါနဲ့တော်...  "
 
 Book: "1774769195137"
 Dataset row: 163
@@ -841,15 +1286,37 @@ Signal [duplicate]: at least 3 consecutive copies; character offset 145
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 326
   Sample: "ဆရာမစာရေးဆရာမ cifMuLMuLwif \nttttyyyyppppiiiinnnngggg    &&&&    ppppddddffff    ----    lllluuuucccckkkkyyyy"
 
+Book: "1775189898005"
+Dataset row: 164
+PDF SHA-256: 1629bc0a5ec8c71478ff59ad92d6743058180f6de849875215f145dfa2c48885
+Groups: latin-paired
+Text line 1: "ကျွန်တော်လွမ်းမိ အပြစ်ရှိသည် နေပိုင် "
+Text line 4: "1 "
+Text line 7: "ကျွန်တော်လွမ်းမိ အပြစ်ရှိသည် နေပိုင် "
+Signal [latin-paired]: full-text counts Ò/Ó=827/827, Ô/Õ=2/2; character offset 2359
+  Sample: "လောဆယ်တော့ ငါတို့နိုင်တယ် ညီÓ \n \nÒမဟုတ်ဘူးကွÉ တစ်ယောက်ယောက်က အနိုင်ရတယ် ဆိုတာ တဖက်က အ"
+
 Book: "1783948012042"
 Dataset row: 166
 PDF SHA-256: 602840d11c2ead4054cf00338933cc48bbd5f5018ce87d1ea9cc792d7789af60
-Groups: ascii-heading
+Groups: ascii-heading, latin-paired
 Text line 1: "&,farmjcif; tydkif;tprsm; "
 Text line 3: "ပုံနှိပ်မှတ်တမ်း "
 Text line 4: "စာမူခွင့်ပြုချက်အမှတ် "
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 12
   Sample: "&,farmjcif; tydkif;tprsm; \n \nပုံနှိပ်မှတ်တမ်း \nစာမူခွင့်ပြုချက်အမှတ် \n၅၀၀၁၀၀၀၁၀၇ "
+Signal [latin-paired]: full-text counts Ò/Ó=387/387, Ô/Õ=0/0; character offset 1386
+  Sample: "်ယာက နှစ်ယောက်စာ ယူလိုက်၏။ \nÒဘာဖြစ်လို့ နှစ်ယောက်စာ ယူရတာလဲÓ \nÒဗိုက်ထဲက ကလေးအတွက်ပါ ယ"
+
+Book: "1783952099463"
+Dataset row: 167
+PDF SHA-256: 39bf26f9ecf4bd60060b1a0c3b2529acd45d05fed0c82aea695077e98cb71b9d
+Groups: latin-paired
+Text line 1: "Ò သာဓု အင် ဆန်း၊စ်၊ Ó "
+Text line 5: " rat "
+Text line 6: "  Parker "
+Signal [latin-paired]: full-text counts Ò/Ó=1139/1139, Ô/Õ=0/216; character offset 0
+  Sample: "Ò သာဓု အင် ဆန်း၊စ်၊ Ó \n \n \n \n rat \n  Parker \n\nသာဓု အင် ဆန"
 
 Book: "1784274916692"
 Dataset row: 172
@@ -864,12 +1331,14 @@ Signal [duplicate]: at least 3 consecutive copies; character offset 0
 Book: "1784999368188"
 Dataset row: 175
 PDF SHA-256: c92f8ec930cb6837037443dc2542bf18f46d40bb1225844262d012b72811ccfa
-Groups: mark-order
-Text line 1: "မြန်မာနိုင်ငံ ရင်းနှီးမြှုပ်နှံမု ဥပေဒ (၂၀၁၆ခုနှစ်၊  ပြညေ်ထာင်စုလ|တေ်တာ် ဥပေဒအမှတ် ၄၀ ။) ၁၃၇၈ခုနှစ်၊ သီတင်းကတ်လပြညေ့်ကျာ် ၂  ရက် (၂၀၁၆ခုနှစ်၊ ေအာက်တိုဘာလ ၁၈   ရက်)  ပြညေ်ထာင်စုလ|တေ်တာ်သည် ဤဥပေဒကို ပြာန်းလိုက်သည်။ အခန်း(၁) အမည်နှင့် အဓိပlာယေ်ဖာ်ပြချက် ၁။ ဤဥပေဒကို မြန်မာနိုင်ငံ ရင်းနှီးမြှုပ်နှံမု ဥပေဒ ဟေု ခvတွငေ်စရမည်။ ၂။ ဤဥပေဒတွင် ပါရှေိသော အာက်ပါ စကားရပ်များသညေ် ဖာ်ပြပါအတိုင်း အဓိပlာယ် သကေ်ရာကေ်စရမည် - (က) နိုင်ငေံတာ် ဆိုသည်မှာ ပြညေ်ထာင်စုသမpတမြန်မာနိုင်ငေံတာ်ကိုဆိုသည်။ (ခ) နိုင်ငေံတာ်သမpတ ဆိုသည်မှာ ပြညေ်ထာင်စုသမpတ မြန်မာနိုင်ငေံတာ်၏      နိုင်ငေံတာ်သမpတကိုဆိုသည်။ (ဂ) အစိုးရအဖွဲ့ဆိုသည်မှာ ပြညေ်ထာင်စုသမpတ မြန်မာနိုင်ငေံတာ် ပြညေ်ထာင်စု အစိုးရအဖွဲ့ကိုဆိုသည်။  (ဃ) ဝန်ကyီးဌာန ဆိုသည်မှာ ပြညေ်ထာင်စုအစိုးရ၊ စီမံကိန်းနှင့် ဘာေရးဝန်ကyီး ဌာနကို ဆိုသည်။ (င) ေကာ်မရှင် ဆိုသည်မှာ ဤဥပေဒအရဖွဲ့စညေ်းသာ မြန်မာနိုင်ငံရင်းနှီးမြှုပ်နှံမေု ကာ်မရှင် ကိုဆိုသည်။ (စ) အဖွဲ့ဝင် ဆိုသည်မှာ မြန်မာနိုင်ငံ ရင်းနှီးမြှုပ်နှံမေု ကာ်မရှင် ဥကsနှင့် ဒုတိယ ဥကsတို့အပါအဝင် အဖွဲ့ဝင်တစ်ဦးဦးကိုဆိုသည်။ (ဆ) ေကာ်မရှင်ရုံး ဆိုသည်မှာ မြန်မာနိုင်ငံရင်းနှီးမြှုပ်နှံမေုကာ်မရှင်၏ ရုံးလုပ်ငန်း များကို တာဝန်ယေူဆာင်ရွက်သည့် ရင်းနှီးမြှုပ်နှံမုနှင့်ကုမlဏီများ ည|န်ကြားမု ဦးစီးဌာနရုံးကိုဆိုသည်။ (ဇ) အတွငေ်းရးမှူး ဆိုသည်မှော ကာ်မရှင်ရုံး၏ ရုံးလုပ်ငန်းတာဝန်များကို တာဝန်ခေံ ဆာင်ရွက်မည့် မြန်မာနိုင်ငံရင်းနှီးမြှုပ်နှံမေုကာ်မရှင်၏ အတွငေ်းရးမှူးကို ဆိုသည်။ "
-Text line 3: "2  (ဈ) အဆိုပြုချက် ဆိုသည်မှာ ရင်းနှီးမြှုပ်နှံသူက ပုဒ်မ ၃၆ တွငေ် ဖာ်ပြထားသည့် လုပ်ငန်းများ၌ လုပ်ကိုင်လိုသည့် ရင်းနှီးမြှုပ်နှံမုလုပ်ငန်းအတွကေ် ကာ်မရှင်၏ ခွင့်ပြုမိန့်ရရှိရန် သတ်မှတ်သည့်ပုံစံဖြင့် လိုအပ်သည့် စာချုပ်၊ စာရွက်စာတမ်း အေထာက်အထားများ ပူးတွဲကာ တင်ပြေသော လာက်လ|ာကိုဆိုသည်။ (ည) ခွင့်ပြုမိန့် ဆိုသည်မှာ ရင်းနှီးမြှုပ်နှံလိုသူက ရင်းနှီးမြှုပ်နှံရန် တင်ပြလောသာ အဆိုပြုချက်နှင့်စပ်လျဉ်း၍ ေကာ်မရှင်၏ သေဘာတူခွင့်ပြုချက်ကေိုဖာ်ပြသည့် အမိန့်ကို ဆိုသည်။ (ဋ) အတည်ပြေုလာက်ထားလ|ာ ဆိုသည်မှာ ရင်းနှီးမြှုပ်နှံလိုသူက အခန်း(၁၂) ေမြ အသုံးပြုခွင့်နှင့် အခန်း(၁၈) ပုဒ်မ ၇၅၊ ၇၇ နှင့် ၇၈ ပါ ကင်းလွတ်ခွင့်နှင့် သက်သာခွင့်များ ခံစားနိုင်ရန် အလို့ငှောကာ်မရှင်၏ အတည်ပြုမိန့် ရရှိရန် သတ်မှတ်သည့်ပုံစံဖြင့် လိုအပ်သည့် အေထာက်အထားများ ပူးတွဲကာ တင်ပြေ သောလာက်လ|ာကိုဆိုသည်။ (ဌ) အတည်ပြုမိန့် ဆိုသည်မှာ ရင်းနှီးမြှုပ်နှံလိုသူက တင်ပြလောသာ အတည်ပြေု လာက်ထားလ|ာနှင့်စပ်လျဉ်း၍ ေကာ်မရှင်၏ အတည်ပြုချက်ကေိုဖာ်ပြသည့် အမိန့်ကိုဆိုသည်။ (ဍ) နိုင်ငံသား ဆိုသည်မှာ ဤဥပေဒအလို့ငှာ နိုင်ငံသား ၊ဧည့်နိုင်ငံသား သို့မဟုတ် နိုင်ငံသားပြု ခွင့်ရသူတို့ကို ဆိုသည်။ ယင်းစကားရပ်တွင် နိုင်ငံသားများဖြင့်သာ ပါဝင် ဖွဲ့စည်းထေားသာ စီးပွေားရးအဖွဲ့အစည်းလည်းပါဝင်သည်။ (ဎ)  မြန်မာနိုင်ငံသား ရင်းနှီးမြှုပ်နှံသူ ဆိုသည်မှာ နိုင်ငေံတာ်အတွင်း ရင်းနှီးမြှုပ်နှံမု ပြုလုပ်သည့် နိုင်ငံသားကိုဆိုသည်။ ယင်းစကားရပ်တွင် မြန်မာနိုင်ငံ ကုမlဏီများ အက်ဥပေဒနှင့် အညီ ဖွဲ့စည်းတညေ် ထာင်မှတ်ပုံတင်ထားသည့် မြန်မာကုမlဏီ၊ ရုံးခွဲများနှင့် အခြားစီးပွေားရး အဖွဲ့အစည်းများလည်းပါဝင်သည်။ (ဏ) နိုင်ငံခြားသားရင်းနှီးမြှုပ်နှံသူ ဆိုသည်မှာ နိုင်ငေံတာ်အတွင်း ရင်းနှီးမြှုပ်နှံမု ပြုလုပ်သည့် နိုင်ငံသားမဟုတ်သူကို ဆိုသည်။ ယင်းစကားရပ်တွင် မြန်မာနိုင်ငံ ကုမlဏီများအက်ဥပေဒနှင့်အညီ ဖွဲ့စည်းတညေ်ထာင်မှတ်ပုံတင်ထားသည့် နိုင်ငံ ခြားကုမlဏီ၊ ရုံးခွဲ၊ အခြား စီးပွေားရးအဖွဲ့အစည်းများနှင့် ပြည်ပနိုင်ငံတစ်နိုင်ငံမှ ပြာန်းထားသည့် ဥပေဒများနှင့်အညီဖွဲ့စည်းထေားသာ စီးပွေားရးအဖွဲ့အစည်း များလည်း ပါဝင်သည်။ (တ) ရင်းနှီးမြှုပ်နှံသူ ဆိုသည်မှာ နိုင်ငေံတာ်အတွင်း ရင်းနှီးမြှုပ်နှံမုကို ဥပေဒနှင့်အညီ လုပ်ကိုငေ်ဆာင်ရွက်လျက်ရှိသည့် မြန်မာနိုင်ငံသားရင်းနှီးမြှုပ်နှံသူ သို့မဟုတ် နိုင်ငံခြားသားရင်းနှီးမြှုပ်နှံသူကို ဆိုသည်။ "
-Text line 5: "3  (ထ) ရင်းနှီးမြှုပ်နှံမု ဆိုသည်မှာ ရင်းနှီးမြှုပ်နှံသူက ဤဥပေဒနှင့်အညီ ပိုင်ဆိုင်သည့် သို့မဟုတ် ထိန်းချုပ်သည့် ပစ[ည်းများကို ဆိုသည်။ ယင်းစကားရပ်တွင် ပုဒ်မ ၄၀ ပါ ရင်းနှီးမြှုပ်နှံမုများလည်း အပါအဝင်ဖြစ်သည်။  (ဒ) တိုက်ရိုက်ရင်းနှီးမြှုပ်နှံမု ဆိုသည်မှာ နိုင်ငေံတာ်အတွင်း ရင်းနှီးမြှုပ်နှံသူက ဥပေဒနှင့်အညီ လုပ်ငန်းတွင် ရင်းနှီးမြှုပ်နှံထားသည့် ပိုင်ဆိုင်ပစ[ည်းအေပv ထိန်းချုပ်ခွင့် သို့မဟုတ် လ|မ်းမိုးခွင့်နှင့် လုပ်ငန်းစီမံခန့်ခွဲခွင့်တို့ရှိသည့် ရင်းနှီး မြှုပ်နှံမုကို ဆိုသည်။  (ဓ) နိုင်ငံခြားရင်းနှီးမြှုပ်နှံမု ဆိုသည်မှာ နိုင်ငံခြားသားရင်းနှီးမြှုပ်နှံသူက နိုင်ငေံတာ် အတွင်း ပြုလုပ်သည့် တိုက်ရိုက်ရင်းနှီးမြှုပ်နှံမုကို ဆိုသည်။ (န) စီးပွေားရးအဖွဲ့အစည်းဆိုသည်မှာ-   (၁) တည်ဆဲဥပေဒများနှင့်အညီ စီးပွေားရးလုပ်ငနေ်းဆာင်ရွက်ရန် ဖွဲ့စည်း တညေ်ထာင်ထားသည့် သို့မဟုတ် မှတ်ပုံတင်ထားသည့် ကုမlဏီ၊ ရန်ပေုံ ငွအဖွဲ့၊ အစုစပ်၊ တစ်ဦးတည်းပိုင်၊ ဖက်စပ်၊ စီးပွေားရးလုပ်ငန်း ဆိုင်ရာ အသင်းအဖွဲ့ သို့မဟုတ် အလားတူအဖွဲ့အစည်းများ အပါအဝင် တရား ဝင်စီးပွေားရးအဖွဲ့အစည်းများကို ဆိုသည်။  (၂) တည်ဆဲဥပေဒများနှင့်အညီ ဖွဲ့စည်းတညေ်ထာင်ထားသည့် အဆိုပါ တရားဝင်စီးပွေားရးအဖွဲ့အစည်း၏ ရုံးခွဲတစ်ခုကိုဆိုသည်။ (ပ) လွတ်လပ်စွာ အသုံးပြုနိုင်သညေ့် ငွေကြး ဆိုသည်မှာ အပြည်ပြည်ဆိုင်ရော ငွေကြးရန်ပေုံငွအဖွဲ့ (International Monetary Fund-IMF)၏ သေဘာတူ ညီချက်စာချုပ်အပိုဒ်၃၀(စ)နှင့် ၎င်းကိုပြင်ဆငေ်သာပြင်ဆင်ချက်တွင်အဓိပlာယ် ဖွင့်ဆိုထားသည့် အပြည်ပြည်ဆိုင်ရော ငွေပေးချမုများအတွက် လ|ဲေပြာငေ်းပး ခြင်းများနှင့် အဓိက နိုင်ငံခြေားငွေကြေးဈးကွက်များတွင် ကျယ်ကျယ်ပြန့်ပြနေ့် ရာင်းဝယ်ခြင်း ပြုလုပ်နိုင်ပြီး အပြည်ပြည်ဆိုင်ရော ငွေကြးရန်ပေုံငွအဖွဲ့ဝင် နိုင်ငံတစ်နိုင်ငံ၏ သုံးစွဲလျက်ရှေိသော ငွေကြးကို ဆိုသည်။ (ဖ) ကင်းလွတ်ခွင့်နှင့် သက်သာခွင့်များ ဆိုသည်မှာ ရင်းနှီးမြှုပ်နှံသူကေကာ်မရှင်၏ ခွင့်ပြုမိန့် သို့မဟုတ် အတည်ပြုမိန့် ရရှိထေားသာရင်းနှီးမြှုပ်နှံမုလုပ်ငန်းများ အတွက် ဤဥပေဒပါ ပြာန်းချက်နှင့်အညီ ရင်းနှီးမြှုပ်နှံသူ၏ ေလာက်ထားမု အေပv ေကာ်မရှင်က စိစစ်ခွင့်ပြုနိုင်သည့် ဝငေ်ငွခွန်၊ အေကာက်ခွန်နှင့် အခြား ပြည်တွင်းအခွန်အေကာက်များ ကင်းလွတ်ခွင့်နှင့်သက်သာခွင့်များကို ဆိုသည်။ "
+Groups: mark-order, control-chars
+Text line 1: "မြန်မာနိုင်ငံ ရင်းနှီးမြှုပ်နှံမု ဥပေဒ (၂၀၁၆ခုနှစ်၊  ပြညေ်ထာင်စုလ|တေ်တာ် ဥပေဒအမှတ် ၄၀ ။) ၁၃၇၈ခုနှစ်၊ သီတင်းကတ်လပြညေ့်ကျာ် ၂  ရက် (၂၀၁၆ခုနှစ်၊ ေအာက်တိုဘာလ ၁၈   ရက်)  ပြညေ်ထာင်စုလ|တေ်တာ်သည် ဤဥပေဒကို ပြ\u0095ာန်းလိုက်သည်။ အခန်း(၁) အမည်နှင့် အဓိပlာယေ်ဖာ်ပြချက် ၁။ ဤဥပေဒကို မြန်မာနိုင်ငံ ရင်းနှီးမြှုပ်နှံမု ဥပေဒ ဟေု ခvတွငေ်စရမည်။ ၂။ ဤဥပေဒတွင် ပါရှေိသော အာက်ပါ စကားရပ်များသညေ် ဖာ်ပြပါအတိုင်း အဓိပlာယ် သကေ်ရာကေ်စရမည် - (က) နိုင်ငေံတာ် ဆိုသည်မှာ ပြညေ်ထာင်စုသမpတမြန်မာနိုင်ငေံတာ်ကိုဆိုသည်။ (ခ) နိုင်ငေံတာ်သမpတ ဆိုသည်မှာ ပြညေ်ထာင်စုသမpတ မြန်မာနိုင်ငေံတာ်၏      နိုင်ငေံတာ်သမpတကိုဆိုသည်။ (ဂ) အစိုးရအဖွဲ့ဆိုသည်မှာ ပြညေ်ထာင်စုသမpတ မြန်မာနိုင်ငေံတာ် ပြညေ်ထာင်စု အစိုးရအဖွဲ့ကိုဆိုသည်။  (ဃ) ဝန်ကyီးဌာန ဆိုသည်မှာ ပြညေ်ထာင်စုအစိုးရ၊ စီမံကိန်းနှင့် ဘ\u0094ာေရးဝန်ကyီး ဌာနကို ဆိုသည်။ (င) ေကာ်မရှင် ဆိုသည်မှာ ဤဥပေဒအရဖွဲ့စညေ်းသာ မြန်မာနိုင်ငံရင်းနှီးမြှုပ်နှံမေု ကာ်မရှင် ကိုဆိုသည်။ (စ) အဖွဲ့ဝင် ဆိုသည်မှာ မြန်မာနိုင်ငံ ရင်းနှီးမြှုပ်နှံမေု ကာ်မရှင် ဥကs\u0095နှင့် ဒုတိယ ဥကs\u0095တို့အပါအဝင် အဖွဲ့ဝင်တစ်ဦးဦးကိုဆိုသည်။ (ဆ) ေကာ်မရှင်ရုံး ဆိုသည်မှာ မြန်မာနိုင်ငံရင်းနှီးမြှုပ်နှံမေုကာ်မရှင်၏ ရုံးလုပ်ငန်း များကို တာဝန်ယေူဆာင်ရွက်သည့် ရင်းနှီးမြှုပ်နှံမုနှင့်ကုမlဏီများ ည|န်ကြားမု ဦးစီးဌာနရုံးကိုဆိုသည်။ (ဇ) အတွငေ်းရးမှူး ဆိုသည်မှော ကာ်မရှင်ရုံး၏ ရုံးလုပ်ငန်းတာဝန်များကို တာဝန်ခေံ ဆာင်ရွက်မည့် မြန်မာနိုင်ငံရင်းနှီးမြှုပ်နှံမေုကာ်မရှင်၏ အတွငေ်းရးမှူးကို ဆိုသည်။ "
+Text line 3: "2  (ဈ) အဆိုပြုချက် ဆိုသည်မှာ ရင်းနှီးမြှုပ်နှံသူက ပုဒ်မ ၃၆ တွငေ် ဖာ်ပြထားသည့် လုပ်ငန်းများ၌ လုပ်ကိုင်လိုသည့် ရင်းနှီးမြှုပ်နှံမုလုပ်ငန်းအတွကေ် ကာ်မရှင်၏ ခွင့်ပြုမိန့်ရရှိရန် သတ်မှတ်သည့်ပုံစံဖြင့် လိုအပ်သည့် စာချုပ်၊ စာရွက်စာတမ်း အေထာက်အထားများ ပူးတွဲကာ တင်ပြေသော လ\u0080ာက်လ|ာကိုဆိုသည်။ (ည) ခွင့်ပြုမိန့် ဆိုသည်မှာ ရင်းနှီးမြှုပ်နှံလိုသူက ရင်းနှီးမြှုပ်နှံရန် တင်ပြလောသာ အဆိုပြုချက်နှင့်စပ်လျဉ်း၍ ေကာ်မရှင်၏ သေဘာတူခွင့်ပြုချက်ကေိုဖာ်ပြသည့် အမိန့်ကို ဆိုသည်။ (ဋ) အတည်ပြေုလ\u0080ာက်ထားလ|ာ ဆိုသည်မှာ ရင်းနှီးမြှုပ်နှံလိုသူက အခန်း(၁၂) ေမြ အသုံးပြုခွင့်နှင့် အခန်း(၁၈) ပုဒ်မ ၇၅၊ ၇၇ နှင့် ၇၈ ပါ ကင်းလွတ်ခွင့်နှင့် သက်သာခွင့်များ ခံစားနိုင်ရန် အလို့ငှောကာ်မရှင်၏ အတည်ပြုမိန့် ရရှိရန် သတ်မှတ်သည့်ပုံစံဖြင့် လိုအပ်သည့် အေထာက်အထားများ ပူးတွဲကာ တင်ပြေ သောလ\u0080ာက်လ|ာကိုဆိုသည်။ (ဌ) အတည်ပြုမိန့် ဆိုသည်မှာ ရင်းနှီးမြှုပ်နှံလိုသူက တင်ပြလောသာ အတည်ပြေု လ\u0080ာက်ထားလ|ာနှင့်စပ်လျဉ်း၍ ေကာ်မရှင်၏ အတည်ပြုချက်ကေိုဖာ်ပြသည့် အမိန့်ကိုဆိုသည်။ (ဍ) နိုင်ငံသား ဆိုသည်မှာ ဤဥပေဒအလို့ငှာ နိုင်ငံသား ၊ဧည့်နိုင်ငံသား သို့မဟုတ် နိုင်ငံသားပြု ခွင့်ရသူတို့ကို ဆိုသည်။ ယင်းစကားရပ်တွင် နိုင်ငံသားများဖြင့်သာ ပါဝင် ဖွဲ့စည်းထေားသာ စီးပွေားရးအဖွဲ့အစည်းလည်းပါဝင်သည်။ (ဎ)  မြန်မာနိုင်ငံသား ရင်းနှီးမြှုပ်နှံသူ ဆိုသည်မှာ နိုင်ငေံတာ်အတွင်း ရင်းနှီးမြှုပ်နှံမု ပြုလုပ်သည့် နိုင်ငံသားကိုဆိုသည်။ ယင်းစကားရပ်တွင် မြန်မာနိုင်ငံ ကုမlဏီများ အက်ဥပေဒနှင့် အညီ ဖွဲ့စည်းတညေ် ထာင်မှတ်ပုံတင်ထားသည့် မြန်မာကုမlဏီ၊ ရုံးခွဲများနှင့် အခြားစီးပွေားရး အဖွဲ့အစည်းများလည်းပါဝင်သည်။ (ဏ) နိုင်ငံခြားသားရင်းနှီးမြှုပ်နှံသူ ဆိုသည်မှာ နိုင်ငေံတာ်အတွင်း ရင်းနှီးမြှုပ်နှံမု ပြုလုပ်သည့် နိုင်ငံသားမဟုတ်သူကို ဆိုသည်။ ယင်းစကားရပ်တွင် မြန်မာနိုင်ငံ ကုမlဏီများအက်ဥပေဒနှင့်အညီ ဖွဲ့စည်းတညေ်ထာင်မှတ်ပုံတင်ထားသည့် နိုင်ငံ ခြားကုမlဏီ၊ ရုံးခွဲ၊ အခြား စီးပွေားရးအဖွဲ့အစည်းများနှင့် ပြည်ပနိုင်ငံတစ်နိုင်ငံမှ ပြ\u0095ာန်းထားသည့် ဥပေဒများနှင့်အညီဖွဲ့စည်းထေားသာ စီးပွေားရးအဖွဲ့အစည်း များလည်း ပါဝင်သည်။ (တ) ရင်းနှီးမြှုပ်နှံသူ ဆိုသည်မှာ နိုင်ငေံတာ်အတွင်း ရင်းနှီးမြှုပ်နှံမုကို ဥပေဒနှင့်အညီ လုပ်ကိုငေ်ဆာင်ရွက်လျက်ရှိသည့် မြန်မာနိုင်ငံသားရင်းနှီးမြှုပ်နှံသူ သို့မဟုတ် နိုင်ငံခြားသားရင်းနှီးမြှုပ်နှံသူကို ဆိုသည်။ "
+Text line 5: "3  (ထ) ရင်းနှီးမြှုပ်နှံမု ဆိုသည်မှာ ရင်းနှီးမြှုပ်နှံသူက ဤဥပေဒနှင့်အညီ ပိုင်ဆိုင်သည့် သို့မဟုတ် ထိန်းချုပ်သည့် ပစ[ည်းများကို ဆိုသည်။ ယင်းစကားရပ်တွင် ပုဒ်မ ၄၀ ပါ ရင်းနှီးမြှုပ်နှံမုများလည်း အပါအဝင်ဖြစ်သည်။  (ဒ) တိုက်ရိုက်ရင်းနှီးမြှုပ်နှံမု ဆိုသည်မှာ နိုင်ငေံတာ်အတွင်း ရင်းနှီးမြှုပ်နှံသူက ဥပေဒနှင့်အညီ လုပ်ငန်းတွင် ရင်းနှီးမြှုပ်နှံထားသည့် ပိုင်ဆိုင်ပစ[ည်းအေပv ထိန်းချုပ်ခွင့် သို့မဟုတ် လ|မ်းမိုးခွင့်နှင့် လုပ်ငန်းစီမံခန့်ခွဲခွင့်တို့ရှိသည့် ရင်းနှီး မြှုပ်နှံမုကို ဆိုသည်။  (ဓ) နိုင်ငံခြားရင်းနှီးမြှုပ်နှံမု ဆိုသည်မှာ နိုင်ငံခြားသားရင်းနှီးမြှုပ်နှံသူက နိုင်ငေံတာ် အတွင်း ပြုလုပ်သည့် တိုက်ရိုက်ရင်းနှီးမြှုပ်နှံမုကို ဆိုသည်။ (န) စီးပွေားရးအဖွဲ့အစည်းဆိုသည်မှာ-   (၁) တည်ဆဲဥပေဒများနှင့်အညီ စီးပွေားရးလုပ်ငနေ်းဆာင်ရွက်ရန် ဖွဲ့စည်း တညေ်ထာင်ထားသည့် သို့မဟုတ် မှတ်ပုံတင်ထားသည့် ကုမlဏီ၊ ရန်ပေုံ ငွအဖွဲ့၊ အစုစပ်၊ တစ်ဦးတည်းပိုင်၊ ဖက်စပ်၊ စီးပွေားရးလုပ်ငန်း ဆိုင်ရာ အသင်းအဖွဲ့ သို့မဟုတ် အလားတူအဖွဲ့အစည်းများ အပါအဝင် တရား ဝင်စီးပွေားရးအဖွဲ့အစည်းများကို ဆိုသည်။  (၂) တည်ဆဲဥပေဒများနှင့်အညီ ဖွဲ့စည်းတညေ်ထာင်ထားသည့် အဆိုပါ တရားဝင်စီးပွေားရးအဖွဲ့အစည်း၏ ရုံးခွဲတစ်ခုကိုဆိုသည်။ (ပ) လွတ်လပ်စွာ အသုံးပြုနိုင်သညေ့် ငွေကြး ဆိုသည်မှာ အပြည်ပြည်ဆိုင်ရော ငွေကြးရန်ပေုံငွအဖွဲ့ (International Monetary Fund-IMF)၏ သေဘာတူ ညီချက်စာချုပ်အပိုဒ်၃၀(စ)နှင့် ၎င်းကိုပြင်ဆငေ်သာပြင်ဆင်ချက်တွင်အဓိပlာယ် ဖွင့်ဆိုထားသည့် အပြည်ပြည်ဆိုင်ရော ငွေပေးချမုများအတွက် လ|ဲေပြာငေ်းပး ခြင်းများနှင့် အဓိက နိုင်ငံခြေားငွေကြေးဈးကွက်များတွင် ကျယ်ကျယ်ပြန့်ပြနေ့် ရာင်းဝယ်ခြင်း ပြုလုပ်နိုင်ပြီး အပြည်ပြည်ဆိုင်ရော ငွေကြးရန်ပေုံငွအဖွဲ့ဝင် နိုင်ငံတစ်နိုင်ငံ၏ သုံးစွဲလျက်ရှေိသော ငွေကြးကို ဆိုသည်။ (ဖ) ကင်းလွတ်ခွင့်နှင့် သက်သာခွင့်များ ဆိုသည်မှာ ရင်းနှီးမြှုပ်နှံသူကေကာ်မရှင်၏ ခွင့်ပြုမိန့် သို့မဟုတ် အတည်ပြုမိန့် ရရှိထေားသာရင်းနှီးမြှုပ်နှံမုလုပ်ငန်းများ အတွက် ဤဥပေဒပါ ပြ\u0095ာန်းချက်နှင့်အညီ ရင်းနှီးမြှုပ်နှံသူ၏ ေလ\u0080ာက်ထားမု အေပv ေကာ်မရှင်က စိစစ်ခွင့်ပြုနိုင်သည့် ဝငေ်ငွခွန်၊ အေကာက်ခွန်နှင့် အခြား ပြည်တွင်းအခွန်အေကာက်များ ကင်းလွတ်ခွင့်နှင့်သက်သာခွင့်များကို ဆိုသည်။ "
 Signal [mark-order]: 155 selected mark sequences in samples; character offset 56
   Sample: "နှံမု ဥပေဒ (၂၀၁၆ခုနှစ်၊  ပြညေ်ထာင်စုလ|တေ်တာ် ဥပေဒအမှတ် ၄၀ ။) ၁၃၇၈ခုနှစ်၊ သီတင်းကတ်လပြည"
+Signal [control-chars]: 131 controls or replacement characters in full text; character offset 199
+  Sample: "ာင်စုလ|တေ်တာ်သည် ဤဥပေဒကို ပြ\u0095ာန်းလိုက်သည်။ အခန်း(၁) အမည်နှင့် အဓိပlာယေ်ဖာ်ပြချက် ၁။ ဤ"
 
 Book: "1785548016136"
 Dataset row: 177
@@ -883,6 +1352,16 @@ Signal [duplicate]: at least 3 consecutive copies; character offset 79
 Signal [ascii-au]: 145 adjacent A/U occurrences in samples; character offset 430
   Sample: "မ်း \n၂၀၁၂ ခုနှစ်၊ ဒီဇင်ဘာလ၊ Aလင်းသစ်စာပေတိုက် (တတိယAကြိမ်) Aုပ်ရေ - ၁၀၀၀ တန်ဖိုး - ၃၅"
 
+Book: "1785589730113"
+Dataset row: 178
+PDF SHA-256: e3dad51edb2daf00a8db781d0b91a86c781b95a0b264052b5be32e57d67f08a1
+Groups: latin-paired
+Text line 1: "http://mmteashop.com                                                                                    "
+Text line 4: "10/1/2011 "
+Text line 5: "Typing - အိုလိုလို 1 "
+Signal [latin-paired]: full-text counts Ò/Ó=44/44, Ô/Õ=114/115; character offset 2885
+  Sample: " ကန့်သတ်ထားရမည့်အရာ မဟုတ်။  Ôလူတိုင်းအတွက် ပညာရေးနှစ်ခုရှိသည်။ တစ်ခုက အခြားသူများထံမှ"
+
 Book: "1785661897658"
 Dataset row: 184
 PDF SHA-256: b6336154d19f7292dd8c5bfe49ccd87103aeed8eadb7927428a08b6c1e5ab815
@@ -894,6 +1373,16 @@ Signal [duplicate]: at least 3 consecutive copies; character offset 0
   Sample: "ချစ်ဦးညိုချစ်ဦးညိုချစ်ဦးညိုချစ်ဦးညို"
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 144
   Sample: "ရွှေတိုက်စိုးရွှေတိုက်စိုး \nttttttttyyyyyyyyppppppppiiiiiiiinnnnnnnngggggggg&&&&&&&&ppppppppddddddddffffffff        \nlllllllluuuuuuuucccccccckkkkkkkkyyyyyyyy8888888"
+
+Book: "1785685700221"
+Dataset row: 185
+PDF SHA-256: 8131420fb798f3e8965dc19170d4c7f07528259c37857c15cfab26a415a8b131
+Groups: latin-paired
+Text line 1: "သုညနဲ့ဆောက်ခဲ့တဲ့အိမ် "
+Text line 2: "(မိုးရာသီလမ်း) "
+Text line 3: "နေပိုင် "
+Signal [latin-paired]: full-text counts Ò/Ó=53/103, Ô/Õ=0/0; character offset 2073
+  Sample: "ာ ထိုင်နေကြသည်။ နန္ဒာကÉ \n \n\nÒနေပိုင် ဒါနဲ့နင်က ရုရှားကို ဘယ်တော့ပြန်မှာလဲÓ \n \nÒလကုန်ပ"
 
 Book: "1786504776280"
 Dataset row: 186
@@ -924,6 +1413,18 @@ Text line 2: "http://wytumyanmar.com/group/itlearningebookshttp://wytumyanmar.co
 Text line 4: " နောက် Layout ထဲက Column Guide ကိုနှိပ်ပါ။ အဆင့် အဆင့် အဆင့် အဆင့် ((((၅)၅)၅)၅)  ကျလာတဲ့ Box မှာ Number of Column နေရာမှာ 2 ရိုက်ပါ။ Space between Column နေရာမှာ 0.6 ကိုရိုက်ပါ။ အဆင့်အဆင့်အဆင့်အဆင့် ((((၆)၆)၆)၆)  နောက် Type ထဲက Alignment ထဲက Align Center ကို နှိပ်ပြီး၊ အလယ်ပုံစံယူပါ။ အဆင့် အဆင့် အဆင့် အဆင့် ((((၇)၇)၇)၇)  နောက် Font Type ကို -win-researcher, Font Size ကို 24 ထားပြီး ``မွေးနေ့မင်္ဂလာ ဖိတ်ကြားလွှာ´´ စာသားကို ရိုက်ပါ။ အဆင့် အဆင့် အဆင့် အဆင့် ((((၈)၈)၈)၈) "
 Signal [duplicate]: at least 3 consecutive copies; character offset 468
   Sample: "ဆိုတဲ့ ဆိုတဲ့ ဆိုတဲ့ ဆိုတဲ့"
+
+Book: "1789702727965"
+Dataset row: 196
+PDF SHA-256: e3dd911beba97bfe30022ffc2a0dfaf86aca1548b9663d3639a0c6484ab16f1f
+Groups: latin-paired, numbered-layout
+Text line 1: "ရတနာရွှေမြေ - ဦးလှဒင် 1  စာပေဗိမာန်စာမူဆုရ "
+Text line 2: "မြန်မာပြန် THE LAND OF THE GREAT IMAGE "
+Text line 7: " ရတနာရွှေမြေ - ဦးလှဒင် 2  မာတိကာ ဘာသာပြန်ဆိုသူ၏ အမှာ စကားချီး ၁။ အာရှတိုက်သို့ ပေါ်တူဂီတို့ နယ်ချဲ့ခြင်း ၂။ ဂိုအာရွှေမြို့တော် ၃။ ခရစ်ယာန်ဘုန်းကြီးမန်ရစ် ခရီးထွက်ခြင်း ၄။ ကံကောင်း၍ ခေါင်းဖြတ်မခံရ ၅။ နတ်ကိုးကွယ်သူများ ၆။ ဒီယင်းဂါးမြို့ ကျွန်ကုန်ကူးသူများ ၇။ အထိတ်တလန့်သတင်း ၈။ ကျားနှင့် ရင်ဆိုင် ၉။ တောတွင်းတရားပွဲ ၁ဝ။ တောင်ပေါ်က ဆင်းတုတော် ၁၁။ ရေကြောင်းဗိုလ်ချုပ် ၁၂။ အိမ်တော်ဝန် ၁၃။ ဖူးမြော်ခံခြင်း ၁၄။ အနန္တဘုန်းရှင် ဘုရားသခင် ၁၅။ ဆလမ်းငါးကြိမ်ပေး၍ အလေးပြုခြင်း ၁၆။ ဘုရားရှိခိုးကျောင်း ဆောက်လုပ်လှူဒါန်းခြင်း ၁၇။ မင်းဆရာနှင့် စကားစစ်ထိုးပွဲ ၁၈။ ဆင်ဖြူတော် ၁၉။ နန်းမတော်ဘုရား ၂ဝ။ ကစားစရာနှင့် မင်းသားငယ်များ ၂၁။ ဟူးဂလိမြို့ကို မဂိုမင်း တိုက်ခိုက်လေပြီ ၂၂။ မန်ရစ်ကို သံမှူးခန့်ခြင်း ၂၃။ ဘိသိက်ခံလုနီးလတ်သော် ၂၄။ ရာဇဘိသေက မင်္ဂလာ ၂၅။ မန်ရစ်အား ကျွန်ကုန်သည်ဟု အထင်လွဲကြ ခြင်း ၂၆။ သီရိသုဓမ္မဘုရင် ထူးဆန်းစွာ လုပ်ကြံခံရ ခြင်း ၂၇။  မန်ရစ် အသတ်ခံရခြင်း ၂၈။ နိဂုံးချုပ် လေ့လာမှတ်သားခြင်း "
+Signal [latin-paired]: full-text counts Ò/Ó=144/136, Ô/Õ=25/26; character offset 8422
+  Sample: "ောကြောင့်သာ ထိုနှစ်ထဲမှာပင် Òမြန်မာ့ သုတေသနဂျာနယ်Ó Burma Research Journal ၌ အခန်းဆက် "
+Signal [numbered-layout]: long numbered contents-like line in first 12,000 characters; character offset 97
+  Sample: " ရတနာရွှေမြေ - ဦးလှဒင် 2  မာတိကာ ဘာသာပြန်ဆိုသူ၏ အမှာ စကားချီး ၁။ အာရှတိုက်သို့ ပေါ်တူဂီတို့ နယ်ချဲ့ခြင်း ၂။ ဂိုအာရွှေမြို့တော် ၃။ ခရစ်ယာန်ဘုန်းကြီးမန်ရစ် ခရီးထွက်ခြင်း ၄။ ကံကော"
 
 Book: "1791560434154"
 Dataset row: 199
@@ -995,10 +1496,30 @@ Signal [ascii-au]: 34 adjacent A/U occurrences in samples; character offset 3675
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 1060
   Sample: "fudk wdkufcwfaewmjzpfygw,f/ yGJMunfYy&dowfrsm; cif;Asm; . . . taemufajrmuft&yfrSm raeMuygeJYcifAsm;? r"
 
+Book: "a-coat-1680281236656"
+Dataset row: 216
+PDF SHA-256: ee94fe10d4d66269c87864dd9a65c13f071017fcc9b456067f19f72aebe58f40
+Groups: latin-paired
+Text line 1: "စာမူခွင့်ပြုချက်အမှတ် - ၂၈၈/၉၁ "
+Text line 2: "မျက်နှာဖုံးခွင့်ပြုအမှတ် - ၃၃၇/၉၁(၇) "
+Text line 4: "ပထမအကြိမ် "
+Signal [latin-paired]: full-text counts Ò/Ó=89/89, Ô/Õ=0/0; character offset 2544
+  Sample: "တစ်ဦးနှင့် တွေ့ခဲ့သည်။ သူက \nÒစစ်နှင့်ငြိမ်းချမ်းရေး ကို ကြံရိတ်တဲ့နေရာမှာ ကျမ ယူသွားတ"
+
+Book: "a-portrait-outline-of-sai-hte-sai-1759432455621"
+Dataset row: 218
+PDF SHA-256: e49c2257c0f516e4626ceb7b63bc0db8eb1325bcd97525d1fda5480c9f57866d
+Groups: latin-paired
+Text line 1: "MCM  PDF  TEAM "
+Text line 4: "  ကို luckyp  နှင့် ကိုမားဆိုး "
+Text line 5: "ကိုညီစေမင်း "
+Signal [latin-paired]: full-text counts Ò/Ó=126/126, Ô/Õ=4/5; character offset 1212
+  Sample: "်ထဲမှာ မတ်လ ၁၀ ရက်နေ့ဆိုယင် Òဗေ..ထိÓ \nရှင်သန်နေဆဲဖြစ်ပါသည်။ ဦးထီး၏ သီချင်းသံများ လမ်း"
+
 Book: "anawrahta-the-founder-of-the-bagan-empire-1783991149510"
 Dataset row: 220
 PDF SHA-256: d6f60429d99d4b554da68b110ac0d486a6fa24bdcd8e4fcffd401892e69cdf77
-Groups: foreign-script, ascii-heading
+Groups: foreign-script, ascii-heading, control-chars
 Text line 1: "ࠛࠥࠧࠒࠔ࠰࠮ ࠛࠩࠎࠤ࠰ࠕࠋࠤ     ࠒ ࠊߺࡆ࠘ࠥࠧࠖ࠰߿ࠥࠎ࠰ࠊ߾࠰  mage | ࠎ  "
 Text line 2: "ࠕ࠘߿ࠧ࠭ࠖ߾࠰߿ࠤࠛࠧࠏ࠰߿߾࠰ "
 Text line 4: " ࠎ࠮ yef;la;vTwfylaZmfyGgrsm; Epifhykࠛeaekynfawmf ࠔࠔࠔ  ࠋ࠮ ordkif;u awmif;qdkaeaom vlwpfaࠥmuf ࠔࠔࠔ  ࠊ࠮ wpfaoG; wpfoe wpfrdefrEpifh Edkifieawmf ࠔࠔࠔ  ߺ࠮ ykࠛe\\tawG;tac: awmfvpefaࠖ;ppf ࠔࠔࠔ  ࡆ࠮ owekjynfoGm; omoemhoewreftzGgr ࠔࠔࠔ  S࠮ ppfEpifh jidrf;csrf;aࠖ; bࠥfvrf;aࠖG;rvg ࠔࠔࠔ  7࠮ bkࠖiftaemfࠖxm\\ wdkif;jynfjyh ppfyGg ࠔࠔࠔ  8࠮ yxr jrefrmEdkifieawmf\\ tzGifhpmrsufEpm ࠔࠔࠔ  9࠮ ykࠛe\\wpfqifhkya; wpfqifh ajcvprf;rsm; ࠔࠔࠔ  ࠎࠩ࠮ ygcl;wdkufyGg? usefppfom;Epifh rmdpE”m ࠔࠔࠔ  ࠎࠎ࠮ ykࠛeedkifieawmfEpifh Edkifiejcm;qufqeaࠖ; ࠔࠔࠔ  ࠎࠋ࠮ Epvek;om; tppfEpifh cspfwwfaom ࠖpifbkࠖif ࠔࠔࠔ  ࠎࠊ࠮ tkdbࠥfhrif;jrwfࠔࠔtaemfࠖxmࠔࠔࠔ  ࠒrpajirf;jyhpmtkyfrsm;ࠔࠔࠔ "
@@ -1006,16 +1527,30 @@ Signal [foreign-script]: 687 other-script and 0 Greek beta characters in samples
   Sample: "ࠛࠥࠧࠒࠔ࠰࠮ ࠛࠩࠎࠤ࠰ࠕࠋࠤ     ࠒ ࠊߺࡆ࠘ࠥࠧࠖ࠰߿ࠥࠎ࠰ࠊ߾࠰  mage | ࠎ  \nࠕ࠘߿ࠧ࠭ࠖ"
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 75
   Sample: "ࠎ  \nࠕ࠘߿ࠧ࠭ࠖ߾࠰߿ࠤࠛࠧࠏ࠰߿߾࠰ \n\n ࠎ࠮ yef;la;vTwfylaZmfyGgrsm; Epifhykࠛeaekynfawmf ࠔࠔࠔ  ࠋ࠮ ordkif;u awmif;qdkaeaom vlw"
+Signal [control-chars]: 54 controls or replacement characters in full text; character offset 33513
+  Sample: "csufrpm ࠖpif;vpygonf࠮ eef;yv\u0092ifay:odkromaࠖmufchgonf? eef;yv\u0092if\\wefzdk;udk rif; wࠖm;u "
+
+Book: "android-mobile-repair-guide-1680791177349"
+Dataset row: 221
+PDF SHA-256: ac4a264beeaa8c92763dce8d6cc9744a05b5964fa500b7e961a087bf358b260a
+Groups: latin-paired
+Text line 1: "Ray (Electronic)-Android Mobile Repair Guide "
+Text line 6: " CHAPTER 1 "
+Text line 7: "MOBILE NETWORK "
+Signal [latin-paired]: full-text counts Ò/Ó=34/34, Ô/Õ=0/10; character offset 29695
+  Sample: "လျှောက်ထားရန်အတွက် 1331 ကို ÒOrderdata serviceÓ (အတိအကျ တူရန် \nလိုပါသည်) ဟု Message ပ"
 
 Book: "animal-cycle-1784260642033"
 Dataset row: 222
 PDF SHA-256: efc0cd81f8d0a7a20df9dd70efe604f2a44e3767bcd0f2563b443325a2c40a10
-Groups: duplicate
+Groups: duplicate, numbered-layout
 Text line 1: "mmcybermedia.com "
 Text line 2: "aaoommfwfwmmaaqqG G "
 Text line 3: "သတ္တဝါတို့၏သတ္တဝါတို့၏သတ္တဝါတို့၏သတ္တဝါတို့၏သတ္တဝါတို့၏သတ္တဝါတို့၏သတ္တဝါတို့၏သတ္တဝါတို့၏        သံသရာသံသရာသံသရာသံသရာသံသရာသံသရာသံသရာသံသရာ "
 Signal [duplicate]: at least 3 consecutive copies; character offset 39
   Sample: "သတ္တဝါတို့၏သတ္တဝါတို့၏သတ္တဝါတို့၏သတ္တဝါတို့၏သတ္တဝါတို့၏သတ္တဝါတို့၏သတ္တဝါတို့၏သတ္တဝါတို့၏"
+Signal [numbered-layout]: long numbered contents-like line in first 12,000 characters; character offset 766
+  Sample: "                                မာတိကာမာတိကာမာတိကာမာတိကာ -စာရေးသူ၏ အမှာ ၁။ ကိုယ့်ဘဝ ကိုယ်ပဲပျော် ၂။ မာနနှင့် ကာလ ၃။ မှန်ကန်ခြင်းနှင့် ရဲရင့်ခြင်း ၄။ သတ္တဝါတို့၏ သံသရာ ၅။ လူတစ်ယ"
 
 Book: "antivirus-book-1706454614822"
 Dataset row: 223
@@ -1027,6 +1562,28 @@ Text line 3: "အောင်ဗျာ..2012-03-14 အထိဆိုတော�
 Signal [duplicate]: at least 3 consecutive copies; character offset 285
   Sample: "ထည့်နည်းထည့်နည်းထည့်နည်းထည့်နည်း"
 
+Book: "applied-hvac-system-in-marine-offshore-1703603560839"
+Dataset row: 224
+PDF SHA-256: 145a9800168def71eeffd0cd649fa624509b6eac578af5f9e81594cf865dfb07
+Groups: control-chars
+Text line 1: "အမှာစာ "
+Text line 2: "ဤစာအုပ်ထဲတွင် ပါသော အကြောင်းအရာ များသည် HVAC (Heating, Ventilating and Air "
+Text line 3: "Conditioning) System in Marine and Offshore အတွက် အဓိက ရည်ရွယ်ပြီး ရေးပါသည်။ Applied "
+Signal [control-chars]: 1609 controls or replacement characters in full text; character offset 49512
+  Sample: "\nY\\ff\\`Z=aee=UaXYY\\U\\X`fe\n[y\u0086\u0086y\u0080w\u0085=\u0086\u0081=\u0085\u0087\u0082\u0082\u0081\u0084\u0086=Z\u008aq\u0082|u\u0085=N=q\u0080t=O=q\u0080t=\u0085\u0081u=\u0081v=\u0086xu=\u0081\u0084u=s\u0081\u0081\u0080"
+
+Book: "at-away-1681716501732"
+Dataset row: 225
+PDF SHA-256: 01dcdc879c6c0aa8613d5b771706c337a754ae1b5b51ff1b6b11de5f87ff69b0
+Groups: foreign-script, latin-paired
+Text line 1: "http://www.shwezinu.blogspot.com/"
+Text line 2: " ဘလော့မှ "
+Text line 3: "ရွှေစင်ဦး စာရိုက်တင်ပြီး The New Year by Pearl S. Buck ရေမြေခြားသော်လည်း မြန်မာပြန် - မောင်ပေါ်ထွန်း မင်းအရိပ်မှ ဒီဇိုင်းနှင့် အီးဘွတ်ခ်အား ပြုလုပ်သည်။ http:// colourful-flatlet.blogspot.com/"
+Signal [foreign-script]: 0 Arabic/Samaritan-range and 1404 Greek characters in full text; character offset 1593
+  Sample: "www.shwezinu.blogspot.com/ \nυ Typing ⴀ ရွှေစင်ဦး ☠倀䑆 ⴀ မင်းအရိပ် \n \n\nရေမြေခြားသော်လည်"
+Signal [latin-paired]: full-text counts Ò/Ó=142/141, Ô/Õ=20/53; character offset 7269
+  Sample: "။ ကိုယ် သေသေချာချာ သိပါတယ်\" Òအဲဒီလို သိတာ ကျွန်မလည်း သဘောကျပါတယ်။ ဝမ်းလည်း သာပါသတဲ့ရှ"
+
 Book: "best-theory-of-physical-education-1693147797764"
 Dataset row: 227
 PDF SHA-256: b829b7791baff78020ccfe3093a5fbd2f46f85672b2181a08e57c66d194502b1
@@ -1037,20 +1594,42 @@ Text line 8: "      Optimum Bodybuilding Theories                   by-naing oo-
 Signal [foreign-script]: 113 other-script and 0 Greek beta characters in samples; character offset 329
   Sample: "န်ရှားပါးနေသောကျွန် \nတော်တိုھ့တိုင်းပြည်တွင်၊ကာယဗလကိုဝါသနာပါပြီးလေ့ကျင့်လိုက်စားကြကုန"
 
+Book: "bob-priest-world-top-comedy-short-stories-1706312521763"
+Dataset row: 228
+PDF SHA-256: 025465aa716b368842cb4c1085db41d3b26f483c1e7875b831b0bfa352aa2b07
+Groups: latin-paired
+Text line 1: "ကမ္ဘာ့ထိပ်တန်း ဟာသဝတ္ထုတိုများ "
+Text line 2: "8"
+Text line 3: "PDF & Proof8"
+Signal [latin-paired]: full-text counts Ò/Ó=975/973, Ô/Õ=68/66; character offset 3744
+  Sample: "အင်္ဂလန်ပြည်တောင်ပိုင်းတွင် ÒကလေးဗြူရီÓ အမည်ရှိ ရွာကလေး တစ်ရွာ၏ နွေဦးကာလ တစ်ခုသော နေ့"
+
+Book: "chillers-and-chilled-water-systems-1785673326897"
+Dataset row: 230
+PDF SHA-256: b55416c65067c0b6f337d5ea370346e4a671dd4c0eef45c063e6a60e610cb54a
+Groups: latin-paired
+Text line 1: "Reference Books "
+Text line 2: "(1) ASHEAE Books "
+Text line 3: "(2) Refrigeration and Air-Conditioning (Fourth Edition) by G.F. Hundy, A.R. Trott, T.C. "
+Signal [latin-paired]: full-text counts Ò/Ó=174/124, Ô/Õ=10/49; character offset 3465
+  Sample: "ြစ်လာတတ်ကြသည်။ အင်္ဂလိပ်လို Òfrustration barrierÓ \nဟုခေါ်သည်။ လူတိုင်းလိုလို ထိုအတားအ"
+
 Book: "chinese-stories-2-1705316817328"
 Dataset row: 231
 PDF SHA-256: 87d96bf2559f38f9e17d0478d4f6cb80fd5c757be7df84cabac8cf80768bd47c
-Groups: duplicate
+Groups: duplicate, numbered-layout
 Text line 1: "ရသစုံလင် တရုတ်ပုံပြင်များ ရသစုံလင် တရုတ်ပုံပြင်များ ရသစုံလင် တရုတ်ပုံပြင်များ ရသစုံလင် တရုတ်ပုံပြင်များ ((((၂)၂)၂)၂)        "
 Text line 2: "    FAMOUS CHINESE SHORT STORIES PART IIFAMOUS CHINESE SHORT STORIES PART IIFAMOUS CHINESE SHORT STORIES PART IIFAMOUS CHINESE SHORT STORIES PART II    Retold by Ling Yutang (1959)Retold by Ling Yutang (1959)Retold by Ling Yutang (1959)Retold by Ling Yutang (1959)    "
 Text line 3: "Translated by Ma Hninpwint 1 "
 Signal [duplicate]: at least 3 consecutive copies; character offset 0
   Sample: "ရသစုံလင် တရုတ်ပုံပြင်များ ရသစုံလင် တရုတ်ပုံပြင်များ ရသစုံလင် တရုတ်ပုံပြင်များ ရသစုံလင် တရုတ်ပုံပြင်များ"
+Signal [numbered-layout]: long numbered contents-like line in first 12,000 characters; character offset 492
+  Sample: " FAMOUS CHINESE SHORT STORIES   Retold by LIN YUTANG (1959)LIN YUTANG (1959)LIN YUTANG (1959)LIN YUTANG (1959)        မာတိကာမာတိကာမာတိကာမာတိကာ အပိုင်း အပိုင်း အပိုင်း အပိုင်း -"
 
 Book: "chinese-stories-part-1-1705317289776"
 Dataset row: 232
 PDF SHA-256: 8a90c838a0e3d7ae5174b34df7f18e5c0ab7434e4fb176e42380bc45a36940ff
-Groups: duplicate, ascii-heading
+Groups: duplicate, ascii-heading, numbered-layout
 Text line 1: "Translated by Ma Hninpwint 1 "
 Text line 2: "    FAMOUS CHINESE SHORT STORIESFAMOUS CHINESE SHORT STORIESFAMOUS CHINESE SHORT STORIESFAMOUS CHINESE SHORT STORIES      Retold by LIN YUTANG (1959)LIN YUTANG (1959)LIN YUTANG (1959)LIN YUTANG (1959)       "
 Text line 3: "   Part I "
@@ -1058,6 +1637,8 @@ Signal [duplicate]: at least 3 consecutive copies; character offset 387
   Sample: "မာတိကာမာတိကာမာတိကာမာတိကာ"
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 1677
   Sample: " by Ma Hninpwint 5 \n        CurlyCurlyCurlyCurly----BeardBeardBeardBeard    This is a favorite Tang story , distinguished by sha"
+Signal [numbered-layout]: long numbered contents-like line in first 12,000 characters; character offset 320
+  Sample: "FAMOUS CHINESE SHORT STORIES   Retold by LIN YUTANG (1959)         မာတိကာမာတိကာမာတိကာမာတိကာ အပိုင်း အပိုင်း အပိုင်း အပိုင်း ----    ၁ ၁ ၁ ၁         ၁ - မုတ်ဆိတ်နီ်ကြီး ( တုကွမ်"
 
 Book: "chinese-stories-part-3-4-1705386897174"
 Dataset row: 233
@@ -1103,6 +1684,36 @@ Text line 3: "Online Science Magazine"
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 37
   Sample: "\nJune 2014| issue 001pMu0Vm rdwfqufSGD\tEHQRS\nOnline Science Magazine\nNE\tLX@ML@Q\nHistory of Dis"
 
+Book: "curiosity-science-magazine-year-1-issue-3-1691666171451"
+Dataset row: 242
+PDF SHA-256: 4f1316ad7f8b2698721646fdd9287789a2689a48cf9c29396fba918e78108404
+Groups: latin-paired
+Text line 1: "THE FIRSTONLINE SCIENCE MAGAZINE IN MYANMAR"
+Text line 2: "Aug 2014| issue 003"
+Text line 3: "Mu,fwm&m c&D;onf- Quantum Theory rdwfquf 2- Hyper Space (odkY) pMu0Vm\\ vSyaomtem*wf- a&S;&dk;pGJt,l0g'rsm;ESifh oHo,pdwf- BudK;rQif Theory"
+Signal [latin-paired]: full-text counts Ò/Ó=26/25, Ô/Õ=1/3; character offset 7024
+  Sample: "ာ Carl Sagan က သူ့ရဲ့စာအုပ် ÒThe Dragons of EdenÓ မှာ စတင်ပြီး မိတ်ဆက်ပေးခဲ့တာ ဖြစ်ပါ"
+
+Book: "curiosity-science-magazine-year-1-issue-7-1787061931055"
+Dataset row: 246
+PDF SHA-256: e62158933d3eec51c065368fe0783aefae9f14bf878bda823d476c8b01fea6b8
+Groups: latin-paired
+Text line 1: "The First "
+Text line 2: " Issue 7 | 2015 "
+Text line 3: "ONLINE SCIENCE MAGAZINE "
+Signal [latin-paired]: full-text counts Ò/Ó=35/36, Ô/Õ=6/16; character offset 4998
+  Sample: "။ ထိုကြယ်စုကို အင်္ဂလိပ်လို Òအိုရီယွန်Ó လို့ ခေါ်ဆိုကြပြီး မြန်မာလိုတော့ Òမောင်ရင်ဆို"
+
+Book: "curiosity-science-magazine-year-1-issue-9-1696435525386"
+Dataset row: 248
+PDF SHA-256: d75b9ae2cd4b4f2f46391f70ddcaf514b6c108744a24ff369a0f1e187389ddef
+Groups: latin-paired
+Text line 1: "curiositysciencemagazine.wordpress.com "
+Text line 2: "THE   FIRST "
+Text line 3: " Year 1 - Issue 9 | 2015 "
+Signal [latin-paired]: full-text counts Ò/Ó=238/237, Ô/Õ=5/9; character offset 19322
+  Sample: "်နှစ်ခုကို ထောက်ပြခဲ့ပါတယ်။ Òစကြဝဠာ ဟာ မည်သည့် \nဦးတည်ချက်ကိုပဲ ကြည့်ကြည့် တစ်ပုံစံတည်"
+
 Book: "curiosity-science-magazine-year-2-issue-2-1696435557299"
 Dataset row: 249
 PDF SHA-256: a77c4e81c6465a033467d527c50552dbe53ba29d5fa07ff31dbb8b10a9cdfc12
@@ -1126,14 +1737,28 @@ Signal [latin-mixed]: 2818 Myanmar/extended-Latin adjacencies in samples; charac
 Book: "curiosity-science-magazine-year-2-issue-4-1696435591836"
 Dataset row: 251
 PDF SHA-256: 958d3844ca63a1f06eb17173ebe60760777ae48eae181ec74e22fb6dd87ab469
-Groups: latin-mixed, ascii-heading
+Groups: latin-mixed, private-use, ascii-heading
 Text line 1: "AUTHORS OF "
 Text line 3: "YEAR 2  | ISSUE 4 "
 Text line 4: "KYAW NYUNT LINN "
 Signal [latin-mixed]: 2399 Myanmar/extended-Latin adjacencies in samples; character offset 25814
   Sample: "ǻȽǯǱငǻǞပǰǺ Cancer ɖဖစǻǳစȽǯǱငǻပǲတယǻ။ ဥပမǮအǮǺɖဖငǹǻ Human \nPapilloma Virus - HPV ǳǽကǮငǹǻ "
+Signal [private-use]: 12 private-use characters in full text; character offset 57721
+  Sample: " May, 2016 \n\n \n \n \nDIODE \n \n\n \nDiode ဆǯǱတǮက အǳရǿƧ တစǻပတǻကǳɖပǮခǴǹသလǯǱ dopi"
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 457
   Sample: "| Photography 54 | arSmfynm pdwf0ifpm;ygovm; \nodyÜHynmudk avhvmyg \n \n68 | Gravitaional Waves ac: \n \n"
+
+Book: "dhamma-satkyar-1696943133253"
+Dataset row: 252
+PDF SHA-256: 1f41b9d0a2baad5b841b9c3c068b9c8b049cc056cea2a574156ff5d7890fd680
+Groups: latin-paired, numbered-layout
+Text line 1: "တရားဦးရတနာ မြတ်သောဓမ္မစကြာ (တရားတော် အနှစ်ချုပ် နှင့် ပါဠိတော်မူရင်း)             "
+Text line 2: "သစ္စာပါရမီ ဆရာတော်၏ (၅၁)နှစ်မြောက်မွေးနေ့ "
+Text line 3: "ဓမ္မဒါန "
+Signal [latin-paired]: full-text counts Ò/Ó=20/20, Ô/Õ=28/31; character offset 27206
+  Sample: "ိ။ ဒုက္ခသစ္စာ၌ သစ္စဉာဏ် ၁၁။ Ôဣဒံ ဒုက္ခံ အရိယသစ္စÕန္တိ မေ ဘိက္ခဝေ ပုဗ္ဗေ အနနုဿုတေသု ဓမ"
+Signal [numbered-layout]: long numbered contents-like line in first 12,000 characters; character offset 234
+  Sample: " 2                                                                              တရားဦးရတနာ မာတိကာ နိဒါန်း ......................................................................"
 
 Book: "family-handbook-1706101731370"
 Dataset row: 254
@@ -1145,15 +1770,27 @@ Text line 4: "၁၁၁၁၁၁၁၁"
 Signal [duplicate]: at least 3 consecutive copies; character offset 0
   Sample: "ခုနှစ်။ခုနှစ်။ခုနှစ်။ခုနှစ်။ခုနှစ်။ခုနှစ်။ခုနှစ်။ခုနှစ်။"
 
+Book: "fear-and-your-life-1760260200746"
+Dataset row: 256
+PDF SHA-256: aaac05609518858573d8a047a905473079430e58713e9a6cd7e1877f3e5c6ea2
+Groups: latin-paired
+Text line 1: "ကြောက်စိတ်နှင့် သင့်ဘဝမဂ္ဂဇင်းမျက်နှာဖုံးဆောင်းပါးများ "
+Text line 2: "(မောင်သစ်ဆင်း) "
+Text line 4: "မာတိကာ "
+Signal [latin-paired]: full-text counts Ò/Ó=340/328, Ô/Õ=10/30; character offset 881
+  Sample: "း ဖြစ်သော်လည်း ရံဖန်ရံခါ ၌  Òအချိန်သဘောသည်Ó  အမှု၏ \nကျွန်တော့်သားကြီး၏ အမည်ဖြစ်သည့် Ò"
+
 Book: "focus-youth-magazine-1706129290509"
 Dataset row: 258
 PDF SHA-256: ee6a05680d24deceb665bd40823aae9c1293aabcf347935066c5b4177b3360fb
-Groups: ascii-heading
+Groups: ascii-heading, latin-paired
 Text line 1: "1www.mmfocusyouth.com"
 Text line 3: "CONTENTtifwmeufESifhodcsifpdwftaMuif;ynma&;pepf[muav;awG&JYwDxGifzefwD;EdkifpGrf;udk owfypfEdkifovm;tvSppfqdkwm"
 Text line 4: "SUCCESSatmifjrifjcif; 'dkif,m&Drdk;avuif;pifaeonfhZGefv\\ om,maomnaecif;wpfck"
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 289
   Sample: "kEkaoG;ajcrOapvdk\n22  \n8  \n&kyf&SifrMunfhcif'gav;zwfxm;ygpufwifbmvtwGufwpfvpm aA'ifa[mpmwrf;  \n27  \n11  BIOGRAPHY\nKING OF POP\n13  30 "
+Signal [latin-paired]: full-text counts Ò/Ó=58/52, Ô/Õ=0/5; character offset 10540
+  Sample: "မည်ကိုလည်းကြောက်ရွံ့နေချိန် Ò အိမ်က သမီးက တော့ တစ်ဘာသာပဲရတယ် အစ်မရယ် အစ်မသမီး လေးဘာသာ"
 
 Book: "h1-n1-1688180802659"
 Dataset row: 266
@@ -1178,10 +1815,12 @@ Signal [latin-mixed]: 2928 Myanmar/extended-Latin adjacencies in samples; charac
 Book: "hacker-handbook-1790571086574"
 Dataset row: 269
 PDF SHA-256: d68b851baec2dd61c298e6b791611d5ed68711b00c3a2f1023e826e0cf723256
-Groups: ascii-au
+Groups: mark-order, ascii-au
 Text line 1: "The Hacker’s Underground Handbook ကို ဘာသာပြန်ထားတာပါ။ သိ၍ တတ်၍ ပြန်ခြင်းမဟုတ်၊ မသိ၍ မတတ်၍ ပြူးပြဲဖတ်ရှုချိန်ဝယ်၊ မမှတ်၍ မမိ၍ မြန်မာလို ရေးမှတ်ထားသည်များAား၊ ဖြတ်၍ တိ၍ Cut သင့်သည်ကို Cut၊ ထပ်၍ ကြည့်၍ Add သင့်သည်ကို Add၊ ဟတ်၍ ဟိ၍ (ဟယ်… ဟုတ်သေးပါဘူး။ ကာရန်မစU်းစားတတ်တော့ဘူး။ ရိုးရိုးပဲရေးတော့မယ်။) Aဲဒီလိုပေါ့ဗျာ၊ မြန်မာလိုAကြမ်းမှတ်ထားတာတွေကို ဘာသာပြန်တယ်ဖြစေ်Aာင် နည်းနည်းထပ်လုပ်ပြီး ဟက္ကင်းကို စိတ်ဝင်စားကြတဲ့ ဘော်ဘော်တွေAတွက် ဖတ်ရAဆင်ပြေAာင် မြန်မာလိုမှတ်စုAကြမ်း ဝိုင်းရေးပေးခြင်း ဖြစ်ပါကြောင်း…။           မှတ်စုAကြမ်းရေးသူ ခေတ်H၀၀ "
 Text line 9: "                                                                                                                                                                            @gmail.com@gmail.com@gmail.com@gmail.com              "
 Text line 13: "       Chapter One Introduction "
+Signal [mark-order]: 40 selected mark sequences in full text; character offset 358
+  Sample: "တ်ထားတာတွေကို ဘာသာပြန်တယ်ဖြစေ်Aာင် နည်းနည်းထပ်လုပ်ပြီး ဟက္ကင်းကို စိတ်ဝင်စားကြတဲ့ ဘော်"
 Signal [ascii-au]: 83 adjacent A/U occurrences in samples; character offset 153
   Sample: " မြန်မာလို ရေးမှတ်ထားသည်များAား၊ ဖြတ်၍ တိ၍ Cut သင့်သည်ကို Cut၊ ထပ်၍ ကြည့်၍ Add သင့်သည"
 
@@ -1207,6 +1846,16 @@ Text line 3: "အလုပ်တွေ"
 Signal [fragmented]: 919 short Myanmar tokens and 94 isolated marks in samples; character offset 120
   Sample: "လ်\n၏ှါ\nမေ။။ ---,။မ\nဦဥေ၊-\nန - ီ့\nဤ ူ ရေ။ န္တ [်\n\n\nဦ သင့်မှာ အလုပ်တွေ သိပ်များနေသလား၊\nဘယ်"
 
+Book: "heads-of-japan-1785609388123"
+Dataset row: 275
+PDF SHA-256: 899d526e48eaf6c504632f9ad808dbcf2fda6bd35a30d84e8835562f540dfb15
+Groups: numbered-layout
+Text line 1: "Typed by - Shougon    PDF - wannarပုံနှိပ်မှတ်တမ်း စာမူခွင့်ပြုချက်အမှတ် - ၄ဝဝ၁၉၅ဝ ၂ဝ၈မျက်နှာဖုံးခွင့်ပြုချက်အမှတ် - ၄ဝဝ၂၃၂ဝ၃ဝ၈ ပုံနှိပ်ခြင်းပထမအကြိမ်၊ မေ၊ ၂ဝဝ၈အုပ်ရေ၅ဝဝ မျက်နှာဖုံးဒီဇိုင်း ဇင်မင်းလူ အတွင်းဖလင် ပုံရိပ်ရှင် မျက်နှာဖုံးဖလင် Stars"
+Text line 2: "1"
+Text line 4: " ကွန်ပျူတာစာစီ The Key စာအုပ်ချုပ် ကိုမြင့် ဤစာအုပ်ကို ဦးစိန်ဝင်း၊ စိန်ရတနာပုံနှိပ်တိုက်၊ အမှတ် ၂၁၊ ၁၆၂ လမ်း၊ တာမွေမြို့နယ်၊ ရန်ကုန်မြို့တွင် ပုံနှိပ်ပြီး ဒေါ်သင်းသင်းမွန်၊ သင်းစာပေ၊ အမှတ် ၁ဝ၊ ရတနာမြိုင်လမ်း၊ ၁၂ ရပ်ကွက်၊ ကမာရွတ်မြို့နယ်၊ ရန်ကုန်မြို့မှ ထုတ်ဝေသည်။နိုင်ဦး (၁၉၆၅) မန္တလေးတိုင်း၊မိတ္ထီလာမြို့ဇာတိ၊ဒဿနိကဗေဒဘွဲ့ရ နိုင်ဦးကလောင်အမည်ဖြင့် ရေးသားခဲ့သော စာအုပ်များ - ခေတ်သစ်ဒဿနိကပညာရှင်များ၏ ဘဝနှင့် အတွင်းအပြင် (၂ဝဝဝ) - ဘာသာတရားတို့၏ နိဒါန်း (၂ဝဝ၂) - တွေးမြင်ခြင်း အနုပညာ (၂ဝဝ၂) - ဦးဆောင်သူစေရာ (၂ဝဝ၄) - ဘက်ညီမဂ္ဂင် (၂ဝဝ၇)ယခုစာအုပ် - ဂျပန်ဦးခေါင်းကြီးများ (၁) စက်မှုစီးပွား တင်ဦးခက် ကလောင်အမည်ဖြင့် ရေးသားခဲ့သောစာအုပ်များ - ညဖြူ၊ သူတော်စင်ရူး၊ သူခိုးငရိုး (၁၉၉၆) - ညဖြူ ဝတ္ထုတိုအား ညဖြူဖြူအဖြစ် ဒုတိယအကြိမ် (၂ဝဝ၅) "
+Signal [numbered-layout]: long numbered contents-like line in first 12,000 characters; character offset 973
+  Sample: "- မြေအောက်မှ မှတ်တမ်းများ (၂ဝဝ၆) - ဧဒင်ကို စွန့်ခွာပြီးနောက် (၂ဝဝ၇) - မော်ဒန် ၁ဝ (၂ဝဝ၇) - တရားခွင် (၂ဝဝ၇)မာတိကာစာရေးသူ၏အမှာ ၁။ မိဆူအိ (Mitsui)(နှစ်လေးရာ ကုန်သည်မျိုးဆက်) ၂။ မစ်"
+
 Book: "-1706804477315"
 Dataset row: 276
 PDF SHA-256: 547849b879467dfee7ad6b9a3f10156c21b86671044d1a785e51eefd0e63c8f7
@@ -1229,6 +1878,16 @@ Signal [duplicate]: at least 3 consecutive copies; character offset 21
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 194
   Sample: "မိုင်းအစသမိုင်းအစသမိုင်းအစ \nttttyyyyppppiiiinnnngggg    ----    tttthhhhaaaannnntttthhhhaaaannnnnnnnaaaaiiii"
 
+Book: "heartbeat-1786762037941"
+Dataset row: 279
+PDF SHA-256: f7b2d9f0f984e93aa5fa5f7cfc39dfdfa9c25952b57dd478e7e0f7ca7e20c350
+Groups: latin-paired
+Text line 1: "စာမူခွင့်ပြုချက်အမှတ် "
+Text line 2: "၅၀၀၅၈၁၀၅၀၅ "
+Text line 4: "မျက်နှာဖုံး ခွင့်ပြုချက်အမှတ် "
+Signal [latin-paired]: full-text counts Ò/Ó=1507/1507, Ô/Õ=0/0; character offset 2191
+  Sample: "ုးကြည်ကလည်း \nဇွဲကောင်းသည်။ \nÒယူလိုက်ပါဟာ.. အချင်းချင်းတွေပဲÓ \nတခြားတစ်ယောက်က သူ့အတွက်"
+
 Book: "his-famous-novels-with-a-brandy-1706018918977"
 Dataset row: 280
 PDF SHA-256: a1ab1bbae04af952b58d289ec9e3ecea447582377822086cf632838f25d6c34c
@@ -1240,6 +1899,16 @@ Signal [duplicate]: at least 3 consecutive copies; character offset 188
   Sample: "အောင်မြင်ကျော်ကြားခဲ့သောအောင်မြင်ကျော်ကြားခဲ့သောအောင်မြင်ကျော်ကြားခဲ့သောအောင်မြင်ကျော်ကြားခဲ့သော"
 Signal [ascii-heading]: unusual ASCII string in first 3,000 characters; character offset 139
   Sample: "vvviiiiiiiiffff;;;;ffff;;;;\nEEEEEEEESSSSiiiiSSSSiiiihhhhffff    hhhhffff    \nအောင်မြင်ကျော်ကြားခဲ့သောအောင်မြင်ကျော်က"
+
+Book: "ho-chi-minh-1707836407447"
+Dataset row: 281
+PDF SHA-256: 5dc31c0980dc242d70ecd27defc9a8a5f43254ba4d618259d809b1ed3bee630d
+Groups: latin-paired
+Text line 1: "June 23, "
+Text line 2: "ဟိုချီမင်း လင်းယုန်မောင်မောင် "
+Text line 3: "2011 "
+Signal [latin-paired]: full-text counts Ò/Ó=666/599, Ô/Õ=1/1; character offset 3545
+  Sample: "် ဗီယက်နမ် တစ်မျိုးသားလုံး၏ Òအသည်းစွဲÓ ဖြစ်ခဲ့ရသည့်ပြင် \nကမ္ဘာ့ပြည်သူများကပါ ကြည်ညိုလ"
 
 Book: "-1706804720694"
 Dataset row: 282

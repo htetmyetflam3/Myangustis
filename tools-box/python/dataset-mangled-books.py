@@ -3,7 +3,9 @@
 
 The groups describe observable text symptoms, not identified fonts, encodings,
 PDF-byte mappings, or guaranteed errors. A book can appear in several groups.
-The scan samples each book rather than proving anything about the entire book.
+Some character patterns are counted throughout each extracted text; other
+heuristics examine only a few windows or the beginning. Neither proves the
+original PDF, its fonts, or every visible problem have been covered.
 
 Examples (PyArrow is needed only for ``scan``):
   python tools-box/python/dataset-mangled-books.py scan /path/to/books.parquet --requests mangled-pdfs.tsv
@@ -25,7 +27,7 @@ import json
 import re
 import sys
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
 
@@ -46,7 +48,10 @@ ASCII_AU = re.compile(
 )
 FOREIGN = re.compile(r"[\u0600-\u083f]")
 GREEK_BETA = re.compile("\u0392")
+GREEK = re.compile(r"[\u0370-\u03ff]")
 PRIVATE_USE = re.compile(r"[\ue000-\uf8ff]")
+CONTROL_OR_REPLACEMENT = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f\ufffd]")
+NUMBER = re.compile(r"[0-9\u1040-\u1049]+")
 STRAY_MARK = re.compile(r"(?:^|[\s.,;:()\[\]{}])([\u102b-\u103e]{1,3})", re.M)
 TINY_MYANMAR_TOKEN = re.compile(r"(?:^|\s)([\u1000-\u109f]{1,3})(?=\s|$)")
 # The copies are on one line and are byte-for-byte the same Unicode text.
@@ -79,8 +84,8 @@ GROUPS = {
     ),
     "missing-marks": (
         "Very few Myanmar vowel/medial marks, without dense extended Latin",
-        "A low mark-to-base ratio in the samples; some text may be in another "
-        "language or omit marks intentionally, so review the excerpts.",
+        "A low mark-to-base ratio in the samples or full text; some text may "
+        "be in another language or omit marks intentionally, so review the excerpts.",
         "-1708528931770",
     ),
     "ascii-au": (
@@ -90,13 +95,13 @@ GROUPS = {
         "1704101675047",
     ),
     "foreign-script": (
-        "Unexpected other-script characters in the samples",
-        "Arabic/Samaritan-range characters or many Greek capital betas; "
+        "Other-script characters in or near Burmese",
+        "U+0600–U+083F or Greek characters in the text; "
         "multilingual content and intentional symbols are possible.",
         "-1758614468061",
     ),
     "private-use": (
-        "Private-use characters in the samples",
+        "Private-use characters",
         "A private-use character needs the original font or other evidence "
         "to interpret; it is not automatically an unknown glyph.",
         "1706303571424",
@@ -114,7 +119,71 @@ GROUPS = {
         "also match. The body may be readable.",
         "1702975118935",
     ),
+    "latin-paired": (
+        "Paired accented-Latin markers",
+        "At least 25 each of Ò and Ó, or of Ô and Õ; some occur around Burmese "
+        "passages like quotation marks. They could also be intentional text or decoration.",
+        "1712821408320",
+    ),
+    "control-chars": (
+        "Repeated control or replacement characters",
+        "At least 30 C0/C1 control characters or U+FFFD, excluding tabs, CR "
+        "and LF; a form feed can be an intentional page break.",
+        "applied-hvac-system-in-marine-offshore-1703603560839",
+    ),
+    "numbered-layout": (
+        "Long numbered contents-like line",
+        "A long line near the start containing the Burmese contents label, "
+        "many Myanmar letters and numbers; it may be an ordinary contents "
+        "list rather than a reading-order problem.",
+        "1693107457569",
+    ),
 }
+
+# Curated from the pinned dataset after comparing visible subtypes, rather than
+# assuming one symptom group implies one font. Order spreads groups across
+# small --limit batches. Descriptions are observations, not identified causes.
+REPRESENTATIVE_TARGETS = (
+    ("1704101675047", "Repeated heading plus A/U next to Myanmar characters."),
+    ("1681774700481", "Dense é/è/â/à-like characters mixed with Myanmar."),
+    ("-1708528931770", "Very few Myanmar marks and frequent adjacent B/D/R/A-style letters."),
+    ("-1758614468061", "Other-script characters in a short title followed by readable Burmese."),
+    ("1706303571424", "Long repeated run of private-use characters in a page header."),
+    ("-1707218535397", "Many short, fragmented Myanmar tokens and isolated marks."),
+    ("1702975118935", "Keyboard-like ASCII heading, repeated title and embedded A/U."),
+    ("1712821408320", "Frequent Ò/Ó around Burmese passages."),
+    ("applied-hvac-system-in-marine-offshore-1703603560839", "Technical text with many C1 controls in a garbled-looking passage."),
+    ("1693107457569", "Numbered contents-like lines with text and page numbers apparently interleaved."),
+    ("1706300888234", "Many selected pre-vowel/mark sequences, including ေ် and ေိ."),
+    ("36-short-stories-of-jue-1708877870919", "A/E/I/U adjacent to Myanmar, not only A/U."),
+    ("curiosity-science-magazine-year-2-issue-2-1696435557299", "Dense ǻ/Ǯ/Ǻ/ǳ-style characters mixed with Myanmar."),
+    ("1706118392082", "Doubled individual characters in a heading and C0 controls."),
+    ("best-theory-of-physical-education-1693147797764", "Arabic-range ھ repeatedly embedded in Myanmar text."),
+    ("1699176399227", "Private-use U+F22F inside Myanmar words, unlike a private-use heading."),
+    ("-1758614352663", "Particularly dense short-token fragmentation and isolated marks."),
+    ("1705152502270", "A long multiword heading repeated without separators."),
+    ("1706119141337", "Frequent Ô/Õ around Burmese dialogue, distinct from Ò/Ó."),
+    ("anawrahta-the-founder-of-the-bagan-empire-1783991149510", "Dense Samaritan/NKo-range characters mixed with keyboard-like ASCII."),
+    ("-1759341726906", "Frequent mark sequences, controls and a long numbered contents line."),
+    ("curiosity-science-magazine-year-2-issue-4-1696435591836", "Both ǻ-series and é-series text, plus a private-use name."),
+    ("1792041524361", "Mark-poor text with repeated fragments and mixed ASCII characters."),
+    ("1693064173472", "Greek capital Β repeatedly inserted between Myanmar words."),
+    ("1706118210298", "Fourfold individual letters and an eightfold repeated Burmese heading."),
+    ("1784999368188", "C1 controls within Burmese text alongside unusual mark sequences."),
+    ("1708961902669", "An extended-Latin mixture with comparatively prominent ß/è."),
+    ("chinese-stories-part-3-4-1705386897174", "Spaced repeated heading and varied pre-vowel/mark sequences."),
+    ("at-away-1681716501732", "Greek and CJK-like characters in repeated page/footer material."),
+    ("1689959710117", "Isolated U+F0B7 private-use markers in Myanmar contents-like text."),
+    ("-1758699987420", "Fragmented Myanmar tokens with a sampled mark-order signal."),
+    ("100-short-stories-1783992392966", "Fragmented text beginning with isolated and short Myanmar tokens."),
+    ("1706302190221", "A separate long example of the é/è extended-Latin mixture."),
+    ("-1706804477315", "Short-token fragmentation with a different opening and isolated marks."),
+    ("1785661897658", "Eightfold individual letters in a heading and repeated Burmese names."),
+    ("1693245630110", "A different balance of pre-vowel and vowel/mark sequences."),
+    ("1784274916692", "A complete multiword title repeated with spaces between copies."),
+    ("1706085249444", "Repeated keyboard-like ASCII and a template marker; may be intentional."),
+    ("1693904077870", "Form-feed/C1 controls in a header alongside keyboard-like ASCII."),
+)
 
 
 @dataclass
@@ -125,6 +194,7 @@ class Book:
     sha256: str
     lines: list[tuple[int, str]]
     groups: dict[str, tuple[str, int | None, str]]
+    focus_examples: list[tuple[str, int, str]] = field(default_factory=list)
 
 
 def sha256_file(path: Path) -> str:
@@ -163,6 +233,23 @@ def first_match(text: str, parts: list[tuple[int, str]], pattern: re.Pattern[str
         if match:
             left, right = start + match.start(), start + match.end()
             return left, excerpt(text, left, right)
+    return None, ""
+
+
+def first_full_match(text: str, pattern: re.Pattern[str]) -> tuple[int | None, str]:
+    match = pattern.search(text)
+    if not match:
+        return None, ""
+    return match.start(), excerpt(text, match.start(), match.end())
+
+
+def numbered_contents_line(text: str) -> tuple[int | None, str]:
+    offset = 0
+    for line in text[:12000].split("\n"):
+        if (len(line) >= 250 and "မာတိကာ" in line and
+                len(NUMBER.findall(line)) >= 12 and len(BASE.findall(line)) >= 100):
+            return offset, excerpt(text, offset, offset + min(len(line), 120), before=0)
+        offset += len(line) + 1
     return None, ""
 
 
@@ -237,11 +324,96 @@ def classify(text: str) -> dict[str, tuple[str, int | None, str]]:
     offset, example = find_header_token(text)
     if offset is not None:
         groups["ascii-heading"] = ("unusual ASCII string in first 3,000 characters", offset, example)
+
+    # Complement the window scan with whole-text character counts. These are
+    # still narrow heuristics, not a complete assessment of the extracted text.
+    full_myanmar = len(MYANMAR.findall(text))
+    full_latin = len(LATIN_EXTENDED.findall(text))
+    full_adjacent = len(LATIN_ADJACENT.findall(text))
+    full_bases = len(BASE.findall(text))
+    full_marks = len(MARK.findall(text))
+    full_order = len(MARK_ORDER.findall(text))
+    full_au = len(ASCII_AU.findall(text))
+    full_foreign = len(FOREIGN.findall(text))
+    full_beta = len(GREEK_BETA.findall(text))
+    full_greek = len(GREEK.findall(text))
+    full_private = len(PRIVATE_USE.findall(text))
+    dense_full = (full_latin >= 200 and full_adjacent >= 100 and
+                  full_adjacent / max(full_myanmar, 1) >= 0.05)
+    if dense_full and "latin-mixed" not in groups:
+        offset, example = first_full_match(text, LATIN_ADJACENT)
+        groups["latin-mixed"] = (f"{full_adjacent} Myanmar/extended-Latin adjacencies in full text", offset, example)
+    if (full_order >= 8 and full_order / max(full_myanmar, 1) >= 0.001 and
+            "mark-order" not in groups):
+        offset, example = first_full_match(text, MARK_ORDER)
+        groups["mark-order"] = (f"{full_order} selected mark sequences in full text", offset, example)
+    if (full_bases >= 200 and full_marks / max(full_bases, 1) < 0.15 and
+            not dense_full and "missing-marks" not in groups):
+        groups["missing-marks"] = (f"{full_marks} marks / {full_bases} bases in full text", 0, text[:120])
+    if (full_myanmar >= 5000 and full_au >= 50 and
+            full_au / full_myanmar >= 0.003 and "ascii-au" not in groups):
+        offset, example = first_full_match(text, ASCII_AU)
+        groups["ascii-au"] = (f"{full_au} adjacent A/U occurrences in full text", offset, example)
+    if ((full_foreign >= 30 or full_beta >= 100 or (full_greek >= 100 and full_myanmar >= 100))
+            and "foreign-script" not in groups):
+        pattern = FOREIGN if full_foreign >= 30 else GREEK
+        offset, example = first_full_match(text, pattern)
+        groups["foreign-script"] = (
+            f"{full_foreign} Arabic/Samaritan-range and {full_greek} Greek characters in full text",
+            offset, example,
+        )
+    if full_private >= 10 and "private-use" not in groups:
+        offset, example = first_full_match(text, PRIVATE_USE)
+        groups["private-use"] = (f"{full_private} private-use characters in full text", offset, example)
+
+    pairs = (text.count("Ò"), text.count("Ó"), text.count("Ô"), text.count("Õ"))
+    if min(pairs[0], pairs[1]) >= 25 or min(pairs[2], pairs[3]) >= 25:
+        # Show the dominant qualifying pair, not a stray character from the
+        # other pair earlier in the book.
+        pattern = re.compile(r"[ÒÓ]") if min(pairs[0], pairs[1]) >= min(pairs[2], pairs[3]) else re.compile(r"[ÔÕ]")
+        offset, example = first_full_match(text, pattern)
+        groups["latin-paired"] = (
+            f"full-text counts Ò/Ó={pairs[0]}/{pairs[1]}, Ô/Õ={pairs[2]}/{pairs[3]}", offset, example,
+        )
+    n_control = len(CONTROL_OR_REPLACEMENT.findall(text))
+    if n_control >= 30:
+        offset, example = first_full_match(text, CONTROL_OR_REPLACEMENT)
+        groups["control-chars"] = (f"{n_control} controls or replacement characters in full text", offset, example)
+    offset, example = numbered_contents_line(text)
+    if offset is not None:
+        groups["numbered-layout"] = ("long numbered contents-like line in first 12,000 characters", offset, example)
     return groups
 
 
+# Focused evidence supplements broad group examples where an example has two
+# visibly different signatures in the same text. All offsets are in that text.
+FOCUS_PATTERNS = {
+    "36-short-stories-of-jue-1708877870919": (
+        ("E adjacent to Myanmar", re.compile(r"(?<=[\u1000-\u109f])E|E(?=[\u1000-\u109f])")),
+        ("I adjacent to Myanmar", re.compile(r"(?<=[\u1000-\u109f])I|I(?=[\u1000-\u109f])")),
+    ),
+    "curiosity-science-magazine-year-2-issue-4-1696435591836": (
+        ("é/è-series beside Myanmar", re.compile(r"[\u1000-\u109f][éè]|[éè][\u1000-\u109f]")),
+        ("ǻ-series beside Myanmar", re.compile(r"[\u1000-\u109f]ǻ|ǻ[\u1000-\u109f]")),
+    ),
+    "1706300888234": (("ေိ sequence", re.compile("ေိ")),),
+    "1693245630110": (("ေိ sequence", re.compile("ေိ")), ("ေူ sequence", re.compile("ေူ"))),
+}
+
+
+def focused_examples(name: str, text: str) -> list[tuple[str, int, str]]:
+    examples = []
+    for label, pattern in FOCUS_PATTERNS.get(name, ()):
+        match = pattern.search(text)
+        if match:
+            examples.append((label, match.start(), excerpt(text, match.start(), match.end())))
+    return examples
+
+
 def json_string(value: str) -> str:
-    return json.dumps(value, ensure_ascii=False)
+    # JSON already escapes C0 controls; explicitly escape C1 controls as well.
+    quoted = json.dumps(value, ensure_ascii=False)
+    return re.sub(r"[\x7f-\x9f]", lambda match: f"\\u{ord(match.group()):04x}", quoted)
 
 
 def book_details(book: Book, include_evidence: bool) -> list[str]:
@@ -267,12 +439,94 @@ def book_details(book: Book, include_evidence: bool) -> list[str]:
     return lines
 
 
-def write_requests(path: Path, representatives: dict[str, Book]) -> None:
+def choose_samples(books: list[Book], dataset_sha: str, grouped: dict[str, list[Book]]) -> list[tuple[Book, str]]:
+    selected: list[tuple[Book, str]] = []
+    seen: set[str] = set()
+    if dataset_sha == DATASET_SHA256:
+        by_name: dict[str, list[Book]] = defaultdict(list)
+        for book in books:
+            by_name[book.name].append(book)
+        for name, focus in REPRESENTATIVE_TARGETS:
+            matches = by_name[name]
+            if len(matches) != 1:
+                raise ValueError(f"expected exactly one dataset row for representative {name!r}")
+            book = matches[0]
+            digest = book.sha256.lower()
+            if not SHA256_RE.fullmatch(digest) or digest in seen or not book.groups:
+                raise ValueError(f"representative {name!r} has an invalid/duplicate hash or no detected group")
+            selected.append((book, focus))
+            seen.add(digest)
+    else:
+        # Another dataset has not been curated: offer one per detected group,
+        # without claiming the pinned dataset's finer selection applies to it.
+        for key, (title, _, preferred) in GROUPS.items():
+            candidates = [book for book in grouped[key] if SHA256_RE.fullmatch(book.sha256)]
+            if not candidates:
+                continue
+            book = next((book for book in candidates if book.name == preferred), candidates[0])
+            if book.sha256.lower() not in seen:
+                selected.append((book, f"Uncurated fallback for {title}."))
+                seen.add(book.sha256.lower())
+    if dataset_sha == DATASET_SHA256:
+        for key in GROUPS:
+            if grouped[key] and not any(key in book.groups for book, _ in selected):
+                raise ValueError(f"detected group {key!r} has no selected representative")
+    return selected
+
+
+def write_requests(path: Path, selected: list[tuple[Book, str]]) -> None:
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
         writer.writerow(("group", "book", "pdf_sha256", "dataset_row"))
-        for group, book in representatives.items():
-            writer.writerow((group, book.name, book.sha256, book.index))
+        for book, _ in selected:
+            for group in GROUPS:
+                if group in book.groups:
+                    writer.writerow((group, book.name, book.sha256, book.index))
+
+
+def write_type_samples(path: Path, selected: list[tuple[Book, str]],
+                       grouped: dict[str, list[Book]], dataset_sha: str) -> None:
+    covered = sum(any(group in book.groups for book, _ in selected) for group in GROUPS)
+    lines = [
+        "REPRESENTATIVE PDFS — MULTIPLE VISIBLE SUBTYPES, NOT VERIFIED FONT TYPES",
+        f"Dataset SHA-256: {dataset_sha}",
+        f"{len(selected)} distinct PDFs selected across {covered} overlapping review groups.",
+        "The group index covers detected text signals, not every possible problem in every PDF.",
+        "Similar symptoms do not prove identical fonts, mappings or causes; inspecting originals is necessary.",
+        "Some repetition, foreign scripts, private-use characters or unusual headings can be intentional.",
+        "PDF filenames append .pdf to dataset names; the original extension case is not verified.",
+        "The SHA-256 is from the dataset; the original PDFs have not been downloaded or verified here.",
+        "Text lines are the first three non-empty LF-delimited lines, JSON quoted without spelling changes.",
+        "",
+        "DETECTED-GROUP COVERAGE (candidate counts overlap)",
+    ]
+    for group, (title, _, _) in GROUPS.items():
+        examples = [book.name for book, _ in selected if group in book.groups]
+        lines.append(f"  [{group}] {title}: {len(grouped[group])} detected books; {len(examples)} selected")
+        lines.append("    " + ", ".join(json_string(name) for name in examples))
+    lines.extend(["", "SELECTED PDF DETAILS", ""])
+    for index, (book, focus) in enumerate(selected, 1):
+        lines.append(f"{index}. PDF: {json_string(book.name + '.pdf')}")
+        lines.append(f"   PDF SHA-256: {book.sha256}")
+        lines.append(f"   Dataset book name: {json_string(book.name)} (row {book.index})")
+        lines.append(f"   Selected for: {focus}")
+        for label, offset, snippet in book.focus_examples:
+            lines.append(f"   Focus evidence [{label}] at character offset {offset}: {json_string(snippet)}")
+        for group in GROUPS:
+            if group not in book.groups:
+                continue
+            title, explanation, _ = GROUPS[group]
+            reason, offset, snippet = book.groups[group]
+            where = f"; character offset {offset}" if offset is not None else ""
+            lines.append(f"   Signal [{group}]: {title}")
+            lines.append(f"     {explanation}")
+            lines.append(f"     Observed: {reason}{where}")
+            if snippet:
+                lines.append(f"     Sample: {json_string(snippet)}")
+        for number, text in book.lines:
+            lines.append(f"   Text line {number}: {json_string(text)}")
+        lines.append("")
+    path.write_text("\n".join(lines).rstrip("\n") + "\n", encoding="utf-8")
 
 
 def scan(args: argparse.Namespace) -> int:
@@ -300,17 +554,14 @@ def scan(args: argparse.Namespace) -> int:
             if not all(isinstance(value, str) for value in (text, name, sha)):
                 raise ValueError(f"row {len(books)} has a non-string book, text or sha256")
             author = row.get("author") or ""
-            books.append(Book(len(books), name, author, sha, first_nonempty_lines(text), classify(text)))
+            books.append(Book(len(books), name, author, sha, first_nonempty_lines(text),
+                              classify(text), focused_examples(name, text)))
 
     grouped = {key: [book for book in books if key in book.groups] for key in GROUPS}
-    representatives: dict[str, Book] = {}
-    for key, (_, _, preferred) in GROUPS.items():
-        candidates = [book for book in grouped[key] if SHA256_RE.fullmatch(book.sha256)]
-        if candidates:
-            representatives[key] = next((book for book in candidates if book.name == preferred), candidates[0])
+    selected = choose_samples(books, digest, grouped)
     flagged = [book for book in books if book.groups]
     invalid_hashes = sum(not SHA256_RE.fullmatch(book.sha256) for book in books)
-    unique_pdf_count = len({book.sha256.lower() for book in representatives.values()})
+    unique_pdf_count = len(selected)
 
     header = [
         "MANGLED-BOOK REVIEW — GROUPED BY VISIBLE TEXT SYMPTOM",
@@ -323,31 +574,36 @@ def scan(args: argparse.Namespace) -> int:
         "A flagged passage does not mean the whole book is broken. Unflagged books are not certified clean.",
         "Groups can overlap. Similar symptoms do not prove the same font, PDF bytes, or cause.",
         "No original PDFs were inspected or verified by this report; the PDF hashes come from the dataset.",
-        "Method: five 2,000-character windows spaced across each text, plus its first 12,000 characters",
-        "for exact repetition and first 3,000 characters for unusual ASCII headings. Not every character is scanned.",
+        "Method: whole extracted texts are counted for selected Latin, Myanmar-mark, A/U, other-script,",
+        "private-use, paired-Latin and control patterns. Other rules use five 2,000-character windows,",
+        "the first 12,000 characters for repetition/numbered layout, or the first 3,000 for ASCII headings.",
+        "This is not an exhaustive detector for every possible problem or a font/encoding classification.",
         "Text lines below are up to the first three non-empty LF-delimited lines, JSON quoted to preserve spaces",
         "and expose control characters; line numbers refer to the original text. No spelling is changed.",
         "",
-        f"STARTING PDF SELECTION ({unique_pdf_count} distinct hashes; one preferred representative per group)",
-        "These are starting points only: other PDFs in a group may use different fonts or need separate checks.",
+        f"CURATED PDF SELECTION ({unique_pdf_count} distinct hashes across visible subtypes)",
+        "The groups are represented, not proven equivalent: other PDFs can use different fonts or need separate checks.",
     ])
-    for key, (title, _, _) in GROUPS.items():
-        if key in representatives:
-            book = representatives[key]
-            header.append(f"  {key}: {json_string(book.name)} | {book.sha256} | {title}")
-        else:
-            header.append(f"  {key}: no candidate with a valid PDF hash")
+    if digest != DATASET_SHA256:
+        header.append("Different dataset: the selection is an uncurated one-per-group fallback.")
+    for book, focus in selected:
+        tags = ", ".join(key for key in GROUPS if key in book.groups)
+        header.append(f"  {json_string(book.name)} | {book.sha256} | {tags} | {focus}")
     header.extend([
         "",
-        "The flat list (mangled-pdf-names.txt) and standalone VPS downloader are at the repository root.",
-        "The list appends .pdf to each exact dataset book name; the original file-extension case has not",
-        "been verified. The downloader searches .pdf names case-insensitively and verifies the PDF hash.",
-        "The downloader reads SSH_HOST, SSH_USER, SSH_PORT, SSH_KEY and SSH_DIR from your existing .env.",
+        f"See representative-pdf-types.txt for all {unique_pdf_count} selected PDFs, hashes and excerpts.",
+        "representative-pdf-names.txt is the bounded selection; mangled-pdf-names.txt is the larger review index,",
+        "not a list of confirmed errors or mandatory downloads. The index appends .pdf to dataset book names;",
+        "original extension case is unverified. The downloader verifies the dataset hash after transfer.",
+        "It reads SSH_HOST, SSH_USER, SSH_PORT, SSH_KEY and SSH_DIR from your existing .env.",
         "SSH_DIR is searched recursively; no fixed VPS directory or SSH alias is assumed.",
-        "From the directory containing those two files, download just the starting examples with:",
-        "  python3 download-mangled-pdfs.py --env /path/to/.env --representatives",
-        "Or use the uploader's local uploaded-host.txt ledger to find remote paths by hash:",
-        "  python3 download-mangled-pdfs.py --env /path/to/.env --representatives --ledger /path/to/uploaded-host.txt",
+        f"By default it requests the {unique_pdf_count} selected PDFs outside the repository and never uses Git:",
+        "  python3 download-mangled-pdfs.py --env /path/to/.env",
+        "Use --limit 10 for the first batch, --offset 10 --limit 10 for the next, or --book=NAME for one PDF.",
+        "Use --sizes-only to check located candidates' sizes without downloading; paths are not hash-verified.",
+        "Use --all only if you explicitly want the entire review index. Actual PDF sizes are unknown here.",
+        "If names were changed, use --ledger /path/to/uploaded-host.txt or --search-by-hash; the latter",
+        "reads every remote PDF and may be slow, but transfers only hashes before downloading matches.",
         "The downloader verifies PDF SHA-256 and never overwrites existing files. A ledger entry is not",
         "proof that a remote file still exists. The VPS connection has not been tested in this sandbox.",
         "",
@@ -371,8 +627,10 @@ def scan(args: argparse.Namespace) -> int:
         filenames[book.name] = book.sha256
     args.report.write_text("\n".join(header).rstrip("\n") + "\n", encoding="utf-8")
     args.names.write_text("".join(name + ".pdf\n" for name in filenames), encoding="utf-8")
+    args.selection.write_text("".join(book.name + ".pdf\n" for book, _ in selected), encoding="utf-8")
+    write_type_samples(args.samples, selected, grouped, digest)
     if args.requests:
-        write_requests(args.requests, representatives)
+        write_requests(args.requests, selected)
 
     if args.all_snippets:
         lines = [
@@ -390,7 +648,8 @@ def scan(args: argparse.Namespace) -> int:
     print(f"Scanned {len(books)} rows; {len(flagged)} books have at least one review signal.")
     for key in GROUPS:
         print(f"  {key}: {len(grouped[key])}")
-    print(f"Starting PDFs: {unique_pdf_count} distinct hashes; report: {args.report}; names: {args.names}")
+    print(f"Selected PDFs: {unique_pdf_count} distinct hashes; selection: {args.selection}; samples: {args.samples}; "
+          f"report: {args.report}; review names: {args.names}")
     if args.requests:
         print(f"Representative request manifest: {args.requests}")
     if args.all_snippets:
@@ -466,10 +725,12 @@ def verify(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
-    p_scan = sub.add_parser("scan", help="sample a Parquet dataset and write review reports")
+    p_scan = sub.add_parser("scan", help="scan extracted Parquet texts and write review reports")
     p_scan.add_argument("parquet", type=Path)
     p_scan.add_argument("--report", type=Path, default=ROOT / "mangled-books-report.txt")
     p_scan.add_argument("--names", type=Path, default=ROOT / "mangled-pdf-names.txt")
+    p_scan.add_argument("--selection", type=Path, default=ROOT / "representative-pdf-names.txt")
+    p_scan.add_argument("--samples", type=Path, default=ROOT / "representative-pdf-types.txt")
     p_scan.add_argument("--requests", type=Path, help="optional TSV of representative PDF hashes")
     p_scan.add_argument("--all-snippets", type=Path, help="optional first-line index for every dataset row")
     p_scan.set_defaults(run=scan)
