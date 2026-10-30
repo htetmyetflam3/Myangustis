@@ -877,8 +877,23 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, { usedMyan
     let blockSize = null;
     let textXy = [0.0, 0.0];
     let leading = 0.0;
+    let pendingDecoder = null;
+    let pendingBytes = "";
+    const recordText = (decoder, text) => {
+      if (usedMyanmarFonts && containsMyanmar(text)) usedMyanmarFonts.add(decoder.baseFont || "");
+      blockTexts.push(text);
+      if (doc.zawcodeOrder) blockRuns.push([decoder.zawcodeGlyphs != null, text]);
+    };
+    const flushConfirmedRun = () => {
+      if (pendingDecoder) recordText(pendingDecoder, pendingDecoder.decode(pendingBytes));
+      pendingDecoder = null;
+      pendingBytes = "";
+    };
 
     for (const [op, operands] of iterContentOperations(content)) {
+      // Match only adjacent text-show bytes in the same font and positioning
+      // run, the boundary used by the recorded PDF evidence.
+      if (["BT", "ET", "Tf", "Tm", "Td", "TD", "T*", "'", '"'].includes(op)) flushConfirmedRun();
       if (op === "Tf") {
         if (operands.length >= 2 && operands[operands.length - 2] instanceof PdfName) {
           active = decoders.get(String(operands[operands.length - 2])) ?? null;
@@ -966,10 +981,14 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, { usedMyan
 
           const arg = decoder instanceof UnsetFontDecoder || !(shown instanceof PdfHexBytes)
             ? shown : shown.s;
-          const text = decoder.decode(arg);
-          if (usedMyanmarFonts && containsMyanmar(text)) usedMyanmarFonts.add(decoder.baseFont || "");
-          blockTexts.push(text);
-          if (doc.zawcodeOrder) blockRuns.push([decoder.zawcodeGlyphs != null, text]);
+          if (decoder.confirmedRawRuns && typeof arg === "string") {
+            if (pendingDecoder && pendingDecoder !== decoder) flushConfirmedRun();
+            pendingDecoder = decoder;
+            pendingBytes += arg;
+          } else {
+            flushConfirmedRun();
+            recordText(decoder, decoder.decode(arg));
+          }
         }
       }
     }

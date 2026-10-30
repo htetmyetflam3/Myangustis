@@ -37,8 +37,7 @@ fs.mkdirSync(JUNK_DIR, { recursive: true });
 
 
 export async function getEngineData() {
-  const entry = await import('./Architecture/_index.js');
-  return entry.getEngineData();
+  return import('./Architecture/Engine/.data/secure.js');
 }
 
 export async function getLogen() {

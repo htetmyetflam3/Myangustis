@@ -3,20 +3,20 @@ WinInnwa: raw font-subset mapping review
 Status: partial and not wired as a production replacement. Raw page content streams only; Form XObjects are not covered.
 Some direct values are offline ToUnicode seeds; their meanings are not automatically verified. User-confirmed values are identified separately.
 Context-supported values are provisional. Dictionary matches can overlap or occur inside longer words; they may inherit other provisional slot values.
-Counts below are raw-byte occurrences, not independent words. Raw windows have not been reordered. Pre-base marks may legitimately have orphan flags.
-The decoder skips ToUnicode at runtime; the reports do not establish complete coverage or writing-shape rules.
+Counts below are raw-byte occurrences, not independent words. Review flags include already-output characters and are not counts of missing characters. Raw windows have not been reordered. Pre-base marks may legitimately have orphan flags.
+The research raw-byte helpers skip ToUnicode. The existing runtime can use a ToUnicode legacy bridge for other bytes; the confirmed 17/25 correction reads raw PDF codes first and is scoped to this exact document and font. These reports do not establish complete coverage or writing-shape rules.
 
 ==============================================================================
 bg-mlc-1-1.pdf /F4
 SHA-256: 9b3622c34d21de53fb2a6dacd19e698f05dc46e2d32091ddefe42e23ab7916f2
-Direct entries: 42; review resolutions: 53; unresolved byte slots: 10
+Direct entries: 42; review resolutions: 53; historical review flags: 10 (not a missing-character count)
 
 CONFIRMED: 07 = ဒ; 08 = ္ဒ. သဒ္ဒါ = 06 07 08 09 (page 1).
 USER-CONFIRMED: 5C = ္တ after တ; 5F = ္တ after a different upper consonant.
   ကတ္တား / 17 0B 5C 05 14 (page 6); မန္တလေး / 02 2B 5F 1F 21 14 (page 9).
   Source also contains 0B 5F in မေတ္တာ / 1F 02 0B 5F 05 (page 7).
   Reading retains that observed source; writing selects 5C after တ as instructed.
-  17 25 = က္က (user-confirmed).
+  17 = က; 25 = ္က; 17 25 = က္က (user-confirmed).
 
 CONTEXT-CORRECTED: 51 = '‘'; ‘စာအုပ်’ / 51 16 05 0A 18 1B 04 52 (page 2). Previous legacy output was '='.
 
@@ -40,7 +40,7 @@ CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   1E = '။'
   1F = 'ေ'
   20 = 'ံ'  candidate window အခြေခံ / 0A 1F 01 13 13 20 (page 1)
-  25 = '္က'
+  25 = '္က'  (user-confirmed; retained here as a historical review entry)
   29 = 'ျ'
   2A = 'ူ'  candidate window ကျောင်းသူ / 1F 17 29 05 27 04 14 06 2A (page 1)
   2B = 'န'
@@ -75,7 +75,7 @@ CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   66 = 'ြ'  မြေကြီး / 1F 66 02 45 17 31 14 (page 31)
   69 = '္ဂ'  ပုဂ္ဂိုလ် / 1B 18 36 69 19 1C 21 04 (page 37)
 
-UNRESOLVED (the legacy output is not an answer):
+HISTORICAL REVIEW FLAGS (not a count of missing characters):
   1A: occurrences=123; old output='၃'; current output overlaps another observed byte; held for review
     page 1: 18 19 0E 0A 0B 0C 0D 0F [1A] 11 0E 0B 0C 0D 13 0C 0D
     page 1: 08 09 0A 0B 0C 0D 0E 0F [1A] 11 17 18 19 0E 0B 17 25
@@ -121,7 +121,7 @@ UNRESOLVED (the legacy output is not an answer):
 ==============================================================================
 bg-mlc-2-5.pdf /F4
 SHA-256: 31e1447e813a2b15bee4bc4b1be515764554378cfd254ee45d9f9c0a7eda686b
-Direct entries: 35; review resolutions: 63; unresolved byte slots: 15
+Direct entries: 35; review resolutions: 63; historical review flags: 15 (not a missing-character count)
 
 BOOK 2: 0B 64 = တ္တ; 1D 6C = န္တ. Writing follows the requested
 same-versus-different upper rule; other upper consonants for 6C are not independently observed.
@@ -198,7 +198,7 @@ CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
   6D = '္ဘ'  ကမ္ဘာ့ / 23 02 6D 05 29 (page 47)
   70 = '္မ'  လိမ္မာ / 2D 1E 02 70 05 (page 53)
 
-UNRESOLVED (the legacy output is not an answer):
+HISTORICAL REVIEW FLAGS (not a count of missing characters):
   21: occurrences=1512; old output='၀'; same-shaped Burmese zero and wa require context
     candidates requiring context: '၀', 'ဝ'
     page 1: 20 12 16 17 05 18 20 14 [21] 03 04 22 23 24 14 25 05

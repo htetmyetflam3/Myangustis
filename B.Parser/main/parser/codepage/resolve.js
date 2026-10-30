@@ -113,6 +113,7 @@ export function chooseCodePage(objects, allPages, legacyMap, codePages = LEGACY_
   if (unicodeStrategy) scoreStrategy(UNICODE_PATH, unicodeStrategy);
 
   ranking.sort((a, b) => b[1] - a[1]);
+  if (!ranking.length) return [null, null, 0, ranking, samples];
   const [bestName, bestScore] = ranking[0];
 
 

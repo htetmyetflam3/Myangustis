@@ -8,6 +8,8 @@ export const LEGACY_FONT_NAMES = new Set([
   "arkaoriginal",
   "atypewriternormal",
   "cetitle",
+  "msheavy",
+  "msmoom",
   "nyicircle",
   "nyidesigner",
   "nyidesigner1",
@@ -243,6 +245,13 @@ export function normaliseFontName(baseFont) {
     .replace(/^[A-Z]{6}\+/, "")
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "");
+}
+
+// These are legacy faces, but neither registered Ayar nor WinInnwa is a
+// verified decoder for them. A font name is evidence of a gap, not a map.
+export function isUnresolvedLegacyFont(baseFont) {
+  const n = normaliseFontName(baseFont);
+  return n.startsWith("wwin") || n.startsWith("msheavy") || n.startsWith("msmoom");
 }
 
 export function isLegacyFontName(baseFont) {

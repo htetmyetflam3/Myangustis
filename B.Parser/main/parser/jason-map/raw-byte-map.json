@@ -242,7 +242,8 @@
           "currentOutput": "\u1031",
           "observedOccurrences": 2,
           "orphanFlags": 0,
-          "reviewedValue": "\u1039\u1000"
+          "reviewedValue": "\u1039\u1000",
+          "status": "User-confirmed; currentOutput records the old Ayar fallback before the exact-PDF runtime correction."
         },
         "29": {
           "currentOutput": "\u103b",
@@ -1139,6 +1140,25 @@
         }
       },
       "confirmedEvidence": {
+        "25": {
+          "value": "\u1039\u1000",
+          "status": "user-confirmed",
+          "observedOccurrences": 2,
+          "evidence": {
+            "method": "User confirmed 17 = \u1000 and 25 = \u1039\u1000, giving 17 25 = \u1000\u1039\u1000. The old \u1031 output was an Ayar fallback, not this glyph.",
+            "examples": [
+              {
+                "page": 1,
+                "raw": "0B 17 25 06 18 19 21 04",
+                "word": "\u1010\u1000\u1039\u1000\u101e\u102d\u102f\u101c\u103a"
+              },
+              {
+                "page": 36,
+                "raw": "17 25"
+              }
+            ]
+          }
+        },
         "07": {
           "value": "\u1012",
           "status": "confirmed",

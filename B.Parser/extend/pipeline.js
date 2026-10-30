@@ -4,7 +4,8 @@ import { note } from "../main/parser/core/provenance.js";
 import fs from "node:fs";
 import path from "node:path";
 
-import { ZawgyiDetector, containsMyanmar, hasOnlyZawgyiFonts } from "../main/parser/text/detector.js";
+import { ZawgyiDetector, containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts } from "../main/parser/text/detector.js";
+import { preserveRegionalRuns } from "../main/parser/text/unicode-evidence.js";
 import { decryptPdf, isEncryptedPdf, hasObjectStreams, expandObjectStreams } from "../main/parser/read/decrypt.js";
 import { Rabbit } from "../main/parser/text/rabbit.js";
 import { createHash } from "node:crypto";
@@ -25,6 +26,7 @@ import {
   legacyFontFaces,
 } from "../main/parser/read/pdf-fonts.js";
 import { LEGACY_CODE_PAGES, UNICODE_PATH, ZawCODE_PATH } from "../main/parser/codepage/registry.js";
+import { confirmedPdfProfile } from "../main/parser/codepage/confirmed-pdf-runs.js";
 import { normaliseFontName } from "../main/parser/codepage/names.js";
 import { zawCodeGuard } from "../main/parser/text/repair.js";
 import { loadScanDictionary, dictionaryWords } from "../main/parser/text/scan.js";
@@ -97,6 +99,7 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
     );
   }
   const raw = input;
+  const confirmedProfile = confirmedPdfProfile(createHash("sha256").update(raw).digest("hex"));
 
   const objects = parsePdfObjects(raw);
   log(`[+] Objects found: ${objects.size}`);
@@ -130,6 +133,12 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
 
 
     const hasImg = pageHasImages(objects, pnum, pgen);
+    // Enable confirmed runs for the final legacy decoding, including a
+    // vector-derived map. Scoring probes do not see them; the decoder still
+    // requires the exact PDF hash, selected WinInnwa face, and font hash.
+    if (confirmedProfile && codeToUni?.kind === "legacy") {
+      codeToUni.confirmedPdfProfile = confirmedProfile;
+    }
     const before = codeToUni?.zawcodeStats?.glyphs ?? 0;
     const fontNames = new Set();
     const [lines, w, h] = extractPageLines(objects, pnum, pgen, codeToUni,
@@ -550,14 +559,17 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
 }
 
 
+const orderUnicode = (text) => preserveRegionalRuns(text, orderText);
+const cleanupUnicode = (text) => preserveRegionalRuns(text, cleanupText);
+
 export function cleanupFor(cat, text) {
-  return cat === "UNICODE" ? cleanupText(text) : null;
+  return cat === "UNICODE" ? cleanupUnicode(text) : null;
 }
 
 
 function convertLine(t, cat, applyCleanup) {
   if (cat === "ZAWGYI") return orderText(Rabbit.zg2uni(t));
-  if (cat === "UNICODE" && applyCleanup) return cleanupText(t);
+  if (cat === "UNICODE") return applyCleanup ? cleanupUnicode(t) : orderUnicode(t);
   return orderText(t);
 }
 function convLines(lines, cat, applyCleanup) {
@@ -593,7 +605,9 @@ export function processPageRecord(pg, detector, applyCleanup, log = () => {}, wa
   }
   const [category, prob] = sourceEncoding === "auto" && pg.legacyDecoded
     ? ["UNICODE", 0]
-    : detector.detect(raw, { sourceEncoding, fontNames: pg.fontNames });
+    // A PDF font name does not establish what its character codes or
+    // /ToUnicode entries mean. DOCX text has a different evidence boundary.
+    : detector.detect(raw, { sourceEncoding, fontNames: pg.fontNames, unicodeFontEvidence: false });
   let cat = normCategory(category);
 
 
@@ -661,7 +675,7 @@ export function processPageRecord(pg, detector, applyCleanup, log = () => {}, wa
       log(`    Page ${idx + 1}: ZAWGYI (font/source evidence) -> converted`);
     }
   } else {
-    base = orderText(raw);
+    base = orderUnicode(raw);
     log(`    Page ${idx + 1}: UNICODE (source evidence) -> kept`);
   }
 
@@ -820,10 +834,11 @@ function buildDocxJob(paragraphs, filename, detector, log, sourceEncoding = "aut
     }
     const [category, prob] = detector.detect(chunk, { sourceEncoding, fontNames });
     const cat = normCategory(category);
-
-
+    // For actual DOCX text, a known Unicode face is enough to keep the stored
+    // code points, but does not prove which keyboard produced them.
+    const fontUnicode = sourceEncoding === "auto" && hasOnlyUnicodeFonts(fontNames);
     const base = cat === "ZAWGYI" ? orderText(Rabbit.zg2uni(chunk))
-      : cat === "UNICODE" ? orderText(chunk) : chunk;
+      : cat === "UNICODE" ? (fontUnicode ? chunk : orderUnicode(chunk)) : chunk;
     const clean = cleanupFor(cat, base);
     reports.push({ page: idx + 1, category: cat, prob: safeProb(prob), base, clean });
     pages.push({ text: base });
@@ -931,7 +946,7 @@ export function buildFinalPages(job, applyCleanup) {
     if (applyCleanup && rep.clean !== null && rep.clean !== undefined) {
       out.push({
         text: rep.clean,
-        lines: pg.lines.map(([x, y, s, t]) => [x, y, s, cleanupText(t)]),
+        lines: pg.lines.map(([x, y, s, t]) => [x, y, s, cleanupUnicode(t)]),
         wh: pg.wh,
         hasImg: pg.hasImg,
       });

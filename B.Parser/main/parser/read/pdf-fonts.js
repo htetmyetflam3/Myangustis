@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { pyChr } from "../core/pylib.js";
 import { BASE_ENCODINGS, GLYPH_NAME_TO_UNICODE } from "./pdf-encodings.js";
-import { isLegacyFontName } from "../codepage/names.js";
+import { isLegacyFontName, isUnresolvedLegacyFont, normaliseFontName } from "../codepage/names.js";
+import { confirmedRunAt } from "../codepage/confirmed-pdf-runs.js";
 import { parseTtfGsubReverse, parseTtfVariantSlots } from "../core/ttf-gsub.js";
 
 
@@ -850,8 +851,10 @@ export function detectLegacyLayoutFonts(objects, getStreamFn, parseToUnicodeFn) 
     const text = body.toString("latin1");
     if (!text.includes("/Subtype")) continue;
     if (!subtypeRe.test(text)) continue;
+    const bf = baseFontRe.exec(text);
+    // A sparse /ToUnicode map does not make an unsupported face Ayar/WinInnwa.
+    if (bf && isUnresolvedLegacyFont(bf[1])) continue;
     if (!text.includes("/ToUnicode")) {
-      const bf = baseFontRe.exec(text);
       if (!bf || !isLegacyFontName(bf[1])) continue;
       const enc = /\/Encoding\s*(\/\w+|\d+\s+\d+\s+R)/.exec(text);
       if (enc && !simpleEncRe.test(text)) continue;
@@ -920,7 +923,7 @@ export class FontDecoder {
   constructor(name, {
     subtype = "", baseFont = "", isCid = false, cmap = null, toUnicode = null,
     encoding = null, hasEncoding = false, ownGids = null, doc = null, cidToGid = null,
-    zawcodeGlyphs = null,
+    zawcodeGlyphs = null, confirmedRawRuns = null,
   } = {}) {
     this.name = name;
     this.subtype = subtype;
@@ -932,11 +935,13 @@ export class FontDecoder {
     this.hasEncoding = hasEncoding;
     this.ownGids = ownGids || new Map();
     this.zawcodeGlyphs = zawcodeGlyphs;
+    this.confirmedRawRuns = confirmedRawRuns;
     this.doc = doc !== null ? doc : new DocumentDecoding("none");
     this._cidToGid = cidToGid;
   }
 
   get _isSelectedLegacyFont() {
+    if (isUnresolvedLegacyFont(this.baseFont)) return false;
     const selected = this.doc.legacyFontNames;
     if (!selected) return true;
     const normalize = (name) => String(name || "")
@@ -1073,6 +1078,10 @@ export class FontDecoder {
 
 
   decodeCode(code, cid = null) {
+    if (isUnresolvedLegacyFont(this.baseFont) || this.confirmedRawRuns?.unresolved.has(code)) return null;
+    // These are raw PDF codes, not /ToUnicode values or physical key positions.
+    const confirmed = !this.isCid ? this.confirmedRawRuns?.bytes?.get(code) : undefined;
+    if (confirmed !== undefined) return confirmed;
     const tu = this._trustedToUnicode;
     if (tu !== null) {
       const hit = tu.get(code);
@@ -1095,6 +1104,15 @@ export class FontDecoder {
 
   decode(data) {
     if (!data) return "";
+    if (isUnresolvedLegacyFont(this.baseFont)) {
+      // Keep raw character codes visible rather than applying a different
+      // font's map, /ToUnicode, or a document-wide glyph fallback.
+      const codes = this.isCid
+        ? [...this.cmap.iterCodes(data)].map(([code]) => code)
+        : Array.from(data, (ch) => ch.charCodeAt(0));
+      const width = this.isCid ? 4 : 2;
+      return codes.map((code) => `[${code.toString(16).toUpperCase().padStart(width, "0")}]`).join("");
+    }
     if (this.zawcodeGlyphs !== null && this.doc.zawcodeStats) {
       this.doc.zawcodeStats.glyphs += Math.floor(data.length / 2);
     }
@@ -1108,6 +1126,18 @@ export class FontDecoder {
     }
     for (let i = 0; i < data.length; i += 1) {
       const code = data.charCodeAt(i);
+      if (this.confirmedRawRuns) {
+        const run = confirmedRunAt(this.confirmedRawRuns, data, i);
+        if (run) {
+          out += run.text;
+          i += run.bytes.length - 1;
+          continue;
+        }
+        if (this.confirmedRawRuns.unresolved.has(code)) {
+          out += `[${code.toString(16).toUpperCase().padStart(2, "0")}]`;
+          continue;
+        }
+      }
       let text = this.decodeCode(code);
       if (text === null) {
         text = ((code < 0x20 || (code >= 0x7f && code <= 0x9f)) && code !== 0x09 && code !== 0x0a && code !== 0x0d)
@@ -1239,10 +1269,22 @@ export function buildFontDecoder(loader, name, entry, doc) {
   }
 
   const [encoding, declared] = buildSimpleEncoding(font.get("Encoding"), (v) => loader.resolve(v));
+  const descriptor = loader.resolve(font.get("FontDescriptor"));
+  const candidate = doc.confirmedPdfProfile;
+  const normalizedFont = normaliseFontName(baseFont);
+  const selected = !doc.legacyFontNames
+    || [...doc.legacyFontNames].some((entry) => normaliseFontName(entry) === normalizedFont);
+  let confirmedRawRuns = null;
+  if (candidate && selected && normalizedFont.startsWith("wininnwa") && descriptor instanceof Map) {
+    const program = loader.streamOf(descriptor.get("FontFile2"));
+    const digest = program ? createHash("sha256").update(program).digest("hex") : null;
+    if (digest === candidate.fontSha256) confirmedRawRuns = candidate;
+  }
   const ownGids = loader.reversedFontCmap(font.get("FontDescriptor"));
   const toUnicode = loader.tounicodeOf(font);
   return new FontDecoder(name, {
     subtype, baseFont, isCid: false, toUnicode, encoding, hasEncoding: declared, ownGids, doc,
+    confirmedRawRuns,
   });
 }
 
