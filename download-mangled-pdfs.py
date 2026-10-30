@@ -1,0 +1,393 @@
+#!/usr/bin/env python3
+"""Download the books in mangled-pdf-names.txt from the scraper VPS.
+
+This is standalone and follows tools-box/python/vps.py's SSH defaults:
+  alias: hostingervps       private key: ~/.ssh/mylinux
+
+Examples:
+  python3 download-mangled-pdfs.py --representatives
+  python3 download-mangled-pdfs.py --book=1704101675047 --book=-1708528931770
+  python3 download-mangled-pdfs.py --remote-dir '~/pdfs/convertable' --dest ./pdfs
+  python3 download-mangled-pdfs.py --ledger /path/to/uploaded-host.txt
+  python3 download-mangled-pdfs.py --dry-run
+
+With no selection option, every PDF name in the flat list is requested. The
+list appends .pdf to exact dataset book names; original extension case is
+not known. The representative option requests eight starting PDFs instead. Without a local
+uploader ledger, the script searches the given remote directory recursively
+for matching PDF filenames. The default directory matches the scraper's
+SSH_DIR=pdfs default; pass --remote-dir if your archive is elsewhere.
+
+Every download is checked against the original PDF SHA-256 from the dataset.
+Existing local files are never overwritten. Nothing on the VPS is modified.
+The list contains review candidates, including possible false positives; it
+is not proof that every listed book is broken or uses the same font.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import os
+import shlex
+import shutil
+import subprocess
+import sys
+import tempfile
+from collections import defaultdict
+from pathlib import Path
+
+# Filled from the verified public dataset, not from font/keyboard guesses.
+PDF_SHA256 = {
+    "-1708528931770": "f9e1f34c38c180bd6b280436c916acf17f20941d89e8c1da6f4cec507d1a7292",
+    "-1758614468061": "2a30c3a85ad1c4312382a226912b48e2c41178a9afd997f0149670eaff3673ec",
+    "-1759341726906": "979daff6007030888c8f8646ab277ffac4e2b34ba682d8c32646d09300ee0faf",
+    "1680800753958": "1c90df70f26d03bd2a808c2fbe445aa2b4db164e3c2a378017b3b7d40db1fd0c",
+    "1681774700481": "cc54c33946db95c3fcb36969a09d243c87096f6b94c8e5524dc97a0eaf64153b",
+    "1683082497742": "a301c7739318272df4fdf1e3c19e4d973f870b2f4244af55903e85882b38c840",
+    "1683988423841": "ce65f479137c2ce5f0a5d932ac0c59697834972509892ad68361e3bd41c9c733",
+    "1686651510593": "2c3a7f9724906a3505de9a8b174d70efa39700ca83418f4f4d585caed1b1d9d0",
+    "1687772069622": "6ffd1971d457dfc61df8dc6af12f49c08efdbec54e2b8292f55c8a8151920552",
+    "1691340688985": "544df179b17d24d66576b23ba84ce92ed7ec0da5279ed59c1c54771c3588eef2",
+    "1692171082250": "4d6733b1094e7da6faf82aaf216fda6972a4d2c2e86ac434cad5b4faef54b50a",
+    "1693064173472": "52fd6d97651bcedc4e88ccf18785ffa0fd54d38f97cca6b3cd0020206835ab4c",
+    "1693245630110": "853d9c207e8e1403e1bc2c5ac319ccf74cc8f520f6da675a1610dabbea108c86",
+    "1693544137113": "cf1415b8d73f9ca7b90b933e260e9a901a5186cf1764f1ba230f9a3663d5816f",
+    "1693904077870": "3ad5c61f0547a392207613258cc6a9443e74a012263f9b8ff6133fe9b3facc19",
+    "1693914057531": "252e25415260df0d337aa523c8b9bc0d3201fd1239368b6fabbffaf2715c6904",
+    "1697083096373": "f95dbe30f2cca3ec4a857bbc65c3464e6efa80ff3b150e058c81558c6b2aa576",
+    "1702644363071": "7d8d130e432c0c87b1b733be47b265bc0568b792624e6edf401a6ef523abe18a",
+    "1702826768136": "b6e454e263e0214b2811220be91ed568dc08d1fdd14a55e4f12c3079382717ab",
+    "1702975118935": "167771967b783b6fb55142c47f73ef4b174f5ebd542276378499474ef3d72044",
+    "1703521227806": "851e314ed72049984182d6d95b1b95972daa74acb1c7b8f107c092d5bb6736ec",
+    "1704101675047": "996c78a372e1bcd0ab27eb8e3b619c51216c00c84e1937ae0a4a1511b2b7cd43",
+    "1705152502270": "0ed4f55a509ae508cc0b9ff511edf7425fb475bc34a3e2f9e3cdbc3ee67bfdfa",
+    "1706085249444": "89800d6c2e5af45d2e71f41844a532aa2d8056c69a83041175eb02fd568a373a",
+    "1706118210298": "10f7b1fa18deef62d4060e09b34229663b7e5aeaba1177533933d2b37abc3dbe",
+    "1706118384028": "54b6fb22e14c1fb89011e7603c0ab4afa3feecb54640c83e525005b26664d282",
+    "1706118392082": "53a6a711a4ab30fdc5bf800d274f40b70acc4d5070135eaba6ca32a7f99b3b68",
+    "1706300888234": "7becbb64de7b47145158d808f5498053e653e4f5aa823a3560ee429c4207dbd0",
+    "1706301383341": "86768933e3a41698946f357be91739e5c2cec10fe53b6198b05dd9c756056015",
+    "1706302190221": "80a28041b27a5db83fac17ef11a8cf1d664c8a8083d255d258facc7a6cb5f082",
+    "1706302438993": "e9f7def275cb0a30617b799a177e640392acbf433881332829de00dbeb3f9e45",
+    "1706302441939": "e9827e3033a8d2ddf508215201ff37e3a38d428ff7b449656d18c0b20eac0b86",
+    "1706302445830": "8185ac69fc797da4fb5ac1177efdc9c3d5e97bc345123b13a01c30c02e2a8098",
+    "1706302446480": "172bd76a7a77f8bf6cbc7557854fe219400b1e5f854a52a603953edaf06ef019",
+    "1706302447717": "3b23491cd6741c3c53095afd0b9922b32e06e763280e3f44570a9099e734886f",
+    "1706302600730": "56fb01da8f89933c36a808b04b385175e6394dee4b661c9a5588e64449963616",
+    "1706302745930": "a42e128cc3259a27dca667cca15be9f6162deadf9b7537661ed5fb2b933a62a0",
+    "1706303227693": "19f37dd791f5608449584351a8a364909e75a6a6eaa66cf5b3b97d4da912d5c4",
+    "1706303228990": "090bc51e5871d3188ba8d0876f5431ab51e77f0d35dc04a7d02382f09c1cea52",
+    "1706303571424": "895c872e9f7f725e52347eb03ffe920d7a6806deb378c5d4c4fc55908ad5f1b8",
+    "1706303575223": "d10b7f76bd5ddb1c4f4637e7cd3fc613bec2faa64cc2c6c68cd30bac22d7a150",
+    "1706308534942": "fb94a350cfc7ea593b4755afe05825484cd676cb9dcee0bedbeb8107c5fe78ca",
+    "1707195104410": "fcd07393aac07b0eeb23993528354d259459b002daedee14b36faafe031d8f5e",
+    "1707365284222": "ee4da8fe5a64b2b9c233f2d52a9e90602365d5bf3e5d446165fbdd7bb0349c79",
+    "1707666773664": "a74cff9e4c1d423663b7579d58b18211c6d26059307d5deb2e2b4e472d67701a",
+    "1708961902669": "8371a6d6a6a6bf10489ca7fb780dc74cd9b84a41d1202e54475700c8e3b5db5a",
+    "1758614515798": "90937b06182349f83215b6f4c86497fff0cc567ad11d422fe141db177dd4460e",
+    "1758614531892": "f0a867d60d6fd5420a0ab8018dff8bd6cb57fdc53b4826297a67de80e4a0cf50",
+    "1758614595970": "3135ddaffeaa8b08872e1fb0e2bd1a39a6a7da67108c77666bf4cb5030170f68",
+    "1758614665514": "af44bb6e505a0873d205a42e46560029f479c8bef012f010ff51880095da35c9",
+    "1758724351533": "035769972042db727f9767441b761757e37208b4fea35c9396478db7780d6547",
+    "1759199573598": "d07838b7f5f228680430fd80beefabffc9342e156a3ee73af232574731486637",
+    "1759264676234": "882b8a62887162879ff07ec9a9caa55b54b047e5e59ab7f4c9d14ae6489f72f6",
+    "1759388334644": "7eff08278b24ce86308163b26909fb435feca9a34df0aff5b9f1145d8ecdc045",
+    "1759845684572": "382c058a0b1589f85f256da6bc38dfd7966658660328a97cbbf618f70183d487",
+    "1761689865836": "ac8f11673538fb7c1256f1bffd3f34ecd36004ee527f270a5ccbdc1bba0cdc10",
+    "1765481030976": "dabb4527cafa3562daa9432461c56f8b4bbcdb7be397efb3a4764c19d2f9061b",
+    "1774769195137": "9b9abc5ab1c84bc5e5b868eecf4e4c5c5b9f30f82c84150993e9f0299c653e1b",
+    "1783948012042": "602840d11c2ead4054cf00338933cc48bbd5f5018ce87d1ea9cc792d7789af60",
+    "1784274916692": "20c7a6a0e3ea3063f87d1b55d9a7d6ac68e40181da3e6b8a773fbaa3bad9decd",
+    "1784999368188": "c92f8ec930cb6837037443dc2542bf18f46d40bb1225844262d012b72811ccfa",
+    "1785548016136": "204421f11a613b0c61b91839d5625d13fe42a33624b5b31c99128b62a83d5069",
+    "1785661897658": "b6336154d19f7292dd8c5bfe49ccd87103aeed8eadb7927428a08b6c1e5ab815",
+    "1786504776280": "6762586577af66834a1ca9f053195cacd809f74c348a242bf47a38a97aeede2b",
+    "1788764739831": "0abc861e7198d2184e3965540f070bdc7abb3aaa670a0884e09137cc3608b1b0",
+    "1789180271132": "14048125c51b96351bc67da1efb8a15e3701c5f3bb3918eeff4fc1d29dbbf704",
+    "1791560434154": "089d78547b4e8afd9739933c1bb85b8e8b1a828833dc6d80e28f61cf515fb0fc",
+    "1792041524361": "50ec584aa42586f5306bd1e109ac960e9aa863a256a0fd28422390965f9328e7",
+    "1792042706358": "4a5a56409fa16f77b69b0f8a9e9211ad6c05795386427eb6b4434b51c2a65ad0",
+    "1792325291870": "eb6af77933315c3b6e06dc2823a061052ef93405b5d6ef11008a399579639f69",
+    "1792388014179": "7c0ba6321b6d840610acc3a3771c76c4dd9bed6e9bf6067014a8f9b57b0e0eed",
+    "36-short-stories-of-jue-1708877870919": "b8b18d260cd2802332a964260db22686d9ce4a86d838f769137a91d1efd2c84d",
+    "anawrahta-the-founder-of-the-bagan-empire-1783991149510": "d6f60429d99d4b554da68b110ac0d486a6fa24bdcd8e4fcffd401892e69cdf77",
+    "animal-cycle-1784260642033": "efc0cd81f8d0a7a20df9dd70efe604f2a44e3767bcd0f2563b443325a2c40a10",
+    "antivirus-book-1706454614822": "552809c8669c1c11c803afaa923bc81e85fcb09a28a030a4030606f74e1e450b",
+    "best-theory-of-physical-education-1693147797764": "b829b7791baff78020ccfe3093a5fbd2f46f85672b2181a08e57c66d194502b1",
+    "chinese-stories-2-1705316817328": "87d96bf2559f38f9e17d0478d4f6cb80fd5c757be7df84cabac8cf80768bd47c",
+    "chinese-stories-part-1-1705317289776": "8a90c838a0e3d7ae5174b34df7f18e5c0ab7434e4fb176e42380bc45a36940ff",
+    "chinese-stories-part-3-4-1705386897174": "72ff88fca9353b299eae834fa89d9322a98810141ab1598f0af869171d915cac",
+    "city-poems-1706870169476": "0dfb86575e4ad22604bdc1733570b3bce3a17700b1f4ccb8870a08331f9ba510",
+    "contemporary-bridal-short-stories-1785225727606": "b2dda84d457c125e09de906d02eb64678d267a63f3b336d7d131c2036d2d67c2",
+    "curiosity-science-magazine-year-1-issue-1-1760318923964": "43b2024b73a4d5b734cb89f1e757b1c3369d4932dd7e8d8f409a80815d29e252",
+    "curiosity-science-magazine-year-2-issue-2-1696435557299": "a77c4e81c6465a033467d527c50552dbe53ba29d5fa07ff31dbb8b10a9cdfc12",
+    "curiosity-science-magazine-year-2-issue-3-1696435577934": "7b37d529553d07280e1b083be17fba00554bb41643e58d8d3eb044fabbc21ad2",
+    "curiosity-science-magazine-year-2-issue-4-1696435591836": "958d3844ca63a1f06eb17173ebe60760777ae48eae181ec74e22fb6dd87ab469",
+    "family-handbook-1706101731370": "a1ad13a6169ed98b974556e40da37fb382c08178c561ac07b835408f7b2ecfb3",
+    "focus-youth-magazine-1706129290509": "ee6a05680d24deceb665bd40823aae9c1293aabcf347935066c5b4177b3360fb",
+    "h1-n1-1688180802659": "bda5a6ba9487170f4b4b276cf58b3005c2899b374fb7693ad067286a15a3cac2",
+    "h1-n1-1716537335159": "f70065d5f86e612e2f3ec39eda3f32822c52a91f8499cf55ad088221127dea24",
+    "hacker-handbook-1790571086574": "d68b851baec2dd61c298e6b791611d5ed68711b00c3a2f1023e826e0cf723256",
+    "harddisk-issues-1791994279395": "75460111d5c60bb4ac73ed8d24d4660478fcccb2fb02388fc15fe6457841429d",
+    "-1693248588542": "21fb40aa6e9a07dc2a6927466d6cbdd5c7916a914cabe80548cb293d730acc7b",
+    "-1706804477315": "547849b879467dfee7ad6b9a3f10156c21b86671044d1a785e51eefd0e63c8f7",
+    "heartache-1691950053296": "6fd9600b38768240eef4998c22bdb0ca515514a78942279d40965af14cc9ecd2",
+    "his-famous-novels-with-a-brandy-1706018918977": "a1ab1bbae04af952b58d289ec9e3ecea447582377822086cf632838f25d6c34c",
+    "-1706804720694": "527116258fa7937a1b3a6ae16e27f0cbc41c317c70c25d5945d8ff828ee6cd65",
+    "-1706804835850": "20e1a7a7fbbcbd1a591e350520f809f935a7c447db2de539b74f60f5c1879ae2",
+    "-1707218535397": "3413b2b23db159c85370e4797095ec472ab4dc86a93d0cb1246213289d5e1c2e",
+    "-1710135911863": "b97e969b382ae672f3820beedf631728659e22d10a9800aa83726cfeec5b537c",
+    "-1716189358461": "6aa9053ac23781f569e601a967e3f301cd55b9d659f238b9bddd0ee6a9d819a5",
+    "-1758614263766": "b195590c6c22fe37f69eae370f589c0e49842b6364cba82393094c323ed154e8",
+    "-1758614352663": "cf9477ecfd358982d7e33d2eb21e2e0a62c7f1d1c986a3995e488531e0d7827f",
+    "-1758614480066": "b8676c0c5cde7f3f44ccb50b2d433cb68d0af97d913ded2f642011ec7af7ff27",
+    "-1758699987420": "a8d00a63cadd6c9f1e6f54c75e4d36bae3486d8b42ac8e8db814f1acddc588ab",
+    "-1775392889629": "a671297f620387adea9322dcfc3f640b95154393f15c89c70178e1fb54c3a1d6",
+    "-1781488989861": "6be3d233d5daff4a481c08ad7950e188e0781d7467119bfda324b60a0227b9e7",
+    "-1784554562929": "d1048d3b121a829e6881ae558c3d65ec6c7ab7687d1ac6e59abcdac601bcb42e",
+    "-1786385765052": "b43231ab5014068e6b3dbf921745ba1d1d148bb735177549690fe971d5380afb",
+    "-1791893590189": "9ae604dcdd859c353789cedf5c32c4f7234b6191e9a3572470065df44adf26b4",
+    "1-by-4-4-in-1-1785335697045": "f2cd541c3dd27713541d4f5b5d0df3f62c221d1ae64951f6878ebe369d969078",
+    "10-jataka-stories-1704619021023": "5a5869b8bbf9c5522f1fd1240c7eec521c4ca0a57b50b2e78862a265361ad3a8",
+    "100-good-ways-to-be-successful-and-grow-1702298897509": "dbe2247bb5baa5e4fa8bdd6fda9f01ec550143e1d1f122c4b84cdd35c4fc8182",
+    "100-loves-of-my-sweetheart-1785692723787": "37a9034a8808c416fd31af26cda2238c4ddb778f3909d132311caaf96dd88c9c",
+    "100-short-stories-1783992392966": "d27c8ae38329d0b164b2e82bb1c02173b7025e6c28610e7e63c1e68218225c48",
+    "100-ways-to-be-happy-and-rich-1689657291094": "747e387c2d8f16313b8c4b559a54507d3da61206c639a46a894e08258627d226",
+    "100-years-of-general-aung-san-100-letters-1758627755471": "4d4ca3dde9d56eb13be1f1b44f3142654eb98465a5d9ff616ddc6416492be217"
+}
+
+REPRESENTATIVES = (
+    "1704101675047",    # adjacent duplication and A/U
+    "1681774700481",    # extended-Latin mixtures
+    "1706300888234",    # unusual mark ordering
+    "-1708528931770",   # very few marks
+    "-1758614468061",   # other-script heading
+    "1706303571424",    # private-use characters
+    "-1707218535397",   # fragmented text
+    "1702975118935",    # unusual ASCII heading
+)
+
+DEFAULT_LIST = Path(__file__).resolve().with_name("mangled-pdf-names.txt")
+
+
+class DownloadError(Exception):
+    pass
+
+
+def digest_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def names_from(path: Path) -> list[str]:
+    names: list[str] = []
+    seen: set[str] = set()
+    for number, filename in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if not filename:
+            continue
+        if (filename.strip() != filename or any(ch in filename for ch in "/\\\x00")
+                or not filename.lower().endswith(".pdf")):
+            raise DownloadError(f"Unsafe or non-PDF filename on line {number}: {filename!r}")
+        name = filename[:-4]
+        if name in ("", ".", "..") or name not in PDF_SHA256:
+            raise DownloadError(f"No recorded PDF hash for {filename!r}; refusing an unverified download")
+        if name not in seen:
+            names.append(name)
+            seen.add(name)
+    if not names:
+        raise DownloadError(f"No book names found in {path}")
+    return names
+
+
+def ssh_args(host: str, key: Path, command: str) -> list[str]:
+    # Match vps.py; never disable host-key checks or ask for a password.
+    return [
+        "ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=20",
+        "-o", "ServerAliveInterval=30", "-i", str(key),
+        "-o", "IdentitiesOnly=yes", host, command,
+    ]
+
+
+def ssh(host: str, key: Path, command: str, stdout=subprocess.PIPE) -> subprocess.CompletedProcess:
+    try:
+        return subprocess.run(ssh_args(host, key, command), stdout=stdout, stderr=subprocess.PIPE, check=False)
+    except FileNotFoundError as error:
+        raise DownloadError("ssh not found; install an OpenSSH client") from error
+
+
+def failure(result: subprocess.CompletedProcess) -> str:
+    stderr = (result.stderr or b"").decode("utf-8", "replace").strip().splitlines()
+    return stderr[-1] if stderr else f"ssh exit {result.returncode}"
+
+
+def home_directory(host: str, key: Path) -> str:
+    if not key.is_file():
+        raise DownloadError(f"SSH key file not found: {key}")
+    result = ssh(host, key, 'printf "%s" "$HOME"')
+    if result.returncode:
+        raise DownloadError(f"Cannot connect to {host}: {failure(result)}")
+    home = os.fsdecode(result.stdout).strip()
+    if not home.startswith("/") or "\n" in home:
+        raise DownloadError("The VPS did not return a usable absolute home directory")
+    return home
+
+
+def remote_path(raw: str, home: str) -> str:
+    # Same home-relative and ~ handling as vps.py; quote the result for ssh.
+    path = raw.strip()
+    if path.startswith("~"):
+        path = path[1:].lstrip("/")
+    if path.startswith("/"):
+        return path
+    return f"{home.rstrip('/')}/{path}" if path else home
+
+
+def ledger_paths(path: Path, selected: list[str], home: str) -> dict[str, list[str]]:
+    hashes: dict[str, list[str]] = defaultdict(list)
+    for line in path.read_text(encoding="utf-8").splitlines():
+        fields = line.split("\t")
+        if len(fields) >= 4 and fields[2]:
+            remote = remote_path(fields[2], home)
+            digest = fields[0].lower()
+            if remote not in hashes[digest]:
+                hashes[digest].append(remote)
+    return {name: hashes[PDF_SHA256[name]] for name in selected}
+
+
+def discover_paths(host: str, key: Path, directory: str, selected: list[str]) -> dict[str, list[str]]:
+    # NUL delimiters keep spaces and non-ASCII filenames intact. `find` is
+    # read-only and does not follow symlinked directories.
+    command = f"find {shlex.quote(directory)} -type f -iname '*.pdf' -print0"
+    result = ssh(host, key, command)
+    if result.returncode:
+        raise DownloadError(f"Cannot search the remote PDF directory: {failure(result)}")
+    wanted = set(selected)
+    found: dict[str, list[str]] = defaultdict(list)
+    for raw in result.stdout.split(b"\x00"):
+        if not raw:
+            continue
+        path = os.fsdecode(raw)
+        leaf = path.rsplit("/", 1)[-1]
+        if leaf.lower().endswith(".pdf") and leaf[:-4] in wanted:
+            found[leaf[:-4]].append(path)
+    return {name: sorted(set(found[name])) for name in selected}
+
+
+def install_without_overwrite(temp: Path, target: Path) -> None:
+    """Publish a verified temp file with exclusive creation, even under races."""
+    try:
+        os.link(temp, target)
+        return
+    except FileExistsError:
+        raise
+    except OSError:
+        # A filesystem without hard-link support still gets exclusive creation.
+        created = False
+        try:
+            with target.open("xb") as destination:
+                created = True
+                with temp.open("rb") as source:
+                    shutil.copyfileobj(source, destination, length=1024 * 1024)
+        except BaseException:
+            if created:
+                target.unlink(missing_ok=True)
+            raise
+
+
+def download_one(host: str, key: Path, name: str, candidates: list[str], dest: Path) -> bool:
+    expected = PDF_SHA256[name]
+    target = dest / f"{name}.pdf"
+    if target.exists():
+        if target.is_file() and digest_file(target) == expected:
+            print(f"SKIP verified existing: {name}")
+            return True
+        print(f"ERROR existing file differs; not overwritten: {target}", file=sys.stderr)
+        return False
+    if not candidates:
+        print(f"MISSING on VPS/in ledger: {name}", file=sys.stderr)
+        return False
+    dest.mkdir(parents=True, exist_ok=True)
+    for remote in candidates:
+        fd, temp_name = tempfile.mkstemp(prefix=".pdf-download-", suffix=".part", dir=dest)
+        temp = Path(temp_name)
+        try:
+            with os.fdopen(fd, "wb") as output:
+                result = ssh(host, key, f"cat -- {shlex.quote(remote)}", stdout=output)
+            if result.returncode:
+                print(f"ERROR reading {remote}: {failure(result)}", file=sys.stderr)
+                continue
+            actual = digest_file(temp)
+            if actual != expected:
+                print(f"HASH MISMATCH for {name}: expected {expected}, got {actual}; trying any other match", file=sys.stderr)
+                continue
+            try:
+                install_without_overwrite(temp, target)
+            except FileExistsError:
+                if target.is_file() and digest_file(target) == expected:
+                    print(f"SKIP concurrently created verified file: {name}")
+                    return True
+                print(f"ERROR file appeared during download; not overwritten: {target}", file=sys.stderr)
+                return False
+            print(f"OK {name}  {expected}  {target}")
+            return True
+        finally:
+            temp.unlink(missing_ok=True)
+    print(f"FAILED no matching original PDF for {name}", file=sys.stderr)
+    return False
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--list", type=Path, default=DEFAULT_LIST, help="flat PDF-name list (default: alongside script)")
+    parser.add_argument("--dest", type=Path, default=Path("downloaded-pdfs"), help="local directory (default: ./downloaded-pdfs)")
+    parser.add_argument("--remote-dir", default="~/pdfs/convertable", help="VPS directory containing PDFs (default: ~/pdfs/convertable)")
+    parser.add_argument("--ledger", type=Path, help="local scraper uploaded-host.txt: find remote paths by PDF hash instead")
+    parser.add_argument("--host", default="hostingervps", help="SSH alias (default: hostingervps, as in vps.py)")
+    parser.add_argument("--key", type=Path, default=Path.home() / ".ssh" / "mylinux", help="SSH private key file")
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument("--representatives", action="store_true", help="download the eight starting examples only")
+    selection.add_argument("--book", action="append", help="select one book name or PDF filename; repeat (use --book=NAME)")
+    parser.add_argument("--dry-run", action="store_true", help="list selections and expected hashes without connecting")
+    args = parser.parse_args()
+    try:
+        names = names_from(args.list)
+        if args.representatives or args.book:
+            requested = list(REPRESENTATIVES) if args.representatives else [
+                item[:-4] if item.lower().endswith(".pdf") else item for item in args.book
+            ]
+            missing = [name for name in requested if name not in names]
+            if missing:
+                raise DownloadError(f"Requested names are not in {args.list}: {', '.join(missing)}")
+            names = list(dict.fromkeys(requested))
+        if args.dry_run:
+            for name in names:
+                print(f"{name}\t{PDF_SHA256[name]}")
+            print(f"{len(names)} selected; dry run did not connect to the VPS.", file=sys.stderr)
+            return 0
+        home = home_directory(args.host, args.key.expanduser())
+        if args.ledger:
+            paths = ledger_paths(args.ledger, names, home)
+        else:
+            paths = discover_paths(args.host, args.key.expanduser(), remote_path(args.remote_dir, home), names)
+        failures = 0
+        for index, name in enumerate(names, 1):
+            print(f"[{index}/{len(names)}] {name}", flush=True)
+            try:
+                if not download_one(args.host, args.key.expanduser(), name, paths[name], args.dest):
+                    failures += 1
+            except OSError as error:
+                failures += 1
+                print(f"ERROR {name}: {error}", file=sys.stderr)
+        print(f"Done: {len(names) - failures} verified, {failures} missing or failed; no remote files modified.")
+        return 1 if failures else 0
+    except (OSError, UnicodeError, DownloadError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
