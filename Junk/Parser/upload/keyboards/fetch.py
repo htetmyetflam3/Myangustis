@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Fetch the pinned keyboard originals listed in sources.json.
+"""Fetch selected pinned KeyMagic originals and their required includes.
 
-Some originals have no clear redistribution license. This downloads them from
-upstream for local use rather than placing copies in this repository.
+The manifest records discarded keyboards for provenance, but they are not
+fetched unless explicitly requested for an audit. Some sources have no clear
+redistribution license; they are downloaded locally rather than committed.
 """
 
 from __future__ import annotations
@@ -46,12 +47,14 @@ def fetch_archive(owner: str, repo: str, revision: str) -> bytes:
     return data
 
 
-def fetch_all(root: Path) -> tuple[int, int]:
+def fetch_all(root: Path, include_discarded: bool = False) -> tuple[int, int]:
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     root.mkdir(parents=True, exist_ok=True)
     groups = {}
     kept = 0
     for entry in manifest["files"]:
+        if not include_discarded and entry.get("selection") == "discarded":
+            continue
         target = destination(root, entry["local"])
         if target.is_symlink():
             raise ValueError(f"Refusing to overwrite symlink: {target}")
@@ -98,8 +101,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--destination", type=Path, default=HERE,
                         help="directory for the downloaded keyboard collection")
+    parser.add_argument("--include-discarded", action="store_true",
+                        help="also download discarded files for a deliberate audit")
     args = parser.parse_args()
-    written, kept = fetch_all(args.destination)
+    written, kept = fetch_all(args.destination, include_discarded=args.include_discarded)
     print(f"Verified {written + kept} files ({written} downloaded, {kept} already present).")
     print("Check each upstream license before redistribution.")
 
