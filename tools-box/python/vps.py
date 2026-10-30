@@ -1,38 +1,18 @@
-"""One-shot file transfer to and from the VPS over the hostingervps ssh alias.
-
-A thin wrapper around ``ssh hostingervps``: connect, run the action the flag
-asks for, done. Both directions run from the local container only - never on
-the VPS itself.
+"""One-shot file transfers using the Scraper's shared-host SSH configuration.
 
     uv run vps.py --upload   LOCAL   REMOTE_DIR
     uv run vps.py --download REMOTE  LOCAL_DIR
 
-    uv run vps.py --upload   ./.env                  scraper/
-    uv run vps.py --upload   ./pdfs/parquet/         /root/scraper/parquet/
-    uv run vps.py --download '~/scraper/.env'        ./
-    uv run vps.py --download scraper/pdfs/parquet/   ./parquet/
+The Scraper's save_remote.py supplies SSH_HOST, SSH_USER, SSH_PORT and SSH_KEY
+from the shared environment/.env. SSH_DIR belongs to the Scraper's archive;
+this tool uses the remote path explicitly supplied on the command line.
 
-The flag order is the only difference: --upload is local-then-remote,
---download is remote-then-local. The first argument is the source, the second
-is always a directory to save into.
-
-Rules:
-- The LOCAL side is relative to where you run the script (your cwd), like any
-  other shell command.
-- The REMOTE side is relative to the VPS account home, so ``scraper/.env`` and
-  ``~/scraper/.env`` both mean ``/root/scraper/.env``; an absolute path is used
-  as given. Quote a leading ``~`` - unquoted, your own shell rewrites it to
-  your LOCAL home before this script ever sees it.
-- A path that ends in ``/`` - or an existing directory - transfers every file
-  inside it automatically. Sub-directories are skipped, not followed.
-- One-shot on purpose: no resume, no retry waits, no sha256 pass. For the big
-  Parquet collection use ./vps-pull.sh, which resumes and verifies.
-- Nothing is deleted on either box. A destination file of the same name is
-  overwritten.
-
-The private key is hardcoded and pinned with IdentitiesOnly, so only that key
-is offered to the VPS and never a general key used for other hosts. HostName,
-Port and User come from the ~/.ssh/config "hostingervps" alias.
+The first argument is the source and the second is the destination directory.
+Local paths are relative to the current directory; remote paths are relative to
+the remote account's home unless absolute. Quote a leading ``~`` to prevent
+local shell expansion. A source ending in ``/`` transfers its immediate files,
+not subdirectories. There is no resume, retry or hash verification. Existing
+destination files are overwritten.
 
 exit codes: 0 ok, 1 failed, 2 usage error
 """
@@ -40,6 +20,7 @@ exit codes: 0 ok, 1 failed, 2 usage error
 from __future__ import annotations
 
 import argparse
+import importlib
 import os
 import shlex
 import subprocess
@@ -47,39 +28,67 @@ import sys
 from pathlib import Path
 from typing import IO
 
-# ── the VPS. Edit these lines. ────────────────────────────────────────────
-SSH_HOST = "hostingervps"  # ssh alias in this box's ~/.ssh/config
-SSH_KEY = Path.home() / ".ssh" / "mylinux"  # the VPS private key, hardcoded
 CONNECT_TIMEOUT = 20
 
 
 class VpsError(RuntimeError):
-    """Unreachable VPS, missing key or bad argument."""
+    """Unreachable host, missing key or bad argument."""
+
+
+def load_config():
+    """Use the same workspace environment and configuration as the Scraper."""
+    repo_root = Path(__file__).resolve().parents[2]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    importlib.import_module("index-path")
+
+    scraper = next(
+        (
+            path / "main"
+            for path in sorted(repo_root.glob("*.Scraper"))
+            if (path / "main" / "bootstrap.py").is_file()
+            and (path / "main" / "modules" / "download" / "save_remote.py").is_file()
+        ),
+        None,
+    )
+    if scraper is None:
+        raise VpsError("Scraper's bootstrap.py and save_remote.py were not found")
+    sys.path.insert(0, str(scraper))
+    importlib.import_module("bootstrap")
+    remote = importlib.import_module("save_remote")
+    try:
+        config = remote.load_config()
+    except remote.RemoteError as error:
+        raise VpsError(str(error)) from error
+    if not 1 <= config.port <= 65535:
+        raise VpsError("SSH_PORT must be a number from 1 to 65535")
+    return config
 
 
 def _log(message: str) -> None:
     print(message, flush=True)
 
 
-def _ssh(command: str) -> list[str]:
-    return [
+def _ssh(config, command: str) -> list[str]:
+    args = [
         "ssh",
+        "-p",
+        str(config.port),
         "-o",
         "BatchMode=yes",
         "-o",
         f"ConnectTimeout={CONNECT_TIMEOUT}",
         "-o",
         "ServerAliveInterval=30",
-        "-i",
-        str(SSH_KEY),
-        "-o",
-        "IdentitiesOnly=yes",
-        SSH_HOST,
-        command,
     ]
+    if config.key:
+        args.extend(["-i", os.path.expanduser(config.key), "-o", "IdentitiesOnly=yes"])
+    args.extend([config.target, command])
+    return args
 
 
 def _run(
+    config,
     command: str,
     *,
     stdin=None,
@@ -89,7 +98,7 @@ def _run(
     (the download path streams straight into the destination file)."""
     try:
         return subprocess.run(
-            _ssh(command),
+            _ssh(config, command),
             stdin=stdin,
             stdout=stdout,
             stderr=subprocess.PIPE,
@@ -104,24 +113,21 @@ def _fail(result: subprocess.CompletedProcess, what: str) -> None:
     raise VpsError(f"{what}: {detail[-1] if detail else f'exit {result.returncode}'}")
 
 
-def preflight() -> str:
-    """Check the key and the connection; return the VPS account home."""
-    if not SSH_KEY.is_file():
-        raise VpsError(
-            f"ssh private key not found: {SSH_KEY}\n"
-            f"        copy your VPS key there, or edit SSH_KEY in {Path(__file__).name}"
-        )
-    result = _run("echo $HOME")  # expanded by the remote shell, not here
+def preflight(config) -> str:
+    """Check the configured key and connection; return the remote account home."""
+    if config.key and not Path(os.path.expanduser(config.key)).is_file():
+        raise VpsError("SSH_KEY file not found; check the Scraper's SSH_KEY setting")
+    result = _run(config, "echo $HOME")  # expanded by the remote shell, not here
     if result.returncode != 0:
-        _fail(result, f"cannot connect to {SSH_HOST}")
+        _fail(result, "cannot connect to the configured SSH host")
     home = (result.stdout or "").strip().splitlines()
     if not home or not home[-1].startswith("/"):
-        raise VpsError(f"cannot read the account home on {SSH_HOST}: {home!r}")
+        raise VpsError("cannot read the remote account home")
     return home[-1]
 
 
 def remote_path(raw: str, home: str) -> str:
-    """Absolute path on the VPS: ~ and relative paths resolve in `home`."""
+    """Absolute remote path: ~ and relative paths resolve in `home`."""
     path = raw.strip()
     if path.startswith("~"):
         path = path[1:].lstrip("/")
@@ -152,51 +158,51 @@ def expand_local(raw: str) -> list[Path]:
     return files
 
 
-def expand_remote(raw: str, home: str) -> list[str]:
+def expand_remote(config, raw: str, home: str) -> list[str]:
     """One remote file, or every file inside a remote directory."""
     target = remote_path(raw, home)
     if not wants_directory(raw, False):
         return [target]
     directory = target.rstrip("/")
-    result = _run(f"ls -1p -- {shlex.quote(directory)}")
+    result = _run(config, f"ls -1p -- {shlex.quote(directory)}")
     if result.returncode != 0:
-        _fail(result, f"cannot list {directory} on {SSH_HOST}")
+        _fail(result, f"cannot list remote directory {directory}")
     names = [
         line.strip()
         for line in (result.stdout or "").splitlines()
         if line.strip() and not line.strip().endswith("/")  # skip sub-directories
     ]
     if not names:
-        raise VpsError(f"no files inside {SSH_HOST}:{directory}")
+        raise VpsError(f"no files inside remote directory {directory}")
     return [f"{directory}/{name}" for name in sorted(names)]
 
 
-def upload(sources: list[Path], remote_dir: str, home: str) -> None:
+def upload(config, sources: list[Path], remote_dir: str, home: str) -> None:
     directory = remote_path(remote_dir, home)
-    result = _run(f"mkdir -p -- {shlex.quote(directory)}")
+    result = _run(config, f"mkdir -p -- {shlex.quote(directory)}")
     if result.returncode != 0:
-        _fail(result, f"cannot create {directory} on {SSH_HOST}")
+        _fail(result, f"cannot create remote directory {directory}")
     for index, local in enumerate(sources, 1):
         target = f"{directory.rstrip('/')}/{local.name}"
-        _log(f"[vps] -> {local} ({local.stat().st_size} bytes) to {SSH_HOST}:{target}")
+        _log(f"[remote] -> {local} ({local.stat().st_size} bytes) to {target}")
         with local.open("rb") as handle:
-            sent = _run(f"cat > {shlex.quote(target)}", stdin=handle)
+            sent = _run(config, f"cat > {shlex.quote(target)}", stdin=handle)
         if sent.returncode != 0:
             _fail(sent, f"upload of {local.name} failed")
-        _log(f"[vps] ok {index}/{len(sources)}")
+        _log(f"[remote] ok {index}/{len(sources)}")
 
 
-def download(sources: list[str], local_dir: Path) -> None:
+def download(config, sources: list[str], local_dir: Path) -> None:
     local_dir.mkdir(parents=True, exist_ok=True)
     for index, remote in enumerate(sources, 1):
         target = local_dir / remote.rstrip("/").rsplit("/", 1)[-1]
-        _log(f"[vps] <- {SSH_HOST}:{remote} to {target}")
+        _log(f"[remote] <- {remote} to {target}")
         with target.open("wb") as handle:
-            got = _run(f"cat -- {shlex.quote(remote)}", stdout=handle)
+            got = _run(config, f"cat -- {shlex.quote(remote)}", stdout=handle)
         if got.returncode != 0:
             target.unlink(missing_ok=True)  # our own empty file, nothing else
             _fail(got, f"download of {target.name} failed")
-        _log(f"[vps] ok {index}/{len(sources)} ({target.stat().st_size} bytes)")
+        _log(f"[remote] ok {index}/{len(sources)} ({target.stat().st_size} bytes)")
 
 
 def local_dir_arg(raw: str) -> Path:
@@ -208,16 +214,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="vps.py",
         description=(
-            "One-shot file transfer to/from the VPS over the hostingervps ssh "
-            "alias. --upload is LOCAL then REMOTE_DIR; --download is REMOTE "
-            "then LOCAL_DIR. A path ending in / transfers the files inside it."
+            "One-shot file transfer using the Scraper's shared-host SSH settings. "
+            "--upload is LOCAL then REMOTE_DIR; --download is REMOTE then "
+            "LOCAL_DIR. A source ending in / transfers the files inside it."
         ),
         epilog=(
             "examples:\n"
-            "  uv run vps.py --upload ./.env scraper/\n"
-            "  uv run vps.py --upload ./pdfs/parquet/ /root/scraper/parquet/\n"
-            "  uv run vps.py --download '~/scraper/.env' ./\n"
-            "  uv run vps.py --download scraper/pdfs/parquet/ ./parquet/\n"
+            "  python3 tools-box/python/vps.py --upload ./book.pdf pdfs/convertable/\n"
+            "  python3 tools-box/python/vps.py --download pdfs/convertable/book.pdf ./pdfs/\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -242,20 +246,21 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        home = preflight()
+        config = load_config()
+        home = preflight(config)
         if args.upload:
             sources = expand_local(args.source)
-            _log(f"[vps] upload {len(sources)} file(s) -> {SSH_HOST}:{args.destination}")
-            upload(sources, args.destination, home)
+            _log(f"[remote] upload {len(sources)} file(s) -> {args.destination}")
+            upload(config, sources, args.destination, home)
         else:
-            sources = expand_remote(args.source, home)
+            sources = expand_remote(config, args.source, home)
             dest = local_dir_arg(args.destination)
-            _log(f"[vps] download {len(sources)} file(s) -> {dest}")
-            download(sources, dest)
-        _log("[vps] done; nothing was deleted on either box")
+            _log(f"[remote] download {len(sources)} file(s) -> {dest}")
+            download(config, sources, dest)
+        _log("[remote] done")
         return 0
     except VpsError as error:
-        _log(f"[vps] failed: {error}")
+        _log(f"[remote] failed: {error}")
         return 1
 
 
