@@ -44,7 +44,35 @@
         },
         "limitation": "These aggregate internal slot similarities do not establish keyboard equivalence, full encoding compatibility, contextual conversion behavior, or Microsoft provenance."
       },
-      "status": "No original MS-HEAVY or MS-MOOM font, document, or keyboard was identified during this review."
+      "font_archive": {
+        "source": "https://github.com/moekyawsoe/Myanmar-Fonts/blob/cefd1f5297c1fce9d052dd92cdf7bf8cf902426f/Myanmar%20Fonts%20TTF%20Series%202.rar",
+        "archive_sha256": "9f873d9ad45b8cc5d5ed5f289844bdbb3330af2ddb3dc38c20c759b67f67ebb4",
+        "archive_git_blob": "8959c1e3181fe0aa15277150ac4f0cfaa67d943d",
+        "note": "Only the four named PostScript Type 1 font and metrics files were extracted into a temporary research cache; none were added to this repository. The archive's provenance and whether these are the exact versions targeted by the converter are not independently verified.",
+        "fonts": [
+          {
+            "archive_entry": "Myanmar Fonts TTF Series 2/MSHEAV__.PFB",
+            "postscript_name": "MS-HEAVY",
+            "font_sha256": "afb8ba64f40b8abdd902f66578a92edd50b517d976d3c3b377b7f8ff6a944652",
+            "metrics_entry": "Myanmar Fonts TTF Series 2/MSHEAV__.PFM",
+            "metrics_sha256": "e5c693fc09d3edfd9f436eff4a6a748ecd41ac7092ddc37bf3a326fcf42072d5",
+            "creation_date_in_font": "1996-08-17",
+            "attribution_in_font": "SUNNY (HINTHA PRESS), INSEIN"
+          },
+          {
+            "archive_entry": "Myanmar Fonts TTF Series 2/MSMOOM__.PFB",
+            "postscript_name": "MS-MOOM",
+            "font_sha256": "c5da701d0bbd4d98ae105d8824dba0e487d4a7659e90270ee1eea2ba4c58346c",
+            "metrics_entry": "Myanmar Fonts TTF Series 2/MSMOOM__.PFM",
+            "metrics_sha256": "703d935db15133ca1b100668255b8b70fe3f1351a7dacc70f921df8c00632507",
+            "creation_date_in_font": "1996-08-17",
+            "attribution_in_font": "SUNNY (HINTHAR PRESS)"
+          }
+        ],
+        "encoding_array_observation": "The font programs' own 256-position Encoding arrays define 127 positions for MS-HEAVY and 118 for MS-MOOM: 93 are defined in both, 34 only in MS-HEAVY, and 25 only in MS-MOOM. Both have nonempty glyphs at the converter's 33 comparable direct consonant slots.",
+        "encoding_array_limit": "Presence or absence of an internal font slot does not establish its Unicode meaning, the host application's font reencoding, or a physical keyboard. Do not assume that the two font programs have identical coverage or conversion rules."
+      },
+      "status": "Found font programs matching both names. Their internal notices credit SUNNY and Hintha(r) Press, not Microsoft; this does not establish what MS stands for or rule out their use in Microsoft Office. An original document or associated keyboard has not been identified."
     }
   },
   "microsoft_windows": {
@@ -137,6 +165,11 @@
         "name": "Keyman Burmese keyboards",
         "url": "https://keyman.com/en/keyboards/h/burmese/",
         "observation": "Keyman describes myWin Extended as a simplified WinMyanmar-style Unicode layout and Myanmar3 SIL as a modified layout originating with Myanmar NLP using MSKLC."
+      },
+      {
+        "name": "ThanLwinSoft Myanmar Unicode input guide",
+        "url": "https://thanlwinsoft.github.io/www.thanlwinsoft.org/ThanLwinSoft/MyanmarUnicode/InputMethods/KeymanKMFL.html",
+        "observation": "The guide describes myWin as loosely based on traditional WinMyanmar fonts and notes that Unicode input does not exactly match the older layouts and their modifier combinations."
       }
     ],
     "direct_key_comparisons": {
