@@ -1,0 +1,188 @@
+{
+  "description": "Research references for Myanmar keyboard layouts and legacy font profiles. This is an evidence index, not a keyboard, conversion table, or production parser configuration.",
+  "review_date": "2026-10-30",
+  "policy": {
+    "pending_layouts": "Keep all pending layouts, including Unicode-output and partial layouts. No layouts are excluded by this reference research.",
+    "third_party_material": "References and aggregate observations only. No third-party keyboard or converter tables are integrated.",
+    "inspection": "The supplied Windows installer and its components were inspected statically; they were not executed.",
+    "distinctions": "A physical keyboard, a font, text encoding, and embedded PDF subset bytes are different evidence. Similar names or direct slots do not establish complete equivalence."
+  },
+  "text_tools": {
+    "installer": "tools-box/font/installer.exe",
+    "installer_sha256": "6b15c810a14cad3eede48ccaa8797dccca76051937ad3ca2abcc757432d1446e",
+    "profile_labels": [
+      "Zawgyi-One",
+      "Zawgyi-One 2009",
+      "Unicode41 (Myanmar1)",
+      "Unicode51 (Myanmar3)",
+      "Ayar",
+      "UniBurma",
+      "MyaZedi",
+      "WinInnwa",
+      "M-Myanmar1",
+      "Academy",
+      "Kingmyanmarsar",
+      "Gandamar-Letter1",
+      "Metrix-1",
+      "CECLASSIC",
+      "MS-HEAVY (MS-MOOM)",
+      "Wwin_Burmese",
+      "Kannaka",
+      "PDF1"
+    ],
+    "label_scope": "These are converter selections, not verified names of separate physical keyboards. PDF1 is a special converter case, not a general PDF font profile.",
+    "ms_heavy": {
+      "historical_reference": "https://burglish.my-mm.org/latest/trunk/web/fontconv.htm",
+      "historical_observation": "The changelog describes MS-HEAVY and MS-MOOM as font types added on 2 December 2006. It does not identify Microsoft as their maker or identify an associated keyboard.",
+      "static_profile_comparison": {
+        "method": "Compare entries in the converter's apparent parallel profile arrays corresponding to Unicode consonants U+1000 through U+1021. Exclude missing direct entries. No converter code was executed.",
+        "comparable_positions": 33,
+        "matching_positions": {
+          "WinInnwa": 28,
+          "Wwin_Burmese": 30,
+          "Kingmyanmarsar": 31
+        },
+        "limitation": "These aggregate internal slot similarities do not establish keyboard equivalence, full encoding compatibility, contextual conversion behavior, or Microsoft provenance."
+      },
+      "status": "No original MS-HEAVY or MS-MOOM font, document, or keyboard was identified during this review."
+    }
+  },
+  "microsoft_windows": {
+    "layouts": [
+      {
+        "name": "Myanmar (Visual order)",
+        "klid": "00130C00",
+        "documentation": "https://learn.microsoft.com/en-us/globalization/keyboards/kbdmyan_2",
+        "pinned_html": "https://github.com/MicrosoftDocs/globalization/blob/e1aad2251f92e10e341c744a2b29dffc0fd10c50/globalization/keyboards/kbdmyan_2.html",
+        "html_sha256": "4accc66445da7b5fa9aa819ea6923a7bb194c9ca2e3756bf51f16cb8678e5cc6"
+      },
+      {
+        "name": "Myanmar (Phonetic order)",
+        "klid": "00010C00",
+        "documentation": "https://learn.microsoft.com/en-us/globalization/keyboards/kbdmyan_1",
+        "pinned_html": "https://github.com/MicrosoftDocs/globalization/blob/e1aad2251f92e10e341c744a2b29dffc0fd10c50/globalization/keyboards/kbdmyan_1.html",
+        "html_sha256": "25fe9d07010eefb0235c833a4a16abaada0d69f5b83485305eef191b7e8f0207"
+      }
+    ],
+    "documentation_observation": "The pinned layout HTMLs have identical illustrated key-state content apart from their titles and descriptions. This is not a runtime test of the two input methods or their composition and ordering behavior.",
+    "font_reference": "https://learn.microsoft.com/en-us/typography/font-list/myanmar-text",
+    "local_font_witnesses": [
+      {
+        "path": "Junk/fonts/Unicode/MMRTEXT.TTF",
+        "family": "Myanmar Text",
+        "version": "1.18",
+        "sha256": "3ed4612d44f71851d33a126bb483b08a623feb0b2731025a73a41898dec7cee7"
+      },
+      {
+        "path": "Junk/fonts/Unicode/mmrtext.ttf",
+        "family": "Myanmar Text",
+        "version": "1.10",
+        "sha256": "5fe58eb92beaf349f29c7f989e307701a62f60326c83379f0fd32d0930cd28d1"
+      }
+    ],
+    "office_interpretation": "Windows can supply a Myanmar font and input method without the user separately installing a font. Office can also use other fonts and keyboards; the application name alone does not determine the text encoding or keyboard.",
+    "repository_word_pdf_examples": [
+      {
+        "path": "Junk/Parser/upload/pdf/sample.pdf",
+        "sha256": "a94e42e891e2b8d2c6b92300a52d86df3738575e09beddd362f93ba262a2c9fa",
+        "creator_metadata": "Microsoft Word 2010",
+        "observed_font": "Zawgyi-One"
+      },
+      {
+        "path": "Junk/Parser/upload/pdf/ယဲ့နင် စာစဉ် a ၁.merged.merged.pdf",
+        "sha256": "2b218b82f5def95f8ebceb173319ffd3cfaa2734d33c8564a964be419999dcf2",
+        "creator_metadata": "Microsoft Word 2010",
+        "observed_font": "Myanmar3"
+      }
+    ],
+    "word_example_limit": "PDF creator fields and embedded font names are evidence of those files, not proof of original keystrokes or the keyboard that produced them."
+  },
+  "win_and_wwin": {
+    "naming_caution": "WinMyanmar Systems is associated with WinInnwa, while an NFLCIME converter named winmyanmar has been identified by other researchers as Wwin-like. The name WinMyanmar alone does not identify a unique keyboard or font encoding.",
+    "reference_font_witnesses": [
+      {
+        "file": "WinInnwa.ttf",
+        "source": "https://github.com/scriptive/burglish/blob/9d6b778b9f30629e7c782780e625a91be468430c/font/WinInnwa.ttf",
+        "sha256": "f8380367073347103af67f8363b6c9ca5580fb3a2510ceef53fd559cb214854f",
+        "internal_family": "WinInnwa",
+        "attribution_in_font": "Zaw Htut / SMMS Inc. with MCC"
+      },
+      {
+        "file": "Wwin_Burmese.ttf",
+        "source": "https://github.com/scriptive/burglish/blob/9d6b778b9f30629e7c782780e625a91be468430c/font/Wwin_Burmese.ttf",
+        "sha256": "7ddccb07969b1c468beec0b566a6de1f7906b1f25c7d5a04325b92f7d97033ff",
+        "internal_family": "WwinBurmese",
+        "attribution_in_font": "Win Tun"
+      }
+    ],
+    "font_observation": "The two font files have different names, attributions, and selected glyph outlines. Selected outlines from the WinInnwa PDF subset resemble the WinInnwa reference face more closely than the Wwin reference face; this supports separate profiles, not a universal font-version identification.",
+    "font_research": "https://github.com/greenlikeorange/knayi-myscript/blob/b336d2c25dd232c91cf1e56881035b84e8c2d709/research/win-fonts.md",
+    "keyboard_references": [
+      {
+        "name": "myWin KeyMagic source",
+        "url": "https://github.com/thantthet/keymagic-keyboards/blob/61da86297fdb99da56b2892190f73009dfe8bc07/myWin/myWin.kms",
+        "observation": "The source describes a Unicode layout designed to resemble WinMyanmar Systems' non-Unicode layouts, with changes, and declares Myanmar3 as its font family."
+      },
+      {
+        "name": "ZawCode KeyMagic source",
+        "url": "https://github.com/thantthet/keymagic-keyboards/blob/61da86297fdb99da56b2892190f73009dfe8bc07/ZawCode/ZawCode.kms",
+        "observation": "The source describes Zawgyi-style input with Unicode output."
+      },
+      {
+        "name": "NFLCIME WinMyanmar Unicode keyboard reference",
+        "url": "https://github.com/NFLC-UMD/NFLCIME/blob/fc4aa4d67cd807333d51878926031249350a9f2c/nflcime/packages/kb/kb.burmese.burmese.winmyanmar.js",
+        "sha256": "f0ddc663b97ef8063e52e7f751fa7b6cbc9e65f195270fe6c9c8fc7dbed52d07"
+      },
+      {
+        "name": "Keyman Burmese keyboards",
+        "url": "https://keyman.com/en/keyboards/h/burmese/",
+        "observation": "Keyman describes myWin Extended as a simplified WinMyanmar-style Unicode layout and Myanmar3 SIL as a modified layout originating with Myanmar NLP using MSKLC."
+      }
+    ],
+    "direct_key_comparisons": {
+      "scope": "Normal and Shift printable keys in an empty context, compared against the already-generated KeyMagic draft outputs. Invisible spacing characters count as different. These counts do not test composition, other modifiers, or keyboard equivalence.",
+      "comparisons": [
+        {
+          "reference": "NFLCIME WinMyanmar",
+          "draft": "keymagic-official/ZawCode/ZawCode.kms",
+          "exact_matches": 80,
+          "shared_key_states": 94
+        },
+        {
+          "reference": "NFLCIME WinMyanmar",
+          "draft": "keymagic-official/myWin/myWin.kms",
+          "exact_matches": 74,
+          "shared_key_states": 94
+        },
+        {
+          "reference": "Microsoft Myanmar Visual order documentation",
+          "draft": "keymagic-official/Myanmar3/mm3std.kms",
+          "exact_matches": 90,
+          "shared_key_states": 94
+        },
+        {
+          "reference": "Microsoft Myanmar Visual order documentation",
+          "draft": "keymagic-official/ZawCode/ZawCode.kms",
+          "exact_matches": 58,
+          "shared_key_states": 94
+        }
+      ]
+    },
+    "project_legacy_table_review_lead": {
+      "path": "B.Parser/main/parser/codepage/registry.js",
+      "scope": "Static comparison of shared single-codepoint literal rules only; not the NFLCIME converter's full ordered execution and not a production Manager test.",
+      "nflc_winmyanmar_reference": "https://github.com/NFLC-UMD/NFLCIME/blob/fc4aa4d67cd807333d51878926031249350a9f2c/nflcime/packages/cvt/cvt.burmese.burmese.winmyanmar.js",
+      "winmyanmar_exact_matches": 112,
+      "winmyanmar_shared_rules": 124,
+      "nflc_wininnwa_reference": "https://github.com/NFLC-UMD/NFLCIME/blob/fc4aa4d67cd807333d51878926031249350a9f2c/nflcime/packages/cvt/cvt.burmese.burmese.wininnwa.js",
+      "wininnwa_exact_matches": 61,
+      "wininnwa_shared_rules": 113,
+      "interpretation": "The existing table labeled WinInnwa more closely resembles the referenced WinMyanmar literals in this limited comparison. This is a review lead, not proof of origin, complete profile identity, or a confirmed production bug. No parser or heuristics were changed."
+    }
+  },
+  "next_evidence": [
+    "An original MS-HEAVY or MS-MOOM font, DOCX/XLSX, PDF, or recorded keyboard sample with known font and source application.",
+    "An original WWIN keyboard or document showing the keyboard name, font family, and known typed text.",
+    "Contextual keyboard probes and real word-level evidence before treating any source or font profile as equivalent."
+  ]
+}
