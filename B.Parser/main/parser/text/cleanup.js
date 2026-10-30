@@ -32,24 +32,41 @@
 
 
 
+import { getEngineData } from "../../../_path.js";
 import { loadMapJson } from "../core/json-map.js";
 import { MARK_ORDER as PRIORITY, isIndex } from "./mm-score.js";
 
-const DATA = loadMapJson("cleanup.json");
+const { readMasterJson } = await getEngineData();
+let masterMapData = null;
+
+export function getMasterMapData() {
+  if (masterMapData !== null) return masterMapData;
+  const data = readMasterJson()?.mapData;
+  if (!data?.Priority || !Array.isArray(data.Glue) ||
+      !Array.isArray(data.PUNCTUATION) || !data.IMPOSTER) {
+    throw new Error("Engine master is missing normalization data");
+  }
+  masterMapData = data;
+  return masterMapData;
+}
 
 
 
 
 
 
-const GLUE = new Set(DATA.glue);
+let glue = null;
+function getGlue() {
+  if (glue === null) glue = new Set(getMasterMapData().Glue);
+  return glue;
+}
 
 
 
 
 
 
-const IMPOSTER_REPS = DATA.reps;
+
 
 const REPLACEMENT = Symbol("replacement");
 
@@ -66,7 +83,17 @@ function buildImposterTrie(reps) {
   return trie;
 }
 
-const IMPOSTER_TRIE = buildImposterTrie(IMPOSTER_REPS);
+let imposterMatcher = null;
+function getImposterMatcher() {
+  if (imposterMatcher !== null) return imposterMatcher;
+  const reps = Object.values(getMasterMapData().IMPOSTER)
+    .flatMap(({ imposters, correct }) => imposters.map((imposter) => [imposter, correct]));
+  imposterMatcher = {
+    trie: buildImposterTrie(reps),
+    table: reps.every(([from]) => Array.from(from).length === 1) ? new Map(reps) : null,
+  };
+  return imposterMatcher;
+}
 
 
 
@@ -75,8 +102,7 @@ const IMPOSTER_TRIE = buildImposterTrie(IMPOSTER_REPS);
 
 
 
-const SINGLE_CHAR_ONLY = IMPOSTER_REPS.every(([from]) => Array.from(from).length === 1);
-const IMPOSTER_TABLE = SINGLE_CHAR_ONLY ? new Map(IMPOSTER_REPS) : null;
+
 
 
 
@@ -89,9 +115,10 @@ const IMPOSTER_TABLE = SINGLE_CHAR_ONLY ? new Map(IMPOSTER_REPS) : null;
 export function cleanImposters(t) {
   if (!t) return t;
 
-  if (IMPOSTER_TABLE !== null) {
+  const { trie, table } = getImposterMatcher();
+  if (table !== null) {
     let out = "";
-    for (const ch of t) out += IMPOSTER_TABLE.get(ch) ?? ch;
+    for (const ch of t) out += table.get(ch) ?? ch;
     return out;
   }
 
@@ -100,7 +127,7 @@ export function cleanImposters(t) {
   const out = [];
   let i = 0;
   while (i < n) {
-    let node = IMPOSTER_TRIE;
+    let node = trie;
     let j = i;
     let lastMatch = -1;
     let replacement = null;
@@ -383,10 +410,12 @@ export function reorderMarks(t) {
       const seenPriorities = new Set();
       while (i < n) {
         const nxt = chars[i];
-        if (isIndex(nxt)) break;
+        if (isIndex(nxt) || nxt === " " || nxt === "\n") break;
         const p = PRIORITY.get(nxt);
         if (p === undefined) break;
-        if (!seenPriorities.has(p)) {
+        // Some input workflows deliberately emit two U+102F signs. Keep both
+        // codepoints; neither is U+1030 and neither is proven overprinting.
+        if (nxt === "\u102F" || !seenPriorities.has(p)) {
           seenPriorities.add(p);
           marks.push(nxt);
         }
@@ -471,7 +500,7 @@ export function unmixZawCodeMarks(t) {
       let raBehindBase = false;
       while (i < n) {
         const nxt = chars[i];
-        if (isIndex(nxt)) break;
+        if (isIndex(nxt) || nxt === " " || nxt === "\n") break;
         const p = PRIORITY.get(nxt);
         if (p === undefined) break;
 
@@ -484,7 +513,7 @@ export function unmixZawCodeMarks(t) {
         }
 
         if (nxt === "\u103C") raBehindBase = true;
-        if (!seenPriorities.has(p)) {
+        if (nxt === "\u102F" || !seenPriorities.has(p)) {
           seenPriorities.add(p);
           marks.push(nxt);
         }
@@ -690,9 +719,10 @@ export function settleZawCodeAhE(t) {
 
 export function normalizeText(t) {
   if (!t || typeof t !== "string") return "";
+  const glue = getGlue();
   let out = "";
   for (const ch of t.normalize("NFC")) {
-    if (!GLUE.has(ch)) out += ch;
+    if (!glue.has(ch)) out += ch;
   }
   return out;
 }
@@ -767,6 +797,10 @@ export function dropImpossibleMarks(t) {
     if (ch !== "\u1031") continue;
     let j = i + 1;
     while (j < chars.length && AFTER_E_IMPOSSIBLE.has(chars[j])) j += 1;
+    const following = chars.slice(i + 1, j);
+    // A doubled short-u workflow is evidence, not an automatically removable
+    // duplicate or a spelling of U+1030. Leave that uncertain run untouched.
+    if (following.filter((mark) => mark === "\u102F").length >= 2) out.push(...following);
     i = j - 1;
   }
   return out.join("");

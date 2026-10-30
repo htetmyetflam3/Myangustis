@@ -11,7 +11,7 @@ import { Rabbit } from "../main/parser/text/rabbit.js";
 import { createHash } from "node:crypto";
 import { countZawCodeEvidence, reorderZawCodeText } from "../main/parser/text/legacy-order.js";
 import zawCodeDraft from "../main/parser/jason-map/zawcode-draft-glyphs.json" with { type: "json" };
-import { cleanupText, orderText } from "../main/parser/text/normalize.js";
+import { cleanupText, orderText } from "../main/parser/text/cleanup.js";
 import { extractDocxParagraphs, extractDocxImages, validateDocxArchive } from "../main/parser/read/docx-extract.js";
 import { extractDocxParagraphsExternal } from "../main/parser/read/docx-external.js";
 import { scoreText } from "../main/parser/text/mm-score.js";

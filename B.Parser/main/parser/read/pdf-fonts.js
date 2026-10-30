@@ -3,6 +3,7 @@ import { pyChr } from "../core/pylib.js";
 import { BASE_ENCODINGS, GLYPH_NAME_TO_UNICODE } from "./pdf-encodings.js";
 import { isLegacyFontName, isUnresolvedLegacyFont, normaliseFontName } from "../codepage/names.js";
 import { confirmedRunAt } from "../codepage/confirmed-pdf-runs.js";
+import { subsetFontBridge } from "../codepage/subset-font-bridges.js";
 import { parseTtfGsubReverse, parseTtfVariantSlots } from "../core/ttf-gsub.js";
 
 
@@ -923,7 +924,7 @@ export class FontDecoder {
   constructor(name, {
     subtype = "", baseFont = "", isCid = false, cmap = null, toUnicode = null,
     encoding = null, hasEncoding = false, ownGids = null, doc = null, cidToGid = null,
-    zawcodeGlyphs = null, confirmedRawRuns = null,
+    zawcodeGlyphs = null, confirmedRawRuns = null, fontLegacyCodePage = null,
   } = {}) {
     this.name = name;
     this.subtype = subtype;
@@ -936,12 +937,24 @@ export class FontDecoder {
     this.ownGids = ownGids || new Map();
     this.zawcodeGlyphs = zawcodeGlyphs;
     this.confirmedRawRuns = confirmedRawRuns;
+    this.fontLegacyCodePage = fontLegacyCodePage;
     this.doc = doc !== null ? doc : new DocumentDecoding("none");
     this._cidToGid = cidToGid;
+    // A mixed document can contain CID text alongside simple legacy fonts.
+    // Use a substantial Myanmar ToUnicode map for that CID font's raw text,
+    // not the other font's legacy table. This is not an encoding verdict;
+    // sparse or space-dominated maps remain on the existing fallback path.
+    const mappings = this.toUnicode ? [...this.toUnicode.values()] : [];
+    const myanmarMappings = mappings.filter((v) => /[\u1000-\u109f]/u.test(v)).length;
+    const spaceMappings = mappings.filter((v) => v === " ").length;
+    this._unicodeCidInLegacyDocument = this.doc.kind === "legacy" && this.isCid
+      && this.zawcodeGlyphs === null && mappings.length >= 8 && myanmarMappings >= 4
+      && myanmarMappings * 2 >= mappings.length && spaceMappings * 2 < mappings.length;
   }
 
   get _isSelectedLegacyFont() {
     if (isUnresolvedLegacyFont(this.baseFont)) return false;
+    if (this.fontLegacyCodePage) return true;
     const selected = this.doc.legacyFontNames;
     if (!selected) return true;
     const normalize = (name) => String(name || "")
@@ -954,18 +967,17 @@ export class FontDecoder {
 
   get _trustedToUnicode() {
     if (!this.toUnicode) return null;
-    if (this.doc.trustFontToUnicode) return this.toUnicode;
-
-
-
-
+    if (this.doc.trustFontToUnicode || this._unicodeCidInLegacyDocument) return this.toUnicode;
     if (this.doc.kind === "legacy" && !this._isSelectedLegacyFont) return this.toUnicode;
     return null;
   }
 
+  get needsLegacyTextFix() {
+    return this.doc.legacyTextFix && !this._unicodeCidInLegacyDocument && this._isSelectedLegacyFont;
+  }
 
   _legacyLookup(code) {
-    const page = this.doc.legacyCodePage;
+    const page = this.fontLegacyCodePage || this.doc.legacyCodePage;
     if (!page) return null;
     if (!this._isSelectedLegacyFont) return null;
     if (!this.toUnicode) {
@@ -1275,16 +1287,30 @@ export function buildFontDecoder(loader, name, entry, doc) {
   const selected = !doc.legacyFontNames
     || [...doc.legacyFontNames].some((entry) => normaliseFontName(entry) === normalizedFont);
   let confirmedRawRuns = null;
-  if (candidate && selected && normalizedFont.startsWith("wininnwa") && descriptor instanceof Map) {
+  let bridge = null;
+  if (doc.kind === "legacy" && descriptor instanceof Map) {
     const program = loader.streamOf(descriptor.get("FontFile2"));
     const digest = program ? createHash("sha256").update(program).digest("hex") : null;
-    if (digest === candidate.fontSha256) confirmedRawRuns = candidate;
+    const toUnicodeStream = loader.streamOf(font.get("ToUnicode"));
+    const toUnicodeSha256 = toUnicodeStream ? createHash("sha256").update(toUnicodeStream).digest("hex") : null;
+    bridge = subsetFontBridge({
+      fontSha256: digest, toUnicodeSha256, baseFont: normalizedFont,
+      firstChar: font.get("FirstChar"), lastChar: font.get("LastChar"),
+      hasEncoding: font.has("Encoding"),
+    });
+    if (candidate && selected && normalizedFont.startsWith("wininnwa") && digest === candidate.fontSha256) {
+      confirmedRawRuns = bridge?.rawRuns
+        ? { ...candidate, bytes: new Map([...(bridge.rawRuns.bytes || []), ...(candidate.bytes || [])]) }
+        : candidate;
+    } else if (bridge?.rawRuns) {
+      confirmedRawRuns = bridge.rawRuns;
+    }
   }
   const ownGids = loader.reversedFontCmap(font.get("FontDescriptor"));
   const toUnicode = loader.tounicodeOf(font);
   return new FontDecoder(name, {
     subtype, baseFont, isCid: false, toUnicode, encoding, hasEncoding: declared, ownGids, doc,
-    confirmedRawRuns,
+    confirmedRawRuns, fontLegacyCodePage: bridge?.codePage || null,
   });
 }
 

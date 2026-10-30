@@ -883,6 +883,7 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, { usedMyan
       if (usedMyanmarFonts && containsMyanmar(text)) usedMyanmarFonts.add(decoder.baseFont || "");
       blockTexts.push(text);
       if (doc.zawcodeOrder) blockRuns.push([decoder.zawcodeGlyphs != null, text]);
+      else if (doc.legacyTextFix) blockRuns.push([decoder.needsLegacyTextFix, text]);
     };
     const flushConfirmedRun = () => {
       if (pendingDecoder) recordText(pendingDecoder, pendingDecoder.decode(pendingBytes));
@@ -962,10 +963,12 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, { usedMyan
 
 
 
-          let text = blockTexts.join("");
-          if (doc.legacyTextFix) text = collapseOverprint(text);
+          const text = blockTexts.join("");
+          // Repeated characters in a text-show operation can be deliberate,
+          // including U+102F U+102F. Only the later position-based duplicate
+          // piece check has evidence that two separate draws are overprints.
           pieces.push([blockXy[1], blockXy[0], blockSize === null ? 12.0 : blockSize, text,
-            doc.zawcodeOrder ? blockRuns : null]);
+            doc.zawcodeOrder || doc.legacyTextFix ? blockRuns : null]);
         }
         blockTexts = [];
         blockRuns = [];
@@ -1041,14 +1044,18 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, { usedMyan
     const ordered = [...currentLine].sort((p, q) => p[0] - q[0]);
     let maxSize = -Infinity;
     for (const [, s] of ordered) if (s > maxSize) maxSize = s;
-    let joined = doc.zawcodeOrder
-      ? joinDraftRuns(ordered, doc.zawcodeOrder)
-      : ordered.map(([, , t]) => t).join("");
-    if (doc.legacyTextFix) {
+    let joined;
+    if (doc.zawcodeOrder) {
+      joined = joinDraftRuns(ordered, doc.zawcodeOrder);
+    } else if (doc.legacyTextFix) {
       const page = doc.legacyCodePage;
       const applyAaVowelRule = (page == null && doc.map instanceof LegacyAyarMap)
         || page === AYAR_LEGACY_CODE_PAGE || page === WININNWA_LEGACY_CODE_PAGE;
-      joined = legacyAyarToUnicode(joined, { applyAaVowelRule });
+      // A page may mix legacy and Unicode fonts. Do not reorder or normalize
+      // a non-legacy font's text merely because a different font was legacy.
+      joined = joinDraftRuns(ordered, (text) => legacyAyarToUnicode(text, { applyAaVowelRule }));
+    } else {
+      joined = ordered.map(([, , t]) => t).join("");
     }
     lines.push([ordered[0][0], currentY, maxSize, joined]);
   };

@@ -13,12 +13,12 @@ const PROFILES = new Map([
       { bytes: [0x06, 0x07, 0x08, 0x09], text: "သဒ္ဒါ" },
       { bytes: [0x07, 0x08], text: "ဒ္ဒ" },
       { bytes: [0x0B, 0x5C], text: "တ္တ" },
-      { bytes: [0x0B, 0x5F], text: "တ္တ" },
       { bytes: [0x2B, 0x5F], text: "န္တ" },
     ],
-    // 33/69 conflict with existing maps. Retain their raw codes outside a
-    // confirmed run rather than guess.
-    unresolved: new Set([0x33, 0x69]),
+    // These stack slots require their observed upper consonants. 5F is also
+    // present after 0B in the source, conflicting with the supplied rule;
+    // retain the raw code outside a confirmed run, like 33/69.
+    unresolved: new Set([0x08, 0x33, 0x5C, 0x5F, 0x69]),
   }],
   ["254712db152e350e69df5edcfa6ace40313bcd75f2fc571fa5bb7fdd3ec2b06c", {
     fontSha256: "31e1447e813a2b15bee4bc4b1be515764554378cfd254ee45d9f9c0a7eda686b",

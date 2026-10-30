@@ -1,8 +1,9 @@
-import { OUTPUT_FONT_DIR } from "../../../B.Parser/_path.js";
+import { getEngineData, OUTPUT_FONT_DIR } from "../../../B.Parser/_path.js";
 import { SITE_RUNTIME_DIR, SITE_OUTPUT_DIR } from "../../_path.js";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+const { MASTER_ENC } = await getEngineData();
 export const PROJECT_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
@@ -112,9 +113,8 @@ export function validatePraserAssets() {
     `${PARSER_MODEL_DIR}/mya.traineddata`,
     `${PARSER_MAP_DIR}/cipher-map.json`,
     `${PARSER_MAP_DIR}/mm-score.json`,
-    `${PARSER_MAP_DIR}/cleanup.json`,
+    MASTER_ENC,
     `${PARSER_MAP_DIR}/scan.json`,
-    `${PARSER_MAP_DIR}/normalize-map.json`,
     `${PARSER_MAP_DIR}/zg2uni-rules.json`,
     `${PARSER_FONT_DIR}/Unicode/PYIDAUNGSU-2.5.2_REGULAR.TTF`,
     `${PARSER_FONT_DIR}/used/AnonymousPro-Regular.ttf`,

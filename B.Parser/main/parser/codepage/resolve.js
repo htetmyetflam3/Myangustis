@@ -35,7 +35,7 @@ const { emitEvent } = (await getLogen()).coreLog;
 
 import fs from "node:fs";
 
-import { orderText } from "../text/normalize.js";
+import { orderText } from "../text/cleanup.js";
 import { scoreText } from "../text/mm-score.js";
 import {
   extractPageLines, parsePdfObjects, getStream, parseToUnicodeStream,

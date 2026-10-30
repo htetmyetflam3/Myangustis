@@ -32,6 +32,10 @@ import {
 } from "./cleanup.js";
 import { scoreText, isIndex } from "./mm-score.js";
 
+// Raw-font evidence is available to a repair caller that retained provenance.
+// These lookups return candidates only; they never alter text automatically.
+export { pdfRepairCandidates, physicalKeyCandidates, evidenceForOutput } from "../codepage/pooled-candidates.js";
+
 const DATA = loadMapJson("homoglyphs.json");
 
 

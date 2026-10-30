@@ -1,11 +1,14 @@
 """Shared Python workspace paths and environment, matching index-path.js."""
 
+import importlib.util
 import os
 import re
+from functools import lru_cache
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent
 JUNK_DIR = ROOT_DIR / "Junk"
+ENGINE_DATA_DIR = ROOT_DIR / "Architecture" / "Engine" / ".data"
 _VALID_KEY = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
@@ -71,7 +74,7 @@ def load_root_env():
     """Use process environment, root .env, then engine data .env, in that order."""
     sources = []
     applied = []
-    for file in (ROOT_DIR / ".env", ROOT_DIR / "Architecture/Engine/.data/.env"):
+    for file in (ROOT_DIR / ".env", ENGINE_DATA_DIR / ".env"):
         try:
             names = load_env_file(file)
         except FileNotFoundError:
@@ -79,6 +82,17 @@ def load_root_env():
         sources.append(str(file))
         applied.extend(names)
     return {"sources": sources, "applied": applied}
+
+
+@lru_cache(maxsize=1)
+def get_engine_data():
+    """Load the Engine's native Python secure-data reader on demand."""
+    spec = importlib.util.spec_from_file_location(
+        "myangustis_engine_secure", ENGINE_DATA_DIR / "secure.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 ENV_RESULT = load_root_env()

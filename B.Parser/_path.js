@@ -26,6 +26,10 @@ export async function getLogen() {
   const entry = await import('./_index.js');
   return entry.getLogen();
 }
+export async function getEngineData() {
+  const entry = await import('./_index.js');
+  return entry.getEngineData();
+}
 
 export const RUNTIME_ROOT = resolved.shared ? path.join(BASE_DIR, "Parser") : COMPONENT_ROOT;
 const FONT_ROOT = path.join(BASE_DIR, "fonts");

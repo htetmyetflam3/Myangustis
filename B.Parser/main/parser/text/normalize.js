@@ -16,9 +16,9 @@
  * same reason. It used to be read from normalize.json while mm-score.mjs kept
  * a second hand-written copy; there is now one source.
  */
-import { loadMapJson } from "../core/json-map.js";
 import { MARKS } from "./mm-score.js";
 import {
+  getMasterMapData,
   cleanImposters,
   reorderMarks,
   unmixZawCodeMarks,
@@ -57,11 +57,11 @@ export const isExternalNormalize = () => external !== null;
 
 
 
-const MAPDATA = loadMapJson("normalize-map.json");
+const MAPDATA = getMasterMapData();
 
-const PRIORITY2 = MAPDATA.priority;                                    
-const GLUE = new Set(MAPDATA.glue);
-const PUNCTUATION = new Set(MAPDATA.punctuation);
+const PRIORITY2 = MAPDATA.Priority;
+const GLUE = new Set(MAPDATA.Glue);
+const PUNCTUATION = new Set(MAPDATA.PUNCTUATION);
 const ENGLISH_DIGITS = new Set(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]);
 const BURMESE_DIGITS = new Set(["\u1040", "\u1041", "\u1042", "\u1043", "\u1044",
   "\u1045", "\u1046", "\u1047", "\u1048", "\u1049"]);
@@ -70,7 +70,7 @@ const BURMESE_DIGITS = new Set(["\u1040", "\u1041", "\u1042", "\u1043", "\u1044"
 
 
 const IMPOSTER_REPS = [];
-for (const entry of MAPDATA.imposter) {
+for (const entry of Object.values(MAPDATA.IMPOSTER)) {
   for (const imp of entry.imposters) IMPOSTER_REPS.push({ from: imp, to: entry.correct });
 }
 IMPOSTER_REPS.sort((a, b) => b.from.length - a.from.length);
