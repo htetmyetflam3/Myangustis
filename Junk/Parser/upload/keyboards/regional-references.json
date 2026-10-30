@@ -240,9 +240,38 @@
       "interpretation": "The existing table labeled WinInnwa more closely resembles the referenced WinMyanmar literals in this limited comparison. This is a review lead, not proof of origin, complete profile identity, or a confirmed production bug. No parser or heuristics were changed."
     }
   },
+  "keyboard_font_crosscheck": {
+    "wininnwa_base_bridge_witness": {
+      "pdf": "Junk/Parser/upload/pdf/bg-mlc-1-1.pdf",
+      "subset_font_sha256": "9b3622c34d21de53fb2a6dacd19e698f05dc46e2d32091ddefe42e23ab7916f2",
+      "raw_subset_byte": "0x17",
+      "pdf_to_unicode_bridge": "U+0075",
+      "user_confirmed_reading": "0x17 = က in the context 17 25 = က္က",
+      "reference_font": "https://github.com/scriptive/burglish/blob/9d6b778b9f30629e7c782780e625a91be468430c/font/WinInnwa.ttf",
+      "reference_font_sha256": "f8380367073347103af67f8363b6c9ca5580fb3a2510ceef53fd559cb214854f",
+      "reference_cmap_glyph": "u",
+      "reference_glyph_id": 88,
+      "outline_comparison": "The subset 0x17 glyph and the reference WinInnwa U+0075 glyph had matching contour topology and normalized contour distance 0.00603. The Wwin_Burmese U+0075 comparison gave 0.07303; a single glyph does not identify a full font or encoding.",
+      "unicode_keyboard_crosscheck": "The retained ZawCode source's u key emits U+1000, mapped by the examined TharLon font to ka. This is a separate Unicode keyboard observation, not proof of the PDF's physical key or a conversion rule.",
+      "limitation": "The user-confirmed reading, subset-specific byte, PDF ToUnicode bridge, legacy font cmap entry and physical key position are distinct evidence layers. The ToUnicode bridge is not an independent keystroke record."
+    },
+    "summary": "Junk/Parser/upload/keyboards/font-layout-summary.txt",
+    "evidence": "Junk/Parser/upload/keyboards/font-layout-evidence.json",
+    "analysis_script": "Junk/Parser/upload/keyboards/compare-font-layouts.py",
+    "probe_source": "Junk/Parser/upload/keyboards/font-layout-probe.cpp",
+    "scope": "All 54 retained draft artifacts, declared-family metadata, local candidate font cmaps, selected regional key positions, and bounded KeyMagic/HarfBuzz context witnesses. Layouts and their original gaps are preserved.",
+    "highlights": [
+      "The same U+1095 maps to a Shan digit glyph in TharLon and a dot-below glyph in the examined Zawgyi-One face; ZawCode and Zawgyi L also emit different raw code points for the same input sequence.",
+      "Two PaOh source layouts declare Myanmar3 and emit U+108F and U+AA7B, which are absent from the examined Myanmar3 family faces but present in separately named Myanmar3 PaOh, Padauk, and Pyidaungsu candidates. That does not prove a historical font assignment.",
+      "Two local Myanmar3 files have the same family/version metadata but different hashes and produce different HarfBuzz glyph sequences for a selected kinzi context. The cause and other rendering environments are unverified.",
+      "The separately supplied ZawCode binary and compiled source differed on 96 of 9,025 two-key outputs in this engine; the binary also produced an unknown-op warning, so other engine behavior remains unverified."
+    ],
+    "boundary": "Raw keyboard outputs, font cmap/glyphs, shaped glyphs, legacy Type 1 encoding slots and PDF subset bytes are distinct domains. No production heuristic or converter was changed."
+  },
   "next_evidence": [
-    "An original MS-HEAVY or MS-MOOM font, DOCX/XLSX, PDF, or recorded keyboard sample with known font and source application.",
+    "A dated original MS-HEAVY or MS-MOOM DOCX/XLSX, PDF, or recorded keyboard sample with known font and source application. Type 1 font witnesses are available, but no original keyboard or document has been confirmed.",
     "An original WWIN keyboard or document showing the keyboard name, font family, and known typed text.",
+    "The Ours-Unicode font file or a known document using it, and regional PaOh rendering examples for the declared versus candidate fonts.",
     "Contextual keyboard probes and real word-level evidence before treating any source or font profile as equivalent."
   ]
 }
