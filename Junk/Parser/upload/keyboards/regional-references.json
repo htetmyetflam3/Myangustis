@@ -125,6 +125,33 @@
     ],
     "word_example_limit": "PDF creator fields and embedded font names are evidence of those files, not proof of original keystrokes or the keyboard that produced them."
   },
+  "missing_pieces_and_detection": {
+    "wininnwa_book1_witness": {
+      "pdf": "Junk/Parser/upload/pdf/bg-mlc-1-1.pdf",
+      "subset_font_sha256": "9b3622c34d21de53fb2a6dacd19e698f05dc46e2d32091ddefe42e23ab7916f2",
+      "raw_subset_byte": "0x25",
+      "pdf_to_unicode_bridge": "U+00FA",
+      "user_confirmed_context": "17 25 = က္က",
+      "reading_of_subset_byte": "္က",
+      "reference_font": "https://github.com/scriptive/burglish/blob/9d6b778b9f30629e7c782780e625a91be468430c/font/WinInnwa.ttf",
+      "reference_font_sha256": "f8380367073347103af67f8363b6c9ca5580fb3a2510ceef53fd559cb214854f",
+      "outline_observation": "The PDF subset glyph at raw byte 0x25 has matching contour topology and close shape to the reference WinInnwa font's U+00FA glyph (distance 0.00802 using the project's contour comparison). This adds an outline witness to the previously user-confirmed subset reading.",
+      "production_status": "The current WININNWA_LEGACY_CODE_PAGE has no U+00FA entry. No mapping or runtime behavior was changed.",
+      "limitation": "The PDF byte is subset-specific and is not the same as the font's character code. The ToUnicode bridge, font version, and context are evidence for this sample, not a universal byte map."
+    },
+    "current_legacy_name_probe": {
+      "method": "Read the actual reference fonts' internal names and pass them to the existing isLegacyFontName function. Also probe detectLegacyLayoutFonts with synthetic no-ToUnicode PDF font dictionaries using WinAnsiEncoding. No scoring or production configuration was changed.",
+      "font_name_results": [
+        { "font_name": "MS-HEAVY", "legacy_name_match": false },
+        { "font_name": "MS-MOOM", "legacy_name_match": false },
+        { "font_name": "WwinBurmese", "legacy_name_match": true },
+        { "font_name": "WinInnwaA", "legacy_name_match": true }
+      ],
+      "synthetic_font_object_result": "The simple Wwin and WinInnwa dictionaries were recognized as legacy; the simple MS-HEAVY and MS-MOOM dictionaries were not recognized by name.",
+      "registered_legacy_code_pages": ["ayar", "wininnwa"],
+      "limitation": "A positive name match is generic legacy-font recognition, not proof of a Wwin-specific decoder or correct output. Other existing PDF detection paths may flag a font based on its structure or ToUnicode map without identifying it as MS. The probes did not run the production Manager on a genuine MS or Wwin document."
+    }
+  },
   "win_and_wwin": {
     "naming_caution": "WinMyanmar Systems is associated with WinInnwa, while an NFLCIME converter named winmyanmar has been identified by other researchers as Wwin-like. The name WinMyanmar alone does not identify a unique keyboard or font encoding.",
     "reference_font_witnesses": [
