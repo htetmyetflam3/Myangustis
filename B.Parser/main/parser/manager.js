@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { TextDecoder } from "node:util";
-import { DEFAULT_OUTPUT_DIR, REGISTER_LOG } from "../../_path.js";
+import { DEFAULT_OUTPUT_DIR, REGISTER_LOG, getOwnerKeyMatcher } from "../../_path.js";
 import { writeOutput } from "./write/emit.js";
 import { appendRecord, note, registerPath } from "./core/provenance.js";
 import {
@@ -24,9 +24,15 @@ const OUTPUT_TYPES = new Set(["txt", "docx", "pdf"]);
 const JOBS = new Set(["extracting", "ocr", "null"]);
 const METHODS = new Set(["default", "manual", "null"]);
 const SOURCE_ENCODINGS = new Set(["auto", "unicode", "zawgyi-one"]);
+const keyMatches = await getOwnerKeyMatcher();
 
-
-
+// Credentials are passed separately from jobs, never to a worker or into metadata.
+function ownerAccess(options) {
+  const key = options?.ownerKey;
+  if (key === undefined || key === null) return false;
+  if (!keyMatches(key)) throw new Error("Invalid owner key");
+  return true;
+}
 
 const IDENTITY_FIELDS = [
   "jobToken", "formId", "submitId", "userId", "sessionId", "extension", "task",
@@ -118,51 +124,84 @@ export function resolveOutput(job) {
 }
 
 export class Manager {
+  #workers = { extract: null, ocr: null, ownerExtract: null, ownerOcr: null };
+  #pending = new Map();
+  #laneTails = { extract: Promise.resolve(), ocr: Promise.resolve() };
+  #seq = 0;
+
   constructor({ outputDir = DEFAULT_OUTPUT_DIR } = {}) {
     this.outputDir = outputDir;
-    this.workers = { extract: null, ocr: null };
-    this.pending = new Map();
-    this.laneTails = { extract: Promise.resolve(), ocr: Promise.resolve() };
-    this.seq = 0;
   }
 
-  _failLane(lane, error, worker) {
-    if (this.workers[lane] === worker) this.workers[lane] = null;
-    for (const [id, entry] of this.pending) {
-      if (entry.lane !== lane) continue;
+  #workerSlot(lane, owner) {
+    return owner ? (lane === "ocr" ? "ownerOcr" : "ownerExtract") : lane;
+  }
+
+  #failLane(slot, error, worker) {
+    if (this.#workers[slot] !== worker) return;
+    this.#workers[slot] = null;
+    for (const [id, entry] of this.#pending) {
+      if (entry.slot !== slot) continue;
       clearTimeout(entry.timer);
-      this.pending.delete(id);
+      this.#pending.delete(id);
       entry.reject(error);
     }
   }
-  _worker(lane) {
-    if (this.workers[lane]) return this.workers[lane];
+
+  #worker(lane, owner) {
+    const slot = this.#workerSlot(lane, owner);
+    if (this.#workers[slot]) return this.#workers[slot];
     const url = lane === "ocr" ? OCR_URL : EXTRACT_URL;
-    const w = new Worker(url, {
-      resourceLimits: {
-        maxOldGenerationSizeMb: WORKER_HEAP_MB,
-        stackSizeMb: 8,
-      },
-    });
-    w.on("message", (m) => {
-      const entry = this.pending.get(m.id);
-      if (!entry) return;
-      this.pending.delete(m.id);
+    const options = {
+      workerData: { parserOwner: owner },
+      // The root loader may read .env again in the worker. Nonempty sentinels
+      // prevent it from importing either stored credential into that worker.
+      env: { ...process.env, CURL_KEY: "__parser_worker_disabled__", CURL_KEY_SHA256: "__parser_worker_disabled__" },
+    };
+    if (!owner) {
+      options.resourceLimits = { maxOldGenerationSizeMb: WORKER_HEAP_MB, stackSizeMb: 8 };
+    }
+    const worker = new Worker(url, options);
+    worker.on("message", (m) => {
+      const entry = this.#pending.get(m.id);
+      if (!entry || entry.slot !== slot) return;
+      this.#pending.delete(m.id);
       clearTimeout(entry.timer);
       if (m.ok) entry.resolve(m);
       else entry.reject(errorFromWorker(lane, m.error));
     });
-    w.on("error", (error) => this._failLane(lane, error, w));
-    w.on("exit", (code) => {
-      if (code !== 0) this._failLane(lane, new Error(`${lane} worker exited (${code})`), w);
-      else if (this.workers[lane] === w) this.workers[lane] = null;
+    worker.on("error", (error) => this.#failLane(slot, error, worker));
+    worker.on("exit", (code) => {
+      this.#failLane(slot, new Error(`${lane} worker exited (${code})`), worker);
     });
-    this.workers[lane] = w;
-    return w;
+    this.#workers[slot] = worker;
+    return worker;
   }
 
+  #submit(lane, payload, budget, owner) {
+    const slot = this.#workerSlot(lane, owner);
+    const worker = this.#worker(lane, owner);
+    const id = ++this.#seq;
+    return new Promise((resolve, reject) => {
+      const timer = owner ? null : setTimeout(() => {
+        this.#pending.delete(id);
+        reject(new Error(`${lane} worker exceeded ${budget} ms`));
+        if (this.#workers[slot] === worker) this.#workers[slot] = null;
+        worker.terminate().catch(() => {});
+      }, budget);
+      timer?.unref();
+      this.#pending.set(id, { resolve, reject, slot, timer });
+      try {
+        worker.postMessage({ ...payload, id });
+      } catch (error) {
+        clearTimeout(timer);
+        this.#pending.delete(id);
+        reject(error);
+      }
+    });
+  }
 
-  _outPathFor(job, out) {
+  #outPathFor(job, out) {
     if (job.outPath) return job.outPath;
 
 
@@ -171,7 +210,10 @@ export class Manager {
   }
 
 
-  async dispatch(job, caller = "site") {
+  // Owner calls use dispatch(job, caller, { ownerKey }); an option flag alone
+  // never changes the public limits. The key is checked for every call.
+  async dispatch(job, caller = "site", options = {}) {
+    const owner = ownerAccess(options);
     const who = normalizeCaller(caller);
     const { job: jobField, method } = readManagerPayload(job);
     const lane = route(job);
@@ -218,22 +260,19 @@ export class Manager {
       }
     }
 
-    const previous = this.laneTails[lane];
+    const previous = this.#laneTails[lane];
     let releaseLane;
     const laneDone = new Promise((resolve) => { releaseLane = resolve; });
-    this.laneTails[lane] = previous.catch(() => {}).then(() => laneDone);
+    this.#laneTails[lane] = previous.catch(() => {}).then(() => laneDone);
     await previous.catch(() => {});
 
     try {
-      const worker = this._worker(lane);
-      const outPath = this._outPathFor(job, out);
-      const id = ++this.seq;
+      const outPath = this.#outPathFor(job, out);
       const payload =
         lane === "ocr"
-          ? { id, op: "ocr", inPath: job.inPath, data: job.data, source: job.filename, outPath,
+          ? { op: "ocr", inPath: job.inPath, data: job.data, source: job.filename, outPath,
               includeText: job.includeText === true }
           : {
-              id,
               op: "extract",
               method,
               kind: inputKind,
@@ -248,11 +287,8 @@ export class Manager {
               ...(manualPdf ? { deferOutput: true } : {}),
             };
 
-
-
-
       let budget = WORKER_TIMEOUT_MS;
-      if (lane === "ocr") {
+      if (lane === "ocr" && !owner) {
         const pages = await countOcrPages(job);
         if (pages > MAX_OCR_PAGES) {
           throw new Error(
@@ -261,30 +297,13 @@ export class Manager {
         }
         budget = ocrTimeoutMs(pages);
       }
+      let reply = await this.#submit(lane, payload, budget, owner);
 
-      let reply = await new Promise((resolve, reject) => {
-        const timer = setTimeout(() => {
-          this.pending.delete(id);
-          reject(new Error(`${lane} worker exceeded ${budget} ms`));
-          if (this.workers[lane] === worker) this.workers[lane] = null;
-          worker.terminate().catch(() => {});
-        }, budget);
-        timer.unref();
-        this.pending.set(id, { resolve, reject, lane, timer });
-        try {
-          worker.postMessage(payload);
-        } catch (error) {
-          clearTimeout(timer);
-          this.pending.delete(id);
-          reject(error);
-        }
-      });
-
-      if (manualPdf) reply = await this._finishManualPdf(reply, job, outPath);
+      if (manualPdf) reply = await this.#finishManualPdf(reply, job, outPath, owner);
 
       if (jobField === "null" && Array.isArray(reply.imageFiles) && reply.imageFiles.length) {
         try {
-          const ocr = await this.dispatchImages(reply.imageFiles);
+          const ocr = (await this.#dispatchOcr({ op: "ocr-images", files: reply.imageFiles }, reply.imageFiles.length, owner)) ?? [];
           let text = await fs.readFile(reply.file, "utf8");
           for (const item of ocr) {
             const marker = `[[IMAGE_${item.id}]]`;
@@ -330,7 +349,7 @@ export class Manager {
     }
   }
 
-  async _finishManualPdf(reply, job, outPath) {
+  async #finishManualPdf(reply, job, outPath, owner) {
     try {
       if (!reply.deferredOutput || !Array.isArray(reply.pagesData)) {
         throw new Error("Manual PDF extraction did not return page data");
@@ -367,14 +386,14 @@ export class Manager {
         if (hasImage) tasks.push({ index, type: "ocrPage", fullPage: true });
       }
       const scanned = [...new Set(tasks.map((task) => task.index))];
-      if (scanned.length > MAX_OCR_PAGES) {
+      if (!owner && scanned.length > MAX_OCR_PAGES) {
         throw new Error(`PDF has ${scanned.length} image pages; the OCR lane accepts at most ${MAX_OCR_PAGES} at a time`);
       }
       for (const task of tasks) {
-        const text = await this._dispatchOcr({
+        const text = await this.#dispatchOcr({
           type: task.type, inPath: sourcePath, data: sourceData,
           pageNumber: task.index + 1, ...(task.bbox ? { bbox: task.bbox } : {}),
-        }, 1);
+        }, 1, owner);
         if (typeof text !== "string") throw new Error(`OCR did not return text for page ${task.index + 1}`);
         const page = pages[task.index];
         const existing = String(page?.text ?? "");
@@ -390,7 +409,7 @@ export class Manager {
       }
       const written = await writeOutput(outPath, pages, {
         counts: reply.counts, source: job.filename ?? reply.filename ?? "",
-        includeText: job.includeText === true,
+        includeText: job.includeText === true, owner,
       });
       const ocrPages = scanned.map((index) => index + 1);
       note(reply.provenance, { ocr: { pages: ocrPages } });
@@ -401,83 +420,67 @@ export class Manager {
     }
   }
 
-  async _dispatchOcr(payload, count) {
+  async #dispatchOcr(payload, count, owner) {
     const lane = "ocr";
-    const previous = this.laneTails[lane];
+    const previous = this.#laneTails[lane];
     let releaseLane;
     const laneDone = new Promise((resolve) => { releaseLane = resolve; });
-    this.laneTails[lane] = previous.catch(() => {}).then(() => laneDone);
+    this.#laneTails[lane] = previous.catch(() => {}).then(() => laneDone);
     await previous.catch(() => {});
     try {
-      const worker = this._worker(lane);
-      const id = ++this.seq;
-      const budget = ocrTimeoutMs(count);
-      const reply = await new Promise((resolve, reject) => {
-        const timer = setTimeout(() => {
-          this.pending.delete(id);
-          reject(new Error(`ocr worker exceeded ${budget} ms`));
-          if (this.workers[lane] === worker) this.workers[lane] = null;
-          worker.terminate().catch(() => {});
-        }, budget);
-        timer.unref();
-        this.pending.set(id, { resolve, reject, lane, timer });
-        try {
-          worker.postMessage({ id, ...payload });
-        } catch (error) {
-          clearTimeout(timer);
-          this.pending.delete(id);
-          reject(error);
-        }
-      });
+      const reply = await this.#submit(lane, payload, ocrTimeoutMs(count), owner);
       return reply.result;
     } finally {
       releaseLane();
     }
   }
 
-  async dispatchImages(files) {
+  async dispatchImages(files, options = {}) {
+    const owner = ownerAccess(options);
     if (!Array.isArray(files) || files.length === 0) return [];
-    return (await this._dispatchOcr({ op: "ocr-images", files }, files.length)) ?? [];
+    return (await this.#dispatchOcr({ op: "ocr-images", files }, files.length, owner)) ?? [];
   }
 
-  async startOcr() {
-    return this._dispatchOcr({ type: "init" }, 1);
+  async startOcr(options = {}) {
+    return this.#dispatchOcr({ type: "init" }, 1, ownerAccess(options));
   }
 
-  async dispatchOcrImageDetailed(data) {
-    if (!(data instanceof Uint8Array) || data.byteLength > MAX_INPUT_BYTES) {
+  async dispatchOcrImageDetailed(data, options = {}) {
+    const owner = ownerAccess(options);
+    if (!(data instanceof Uint8Array) || (!owner && data.byteLength > MAX_INPUT_BYTES)) {
       throw new Error(`OCR image must be bytes within the ${MAX_INPUT_MB} MB cap`);
     }
-    return this._dispatchOcr({ type: "ocrImageDetailed", data }, 1);
+    return this.#dispatchOcr({ type: "ocrImageDetailed", data }, 1, owner);
   }
 
   // Formatting existing text does not recover a lost font or encoding.
-  async renderPlainText({ inPath, outPath }) {
+  async renderPlainText({ inPath, outPath }, options = {}) {
+    const owner = ownerAccess(options);
     if (!inPath || !outPath || path.extname(outPath).toLowerCase() !== ".docx") {
       throw new Error("Plain text rendering requires an input file and a .docx output path");
     }
     const info = await fs.stat(inPath);
-    if (info.size > MAX_INPUT_BYTES) throw new Error(`Parser input exceeds the ${MAX_INPUT_MB} MB cap`);
+    if (!owner && info.size > MAX_INPUT_BYTES) throw new Error(`Parser input exceeds the ${MAX_INPUT_MB} MB cap`);
     const bytes = await fs.readFile(inPath);
-    if (bytes.byteLength > MAX_INPUT_BYTES) throw new Error(`Parser input exceeds the ${MAX_INPUT_MB} MB cap`);
+    if (!owner && bytes.byteLength > MAX_INPUT_BYTES) throw new Error(`Parser input exceeds the ${MAX_INPUT_MB} MB cap`);
     const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-    return writeOutput(outPath, [{ text }], { source: path.basename(inPath) });
+    return writeOutput(outPath, [{ text }], { source: path.basename(inPath), owner });
   }
 
-  async run(jobs, caller = "site") {
+  async run(jobs, caller = "site", options = {}) {
     const out = [];
-    for (const job of jobs) out.push(await this.dispatch(job, caller));
+    for (const job of jobs) out.push(await this.dispatch(job, caller, options));
     return out;
   }
 
   async close() {
-    for (const entry of this.pending.values()) {
+    for (const entry of this.#pending.values()) {
       clearTimeout(entry.timer);
       entry.reject(new Error("Parser manager is shutting down"));
     }
-    this.pending.clear();
-    const live = Object.values(this.workers).filter(Boolean);
-    this.workers = { extract: null, ocr: null };
+    this.#pending.clear();
+    const live = Object.values(this.#workers).filter(Boolean);
+    this.#workers = { extract: null, ocr: null, ownerExtract: null, ownerOcr: null };
     await Promise.all(live.map((w) => w.terminate()));
   }
 }

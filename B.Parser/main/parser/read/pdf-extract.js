@@ -3,7 +3,7 @@ import fs from "node:fs";
 import zlib from "node:zlib";
 import { ValueError, pyTruthy, pyInt, pyFloat, fromHexStrict, pyStripBytes } from "../core/pylib.js";
 import { loadMapJson, mapNameForPath } from "../core/json-map.js";
-import { MAX_PAGES, positiveLimit } from "../core/limits.js";
+import { MAX_PAGES, OWNER_PARSER_WORKER, resourceLimit } from "../core/limits.js";
 import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../codepage/registry.js";
 import { containsMyanmar } from "../text/detector.js";
 import {
@@ -15,15 +15,16 @@ import { readPageContent } from "./pdf-content-stream.js";
 import { PageImageCollector } from "./pdf-image-coverage.js";
 
 
-export const MAX_STREAM_MB = positiveLimit("PRASER_MAX_STREAM_MB", 128, 512);
-export const MAX_PDF_OBJECTS = positiveLimit("PRASER_MAX_OBJECTS", 250_000, 10_000_000);
+export const MAX_STREAM_MB = resourceLimit("PRASER_MAX_STREAM_MB", 128, 512);
+export const MAX_PDF_OBJECTS = resourceLimit("PRASER_MAX_OBJECTS", 250_000, 10_000_000);
 
 
 export function zlibDecompressCapped(buf, limitMb = null) {
   const limit = (limitMb === null ? MAX_STREAM_MB : limitMb) * 1024 * 1024;
   if (buf.length === 0) return Buffer.alloc(0);
   try {
-    const out = zlib.inflateSync(buf, { maxOutputLength: limit + (1 << 20) });
+    const options = Number.isFinite(limit) ? { maxOutputLength: limit + (1 << 20) } : undefined;
+    const out = zlib.inflateSync(buf, options);
     if (out.length > limit) {
       throw new ValueError(`decompressed stream exceeds ${MAX_STREAM_MB} MB cap (decompression bomb?)`);
     }
@@ -31,6 +32,7 @@ export function zlibDecompressCapped(buf, limitMb = null) {
   } catch (e) {
     if (e instanceof ValueError) throw e;
     if (e && (e.code === "ERR_BUFFER_TOO_LARGE" || /maxOutputLength|buffer too large/i.test(String(e.message)))) {
+      if (!Number.isFinite(limit)) throw e;
       throw new ValueError(`decompressed stream exceeds ${MAX_STREAM_MB} MB cap (decompression bomb?)`);
     }
 
@@ -130,7 +132,7 @@ export function getStream(objects, num, gen = 0) {
     try {
       return zlibDecompressCapped(b);
     } catch (e) {
-      if (e instanceof ValueError) throw e;
+      if (e instanceof ValueError || e?.code === "ERR_BUFFER_TOO_LARGE") throw e;
       return null;
     }
   }
@@ -330,12 +332,12 @@ function* cmapTokens(body) {
 
 
 
-const MAX_BFRANGE_CODES = 0x10000;
+const MAX_BFRANGE_CODES = OWNER_PARSER_WORKER ? Infinity : 0x10000;
 
 
 
 
-const MAX_TOUNICODE_ENTRIES = 1 << 20;
+const MAX_TOUNICODE_ENTRIES = OWNER_PARSER_WORKER ? Infinity : (1 << 20);
 
 function incrementBigEndian(bytes) {
   for (let i = bytes.length - 1; i >= 0; i -= 1) {
