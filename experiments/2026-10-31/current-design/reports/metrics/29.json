@@ -1,0 +1,124 @@
+{
+  "case": "29",
+  "path": "pdfs/selected-pdfs/applied-hvac-system-in-marine-offshore-1703603560839.pdf",
+  "blob": "7ee4935125705dd48db4147cc8ba044b92f4a3bb",
+  "source_bytes": 10838781,
+  "source_pages": 154,
+  "selected_pages": 10,
+  "mode": "vector-text-default",
+  "sample_render_match": true,
+  "full_source": {
+    "original_pages": 154,
+    "read_ms": 5.02,
+    "decrypt_or_expand_ms": 1.05,
+    "setup_ms": 112.01,
+    "first_page_ms": 3.86,
+    "all_page_ms": 147.49,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {
+      "pageFontResources": {
+        "calls": 20,
+        "ms": 1.34
+      },
+      "tounicodeOf": {
+        "calls": 8,
+        "ms": 2.09
+      },
+      "reversedFontCmap": {
+        "calls": 8,
+        "ms": 4.23
+      },
+      "cidToGid": {
+        "calls": 4,
+        "ms": 0.03
+      }
+    },
+    "decisions": {
+      "aligned": 1,
+      "unaligned-unknown": 5,
+      "legacy": 4
+    },
+    "paths": {
+      "zawgyi-one": 6,
+      "legacy": 4
+    },
+    "warnings": {
+      "encoding-order-needs-review": 5
+    },
+    "chars": 8525,
+    "myanmar": 3966,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 1,
+    "image_placements": 3,
+    "prefix_warnings": 0
+  },
+  "full_source_over_default_input_limit": false,
+  "sample": {
+    "original_pages": 10,
+    "read_ms": 0.21,
+    "decrypt_or_expand_ms": 0.05,
+    "setup_ms": 12.75,
+    "first_page_ms": 0.6,
+    "all_page_ms": 84.41,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {},
+    "decisions": {
+      "aligned": 1,
+      "unaligned-unknown": 5,
+      "legacy": 4
+    },
+    "paths": {
+      "zawgyi-one": 6,
+      "legacy": 4
+    },
+    "warnings": {
+      "encoding-order-needs-review": 5
+    },
+    "chars": 8525,
+    "myanmar": 3966,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 1,
+    "image_placements": 3,
+    "prefix_warnings": 0
+  },
+  "sample_vs_original_differences": [],
+  "manager_ms": 1003.92,
+  "manager_pages": 10,
+  "manager_counts": {
+    "ZAWGYI": 0,
+    "UNICODE": 0,
+    "UNKNOWN": 10
+  },
+  "output_path": "/home/user/.cache/parser-eye/trash-broad/results/29.pdf",
+  "output_bytes": 220555,
+  "encoding_path": "wininnwa",
+  "page_warnings": [
+    {
+      "code": "encoding-order-needs-review",
+      "page": 2
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 6
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 7
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 8
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 10
+    }
+  ],
+  "linearization_warning": null,
+  "manager_text_matches_sample": true,
+  "status": "ok"
+}

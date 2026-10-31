@@ -1,0 +1,51 @@
+Unicode grammar and raw PDF alignment
+
+The mmgrammar table in tools-box/js/scripts.db contains 66 sections and 15
+chapter labels, including material beyond the PDFs used in earlier reviews.
+It has no PDF page numbers. mmgrammar-unicode.txt is the HTML-stripped export;
+Myanmar code points are not normalized. Section identifiers are database IDs,
+not PDF page numbers. The database itself was opened read-only.
+
+The candidate JSON files record raw font SHA-256, byte window, PDF page, source
+section, chapter, full source paragraph and matched visual-order text. The
+matcher removes whitespace and uses previously mapped neighboring bytes to
+find source paragraphs, applying only the confirmed leading-slot patterns for
+ေ, ြ and ျ. Chapters are never assigned to pages by position. Repeated or
+partial matches, version differences and inherited provisional anchors can
+produce misleading candidates; counts are distinct raw windows, not proof or
+independent observations. These reports were generated against the pre-review
+maps, whose exact SHA-256 values are recorded in each file. Page-stream analysis
+omits Form XObjects. No OCR, outlines, or runtime ToUnicode mapping was used.
+
+Examples reviewed against complete source context (all remain provisional):
+
+WinInnwa book 2 /F4:
+  43 = ဤ, section 35, PDF page 13: ဤပါဠိသက်နာမ်
+  5A = ြ, section 8, PDF page 7: ကြက်၊ ကြောက်၊ ကြိုက်။
+  67 = ့, section 36, PDF page 20: သန့်ရှင်းရေး
+  45 is NOT mapped unconditionally: ၄ in section 8 / PDF page 6, but ၎
+     in ၎င်းတို့, section 34 / PDF page 38. Both contexts are retained.
+  Book 1 3B and book 2 2E also show source contexts for both ဉ and ဥ;
+     book 2 21 shows contexts for both ဝ and ၀. Do not collapse these pairs.
+
+Ayar (font-subset SHA-256 in the map):
+  /TT35 26 = န, section 6, PDF page 160: ဓနိတ
+  /TT41 6D = ္စ, section 31, PDF page 218: ပစ္စည်း
+  /TT41 7C = ္ပ, section 39, PDF page 245: ပစ္စုပ္ပန်
+  /TT49 3E = ္ခ, section 11, PDF page 298: နက္ခတ်
+  /TT49 58 = ဏ္ဌ, section 11, PDF page 299: သဏ္ဌာန်
+
+The Ayar 6D and 7C writer choices are restricted to the observed repeated
+upper consonants; 3E is restricted to the observed က upper consonant. /TT41
+6D also occurs twice after another byte: that observation is retained, not
+assumed to authorize the same writer glyph after a different upper consonant.
+Flagged or otherwise ambiguous marks remain separate from the direct 1:1 map.
+The remaining candidate matches were not promoted automatically.
+
+Reproduce using the tracked extractor and a selected map, for example:
+  python tools-box/python/export-mmgrammar.py --output mmgrammar-unicode.txt
+  python tools-box/python/wininnwa-raw-runs.py --map B.Parser/main/parser/jason-map/ayar-raw-byte-map.json Junk/Parser/upload/pdf/mm-grammar.pdf > ayar-runs.json
+  python tools-box/python/align-mmgrammar.py B.Parser/main/parser/jason-map/ayar-raw-byte-map.json ayar-runs.json ayar-candidates.json
+
+The raw readers and encoders remain partial and are not wired as the production
+migration path. These observations do not establish complete coverage.

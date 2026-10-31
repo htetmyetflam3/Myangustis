@@ -1,0 +1,84 @@
+Requested ZawCode glyph IDs: source words and raw contexts
+
+Source PDF: ယဲ့နင် စာစဉ် a ၁.merged.merged.pdf
+Physical PDF page numbers are 1-based. The numbers below are hexadecimal
+glyph IDs, not Unicode code points. Raw sequences come from page streams
+before ToUnicode; target Unicode values are NOT assigned by this report.
+These examples were transcribed from their PDF context. Other draft glyph
+labels are provisional. The scan covers the 11 exact profiled Myanmar3
+font subsets and excludes other fonts and Form XObjects.
+
+Pages: 4414 total; 3580 with profiled text.
+Counts below are raw shown-glyph occurrences, not accuracy measurements.
+
+00F2: 3 occurrences on 3 pages
+  PDF page 1389: အိန္ဒြေ
+    raw: 008A 00E0 00E4 00F2 0108 00D0
+    font SHA-256: 8b774c49ff7563318c1c1eb0c6f9123c3c6397dfbc55d6ad8ceef38f2d576324
+  PDF page 1831: ဣန္ဒြေ
+    raw: 008B 00E4 00F2 0108 00D0
+    font SHA-256: 9d53847bc7c805162c2ca2db536f61a9dce73fab1aec52633cdf881f18d38158
+  PDF page 2085: another occurrence, with a different raw stack:
+    raw: 008A 00E0 00E4 00F2 007B 00D2
+    font SHA-256: 0e3cc455b4bb1a8acdaa2ab0465ce767ada27e6bab092a9b56e4bf6083295260
+    This stack is not silently rewritten to match pages 1389 and 1831.
+
+00F3: 0 occurrences on 0 pages
+  No occurrence in the profiled Myanmar3 page streams.
+
+00F5: 732 occurrences on 486 pages
+  PDF page 19: ချွင်းချက်
+    raw: 006A 00F5 006D 00E9 00E8 006A 00EA 0069 00E9
+    font SHA-256: 5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9
+  PDF page 56: ဆူးချွန်
+    raw: 006F 00E3 00E8 006A 00F5 007D 00E9
+    font SHA-256: 5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9
+  PDF page 129: ကျွန်တော်
+    raw: 0069 00F5 007D 00E9 00E4 0079 00DF 00E9
+    font SHA-256: 5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9
+  PDF page 151: ကျွမ်းကျင်
+    raw: 0069 00F5 0082 00E9 00E8 0069 00EA 006D 00E9
+    font SHA-256: 5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9
+
+00F9: 0 occurrences on 0 pages
+  No occurrence in the profiled Myanmar3 page streams.
+
+0100: 0 occurrences on 0 pages
+  No occurrence in the profiled Myanmar3 page streams.
+
+0101: 278 occurrences on 246 pages
+  PDF page 43: ညှိတွယ်
+    raw: 0073 0101 00E0 0079 00EB 0083 00E9
+    font SHA-256: 5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9
+  PDF page 62: မြှင့်တင်
+    raw: 00EE 0082 0101 006D 00E7 00E9 0079 006D 00E9
+    font SHA-256: 5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9
+  PDF page 112: ညှင်းပန်း
+    raw: 0073 0101 006D 00E9 00E8 007E 007D 00E9 00E8
+    font SHA-256: 5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9
+
+Supplemental Unicode-source examples — NOT observed PDF glyph streams
+
+The following are genuine existing Unicode source entries shaped through
+one of the embedded Myanmar3 fonts with HarfBuzz 0.57.0. Their glyph IDs
+were generated for this report, not found on a PDF page. They are offered
+for context only; they do not establish a unique inverse mapping.
+Embedded-font SHA-256: 0e3cc455b4bb1a8acdaa2ab0465ce767ada27e6bab092a9b56e4bf6083295260
+
+  00F3: တ္တြာ — a Pali syllable, not a complete word.
+    Source: tools-box/js/scripts.db, pali_syllables row 420.
+    Generated glyph IDs: 00F3 0079 00CE 00DF
+
+  0100: တာဝတိံ — Pali example in the original Unicode grammar.
+    Source: tools-box/js/scripts.db, mmgrammar row 5;
+    also mmgrammar-unicode.txt, line 568.
+    Generated glyph IDs: 0079 00DF 0086 0079 0100
+
+No confirmed full word for 00F3 or source-word example for 00F9 was found.
+The existing draft has provisional multiple-code-point values for 00F5,
+00F9 and 0100; this report does not confirm or change those values.
+
+Full raw windows, page lists and font SHA-256 values:
+  zawcode-requested-gid-contexts.json
+Reproduce the raw page-stream scan:
+  python tools-box/python/zawcode-gid-contexts.py 'Junk/Parser/upload/pdf/ယဲ့နင် စာစဉ် a ၁.merged.merged.pdf' --gids F2 F3 F5 F9 100 101 --output Junk/Parser/upload/analysis/zawcode-requested-gid-contexts.json

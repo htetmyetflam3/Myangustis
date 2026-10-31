@@ -1,0 +1,93 @@
+{
+  "case": "17",
+  "path": "pdfs/selected-pdfs/1706118392082.pdf",
+  "blob": "511605b39a772c4d5e0d6e18424f2f225b123092",
+  "source_bytes": 883860,
+  "source_pages": 82,
+  "selected_pages": 10,
+  "mode": "vector-text-default",
+  "sample_render_match": true,
+  "full_source": {
+    "original_pages": 82,
+    "read_ms": 0.22,
+    "decrypt_or_expand_ms": 0.14,
+    "setup_ms": 33.21,
+    "first_page_ms": 37.16,
+    "all_page_ms": 192.55,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {
+      "pageFontResources": {
+        "calls": 20,
+        "ms": 1.53
+      },
+      "reversedFontCmap": {
+        "calls": 18,
+        "ms": 2.75
+      },
+      "tounicodeOf": {
+        "calls": 18,
+        "ms": 3.02
+      }
+    },
+    "decisions": {
+      "rabbit": 1,
+      "legacy": 9
+    },
+    "paths": {
+      "zawgyi-one": 1,
+      "legacy": 9
+    },
+    "warnings": {},
+    "chars": 13446,
+    "myanmar": 10998,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 0,
+    "image_placements": 443,
+    "prefix_warnings": 0
+  },
+  "full_source_over_default_input_limit": false,
+  "sample": {
+    "original_pages": 10,
+    "read_ms": 0.09,
+    "decrypt_or_expand_ms": 0.02,
+    "setup_ms": 7.11,
+    "first_page_ms": 5.1,
+    "all_page_ms": 118.4,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {},
+    "decisions": {
+      "rabbit": 1,
+      "legacy": 9
+    },
+    "paths": {
+      "zawgyi-one": 1,
+      "legacy": 9
+    },
+    "warnings": {},
+    "chars": 13446,
+    "myanmar": 10998,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 0,
+    "image_placements": 443,
+    "prefix_warnings": 0
+  },
+  "sample_vs_original_differences": [],
+  "manager_ms": 993.53,
+  "manager_pages": 10,
+  "manager_counts": {
+    "ZAWGYI": 1,
+    "UNICODE": 9,
+    "UNKNOWN": 0
+  },
+  "output_path": "/home/user/.cache/parser-eye/trash-broad/results/17.pdf",
+  "output_bytes": 222427,
+  "encoding_path": null,
+  "page_warnings": [],
+  "linearization_warning": null,
+  "manager_text_matches_sample": true,
+  "status": "ok"
+}

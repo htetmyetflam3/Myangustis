@@ -1,0 +1,2025 @@
+Ayar: raw font-subset mapping review
+
+Status: partial and not wired as a production replacement. Raw page content streams only; Form XObjects are not covered.
+Some direct values are offline ToUnicode seeds; their meanings are not automatically verified. User-confirmed values are identified separately.
+Context-supported values are provisional. Dictionary matches can overlap or occur inside longer words; they may inherit other provisional slot values.
+Counts below are raw-byte occurrences, not independent words. Raw windows have not been reordered. Pre-base marks may legitimately have orphan flags.
+The decoder skips ToUnicode at runtime; the reports do not establish complete coverage or writing-shape rules.
+
+==============================================================================
+mm-grammar.pdf /TT2 (EHUJNE+Arlarwade)
+SHA-256: 3a59ab947871b19d1eaaebc827995f2eb13177771af040c03436e5425392350f
+Direct entries: 47; review resolutions: 6; unresolved byte slots: 36
+
+CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
+  21 = 'ြ'  မြန်မာသဒ္ဒါ / 21 2C 2F 24 2C 27 2B 40 51 52 (page 3)
+  24 = '်'  candidate window ခင် / 43 28 24 (page 2)
+  27 = 'ာ'  မြန်မာသဒ္ဒါ / 21 2C 2F 24 2C 27 2B 40 51 52 (page 3)
+  2F = 'န'  မြန်မာသဒ္ဒါ / 21 2C 2F 24 2C 27 2B 40 51 52 (page 3)
+  51 = '္ဒ'  မြန်မာသဒ္ဒါ / 21 2C 2F 24 2C 27 2B 40 51 52 (page 3)
+  52 = 'ါ'  မြန်မာသဒ္ဒါ / 21 2C 2F 24 2C 27 2B 40 51 52 (page 3)
+
+UNRESOLVED (the legacy output is not an answer):
+  25: occurrences=88; old output='ေ'; unresolved
+    page 1: 21 22 23 24 [25] 26 27 28 24 29 2A 2B 2C
+    page 1: 27 30 31 2A 28 24 28 32 [25] 2E 27 24
+    page 1: 22 23 27 [25] 33 34 35 2F 24 36 37 38
+  2A: occurrences=102; old output='ု'; unresolved
+    page 1: 23 24 25 26 27 28 24 29 [2A] 2B 2C 2D 2E 21 2C 2F 24
+    page 1: 21 2C 2F 24 2C 27 30 31 [2A] 28 24 28 32 25 2E 27 24
+    page 2: 40 [2A] 2E 31 41 3A 36 37 31 2C
+  2D: occurrences=1; old output='္မ'; multiple code points
+    page 1: 26 27 28 24 29 2A 2B 2C [2D] 2E 21 2C 2F 24 2C 27 30
+  30: occurrences=44; old output='န'; multiple observed bytes share this output
+    page 1: 2D 2E 21 2C 2F 24 2C 27 [30] 31 2A 28 24 28 32 25 2E
+    page 2: 31 41 3A 36 37 31 2C 24 [30] 42 31 22 24 21 43 28 24
+    page 2: 44 45 46 47 48 43 2A [30] 42 29 24 49 4A 2C 2E 24
+  31: occurrences=110; old output='ိ'; unresolved
+    page 1: 2E 21 2C 2F 24 2C 27 30 [31] 2A 28 24 28 32 25 2E 27
+    page 2: 40 2A 2E [31] 41 3A 36 37 31 2C 24 30
+    page 2: 40 2A 2E 31 41 3A 36 37 [31] 2C 24 30 42 31 22 24 21
+  32: occurrences=36; old output='ံ'; unresolved
+    page 1: 2C 27 30 31 2A 28 24 28 [32] 25 2E 27 24
+    page 2: 2A 4B 24 2C 4F 27 34 22 [32] 2A 30 42 31 22 24 2E 31
+    page 3: 49 4A 2C 3D 2C 24 34 2C [32] 2E 23 24 34 21 3B 2E 24
+  33: occurrences=56; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 1: 22 23 27 25 [33] 34 35 2F 24 36 37 38 34
+    page 2: 3A 2A 22 24 25 [33] 4A 48 4A 47 45 45 45
+    page 2: 24 2E 31 2A 37 24 49 4A [33] 2F 24 37 2A 2F 24 2E 3D
+  34: occurrences=143; old output='း'; unresolved
+    page 1: 22 23 27 25 33 [34] 35 2F 24 36 37 38 34 39
+    page 1: 33 34 35 2F 24 36 37 38 [34] 39 27 2F
+    page 1: 27 3A 3B 3C 3D 3E 3F 38 [34] 29 38 34 39 27 2F
+  35: occurrences=55; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 1: 22 23 27 25 33 34 [35] 2F 24 36 37 38 34 39 27
+    page 3: 31 22 24 26 2A 2E 24 25 [35] 43 3C 55 22 52 2B 23 24
+    page 3: 3B 2E 24 26 2A 2E 24 25 [35] 33 2F 24 4A 29 38 29 3F
+  36: occurrences=18; old output='ြ'; unresolved
+    page 1: 23 27 25 33 34 35 2F 24 [36] 37 38 34 39 27 2F
+    page 2: 40 2A 2E 31 41 3A [36] 37 31 2C 24 30 42 31 22
+    page 3: 40 2A 2E 31 41 3A [36] 37 31 2C 24 49 4A 2C 3D
+  38: occurrences=19; old output='ီ'; unresolved
+    page 1: 25 33 34 35 2F 24 36 37 [38] 34 39 27 2F
+    page 1: 29 27 3A 3B 3C 3D 3E 3F [38] 34 29 38 34 39 27 2F
+    page 1: 3B 3C 3D 3E 3F 38 34 29 [38] 34 39 27 2F
+  3C: occurrences=39; old output='ဲ'; unresolved
+    page 1: 2F 24 2C 27 29 27 3A 3B [3C] 3D 3E 3F 38 34 29 38 34
+    page 2: 2F 24 2C 27 29 27 3A 3B [3C] 3D 3E 3F 38 34 29 38 34
+    page 3: 2F 24 2C 27 29 27 3A 3B [3C] 3D 3E 2B 23 24 4A 21 2C
+  3D: occurrences=54; old output='ွ'; unresolved
+    page 1: 24 2C 27 29 27 3A 3B 3C [3D] 3E 3F 38 34 29 38 34 39
+    page 2: 24 2C 27 29 27 3A 3B 3C [3D] 3E 3F 38 34 29 38 34 39
+    page 2: 33 2F 24 37 2A 2F 24 2E [3D] 28 24 4A 50 31 2A 37 24
+  3E: occurrences=18; old output='့'; unresolved
+    page 1: 2C 27 29 27 3A 3B 3C 3D [3E] 3F 38 34 29 38 34 39 27
+    page 2: 2C 27 29 27 3A 3B 3C 3D [3E] 3F 38 34 29 38 34 39 27
+    page 3: 2C 27 29 27 3A 3B 3C 3D [3E] 2B 23 24 4A 21 2C 2F 24
+  42: occurrences=79; old output='ှ'; unresolved
+    page 2: 41 3A 36 37 31 2C 24 30 [42] 31 22 24 21 43 28 24 34
+    page 2: 44 45 46 47 48 43 2A 30 [42] 29 24 49 4A 2C 2E 24 4B
+    page 2: 2C 4F 27 34 22 32 2A 30 [42] 31 22 24 2E 31 2A 37 24
+  45: occurrences=34; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 2: 44 [45] 46 47 48 43 2A 30 42 29
+    page 2: 22 24 25 33 4A 48 4A 47 [45] 45 45
+    page 2: 24 25 33 4A 48 4A 47 45 [45] 45
+  4C: occurrences=5; old output='ူ'; unresolved
+    page 2: 29 38 34 39 27 2F 4A 2C [4C] 22 31 2A 28 24 21 3B 29
+    page 3: 25 37 4F 27 28 24 34 2B [4C] 2C 4F 27 34 3A 37 4F 58
+    page 4: 31 2A 4A 4B 3D 41 24 37 [4C] 29 3D 27 4A 25 4B 55 4B
+  4E: occurrences=1; old output='္က'; multiple code points
+    page 2: 2E 37 [4E] 2B 31 2A 4B 24 2C 4F 27
+  4F: occurrences=96; old output='ျ'; unresolved
+    page 2: 37 4E 2B 31 2A 4B 24 2C [4F] 27 34 22 32 2A 30 42 31
+    page 3: 22 24 21 3B 2F 24 56 43 [4F] 31 43 3C 55 25 2B 27 4A
+    page 3: 29 27 3A 2A 22 24 2C [4F] 27 34 2B 23 24 4A 21 22
+  50: occurrences=6; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 2: 2A 2F 24 2E 3D 28 24 4A [50] 31 2A 37 24 30 42 31 22
+    page 5: 39 27 2F 24 49 4A 37 [50] 31 2A 5E 24 34 49 4A 22
+    page 6: 22 2A 40 24 [50] 31 2A 34
+  55: occurrences=21; old output='့'; unresolved
+    page 3: 26 2A 2E 24 25 35 43 3C [55] 22 52 2B 23 24 4D 4A 41
+    page 3: 2F 24 56 43 4F 31 43 3C [55] 25 2B 27 4A 21 2C 2F 24
+    page 3: 3B 29 24 2B 21 3B 28 24 [55] 4A 25 37 4F 27 28 24 34
+  56: occurrences=7; old output='့'; unresolved
+    page 3: 42 31 22 24 21 3B 2F 24 [56] 43 4F 31 43 3C 55 25 2B
+    page 3: 31 42 22 24 21 3B 2F 24 [56] 43 4F 31 29 3F 24 37 4A
+    page 4: 27 29 27 3A 5B 3D 2F 24 [56] 33 42 23
+  57: occurrences=1; old output='ြ'; unresolved
+    page 3: 22 2E 24 4B 22 24 25 2F [57] 22 38 4A 21 3B 29 24 2B
+  58: occurrences=17; old output='ု'; unresolved
+    page 3: 4C 2C 4F 27 34 3A 37 4F [58] 31 34 28 42 27
+    page 4: 51 52 3A 25 21 43 21 22 [58] 37 4F 2C 24 34 37 31 2A
+    page 4: 38 34 29 3D 27 4A 21 22 [58] 29 2A 43 3C 55 22 52 2B
+  59: occurrences=1; old output='ျွ'; unresolved
+    page 3: 22 52 37 24 49 4A 3A 43 [59] 2E 24 3A 25 43 4F 27 24
+  66: occurrences=20; old output='ြ'; unresolved
+    page 5: 3A 25 [66] 37 27 28 24 34 3A 33 27
+    page 6: 3A 25 [66] 37 27 28 24 34 3A 33 27
+    page 7: 3A 25 [66] 37 27 28 24 34 3A 33 27
+  67: occurrences=5; old output='္ခ'; multiple code points
+    page 5: 3A 37 [67] 33 27
+    page 5: 6A 4F 23 24 34 3A 37 [67] 33 27 4A 62 4A 2C 4F 58
+    page 5: 21 2C 2F 24 2C 27 3A 37 [67] 33 27
+  69: occurrences=4; old output='င်္'; unresolved
+    page 5: 28 24 34 21 22 2B 25 37 [69] 2E
+    page 6: 35 52 29 68 [69]
+    page 7: 35 52 29 68 [69] 5F 31 2A 28 24 33 27 2B
+  6B: occurrences=19; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 5: [6B] 4D
+    page 5: 44 [6B] 46
+    page 5: 44 61 [6B]
+  73: occurrences=1; old output='ှု'; unresolved
+    page 6: 22 27 28 24 34 4B 3C 2C [73]
+  74: occurrences=4; old output='္စ'; multiple code points
+    page 6: 22 29 [74] 23 24 34 25 33 27 22 2A
+    page 7: 22 29 [74] 23 24 34 49 4A 2F 27 2C
+    page 7: 49 4A 2F 27 2C 24 22 29 [74] 23 24 34
+  75: occurrences=2; old output='ွှ'; unresolved
+    page 6: 3A 23 [75] 2F 24 34 2F 27 2C 35 31
+    page 6: 2F 30 42 28 24 55 3A 23 [75] 2F 24 34 2F 27 2C 24 29
+  76: occurrences=3; old output='္ဗ'; multiple code points
+    page 6: 2B 2C [76] 30 77
+    page 6: 52 37 4F 5F 37 24 2B 2C [76] 30 77 30 42 28 24 55 2F
+    page 7: 2B 2C [76] 30 77
+  77: occurrences=3; old output='္ဓ'; multiple code points
+    page 6: 2B 2C 76 30 [77]
+    page 6: 4F 5F 37 24 2B 2C 76 30 [77] 30 42 28 24 55 2F 27 2C
+    page 7: 2B 2C 76 30 [77]
+  78: occurrences=11; old output='ဏ္ဍ'; multiple code points
+    page 7: 28 24 55 35 52 37 4F 37 [78]
+    page 7: 35 52 37 4F 37 [78]
+    page 7: 2C 42 38 35 52 37 4F 37 [78]
+  79: occurrences=1; old output='္ပ'; multiple code points
+    page 7: 3A 2F 37 24 3A 5B 31 22 [79] 27 41 24
+
+==============================================================================
+mm-grammar.pdf /TT6 (RNKHKA+Arlarwade)
+SHA-256: 164ab2dc98515900ba126fe7043f0fa455ed0472f32a68fbce5d41a6565584fb
+Direct entries: 56; review resolutions: 2; unresolved byte slots: 50
+
+CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
+  2F = 'ာ'  candidate window သာဓက / 2C 2F 3E 35 (page 9)
+  7D = '္စ'  သစ္စာ / 2C 46 7D 2F (page 17)
+    Some occurrences follow other preceding bytes; do not infer that the same writing glyph is valid for a different upper consonant.
+
+UNRESOLVED (the legacy output is not an answer):
+  24: occurrences=183; old output='ဲ'; unresolved
+    page 9: 22 23 [24] 25 26 21 27 26 22 28 29
+    page 9: 3B 34 35 2F 32 2A 2B 36 [24] 33 26 3B 3F 28 53 29 2A
+    page 9: 2C 2D 35 38 39 26 22 46 [24]
+  25: occurrences=5; old output='ွ'; unresolved
+    page 9: 22 23 24 [25] 26 21 27 26 22 28 29 2A
+  29: occurrences=1213; old output='န'; multiple observed bytes share this output
+    page 9: 24 25 26 21 27 26 22 28 [29] 2A 2B 26 21
+    page 9: [29] 2F 2B 30 31 32 2A 33 26
+    page 9: 23 46 2A 3B [29]
+  2A: occurrences=6526; old output='်'; unresolved
+    page 9: 25 26 21 27 26 22 28 29 [2A] 2B 26 21
+    page 9: 29 2F 2B 30 31 32 [2A] 33 26 34 35 2F 2B 2C 36
+    page 9: 3A 39 26 3B 28 3C 2C 3D [2A] 2E
+  2B: occurrences=2911; old output='း'; unresolved
+    page 9: 26 21 27 26 22 28 29 2A [2B] 26 21
+    page 9: 29 2F [2B] 30 31 32 2A 33 26 34 35
+    page 9: 31 32 2A 33 26 34 35 2F [2B] 2C 36 37 35 38 39 26
+  2D: occurrences=435; old output='ံ'; unresolved
+    page 9: 22 2C [2D]
+    page 9: 22 2C [2D] 26
+    page 9: 2E 26 26 2E 26 3F 40 2C [2D] 27 26 3B 28
+  30: occurrences=1113; old output='ြ'; unresolved
+    page 9: 29 2F 2B [30] 31 32 2A 33 26 34 35 2F
+    page 9: 26 22 2C 2D 22 3B [30] 36 2F 35 2A 22 30 36 2F
+    page 9: 22 3B 30 36 2F 35 2A 22 [30] 36 2F 2B 26 49
+  33: occurrences=675; old output='့'; unresolved
+    page 9: 29 2F 2B 30 31 32 2A [33] 26 34 35 2F 2B 2C 36 37
+    page 9: 34 35 2F 32 2A 2B 36 24 [33] 26 3B 3F 28 53 29 2A 2C
+    page 9: 2C 3D 2A [33] 26 22 2C 2D 36 45 2F 2B
+  34: occurrences=299; old output='ြ'; unresolved
+    page 9: 2F 2B 30 31 32 2A 33 26 [34] 35 2F 2B 2C 36 37 35 38
+    page 9: 46 2F 22 39 4C 2A 27 26 [34] 35 35 2A 3A 32 2A 2B 28
+    page 9: 45 2F 2B 26 30 31 46 2A [34] 35 2C 3D 2A 2E
+  37: occurrences=32; old output='ျှ'; unresolved
+    page 9: 33 26 34 35 2F 2B 2C 36 [37] 35 38 39 26
+    page 12: 22 36 3D 2A 3A 40 2C 36 [37] 35 38 39 26 29 2F 36 2A
+    page 13: 22 36 3D 2A 3A 40 2C 36 [37] 35 38 39 26 29 2F 36 2A
+  38: occurrences=2604; old output='ိ'; unresolved
+    page 9: 34 35 2F 2B 2C 36 37 35 [38] 39 26
+    page 9: 26 3B 3F 2C 2D 27 26 36 [38] 39 2B 2C 2D 27 26 41 38
+    page 9: 38 39 2B 2C 2D 27 26 41 [38] 39 32 2A 2B 2C 2D 27 26
+  39: occurrences=2246; old output='ု'; unresolved
+    page 9: 35 2F 2B 2C 36 37 35 38 [39] 26
+    page 9: 3A [39] 26 3B 28 3C 2C 3D 2A 2E
+    page 9: 3B 3F 2C 2D 27 26 36 38 [39] 2B 2C 2D 27 26 41 38 39
+  3B: occurrences=2580; old output='ေ'; unresolved
+    page 9: 3A 39 26 [3B] 28 3C 2C 3D 2A 2E
+    page 9: 2E 26 3F 40 2C 2D 27 26 [3B] 28
+    page 9: 2B 2C 2D 27 26 [3B] 3F 2C 2D 27 26 36 38 39
+  3C: occurrences=147; old output='ါ်'; unresolved
+    page 9: 3A 39 26 3B 28 [3C] 2C 3D 2A 2E
+    page 9: 3A 39 26 3B 28 [3C] 2C 3D 2A 2E 26 4F 35 27
+    page 9: 5B 4D 2F 3A 39 26 3B 28 [3C] 2C 3D 2A 2E
+  40: occurrences=402; old output='ူ'; unresolved
+    page 9: 2E 26 26 2E 26 3F [40] 2C 2D 27 26 3B 28
+    page 9: 46 2C 3D 2A 26 3F [40] 23 38 39
+    page 9: 2F 36 [40] 22 3E 38 4C
+  44: occurrences=313; old output='ီ'; unresolved
+    page 9: 3B 43 2F 2C 2D 27 26 2C [44] 28 45 32 2A 2B 2C 2D
+    page 9: 3A 32 2A 2B 28 50 2B 2C [44] 2B 27
+    page 9: 2A 2C 2D 27 26 4F 4D 52 [44] 4D 52 44 51 26 3A 40 3B
+  45: occurrences=1023; old output='ျ'; unresolved
+    page 9: 2F 2C 2D 27 26 2C 44 28 [45] 32 2A 2B 2C 2D
+    page 9: 32 2A 26 22 28 [45] 4A 38 4B
+    page 9: 2C 3D 2A 2E 26 22 28 [45] 4A 38 4B 36
+  47: occurrences=308; old output='န'; multiple observed bytes share this output
+    page 9: [47] 48 23 2A 36
+    page 9: 35 2A [47] 38 39 32 2A 2C 3D 2A 2E
+    page 10: 38 39 26 42 45 3D 2A 2B [47]
+  48: occurrences=35; old output='ှု'; unresolved
+    page 9: 47 [48] 23 2A 36
+    page 12: 29 2A 26 46 38 23 2A 3F [48] 4C 2A 4D
+    page 12: 2F 2B 35 2F 26 47 [48] 23 2A 36
+  4A: occurrences=244; old output='ု'; unresolved
+    page 9: 32 2A 26 22 28 45 [4A] 38 4B
+    page 9: 2C 3D 2A 2E 26 22 28 45 [4A] 38 4B 36
+    page 9: 30 4C [4A] 59 26 3B 4D 2B 2C 2F 2B
+  4B: occurrences=49; old output='့'; unresolved
+    page 9: 32 2A 26 22 28 45 4A 38 [4B]
+    page 9: 2A 2E 26 22 28 45 4A 38 [4B] 36
+    page 13: [4B] 47 38 39 32 2A 3B 2C 2F
+  4D: occurrences=911; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 9: 2F 43 2A [4D] 38
+    page 9: 2F 43 2A 26 36 [4D] 4E 38 3B 28 45 2E 26 4F
+    page 9: 2F 35 2A 2C 2D 27 26 4F [4D] 52 44 4D 52 44 51 26 3A
+  4E: occurrences=16; old output='ှ'; unresolved
+    page 9: 2F 43 2A 26 36 4D [4E] 38 3B 28 45 2E 26 4F 3F
+    page 9: 2F 43 2A 4D [4E] 38 3B 2C 2F 22 2C 2D 35
+    page 9: 36 [4E] 23 2A 4D 29 2A
+  50: occurrences=499; old output='ါ'; unresolved
+    page 9: 35 35 2A 3A 32 2A 2B 28 [50] 2B 2C 44 2B 27
+    page 9: 27 26 49 38 39 32 2A 4C [50] 51 26 46 2C 3D 2A 23 38
+    page 9: 4F 3B 28 [50] 3B 28 50 51 26 3A 40 3B
+  52: occurrences=8; old output='ွှ'; unresolved
+    page 9: 35 2A 2C 2D 27 26 4F 4D [52] 44 4D 52 44 51 26 3A 40
+    page 9: 2D 27 26 4F 4D 52 44 4D [52] 44 51 26 3A 40 3B 2C 2F
+    page 25: 3B 4D [52] 23 38 5E 2D 39 2C 3D 2A
+  53: occurrences=26; old output='ျွ'; unresolved
+    page 9: 2B 36 24 33 26 3B 3F 28 [53] 29 2A 2C 2D 26 46 2C 3D
+    page 14: 49 38 39 32 2A 27 26 35 [53] 24 27 26 47
+    page 15: 2B 27 26 32 50 27 26 35 [53] 29 2A 3B 23 2F 2A 27 26
+  57: occurrences=2; old output='္ပ'; multiple code points
+    page 9: 3A 39 26 22 3E 38 4C [57] 2F 43 2A 4D 2C 3D 2A 2E
+    page 12: 38 2B 78 26 22 3E 38 4C [57] 2F 43 2A 22 2C 44 2B 2C
+  5B: occurrences=16; old output='္ခ'; multiple code points
+    page 9: 22 35 [5B] 4D 2F
+    page 9: 2F 2B 2C 3D 2A 26 22 35 [5B] 4D 2F 36 45 2F 2B 30 31
+    page 9: 22 35 [5B] 4D 2F 3A 39 26 3B 28 3C
+  5D: occurrences=100; old output='င်္'; unresolved
+    page 9: 23 2A 2C 3B 35 [5D] 23 36 45 2F 2B 35 38 39
+    page 9: 23 2A 2C 3B 35 [5D] 23 36 45 2F 2B 2C 3D 2A
+    page 9: 22 36 4E 23 2A 2C 3B 35 [5D] 23 36 45 2F 2B 35 38 39
+  63: occurrences=70; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 10: 2D 39 2B 27 26 2C 32 2A [63] 38 39 2B 2C 4D 26 21 55
+    page 10: 2C 32 2A [63] 38 39 2B 2C 4D 26 21 55
+    page 10: 2C 32 2A [63] 38 39 2B 2C 4D 3A 39 26
+  6A: occurrences=14; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 10: [6A] 2E
+    page 14: [6A] 2E
+    page 15: [6A]
+  6E: occurrences=539; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 11: 3B 35 5D 23 35 38 39 26 [6E] 38 39 35 2A 28 45 3A 39
+    page 11: 27 26 54 27 26 4C 27 26 [6E] 51 26 42 45 3D 2A 2B 22
+    page 11: [6E] 38 39 35 2A 28 45 26 64
+  77: occurrences=14; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 11: 21 [77] 2E
+    page 14: 21 [77] 2E
+    page 18: 21 [77]
+  7A: occurrences=245; old output='ြ'; unresolved
+    page 12: [7A] 35 38 43 2F
+    page 12: [7A] 35 38 43 2F 6E 38 3B 2C
+    page 12: 35 38 39 26 [7A] 35 38 43 2F 3A 39 3B 28
+  7B: occurrences=44; old output='္ဗ'; multiple code points
+    page 12: 2C 36 [7B] 47 7C
+    page 12: 39 2B 35 38 39 26 2C 36 [7B] 47 7C 3A 39 26 3B 28 3C
+    page 32: 2C 36 [7B] 47 7C
+  7C: occurrences=45; old output='္ဓ'; multiple code points
+    page 12: 2C 36 7B 47 [7C]
+    page 12: 35 38 39 26 2C 36 7B 47 [7C] 3A 39 26 3B 28 3C 2C 3D
+    page 25: 36 3A 2F 42 47 [7C] 4A 3F 2C 3D 2A 26 4D 24
+  7E: occurrences=1; old output='့'; unresolved
+    page 12: 4C 2A 36 24 33 23 38 39 [7E] 78 26 22 36 3D 2A 3A 40
+  7F: occurrences=80; old output='္တ'; multiple code points
+    page 12: 2C 3D 2A 26 35 23 [7F] 2F 2B
+    page 13: 3B 36 23 [7F] 2F
+    page 13: 2F 32 2A 27 26 3B 36 23 [7F] 2F
+  80: occurrences=26; old output='္ထ'; multiple code points
+    page 13: 3D 2A 26 22 4D 2F 6E 23 [80] 4A 78 26 22 36 3D 2A 30
+    page 13: 3D 2A 26 22 4D 2F 6E 23 [80] 4A 78 22 36 3D 2A 36 45
+    page 13: 49 38 39 22 4D 2F 6E 23 [80] 4A 36 45 2F 2B 2C 3D 2A
+  81: occurrences=7; old output='္ဆ'; multiple code points
+    page 13: 2C 3D 2A 26 23 38 4D 46 [81] 2F 29 2A 78 22 36 3D 2A
+    page 13: 2C 3D 2A 26 23 38 4D 46 [81] 2F 29 2A 78 26 22 36 3D
+    page 14: 3B 2C 2F 26 23 38 4D 46 [81] 2F 29 2A 26 60 26 36 45
+  82: occurrences=110; old output='ြ'; unresolved
+    page 13: 36 32 2A 47 38 39 32 2A [82] 4C 44 2B 26 3F 35 2A 30
+    page 15: 2A 41 32 2A 33 26 3B 36 [82] 36 4A 38 4B 2C 38 39
+    page 16: 35 26 3B 36 2F 32 2A [82] 32 38 36 2A 2B 23 38 39
+  83: occurrences=41; old output='္မ'; multiple code points
+    page 15: 2C 3D 2A 26 3F 38 36 [83] 2F 3B 2C 2F 26 41 32 2A
+    page 17: 2A 2B 2C 3D 2A 3F 38 36 [83] 2F 2C 3D 2A 2E 26
+    page 17: 39 2C 3D 2A 26 3F 38 36 [83] 2F 3B 2C 2F 26 41 32 2A
+  84: occurrences=38; old output='္တ'; multiple code points
+    page 15: 36 47 [84] 3B 3F 2B
+    page 22: 36 47 [84] 3B 3F 2B 82 36 4A 38 4B
+    page 28: 2A 2B 2C 3D 2A 26 36 47 [84] 3B 3F 2B
+  85: occurrences=5; old output='ူ'; unresolved
+    page 16: 26 3B 36 2F 32 2A 30 31 [85] 35 38 39 26 22 3B 31 2F
+    page 16: 26 3B 36 2F 32 2A 30 31 [85] 35 26 3B 36 2F 32 2A 30
+    page 16: [85]
+  86: occurrences=38; old output='္လ'; multiple code points
+    page 18: 4C 39 3F [86] 38 32 2A
+    page 18: 29 4C 39 3F [86] 38 32 2A
+    page 18: 4C 39 3F [86] 38 32
+  87: occurrences=1; old output='္ဘ'; multiple code points
+    page 29: 3F 35 36 [87] 2F 2C 38 39
+  88: occurrences=1; old output='ှ'; unresolved
+    page 31: 2A 26 28 45 44 2B 30 36 [88] 32 2A 33 2C 3D 2A 2E 26
+  89: occurrences=1; old output='္က'; multiple code points
+    page 43: 2A 28 32 2A 27 26 68 35 [89] 8A 27 26 4D 4C 2A 35
+  8A: occurrences=1; old output='ဋ္ဌ'; multiple code points
+    page 43: 28 32 2A 27 26 68 35 89 [8A] 27 26 4D 4C 2A 35
+  8C: occurrences=2; old output='္ဂ'; multiple code points
+    page 44: 36 3D 2A 23 40 4C 39 5E [8C] 4A 38 3F 2A 36 45 2F 2B
+    page 44: 2A 26 49 38 39 4C 39 5E [8C] 4A 38 3F 2A 36 45 2F 2B
+
+==============================================================================
+mm-grammar.pdf /TT13 (VWCXUX+Arlarwade)
+SHA-256: b89b5fe3daba90ad860720610d39142ea965ac5a83ce889084c6c75afa9858e3
+Direct entries: 54; review resolutions: 9; unresolved byte slots: 47
+
+CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
+  2D = 'း'  candidate window ကား / 3A 38 2D (page 46)
+  35 = 'ူ'  candidate window အတူ / 23 24 35 (page 48)
+  38 = 'ာ'  candidate window စကာ / 39 3A 38 (page 46)
+  3E = 'ါ'  candidate window ပါဠိ / 3D 3E 3F 40 (page 46)
+  40 = 'ိ'  candidate window အမိ / 23 3B 40 (page 54)
+  49 = 'ျ'  candidate window အချ / 23 2A 49 (page 46)
+  4B = 'ြ'  candidate window ခြာ / 4B 2A 38 (page 48)
+  7B = '္စ'  သစ္စာ / 37 39 7B 38 (page 93)
+    Some occurrences follow other preceding bytes; do not infer that the same writing glyph is valid for a different upper consonant.
+  7C = '္မ'  လိမ္မာ / 41 40 3B 7C 38 (page 52)
+
+UNRESOLVED (the legacy output is not an answer):
+  25: occurrences=379; old output='ဲ'; unresolved
+    page 46: 23 24 [25] 26 27 28 29 27 23 2A 2B
+    page 46: 24 35 47 38 27 39 43 4C [25]
+    page 46: 52 2C 59 27 23 39 43 4C [25]
+  26: occurrences=12; old output='ွ'; unresolved
+    page 46: 23 24 25 [26] 27 28 29 27 23 2A 2B 2C
+    page 70: 2B 23 57 52 2C 59 2A 25 [26] 4B 2A 38 2D 4B 2A 52 2C
+    page 77: 52 2C 59 24 3A [26] 29 27 69 85 52 2C 59 23
+  2B: occurrences=2839; old output='န'; multiple observed bytes share this output
+    page 46: 25 26 27 28 29 27 23 2A [2B] 2C 2D 27 2E
+    page 46: 4A 4B 4C 39 2C 47 38 36 [2B] 47 38 27 4D 38 2B 2C 24
+    page 46: 38 36 2B 47 38 27 4D 38 [2B] 2C 24 35 47 38 24 35 47
+  2C: occurrences=13530; old output='်'; unresolved
+    page 46: 26 27 28 29 27 23 2A 2B [2C] 2D 27 2E
+    page 46: 2F 30 [2C]
+    page 46: 2F 30 [2C] 2F 30 2C
+  2F: occurrences=1476; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 46: [2F] 30 2C
+    page 46: [2F] 30 2C 2F 30 2C
+    page 46: 32 [2F] 30 2C 33 34 35 36 37 38
+  36: occurrences=4869; old output='ေ'; unresolved
+    page 46: 32 2F 30 2C 33 34 35 [36] 37 38 27 39 3A 38 2D 3B
+    page 46: 27 32 2F 30 3C 33 34 35 [36] 37 38 27 3D 3E 3F 40 39
+    page 46: 37 4A 4B 4C 39 2C 47 38 [36] 2B 47 38 27 4D 38 2B 2C
+  3C: occurrences=63; old output='္ဂ'; multiple code points
+    page 46: 38 27 32 2F 30 [3C] 33 34 35 36 37 38 27 3D
+    page 46: 38 32 23 2F 30 [3C] 33 34 35 36 37 38 27 3D
+    page 46: 2F 30 [3C] 69 6A
+  43: occurrences=5295; old output='ု'; unresolved
+    page 46: 23 39 [43] 27
+    page 46: 34 [43] 27 23 44 40 3D 45 38 46
+    page 46: 2C 2D 3B 49 38 2D 3A 40 [43] 27 23 37 4A 4B 4C 39 2C
+  45: occurrences=1; old output='္ပ'; multiple code points
+    page 46: 34 43 27 23 44 40 3D [45] 38 46 2C
+  47: occurrences=1959; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 46: [47] 37 42 2C 31 27 48 49 42
+    page 46: 27 23 37 4A 4B 4C 39 2C [47] 38 36 2B 47 38 27 4D 38
+    page 46: 4B 4C 39 2C 47 38 36 2B [47] 38 27 4D 38 2B 2C 24 35
+  4A: occurrences=1073; old output='ံ'; unresolved
+    page 46: 38 2D 3A 40 43 27 23 37 [4A] 4B 4C 39 2C 47 38 36 2B
+    page 46: 48 49 42 2C 2D 27 55 41 [4A] 43 2D 37 42 2C 27 4B 4C
+    page 46: 48 49 42 2C 2D 27 55 41 [4A] 43 2D 23 39 43 3A 40 43
+  4E: occurrences=140; old output='့'; unresolved
+    page 46: [4E] 4F 38 2D 37 42 2C 31 27
+    page 46: 42 2C 2D 23 2A 49 65 40 [4E] 37 42 2C 27 4B 4C 39 2C
+    page 46: [4E] 3B 47 36 2A 49 31 27 4F
+  50: occurrences=124; old output='ါ်'; unresolved
+    page 46: 2F 30 2C 34 43 27 36 2A [50] 37 42 2C 31
+    page 46: 34 43 36 2A [50] 37 42 2C 31
+    page 46: 34 43 27 36 2A [50] 37 42 2C 31 27 32 3A 29
+  56: occurrences=519; old output='ြ'; unresolved
+    page 46: 38 27 4D 38 2B 2C 24 35 [56] 3A 37 42 2C 31 27 23 39
+    page 46: 36 [56] 3A 38 52 2C 59 27 46 52
+    page 46: 39 2C 4B 2A 52 2C 2D 36 [56] 3A 38 52 2C 59 27
+  59: occurrences=1167; old output='့'; unresolved
+    page 46: 36 56 3A 38 52 2C [59] 27 46 52 2C 2D 48 49 42
+    page 46: 49 42 2C 2D 4B 4C 52 2C [59] 27 39 37 42 2C 59 2F 30
+    page 46: 52 2C 59 27 39 37 42 2C [59] 2F 30 2C 4B 4C 39 2C 4B
+  5D: occurrences=17; old output='ဋ'; multiple observed bytes share this output
+    page 46: [5D] 29 27 4D 29 27 5E 29 27
+    page 46: 29 27 39 2F 30 2C 29 27 [5D] 2F 30 2C 29 27 24 2F 30
+    page 46: 27 32 3A 29 27 39 29 27 [5D] 29
+  62: occurrences=657; old output='ီ'; unresolved
+    page 46: 23 37 [62] 2D 37 62 2D 23 3B 42 2C
+    page 46: 23 37 62 2D 37 [62] 2D 23 3B 42 2C 24
+    page 46: 27 55 27 41 4A 43 2D 39 [62] 27 3D 3E 2F 52 2C 4B 2A
+  65: occurrences=522; old output='ု'; unresolved
+    page 46: 48 49 42 2C 2D 23 2A 49 [65] 40 4E 37 42 2C 27 4B 4C
+    page 48: 2C 23 47 27 63 27 3B 49 [65] 40 2D 47 40
+    page 48: 27 36 47 74 2F 3E 2A 49 [65] 40 52 2C 29 27 36 3B 38
+  66: occurrences=188; old output='ှု'; unresolved
+    page 46: 2B 2C 27 24 35 42 62 3B [66] 3B 47 40
+    page 49: 31 27 3A 40 43 46 2C 69 [66] 24 2C
+    page 49: 43 27 56 3A 42 2C 59 7A [66] 36 4F 38 3A 2C 2A 49 52
+  69: occurrences=604; old output='န'; multiple observed bytes share this output
+    page 46: 2F 30 3C [69] 6A
+    page 46: 32 2F 30 3C [69] 27
+    page 47: 2F 30 3C [69] 6A 48 49 42 2C 2D
+  6A: occurrences=68; old output='္တ'; multiple code points
+    page 46: 2F 30 3C 69 [6A]
+    page 47: 2F 30 3C 69 [6A] 48 49 42 2C 2D
+    page 48: 3A 43 2B 2C 29 27 3B 69 [6A] 36 41 2D 29 27 75 47 38
+  6B: occurrences=40; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 46: [6B] 31
+    page 52: [6B] 31 27 3A
+    page 55: 63 [6B]
+  6E: occurrences=1; old output='ဋ'; multiple observed bytes share this output
+    page 47: [6E] 4D
+  6F: occurrences=29; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 48: 63 [6F]
+    page 48: 28 [6F] 31
+    page 58: 55 [6F]
+  70: occurrences=65; old output='ျှ'; unresolved
+    page 48: 23 3B 42 2C 34 35 37 3B [70] 3A 40 43 27 2B 38 3B 2C
+    page 49: 37 36 61 38 3B [70] 37 38 27 4B 4C 39 2C 37
+    page 49: 37 38 27 37 36 61 38 3B [70] 37 38 4B 4C 39 2C 37 42
+  71: occurrences=4; old output='္ဆ'; multiple code points
+    page 48: 41 35 29 27 24 40 47 39 [71] 38 2B 2C 29 27 39 38 23
+    page 52: 24 40 47 39 [71] 38 2B
+    page 87: 3B 74 38 2D 24 40 47 39 [71] 38 2B 2C 3B 49 38 2D 23
+  72: occurrences=1; old output='္တ'; multiple code points
+    page 48: 3A 38 2D 29 27 36 3B 24 [72] 38 29
+  74: occurrences=256; old output='ွှ'; unresolved
+    page 48: 36 47 [74] 24 40 30 4A 43 29 27 36
+    page 48: 40 30 4A 43 29 27 36 47 [74] 39 42 2C 2D 2A 4A 43 29
+    page 48: 52 3D 41 62 29 27 36 47 [74] 2F 3E 2A 49 65 40 52 2C
+  76: occurrences=123; old output='္ဓ'; multiple code points
+    page 48: 2C 29 27 3B 34 38 48 69 [76] 65 41 29 27 36 3B 38 52
+    page 48: 3B 34 38 48 69 [76] 65 41
+    page 52: 3B 34 38 48 69 [76] 65 41
+  77: occurrences=99; old output='ြ'; unresolved
+    page 48: 37 42 2C 27 [77] 3B 65 40 4E 24 39 2C 77
+    page 48: 77 3B 65 40 4E 24 39 2C [77] 3B 65 40 4E 3A 40 43 27
+    page 49: 31 27 31 27 [77] 3B 65 40 4E 29 27 27 23
+  78: occurrences=580; old output='ြ'; unresolved
+    page 48: 42 2C 27 39 39 2C 37 35 [78] 3A 62 2D 24 39 2C
+    page 49: 36 24 38 52 2C [78] 3A 62 2D 29 27 39 39 2C
+    page 49: 2D 29 27 61 43 2B 2C 2D [78] 3A 62 2D 36 3A 49 38 52
+  79: occurrences=86; old output='္ထ'; multiple code points
+    page 49: 3E 29 27 23 47 38 2F 24 [79] 65 24 40 43
+    page 52: 3E 29 27 23 47 38 2F 24 [79] 65 27 24 40 43
+    page 58: 53 27 2A 27 54 27 84 24 [79] 40 41 40 52 2C
+  7A: occurrences=246; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 49: 40 43 27 56 3A 42 2C 59 [7A] 66 36 4F 38 3A 2C 2A 49
+    page 50: 43 24 52 2C 29 27 48 62 [7A] 40 43
+    page 52: 41 3A 2C [7A] 4A 43 2D 47 42 2C 29
+  7D: occurrences=2; old output='္က'; multiple code points
+    page 52: 73 3A [7D] 7E
+    page 111: 39 2C 37 3A [7D] 47 38 5B 2C 27 39 37 42
+  7E: occurrences=3; old output='ဋ္ဌ'; multiple code points
+    page 52: 73 3A 7D [7E]
+    page 57: 37 42 2C 27 57 [7E] 3B 24 2B 2C 2D 36 3A 49
+    page 109: 38 2D 3A 40 43 27 4B 3D [7E] 38 2B 2C 2D 47 3B 42 2C
+  7F: occurrences=163; old output='ျွ'; unresolved
+    page 53: 31 27 27 31 27 3A [7F] 2B 2C 36 24 38 2C 29 27
+    page 53: 2C 36 24 38 2C 29 27 3A [7F] 2B 2C 3B 29 27 52 3E 29
+    page 53: 3B 29 27 52 3E 29 27 3A [7F] 69 43 2C 3D 2C 29 27 3A
+  81: occurrences=93; old output='င်္'; unresolved
+    page 53: 37 2A [81] 49 38 2B 38 3B 2C 39 38
+    page 55: 37 2A [81] 49 38 2B 38 3B 2C 39 38
+    page 56: 37 2A [81] 49 38 2B 38 3B 2C 39 38
+  82: occurrences=27; old output='ူ'; unresolved
+    page 53: [82] 37
+    page 62: [82] 4E 60 3A 38
+    page 62: [82] 4E 23 3B
+  83: occurrences=102; old output='္လ'; multiple code points
+    page 58: 3D 43 41 [83] 40 52 2C
+    page 58: 30 27 54 27 2B 3D 43 41 [83] 40 52 2C
+    page 58: 3D 43 41 [83] 40 52 2C 27
+  85: occurrences=6; old output='ှ'; unresolved
+    page 77: 2C 59 24 3A 26 29 27 69 [85] 52 2C 59 23 24 35 31
+    page 101: 36 3A 49 38 52 2C 2D 3B [85] 27
+  86: occurrences=1; old output='့'; unresolved
+    page 78: 37 42 2C 31 27 4F 40 43 [86] 36 56 3A 38 52 2C 59
+  88: occurrences=1; old output='္ဘ'; multiple code points
+    page 82: 42 2C 27 3D 4F 3B 3A 3B [88] 38 39 39 2C 23 24
+  89: occurrences=132; old output='္ဗ'; multiple code points
+    page 83: 37 3B [89] 69 76
+    page 83: 37 3B [89] 69 76 27 21 27 3B 49 65
+    page 83: 43 60 2C 57 3A 2C 37 3B [89] 69 76
+  8A: occurrences=1; old output='ဏ္ဌ'; multiple code points
+    page 87: 6C 27 3D 4A 43 37 [8A] 38 2B 2C 29 27 23 3B 49
+  8B: occurrences=3; old output='္ခ'; multiple code points
+    page 87: 29 27 4B 3D 3A [8B] 60 40 2B 2C 24 39 2C
+    page 109: 2B 2C 2D 29 27 23 3A [8B] 47 38 24 40 43
+    page 111: 23 3A [8B] 47 38 69
+  8D: occurrences=2; old output='္န'; multiple code points
+    page 91: 37 62 2D 29 27 3D 40 69 [8D] 27 25 37 62 2D 29 27 37
+    page 91: 37 62 2D 29 27 3D 40 69 [8D] 25 37 62 2D 29
+  8E: occurrences=4; old output='ှ'; unresolved
+    page 92: 57 43 2A 49 62 2D 4B 3B [8E] 52 2C 59 37 42 2C 31
+    page 106: 36 4B 3B [8E] 38 3A 2C 37 42 2C 31
+    page 108: 2C 27 36 3A 38 3A 2C 42 [8E] 52 2C 2D
+
+==============================================================================
+mm-grammar.pdf /TT20 (EECKXI+Arlarwade)
+SHA-256: 4c50ba818d91e8762ea8217586e7a2440747c464b433964e49e3af5dee970db6
+Direct entries: 40; review resolutions: 0; unresolved byte slots: 29
+
+CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
+
+UNRESOLVED (the legacy output is not an answer):
+  22: occurrences=2; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 112: 21 [22] 23
+    page 112: 2F [22] 30
+  25: occurrences=39; old output='ျ'; unresolved
+    page 112: 24 [25] 26 27 28 29 2A 2B 2C 27
+    page 112: 2D 35 3A 3B 2B 3C 2D 24 [25] 26 27 28 29 2A 2B 2C 27
+    page 112: 45 27 28 48 3D 2B 28 32 [25] 2C 27 28 24 25 2B 28
+  27: occurrences=96; old output='်'; unresolved
+    page 112: 24 25 26 [27] 28 29 2A 2B 2C 27 28 2D
+    page 112: 25 26 27 28 29 2A 2B 2C [27] 28 2D 2D 2E
+    page 112: 31 2A [27] 32 33 24 34 33 31 27 31
+  28: occurrences=55; old output='း'; unresolved
+    page 112: 24 25 26 27 [28] 29 2A 2B 2C 27 28 2D 2D
+    page 112: 26 27 28 29 2A 2B 2C 27 [28] 2D 2D 2E
+    page 112: 2A 27 29 37 38 2B 2C 27 [28] 38 39 33 2D 35 3A 3B 2B
+  29: occurrences=38; old output='ေ'; unresolved
+    page 112: 24 25 26 27 28 [29] 2A 2B 2C 27 28 2D 2D 2E
+    page 112: 27 32 33 2D 35 36 2A 27 [29] 37 38 2B 2C 27 28 38 39
+    page 112: 2B 3C 2D 24 25 26 27 28 [29] 2A 2B 2C 27 28 38 39 33
+  2B: occurrences=86; old output='ာ'; unresolved
+    page 112: 24 25 26 27 28 29 2A [2B] 2C 27 28 2D 2D 2E
+    page 112: 2D 35 36 2A 27 29 37 38 [2B] 2C 27 28 38 39 33 2D 35
+    page 112: 28 38 39 33 2D 35 3A 3B [2B] 3C 2D 24 25 26 27 28 29
+  2F: occurrences=3; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 112: [2F] 22 30
+    page 112: [2F] 21 30
+    page 112: [2F] 50 30 4A 38 4B
+  33: occurrences=28; old output='ု'; unresolved
+    page 112: 31 2A 27 32 [33] 24 34 33 31 27 31 2A 27
+    page 112: 31 2A 27 32 33 24 34 [33] 31 27 31 2A 27 32 33 2D
+    page 112: 34 33 31 27 31 2A 27 32 [33] 2D 35 36 2A 27 29 37 38
+  35: occurrences=12; old output='ြ'; unresolved
+    page 112: 31 27 31 2A 27 32 33 2D [35] 36 2A 27 29 37 38 2B 2C
+    page 112: 2B 2C 27 28 38 39 33 2D [35] 3A 3B 2B 3C 2D 24 25 26
+    page 112: 42 39 33 2C 27 2C 3E [35] 32 2B 28 3D 2B 28 2E 42
+  37: occurrences=1; old output='ြ'; unresolved
+    page 112: 32 33 2D 35 36 2A 27 29 [37] 38 2B 2C 27 28 38 39 33
+  39: occurrences=27; old output='ိ'; unresolved
+    page 112: 29 37 38 2B 2C 27 28 38 [39] 33 2D 35 3A 3B 2B 3C 2D
+    page 112: 28 29 2A 2B 2C 27 28 38 [39] 33 2D 3D 3E 33 28 3D 3F
+    page 112: 42 [39] 33 2C 27 2C 3E 35 32 2B
+  3B: occurrences=16; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 112: 27 28 38 39 33 2D 35 3A [3B] 2B 3C 2D 24 25 26 27 28
+    page 112: 3D 38 27 [3B] 39
+    page 112: 24 25 26 27 28 [3B]
+  3E: occurrences=7; old output='ံ'; unresolved
+    page 112: 2C 27 28 38 39 33 2D 3D [3E] 33 28 3D 3F 27 30
+    page 112: 42 39 33 2C 27 2C [3E] 35 32 2B 28 3D 2B 28 2E
+    page 112: 28 2E 42 39 33 2C 27 2C [3E] 3D 2B 28
+  42: occurrences=3; old output='န'; multiple observed bytes share this output
+    page 112: [42] 39 33 2C 27 2C 3E 35 32
+    page 112: 35 32 2B 28 3D 2B 28 2E [42] 39 33 2C 27 2C 3E 3D 2B
+    page 112: 29 38 2B 38 27 [42] 33 31 27 32 25 38 27 54
+  45: occurrences=14; old output='န'; multiple observed bytes share this output
+    page 112: [45] 27
+    page 112: 46 [45] 47 28 2E 32 2C 27 3A
+    page 112: [45] 27 28 48 3D 2B 28 32 25
+  47: occurrences=5; old output='ီ'; unresolved
+    page 112: 46 45 [47] 28 2E 32 2C 27 3A
+    page 112: 38 27 44 3A 27 4C 3D [47] 28 3D 47 28 3C 2D 4E 47
+    page 112: 44 3A 27 4C 3D 47 28 3D [47] 28 3C 2D 4E 47 29 44 25
+  49: occurrences=9; old output='့'; unresolved
+    page 112: 27 44 3A 27 35 36 3F 27 [49] 29 24 28 32
+    page 112: 38 39 33 2D 35 36 3F 27 [49] 3A 4D 30
+    page 112: 45 27 55 2B 28 3D 3F 27 [49]
+  4D: occurrences=6; old output='ါ'; unresolved
+    page 112: 29 4C 2B 38 27 3A [4D] 38
+    page 112: 33 2D 35 36 3F 27 49 3A [4D] 30
+    page 112: 38 2B 38 27 32 57 49 3A [4D] 30
+  4F: occurrences=1; old output='ြ'; unresolved
+    page 112: 44 25 2B 27 29 3D 2B 2D [4F] 38 39 43 2B 38 39 33 2D
+  52: occurrences=1; old output='ု'; unresolved
+    page 112: 4A 51 4B 2D 32 25 [52] 39 3D 2B 29 3D 2B 2A 38
+  53: occurrences=3; old output='ူ'; unresolved
+    page 112: 38 2B 28 38 39 33 2D 44 [53] 31 39 33 2C 27 28
+    page 112: 56 44 [53] 38 29 44 28 3B 57 58 2D
+    page 112: 27 38 29 3D 28 5A 2D 34 [53] 29 3D 2B 2D 38 5B 25 2B
+  57: occurrences=2; old output='ဲ'; unresolved
+    page 112: 56 44 53 38 29 44 28 3B [57] 58 2D 29 32 25 2B 49 2A
+    page 112: 2B 28 29 38 2B 38 27 32 [57] 49 3A 4D 30
+  58: occurrences=1; old output='့'; unresolved
+    page 112: 44 53 38 29 44 28 3B 57 [58] 2D 29 32 25 2B 49 2A 3B
+  59: occurrences=1; old output='္ထ'; multiple code points
+    page 112: 2D 2D 2D 30 2D 24 39 31 [59] 47 44 2B 2D 2D 38 45 27
+  5C: occurrences=1; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 112: 2D 35 24 45 27 24 2B 49 [5C] 39 33 28 3B 2B 2D 3D 2B
+  5F: occurrences=1; old output='္ခ'; multiple code points
+    page 112: 30 2D 4C 38 [5F] 3B 2B 35 36 2C 27 49 2D
+  60: occurrences=2; old output='္စ'; multiple code points
+    page 112: 29 34 31 33 3A 2A [60] 29 43 2B 30 2D 3A 30 2D
+    page 112: 2D 4C 61 39 62 31 3A 2A [60] 29 43 2B 31 39 30
+  61: occurrences=3; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 112: 43 2B 30 2D 3A 30 2D 4C [61] 39 62 31 3A 2A 60 29 43
+    page 112: 39 3A 39 29 3D 2B 64 62 [61] 4D 30 2D 44 30 2D 5B 33
+    page 112: 5B 33 29 5D 65 4D 64 62 [61] 4D 31 39 30
+  65: occurrences=1; old output='္ဓ'; multiple code points
+    page 112: 2D 44 30 2D 5B 33 29 5D [65] 4D 64 62 61 4D 31 39 30
+
+==============================================================================
+mm-grammar.pdf /TT27 (LRIIGK+Arlarwade)
+SHA-256: 4d6aa345dd1b88e650c0b700cd51b336bf0d0ba7016b559ca9f5f562b1ab46ea
+Direct entries: 58; review resolutions: 6; unresolved byte slots: 44
+
+CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
+  2D = 'း'  candidate window သား / 2F 3A 2D (page 114)
+  3A = 'ာ'  candidate window ကာလ / 3B 3A 3C (page 113)
+  3E = 'ြ'  candidate window ပြာ / 3E 4F 3A (page 114)
+  61 = '္စ'  သစ္စာ / 2F 4B 61 3A (page 120)
+  66 = 'ူ'  candidate window စူး / 4B 66 2D (page 116)
+  83 = '္မ'  သမ္မတ / 2F 32 83 25 (page 158)
+
+UNRESOLVED (the legacy output is not an answer):
+  22: occurrences=26; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 113: 21 [22] 23
+    page 114: 21 [22] 5B
+    page 115: 21 [22] 5C
+  26: occurrences=370; old output='ဲ'; unresolved
+    page 113: 24 25 [26] 27 28 21 29 28 24 2A 2B
+    page 113: [26] 2F 40 2C 36
+    page 113: 24 [26]
+  27: occurrences=8; old output='ွ'; unresolved
+    page 113: 24 25 26 [27] 28 21 29 28 24 2A 2B 2C
+    page 131: 2F 40 2C 28 4A 26 [27] 6D 4B 40 2C 2D 25 40 2C
+    page 133: 2B 2F 40 2C 28 28 4A 26 [27] 6D 4B 40 2C 2D
+  2B: occurrences=2253; old output='န'; multiple observed bytes share this output
+    page 113: 26 27 28 21 29 28 24 2A [2B] 2C 2D 28 2E
+    page 113: 39 2F 3A 28 24 2A 33 35 [2B] 2C 3B 3A 3C 3B 38 35 3C
+    page 114: 51 2F 40 2C 36 28 3E 32 [2B] 2C 32 3A 4B 3A 39 30 2D
+  2C: occurrences=10243; old output='်'; unresolved
+    page 113: 27 28 21 29 28 24 2A 2B [2C] 2D 28 2E
+    page 113: 25 [2C] 37 38 35 30 39 2F 3A 28
+    page 113: 2F 3A 28 24 2A 33 35 2B [2C] 3B 3A 3C 3B 38 35 3C 38
+  30: occurrences=1265; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 113: 2F [30] 28 31 28 32 33 34 35 2D
+    page 113: [30]
+    page 113: 25 2C 37 38 35 [30] 39 2F 3A 28 24 2A 33 35
+  33: occurrences=1359; old output='ျ'; unresolved
+    page 113: 2F 30 28 31 28 32 [33] 34 35 2D
+    page 113: 35 30 39 2F 3A 28 24 2A [33] 35 2B 2C 3B 3A 3C 3B 38
+    page 113: 2D 3B 38 35 28 31 28 32 [33] 34 35 2D 2A
+  34: occurrences=351; old output='ု'; unresolved
+    page 113: 2F 30 28 31 28 32 33 [34] 35 2D
+    page 113: 3B 38 35 28 31 28 32 33 [34] 35 2D 2A
+    page 114: 3B 5D 25 28 2E 28 32 33 [34] 35 2D 3B 38 35 28 24 2F
+  35: occurrences=3833; old output='ိ'; unresolved
+    page 113: 2F 30 28 31 28 32 33 34 [35] 2D
+    page 113: 25 2C 37 38 [35] 30 39 2F 3A 28 24 2A 33
+    page 113: 30 39 2F 3A 28 24 2A 33 [35] 2B 2C 3B 3A 3C 3B 38 35
+  38: occurrences=3249; old output='ု'; unresolved
+    page 113: 25 2C 37 [38] 35 30 39 2F 3A 28 24 2A
+    page 113: 33 35 2B 2C 3B 3A 3C 3B [38] 35 3C 38 35 3B 2C 3D 28
+    page 113: 2C 3B 3A 3C 3B 38 35 3C [38] 35 3B 2C 3D 28 24 39 3E
+  39: occurrences=3313; old output='ေ'; unresolved
+    page 113: 25 2C 37 38 35 30 [39] 2F 3A 28 24 2A 33 35 2B
+    page 113: 3C 38 35 3B 2C 3D 28 24 [39] 3E 2A 2A 3F 2F 30 28 21
+    page 113: 25 2C 37 38 35 [39] 2F 3A 24 2A 4D 28 32 33
+  3F: occurrences=616; old output='ံ'; unresolved
+    page 113: 2C 3D 28 24 39 3E 2A 2A [3F] 2F 30 28 21 21 28 3C 38
+    page 113: 2F 30 28 21 21 28 3C 38 [3F] 2D 3B 38 35 28 31 28 32
+    page 113: 2F 30 28 44 2F [3F] 25 38 35 2F 30 45
+  47: occurrences=427; old output='ီ'; unresolved
+    page 113: 46 [47] 48 2F 30 28 44 2F 3F 30
+    page 113: 46 [47] 48 2F 30 28
+    page 113: 28 2F 30 3B 38 35 28 46 [47] 48 2F 30 28 44 2F 3F 30
+  49: occurrences=42; old output='ှ'; unresolved
+    page 113: 48 2F 30 28 44 2F 3F 30 [49] 40 2C 2F 30 45 25 38 35
+    page 113: 48 2F 30 28 44 2F 3F 30 [49] 40 2C 2F 30 45 28 50 38
+    page 113: 57 28 3C 38 3F 2D 30 [49] 35 2F 40 2C 36 28 41 42
+  4C: occurrences=349; old output='ြ'; unresolved
+    page 113: 28 3E 4A 4B 2C [4C] 3B 2F 40 2C 36
+    page 113: 2C 3E 4F 3B 2C 3B 3A 3C [4C] 3B 3A 39 2F 3A 2F 30 3B
+    page 113: 3C 3E 4A 4B 2C 39 4B 28 [4C] 3B 3A 2F 40 2C 36 28 54
+  4D: occurrences=644; old output='ါ'; unresolved
+    page 113: 37 38 35 39 2F 3A 24 2A [4D] 28 32 33 3B 2C 4B 35 25
+    page 113: 37 38 35 39 2F 3A 24 2A [4D] 28 32 33 3B 2C 4B 35 56
+    page 114: 4B 2C 3C 38 3F 2D 39 4F [4D] 3B 2C 28 44 43 2D 45 25
+  4E: occurrences=72; old output='ျှ'; unresolved
+    page 113: 3C [4E] 4F 2C 25 4B 2C 3E 4F 3B
+    page 113: 4A 4B 2C 39 4B 29 28 3C [4E] 4F 2C 25 4B 2C 3E 4F 3B
+    page 113: 3C [4E] 4F 2C 56
+  51: occurrences=106; old output='ါ်'; unresolved
+    page 113: 2F 30 45 28 50 38 39 2A [51] 2F 40 2C 36 28 30
+    page 113: 30 45 28 50 38 28 39 2A [51] 2F 40 2C 36 45
+    page 113: 30 45 28 50 38 28 39 2A [51] 2F 40 2C 36 28 46 47 48
+  55: occurrences=832; old output='့'; unresolved
+    page 113: 39 4C 3B 3A 42 2C [55]
+    page 113: 39 4C 3B 3A 42 2C [55] 28 41 42 2C 2D 25 38 35
+    page 114: 2C 3E 32 4B 2C 28 44 43 [55] 45
+  56: occurrences=518; old output='န'; multiple observed bytes share this output
+    page 113: 4D 28 32 33 3B 2C 4B 35 [56]
+    page 113: 28 3C 3B 2C 4A 33 4B 2C [56]
+    page 113: 3C 4E 4F 2C [56]
+  5C: occurrences=18; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 113: 44 [5C] 45
+    page 115: 21 22 [5C]
+    page 117: [5C] 36
+  5D: occurrences=114; old output='င်္'; unresolved
+    page 114: 42 2C 2D 3E 4F 2F 39 3B [5D] 25
+    page 114: 4F 39 2F 3A 28 2F 39 3B [5D] 25 3B 38 35 28
+    page 114: 42 2C 2D 3E 4F 2F 39 3B [5D] 25 28
+  60: occurrences=929; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 114: [60] 4B 61 56
+    page 114: 25 3A [60] 25 64
+    page 115: [60] 4B 61 56
+  64: occurrences=7; old output='ိံ'; unresolved
+    page 114: 63 24 3F 29 28 24 [64] 29 28 24 38 3F 65 28 50
+    page 114: 24 [64] 28 44
+    page 114: 25 3A 60 25 [64]
+  6D: occurrences=181; old output='့'; unresolved
+    page 115: 24 66 [6D] 28 44 3C 66 6D 29 28 2F
+    page 115: 24 66 6D 28 44 3C 66 [6D] 29 28 2F 66 6D 28 4B 2F
+    page 115: 44 3C 66 6D 29 28 2F 66 [6D] 28 4B 2F 40 2C 45
+  6F: occurrences=142; old output='ျွ'; unresolved
+    page 115: 3B [6F] 2B 2C 39 25 3A 2C 6B
+    page 115: 3B [6F] 2B 2C 39 25 3A 2C 55
+    page 119: 3A 2C 32 25 47 29 28 3B [6F] 26 24 38 4F 2C 29 28 56
+  73: occurrences=83; old output='ွှ'; unresolved
+    page 117: 39 30 [73] 25 35 5F 38 3F 29 28 37
+    page 117: 39 30 [73] 25 35 5F 38 3F 28
+    page 117: 38 35 2F 3A 30 40 2C 40 [73] 2B 2C 2D 78 4F 47 2D 28
+  74: occurrences=116; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 117: 33 34 35 3B 2C 54 47 2D [74] 38 35 2D 36
+    page 117: 33 34 35 3B 2C 54 47 2D [74] 38 35 2D
+    page 119: 29 28 24 4B 40 2C 2D 24 [74] 38 3F 2D 29
+  75: occurrences=13; old output='္တ'; multiple code points
+    page 117: 3B 38 2B 2C 29 28 32 56 [75] 39 3C 2D 29 28 3E 32 4B
+    page 118: 3B 38 2B 2C 29 28 32 56 [75] 39 3C 2D 29 28 3E 32 4B
+    page 118: 32 56 [75] 39 3C 2D 29 28 3E 32 4B
+  76: occurrences=493; old output='ြ'; unresolved
+    page 117: 3C 2D 29 28 3E 32 4B 2C [76] 3B 47 2D 2B 3A 2D 29 28
+    page 117: 39 2F 3A 28 39 4B 25 47 [76] 3B 47 2D 3B 38 35 2F 3A
+    page 118: 39 2F 3A 28 3E 32 4B 2C [76] 3B 47 2D 3B 38 35 2F 3A
+  77: occurrences=32; old output='ူ'; unresolved
+    page 117: 39 3B 33 3A 3B 2C 3E 4A [77] 36
+    page 118: 39 3B 33 3A 3B 2C 3E 4A [77] 28
+    page 120: 2B 2C 3E 4A [77]
+  78: occurrences=78; old output='ြ'; unresolved
+    page 117: 30 40 2C 40 73 2B 2C 2D [78] 4F 47 2D 28 2F 47 2D 3E
+    page 118: 47 2D 37 42 2C 2D 3C 3A [78] 4F 47 2D 28 6E 5F 5D 3C
+    page 118: 30 40 2C 40 73 2B 2C 2D [78] 4F 47 2D 28 2F 47 2D 3E
+  79: occurrences=32; old output='ှု'; unresolved
+    page 118: 3A 28 3C 35 [79] 42 2C 3E 32 4B 2C 56
+    page 120: 39 30 2D 29 28 3C 66 32 [79] 39 30 2D 29 28 4B 47 2D
+    page 121: 60 25 2C 32 [79] 2B 2C 3B 66 2D 3E 2A 42
+  7A: occurrences=28; old output='္ဂ'; multiple code points
+    page 118: 2C 39 2F 3A 28 4F 38 5F [7A] 34 35 3C 2C 29 28 2F 25
+    page 121: 2C 39 2F 3A 28 4F 38 5F [7A] 34 35 3C 2C 29 28 2F 25
+    page 122: 4F 38 5F [7A] 3C 2B 3A 32 2C 4B 3A 2D
+  7B: occurrences=2; old output='္ထ'; multiple code points
+    page 118: 4D 29 28 24 30 3A 60 25 [7B] 34 25 38 35
+    page 121: 4D 29 28 24 30 3A 60 25 [7B] 34 25 38 35
+  7C: occurrences=8; old output='္ဆ'; multiple code points
+    page 118: 3C 66 29 28 25 35 30 4B [7C] 3A 2B 2C 36
+    page 119: 3C 66 29 28 25 35 30 4B [7C] 3A 2B 2C
+    page 120: 25 35 30 4B [7C] 3A 2B 2C
+  7D: occurrences=3; old output='ဏ္ဌ'; multiple code points
+    page 119: 40 2C 28 3E 46 4F 2C 2F [7D] 3A 2B 2C 28 24 54 42 2C
+    page 151: 6B 28 4F 38 3F 2F [7D] 3A 2B 2C 28 24 32 33 34
+  7F: occurrences=87; old output='္ဓ'; multiple code points
+    page 120: 32 29 28 32 50 3A 62 56 [7F] 34 3C 29 28 39 30 2B 3F
+    page 135: 32 50 3A 62 56 [7F] 34 3C 2F 40 2C 28 30 26
+    page 145: 2F 32 8B 56 [7F]
+  80: occurrences=3; old output='္ဘ'; multiple code points
+    page 121: 3B 32 [80] 3A
+    page 144: 58 3B 32 [80] 3A 76 3B 47 2D 28 78 42
+    page 159: 63 3B 32 [80] 3A 39 3E 32 76 3B 47 2D
+  81: occurrences=2; old output='့'; unresolved
+    page 121: 3E 4F 40 2C 2F 66 [81]
+    page 158: 28 70 42 2C 2D 25 35 38 [81] 32 49 3A
+  84: occurrences=1; old output=''; empty decoder output
+    page 132: 3B 38 35 [84]
+  8A: occurrences=14; old output='ှ'; unresolved
+    page 141: 40 [8A] 35 56 35 79 42 2C 2D 60
+    page 142: 40 [8A] 35 56 35 79 42 2C 2D 60
+    page 142: 2D 2A 33 42 2C 2D 28 40 [8A] 35 56 35 79 42 2C 2D 3E
+  8B: occurrences=88; old output='္ဗ'; multiple code points
+    page 145: 2F 32 [8B] 56 7F
+    page 145: 2F 32 [8B] 56 7F 28 2E 32 33 34 35
+    page 145: 38 46 2C 37 3B 2C 2F 32 [8B] 56 7F
+  8C: occurrences=1; old output='င်္'; unresolved
+    page 150: 24 3B [8C] 33 4B 28 25 4B 2C 3B 38
+
+==============================================================================
+mm-grammar.pdf /TT35 (IWBEFM+Arlarwade)
+SHA-256: a7c9e0380ddaa992b8544130db21696438cbe6ec1b0afd8f262c9fc699623437
+Direct entries: 54; review resolutions: 11; unresolved byte slots: 39
+
+CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
+  26 = 'န'  ဓနိတ / 49 29 4C 29 4A 4D 26 38 2B 24 32 (page 160)
+    Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives.
+  28 = 'း'  candidate window အား / 24 35 28 (page 160)
+  30 = 'ျ'  candidate window အချ / 24 25 30 (page 163)
+  35 = 'ာ'  candidate window လျာ / 43 30 35 (page 160)
+  38 = 'ိ'  candidate window တတိယ / 2B 2B 38 52 (page 160)
+  3A = 'ု'  candidate window တို / 2B 38 3A (page 160)
+  40 = 'ြ'  candidate window ပြသ / 40 3C 3E (page 160)
+  5E = '္စ'  ကိစ္စ / 32 38 50 5E (page 161)
+    Some occurrences follow other preceding bytes; do not infer that the same writing glyph is valid for a different upper consonant.
+  65 = 'ူ'  candidate window အတူ / 24 2B 65 (page 161)
+  6D = '္တ'  သတ္တိ / 3E 2B 6D 38 (page 163)
+  80 = '္မ'  လိမ္မာ / 43 38 36 80 35 (page 174)
+
+UNRESOLVED (the legacy output is not an answer):
+  27: occurrences=9894; old output='်'; unresolved
+    page 160: 24 25 26 [27] 28 29 21 2A 29 24 2B 2C
+    page 160: 2F 30 31 [27] 28 24 32 33 34 35 29 2E
+    page 160: 2F 30 31 [27] 28 24 32
+  2C: occurrences=300; old output='ဲ'; unresolved
+    page 160: 27 28 29 21 2A 29 24 2B [2C] 2D 29 2E
+    page 160: [2C] 3E 31 27 39 29 46 3D 27
+    page 161: 38 32 27 4E 3A 2B 27 5B [2C] 29
+  2D: occurrences=10; old output='ွ'; unresolved
+    page 160: 28 29 21 2A 29 24 2B 2C [2D] 29 2E
+    page 174: 42 25 [2D] 28 43 38 36 80 35
+    page 174: 42 25 [2D] 28 43 38 36 80 35 40 4F
+  33: occurrences=5; old output='္ခ'; multiple code points
+    page 160: 2F 30 31 27 28 24 32 [33] 34 35 29 2E 29 36 30 37
+  34: occurrences=1357; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 160: 2F 30 31 27 28 24 32 33 [34] 35 29 2E 29 36 30 37 38
+    page 160: [34] 35 29 2E 29 36 30 37 38
+    page 160: [34] 35 2B 3A 38
+  37: occurrences=303; old output='ု'; unresolved
+    page 160: 33 34 35 29 2E 29 36 30 [37] 38 28
+    page 160: 34 35 29 2E 29 36 30 [37] 38 28
+    page 160: 32 3A 38 29 2E 36 30 [37] 38 28 25
+  3F: occurrences=426; old output='ံ'; unresolved
+    page 160: 3C 3D 27 32 3A 38 24 3E [3F] 29 40 3C 3D 27 28 36 41
+    page 160: 32 3A 38 24 42 40 25 25 [3F] 45 29 2F 30 31 27 28
+    page 160: 34 35 29 49 3E [3F] 40 3C 3D 27 28 24 32
+  41: occurrences=96; old output='ှု'; unresolved
+    page 160: 3F 29 40 3C 3D 27 28 36 [41] 2A 29 36 40 3C 3D 27 28
+    page 160: 29 36 40 3C 3D 27 28 36 [41] 2A 29 42 43 30 35 44 36
+    page 160: 2A 29 42 43 30 35 44 36 [41] 2A 29 2B 3D 27 28 36 41
+  42: occurrences=3571; old output='ေ'; unresolved
+    page 160: 3C 3D 27 28 36 41 2A 29 [42] 43 30 35 44 36 41 2A 29
+    page 160: 27 28 36 41 32 3A 38 24 [42] 40 25 25 3F 45 29 2F 30
+    page 160: 49 32 4A [42] 4B 35 3E 24 32
+  44: occurrences=943; old output='့'; unresolved
+    page 160: 36 41 2A 29 42 43 30 35 [44] 36 41 2A 29 2B 3D 27 28
+    page 160: 29 49 3E 3F 42 43 30 35 [44] 24 32
+    page 160: 38 24 35 28 40 4F 3D 27 [44] 29 40 3C 3D 27 28 42 3E
+  47: occurrences=4; old output='့'; unresolved
+    page 160: 29 46 3D 27 28 2B 38 3A [47] 36
+    page 163: 3C 27 36 2C 44 2B 38 3A [47] 3B 29 24 36 31 27 53 65
+    page 163: 4E 38 3A [47] 42 51 32 35 3D 27 44
+  51: occurrences=426; old output='ြ'; unresolved
+    page 160: 40 4F 50 27 [51] 32 3E 31 27 39
+    page 160: 29 40 4F 50 27 [51] 32 3E 31 27 39
+    page 160: 38 [51] 32 42 3E 35 42 51 32 35
+  54: occurrences=93; old output='ါ်'; unresolved
+    page 160: 34 35 53 3A 29 42 25 [54] 3E 31 27 39 29 42 4B 35
+    page 160: 34 35 29 53 3A 29 42 25 [54]
+    page 160: 34 35 29 53 3A 29 42 25 [54] 3E 31 27 39
+  55: occurrences=18; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 160: 29 24 43 3A 3F 28 29 23 [55]
+    page 160: 29 24 43 3A 3F 28 29 23 [55] 29 2B 3A 38
+    page 160: 35 24 43 3A 3F 28 29 23 [55] 29 2B 3A 38
+  58: occurrences=2; old output='္ထ'; multiple code points
+    page 160: 49 23 4A 50 2B 3A 2B [58] 24 32
+    page 161: 49 5C 4A 50 2B 3A 2B [58] 24 32
+  5F: occurrences=1177; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 160: 49 2E 4A 24 [5F] 4C 27 24 32
+    page 160: 2A 29 34 2A 29 43 2A 29 [5F] 2A 29 60 4A 29 2B 3A 38
+    page 160: 49 5C 4A 29 24 [5F] 4C 27 24 32
+  62: occurrences=347; old output='ီ'; unresolved
+    page 160: 24 3E [62] 28 3E 62 28 34
+    page 163: 27 40 3C 25 2C 44 6F 3C [62] 39 29 70 24 2B
+    page 164: 42 26 6F 3C [62] 40 4F 50 27 3E 31 27 44
+  64: occurrences=1126; old output='ါ'; unresolved
+    page 160: 63 3A 38 42 3E 35 24 25 [64] 29 24 3E 3F 40 3C 3D 27
+    page 160: [64] 32 30 36 27 28 2B 3A 38
+    page 160: 63 3A 38 42 3E 35 24 25 [64] 29 24 3E 3F 31 3D 27 28
+  69: occurrences=643; old output='န'; multiple observed bytes share this output
+    page 161: 2B 27 63 3A 38 [69] 3A 38 3D 27 42 3E 35 29
+    page 161: [69]
+    page 163: 50 29 [69]
+  6A: occurrences=239; old output='္ဓ'; multiple code points
+    page 161: 2F 3A 57 [6A] 5B 35 3E 35 29
+    page 166: 27 28 2A 29 3E 36 7B 69 [6A] 2B 3A 38
+    page 170: 27 28 2A 29 3E 36 7B 69 [6A] 2B 3A 38
+  6B: occurrences=96; old output='ျှ'; unresolved
+    page 163: 24 36 31 27 53 65 3E 36 [6B] 32 3A 38 29
+    page 163: 2B 27 43 3A 38 32 27 43 [6B] 3D 27 29 4E 3A 38 50 32
+    page 163: 2B 27 43 3A 38 32 27 43 [6B] 3D 27 29
+  6C: occurrences=12; old output='္ဆ'; multiple code points
+    page 163: 43 65 2A 29 2B 38 34 50 [6C] 35 26 27 2A 29 3E 2B 6D
+    page 169: 43 65 2A 29 2B 38 34 50 [6C] 35 26 27 69
+    page 171: 3D 27 44 29 2B 38 34 50 [6C] 35 26 27 5D 52 30 35 5D
+  6E: occurrences=129; old output='့'; unresolved
+    page 163: 2C [6E] 50 31 27 28 2B 31 27 42
+    page 163: 2C [6E] 50 31 27 28 4E 35 28 40
+    page 163: 2C [6E] 50 31 27 28 4E 35 28
+  6F: occurrences=133; old output='ြ'; unresolved
+    page 163: 4F 35 27 40 3C 25 2C 44 [6F] 3C 62 39 29 70 24 2B
+    page 164: 42 26 [6F] 3C 62 40 4F 50 27 3E 31
+    page 164: 3D 27 32 30 52 27 42 26 [6F] 3C 62 28 29 40 36 26 27
+  71: occurrences=520; old output='ြ'; unresolved
+    page 163: 49 29 4C 29 4A [71] 32 38 52 35 26 35 36 27
+    page 165: [71] 32 38 52 35 26 35 36 27
+    page 165: 39 [71] 32 38 52 35 3C 3A 57 27
+  73: occurrences=134; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 163: 2A 29 3C 31 35 2A 29 32 [73] 3A
+    page 163: 2A 29 57 [73] 3A 38 3D 27 5B 35 2A 29
+    page 163: 3D 27 5B 35 2A 29 57 64 [73] 3A 38 32 27 2B 35 39
+  74: occurrences=32; old output='င်္'; unresolved
+    page 164: 35 28 3E 31 27 29 24 4C [74] 43 38 3C 27
+    page 164: 24 4C [74] 43 38 3C 27 5B 35 3E 35
+    page 166: 5F 64 50 4C [74] 32 3A 38 43 3A 38 32 27
+  77: occurrences=10; old output='ူ'; unresolved
+    page 164: 24 75 40 4F [77] 76 24 40 4F 77
+    page 164: 75 40 4F 77 76 24 40 4F [77]
+    page 168: [77] 73 41 38 32 27 34 26 27
+  78: occurrences=28; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 165: 21 22 [78]
+    page 166: [78] 39 70 3E 3A 38
+    page 170: [78] 39 42 3C 28 4E 35 28 42
+  79: occurrences=21; old output='ှ'; unresolved
+    page 165: 71 32 38 52 35 3B 42 34 [79] 6E 61 29 3C 50 5E 31 27
+    page 167: 57 27 2B 50 27 25 3A 69 [79] 3D 27 44 29 26 35 36 27
+    page 178: 36 5F 38 42 3E 3E 26 69 [79] 3D 27 44 24 31 7D 26 27
+  7B: occurrences=237; old output='္ဗ'; multiple code points
+    page 166: 5E 31 27 28 2A 29 3E 36 [7B] 69 6A 2B 3A 38
+    page 170: 5E 31 27 28 2A 29 3E 36 [7B] 69 6A 2B 3A 38
+    page 187: 3E 36 [7B] 69 6A
+  7D: occurrences=191; old output='ွှ'; unresolved
+    page 167: 42 34 [7D] 75 29 43 32 27 29 29 75
+    page 167: 3C 27 29 29 29 76 42 34 [7D] 43 32 27 50
+    page 169: 3C 31 35 42 34 [7D] 24 3A 38 28 2A 29 43 65
+  7E: occurrences=11; old output='္တ'; multiple code points
+    page 168: 49 50 4A 36 69 [7E] 42 43 28 3E 3A 38
+    page 184: 49 23 4A 36 69 [7E] 42 43 28 48 34 26 27 32
+    page 194: 29 4A 49 21 4A 29 36 69 [7E] 42 43 28 3E 38 3A
+  7F: occurrences=59; old output='ျွ'; unresolved
+    page 168: 2C 61 29 4E 65 28 25 [7F] 26 27 50
+    page 169: 32 [7F] 26 27 28 3E 50 27 3E 31
+    page 171: 29 29 39 3D 64 2A 29 32 [7F] 26 27 42 2B 35 27 2A 29
+  81: occurrences=6; old output='္ဂ'; multiple code points
+    page 171: 49 32 4A 3C 3A 4C [81] 43 26 35 36 27 50 35 28
+    page 171: 3C 3A 4C [81] 43 26 35 36 27 50 35 28
+  82: occurrences=24; old output='ှ'; unresolved
+    page 179: 2B 27 32 38 3A 29 40 36 [82] 3D 27 44 2B 3D 27 42 3C
+    page 179: 25 69 6A 35 29 42 40 36 [82] 35 3D 27 34 2B 52 27 67
+    page 184: 49 29 25 29 4A 31 [82] 38 69 41 38 3D 27 28 5F
+  85: occurrences=2; old output='္ဘ'; multiple code points
+    page 183: 49 5C 4A 43 32 36 [85] 35 3E 38 3A
+    page 208: 32 4A 49 21 4A 29 32 36 [85] 35 24 34 3C 27 34 3C 27
+  87: occurrences=1; old output='္က'; multiple code points
+    page 199: 3C 3D 27 29 5D 32 [87] 88 42 40 36 82 35 32 27
+  88: occurrences=1; old output='ဋ္ဌ'; multiple code points
+    page 199: 3C 3D 27 29 5D 32 87 [88] 42 40 36 82 35 32 27 51
+
+==============================================================================
+mm-grammar.pdf /TT41 (FPRRRK+Arlarwade)
+SHA-256: 3da8a08e4a4bf0a6629f4efa1e5c0af7ce1d1349edf6580e2c74a33b56eea0ec
+Direct entries: 58; review resolutions: 12; unresolved byte slots: 44
+
+CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
+  2A = 'န'  မြန်မာသဒ္ဒါ / 4A 31 2A 2B 31 32 3E 79 81 47 (page 217)
+  2B = '်'  မြန်မာသဒ္ဒါ / 4A 31 2A 2B 31 32 3E 79 81 47 (page 217)
+  2C = 'း'  candidate window သား / 3E 32 2C (page 212)
+  32 = 'ာ'  candidate window သာဓက / 3E 32 5B 42 (page 210)
+  47 = 'ါ'  မြန်မာသဒ္ဒါ / 4A 31 2A 2B 31 32 3E 79 81 47 (page 217)
+  4A = 'ြ'  candidate window ပြာ / 4A 34 32 (page 210)
+  4C = 'ု'  candidate window ပြု / 4A 34 4C (page 215)
+  5A = 'ူ'  candidate window မူလ / 31 5A 3A (page 210)
+  6D = '္စ'  ပစ္စည်း / 66 24 2B 28 27 34 33 6D 30 2B 2C 28 27 3E 31 (page 218)
+    Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives. Raw 6D occurs 466 times after 33=စ and twice after 6C (currently seeded as ဥ; the latter context needs separate review).
+  7C = '္ပ'  ပစ္စုပ္ပန် / 4C 34 7C 2A 2B 42 32 3A 4A 34 (page 245)
+    Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives.
+  7F = '္တ'  သတ္တမ / 3E 24 7F 31 (page 230)
+  81 = '္ဒ'  မြန်မာသဒ္ဒါ / 4A 31 2A 2B 31 32 3E 79 81 47 (page 217)
+    Some occurrences follow other preceding bytes; do not infer that the same writing glyph is valid for a different upper consonant.
+
+UNRESOLVED (the legacy output is not an answer):
+  22: occurrences=174; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 210: 21 [22] 21
+    page 211: 21 [22] 39
+    page 212: 21 [22] 45
+  25: occurrences=555; old output='ဲ'; unresolved
+    page 210: 23 24 [25] 26 27 21 28 27 23 29 2A
+    page 210: 30 2B 2C 31 2F 32 2C 24 [25] 26 33 34 2B 34 35 36
+    page 210: 30 2B 2C 31 2F 32 2C 24 [25] 26 33 34 2B 34
+  26: occurrences=997; old output='ွ'; unresolved
+    page 210: 23 24 25 [26] 27 21 28 27 23 29 2A 2B
+    page 210: 2B 2C 31 2F 32 2C 24 25 [26] 33 34 2B 34 35 36
+    page 210: 2B 2C 31 2F 32 2C 24 25 [26] 33 34 2B 34
+  2F: occurrences=2268; old output='ျ'; unresolved
+    page 210: 2E [2F] 30 2B 2C 31 2F 32 2C 24
+    page 210: 2E 2F 30 2B 2C 31 [2F] 32 2C 24 25 26 33 34 2B
+    page 210: 37 38 2E [2F] 30 2B 2C 27 39 39
+  35: occurrences=917; old output='ံ'; unresolved
+    page 210: 2C 24 25 26 33 34 2B 34 [35] 36
+    page 210: [35] 36 35 36
+    page 210: [35] 36
+  36: occurrences=3934; old output='ု'; unresolved
+    page 210: 24 25 26 33 34 2B 34 35 [36]
+    page 210: 35 [36] 35 36
+    page 210: 35 [36]
+  3B: occurrences=1646; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 210: 3A 35 36 2C [3B] 3C 3D 3E 30 2B 38 27 3F
+    page 210: 23 2A 42 2B 27 3F 28 27 [3B] 28 27 43 28 27 44 27 2E
+    page 210: 2E 2F 30 2B 2C 23 42 50 [3B] 32
+  3C: occurrences=6134; old output='ိ'; unresolved
+    page 210: 3A 35 36 2C 3B [3C] 3D 3E 30 2B 38 27 3F 40
+    page 210: 2B 2C 2E 2F 30 2B 2C 24 [3C] 36 41 23 2A 42 2B 27 3F
+    page 210: 3A 35 36 2C 42 [3C] 36
+  3D: occurrences=1617; old output='ှ'; unresolved
+    page 210: 3A 35 36 2C 3B 3C [3D] 3E 30 2B 38 27 3F 40 2B
+    page 210: 2C 23 29 2F 4C 3C 4D 4E [3D] 40 2B 4F 24 25 26 3E 30
+    page 210: 44 51 52 [3D]
+  41: occurrences=967; old output='့'; unresolved
+    page 210: 2E 2F 30 2B 2C 24 3C 36 [41] 23 2A 42 2B 27 3F 28 27
+    page 210: 3E 46 42 48 24 24 3C 36 [41] 42 3C 36 27 2E 2F 30 2B
+    page 210: 29 36 28 27 3E 3C 36 [41] 31 44 36 24 2B 27 39
+  43: occurrences=2235; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 210: 2B 27 3F 28 27 3B 28 27 [43] 28 27 44 27 2E 2F 30 2B
+    page 210: [43] 51 52 26
+    page 210: [43] 54 25 26
+  46: occurrences=5306; old output='ေ'; unresolved
+    page 210: [46] 23 32 42 2B 34 47 3E 46
+    page 210: 46 23 32 42 2B 34 47 3E [46] 42 48 24 23 3E 49 2C 3E
+    page 210: 33 2B 27 23 3E 26 40 2B [46] 4A 34 32 40 2B 2C 42 32
+  48: occurrences=190; old output='င်္'; unresolved
+    page 210: 32 42 2B 34 47 3E 46 42 [48] 24 23 3E 49 2C 3E 49 2C
+    page 210: 3E 46 42 [48] 24 23 42 50 3B 32
+    page 210: 52 2F 27 3E 46 42 [48] 24 42 3C 36 27
+  49: occurrences=769; old output='ီ'; unresolved
+    page 210: 47 3E 46 42 48 24 23 3E [49] 2C 3E 49 2C 23 4A 4B 33
+    page 210: 42 48 24 23 3E 49 2C 3E [49] 2C 23 4A 4B 33 2B 27 23
+    page 210: 2C 3E 46 42 48 24 23 3E [49] 2C 3E 49 2C 42 3C 36 27
+  4D: occurrences=263; old output='့'; unresolved
+    page 210: 30 2B 2C 23 29 2F 4C 3C [4D] 4E 3D 40 2B 4F 24 25 26
+    page 210: 30 2B 2C 23 29 2F 4C 3C [4D] 4E 3D 40 2B 4F 27 24 33
+    page 210: 23 29 2F 4C 3C [4D] 4E 3D 40 2B 4F 27 24 25
+  4E: occurrences=988; old output='န'; multiple observed bytes share this output
+    page 210: 2B 2C 23 29 2F 4C 3C 4D [4E] 3D 40 2B 4F 24 25 26 3E
+    page 210: 2B 2C 23 29 2F 4C 3C 4D [4E] 3D 40 2B 4F 27 24 33 2B
+    page 210: 3A 30 2B 2C 27 24 25 26 [4E] 3C 36 40 2B
+  4F: occurrences=1593; old output='့'; unresolved
+    page 210: 2F 4C 3C 4D 4E 3D 40 2B [4F] 24 25 26 3E 30 2B 38
+    page 210: 3F 34 40 2B [4F]
+    page 210: 3F 34 40 2B [4F] 44 36 46 29 53 3E 30 2B
+  50: occurrences=25; old output='္ခ'; multiple code points
+    page 210: 27 2E 2F 30 2B 2C 23 42 [50] 3B 32
+    page 210: 3E 46 42 48 24 23 42 [50] 3B 32
+    page 210: 3A 2E 2F 30 2B 2C 23 42 [50] 3B 32 4E 3D 40 2B 4F 27
+  53: occurrences=139; old output='ါ်'; unresolved
+    page 210: 34 40 2B 4F 44 36 46 29 [53] 3E 30 2B 38
+    page 210: 3B 3B 33 2B 44 36 46 29 [53] 3E 30 2B 38
+    page 210: 54 25 26 44 36 27 46 29 [53] 3E 30 2B 38
+  5E: occurrences=612; old output='ြ'; unresolved
+    page 210: [5E] 42 51 42 5C 4A 52 27
+    page 211: 26 4A 29 40 2B 2C 51 27 [5E] 42 28 27 4A 29 28 27 4A
+    page 211: 26 4A 29 40 2B 2C 51 27 [5E] 42 26 28 27 4A 29 26 28
+  5F: occurrences=173; old output='ျွ'; unresolved
+    page 210: 29 [5F] 51 29 5C 52 2F 27
+    page 211: 52 [5F] 27 4E 3D 40 2B 4F 24 25
+    page 211: 4A 29 40 2B 2C 51 27 42 [5F] 28 27 29 5F 28 27 64 5F
+  60: occurrences=289; old output='ျှ'; unresolved
+    page 210: 3A [60] 51 3A 5C 52 2F 27
+    page 211: 52 [60] 27 4E 3D 40 2B 4F 24 25
+    page 211: 4A 29 40 2B 2C 51 27 31 [60] 28 27 3A 60 28 27 3E 60
+  61: occurrences=22; old output='ှ'; unresolved
+    page 210: 4A 40 [61] 51 40 5C 4A 52 27
+    page 211: 5C 27 52 [61] 27 63 44 55 3C 36 2C 5D
+    page 211: 2C 51 27 40 3D 28 27 30 [61] 28 27 4E 3D 28 27 31 3D
+  62: occurrences=69; old output='ွှ'; unresolved
+    page 211: 3B [62] 51 3B 5C 52 3D 27
+    page 211: 4A 31 [62] 51 31 5C 4A 52 27
+    page 211: 52 [62] 27 4E 3D 40 2B 4F 24 25
+  6B: occurrences=55; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 212: [6B] 38 4A 31 2A 2B 31 32 23
+    page 215: 21 22 [6B]
+    page 216: [6B] 38 6A 2B 6A 27
+  6F: occurrences=1106; old output='ြ'; unresolved
+    page 213: 3E 40 2B 34 36 2A 2B 2C [6F] 42 49 2C 3E 40 2B 70 3C
+    page 213: 3E 40 2B 34 36 2A 2B 2C [6F] 42 49 2C 24 26 40 2B 27
+    page 213: 46 5E 42 32 42 2B 28 27 [6F] 42 4C 3C 42 2B 38
+  70: occurrences=92; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 213: 2C 6F 42 49 2C 3E 40 2B [70] 3C 36 2C 24 26 40 2B 27
+    page 213: 3E 30 2B 38 27 3E 40 2B [70] 3C 36 2C 3E 40 2B 34 36
+    page 217: 46 2A 64 2F 32 28 27 79 [70] 3C 36 40 2B 66 32 28 27
+  72: occurrences=145; old output='ှု'; unresolved
+    page 215: 27 4A 31 2A 2B 31 32 31 [72] 4A 34 4C 42 32 27 3E 35
+    page 215: 4A 31 2A 2B 31 32 31 [72] 4A 34 4C 42 32 27 46 3B
+    page 219: 31 [72]
+  75: occurrences=4; old output='ဋ'; multiple observed bytes share this output
+    page 216: 6E 38 [75] 2B 75 52 3E 24 2B 43 75
+    page 216: 6E 38 75 2B [75] 52 3E 24 2B 43 75 2B
+    page 216: 75 2B 75 52 3E 24 2B 43 [75] 2B
+  7A: occurrences=235; old output='္ဗ'; multiple code points
+    page 216: 2B 34 52 3E 24 2B 74 31 [7A] 7B 79 3C 34 2B
+    page 218: 6D 30 2B 2C 28 27 3E 31 [7A] 4E 85 24 3C 36 41 42 3C
+    page 251: 3E 31 [7A] 4E 85
+  7B: occurrences=7; old output='ူ'; unresolved
+    page 216: 34 52 3E 24 2B 74 31 7A [7B] 79 3C 34 2B
+    page 219: 21 5D 46 4A 31 5C 4A 4B [7B] 51 46 4A 31 4A 4B 7B
+    page 219: 4B 7B 51 46 4A 31 4A 4B [7B]
+  7D: occurrences=1; old output='္က'; multiple code points
+    page 216: 2B 3A 52 3E 24 2B 24 42 [7D] 3E 3C 36 3A 2B
+  7E: occurrences=1; old output='္ဇ'; multiple code points
+    page 216: 43 52 3E 24 2B 3E 3C 6C [7E] 4C 3C 43 2B 2C
+  82: occurrences=171; old output='ြ'; unresolved
+    page 217: 4B 32 2B 4A 34 29 25 4F [82] 34 49 2C 4A 4B 33 2B 3E
+    page 223: 4B 32 2B 4A 34 29 25 4F [82] 34 49 2C 27 4A 4B 33 2B
+    page 223: 2C 54 3C 36 42 2B 46 2A [82] 34 49 38 27
+  83: occurrences=8; old output='္ဂ'; multiple code points
+    page 217: 42 2B 24 32 28 27 31 64 [83] 74 40 2B 2C 28
+    page 223: 27 34 36 64 [83] 3A 2A 32 31 2B 33 32 2C
+    page 223: 34 36 64 [83] 3A 2A 32 31 2B 33 32 2C
+  85: occurrences=237; old output='္ဓ'; multiple code points
+    page 218: 2B 2C 28 27 3E 31 7A 4E [85] 24 3C 36 41 42 3C 36 27
+    page 227: 31 44 32 2E 4E [85] 4C 3A 34 2A 2B 2C 4A 29
+    page 227: 30 2B 27 31 44 32 2E 4E [85] 4C 3A 34 2A 2B 2C 4A 29
+  88: occurrences=4; old output='င်္'; unresolved
+    page 235: 27 3E 5A 4D 23 42 [88] 2F 3E 30 2B 27
+    page 261: 42 42 5D 31 3E 3C 64 [88] 3E 30 2B 27 31 3E 49 24
+    page 261: 29 29 27 5D 31 3E 3C 64 [88] 3E 30 2B 27 31 3E 49 24
+  89: occurrences=5; old output='ဋ'; multiple observed bytes share this output
+    page 240: 27 [89] 5D 27 34 3C 36 40 2B 54
+    page 251: 27 [89] 5D 24 33 2B 29 36 82 34
+    page 252: 27 [89] 5D 3E 5A 55 31 40 2B 2C
+  8B: occurrences=1; old output='္ဆ'; multiple code points
+    page 241: 3E 30 2B 27 24 3C 3B 33 [8B] 32 2A 2B 70 35 36
+  8D: occurrences=3; old output='္တ'; multiple code points
+    page 242: 4A 31 3E 30 2B 27 31 4E [8D] 46 3A 2C 3E 3C 36 41 27
+    page 249: 2B 31 3D 27 31 4E [8D] 46 3A 2C
+    page 263: 2C 43 47 2C 65 27 23 4E [8D] 3B 32 3F 2B 6F 42 49 2C
+  8E: occurrences=1; old output='္ဘ'; multiple code points
+    page 248: 2B 24 26 40 2B 27 42 31 [8E] 32 57 27 3A 5A 6C 49 2C
+  8F: occurrences=1; old output='္ထ'; multiple code points
+    page 254: 5A 28 27 23 3B 32 43 24 [8F] 4C 28 27 23 46 5E 42 32
+  90: occurrences=34; old output='္မ'; multiple code points
+    page 254: 2C 3E 31 49 2C 3A 3C 31 [90] 32
+    page 273: 3C 36 40 2B 2C 3A 3C 31 [90] 32
+    page 273: 3A 3C 31 [90] 32 46 23 32 40 2B
+  92: occurrences=482; old output='ဏ္ဍ'; multiple code points
+    page 268: 2B 4F 27 43 47 42 2F 42 [92]
+    page 268: 40 2B 4F 43 47 42 2F 42 [92]
+    page 268: 43 47 42 2F 42 [92] 23 46 5E 42 32 40 2B 2C
+
+==============================================================================
+mm-grammar.pdf /TT49 (LOZWCO+Arlarwade)
+SHA-256: ab7518c9f0347ee639244fe89fce37115fb9f4fd0fa5b7b065c08ff104bb4c25
+Direct entries: 55; review resolutions: 12; unresolved byte slots: 61
+
+CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
+  2B = 'န'  မြန်မာသဒ္ဒါ / 2F 30 2B 2C 30 31 39 48 7B 5B (page 295)
+  2C = '်'  မြန်မာသဒ္ဒါ / 2F 30 2B 2C 30 31 39 48 7B 5B (page 295)
+  2F = 'ြ'  မြန်မာသဒ္ဒါ / 2F 30 2B 2C 30 31 39 48 7B 5B (page 295)
+  31 = 'ာ'  မြန်မာသဒ္ဒါ / 2F 30 2B 2C 30 31 39 48 7B 5B (page 295)
+  35 = 'ိ'  candidate window အထိ / 24 4F 35 (page 279)
+  3E = '္ခ'  နက္ခတ် / 33 3F 28 28 28 3F 2B 33 3E 25 2C 29 28 32 33 (page 298)
+    Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives.
+  58 = 'ဏ္ဌ'  သဏ္ဌာန် / 33 31 32 29 28 39 58 31 2B 2C 29 28 52 (page 299)
+    Anchors can contain provisional mappings; source and PDF editions may differ. The complete candidate report preserves possible alternatives.
+  5B = 'ါ'  မြန်မာသဒ္ဒါ / 2F 30 2B 2C 30 31 39 48 7B 5B (page 295)
+  6E = '္တ'  သတ္တိ / 39 25 6E 35 (page 297)
+  7B = '္ဒ'  မြန်မာသဒ္ဒါ / 2F 30 2B 2C 30 31 39 48 7B 5B (page 295)
+    Some occurrences follow other preceding bytes; do not infer that the same writing glyph is valid for a different upper consonant.
+  85 = '္စ'  ကိစ္စ / 33 35 32 85 (page 295)
+    Some occurrences follow other preceding bytes; do not infer that the same writing glyph is valid for a different upper consonant.
+  91 = '္မ'  ဓမ္မ / 72 30 91 (page 297)
+
+UNRESOLVED (the legacy output is not an answer):
+  22: occurrences=83; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 279: 21 [22] 23
+    page 279: 28 23 45 44 44 46 23 45 [22] 22 4A 30 3A 32 4B 28 52
+    page 279: 23 45 44 44 46 23 45 22 [22] 4A 30 3A 32 4B 28 52 36
+  26: occurrences=587; old output='ဲ'; unresolved
+    page 279: 24 25 [26] 27 28 21 29 28 24 2A 2B
+    page 279: 41 25 27 4C 38 35 3A 2A [26] 4D 38 39 4E 2C 3F 28 4F
+    page 279: 39 51 36 2D 2F 52 53 2A [26] 4D 41 39 31 28 2F 30 2B
+  27: occurrences=1183; old output='ွ'; unresolved
+    page 279: 24 25 26 [27] 28 21 29 28 24 2A 2B 2C
+    page 279: 28 39 35 30 3A 25 2C 3B [27] 3C 2C 30 3D 31 2D
+    page 279: 4A 30 3A 32 4B 28 41 25 [27] 4C 38 35 3A 2A 26 4D 38
+  2D: occurrences=6036; old output='း'; unresolved
+    page 279: 28 21 29 28 24 2A 2B 2C [2D] 28 2E
+    page 279: 30 2B 2C 30 31 32 33 31 [2D] 34 35 36 37 2C 38 31 28
+    page 279: 2C 3B 27 3C 2C 30 3D 31 [2D]
+  36: occurrences=4055; old output='ု'; unresolved
+    page 279: 30 31 32 33 31 2D 34 35 [36] 37 2C 38 31 28 39 35 30
+    page 279: 38 2D 24 39 31 2D 33 35 [36] 28 2F 30 2B 2C 30 31 39
+    page 279: 49 46 23 23 28 38 31 32 [36] 4A 30 3A 32 4B 28 41 25
+  38: occurrences=1713; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 279: 33 31 2D 34 35 36 37 2C [38] 31 28 39 35 30 3A 25 2C
+    page 279: 30 2B 2C 30 31 24 33 3E [38] 31
+    page 279: 30 40 [38] 37 2C 2D 24 41 38 2D 24
+  3A: occurrences=1379; old output='ှ'; unresolved
+    page 279: 37 2C 38 31 28 39 35 30 [3A] 25 2C 3B 27 3C 2C 30 3D
+    page 279: 23 28 38 31 32 36 4A 30 [3A] 32 4B 28 41 25 27 4C 38
+    page 279: 4B 28 41 25 27 4C 38 35 [3A] 2A 26 4D 38 39 4E 2C 3F
+  3D: occurrences=1793; old output='ျ'; unresolved
+    page 279: 3A 25 2C 3B 27 3C 2C 30 [3D] 31 2D
+    page 279: 41 38 2D 24 39 31 2D 30 [3D] 31 2D
+    page 279: 41 38 2D 24 39 31 2D 30 [3D] 31 2D 3F 28 28 28 28
+  40: occurrences=632; old output='ူ'; unresolved
+    page 279: 30 [40] 38 37 2C 2D 24 41 38 2D
+    page 279: 52 51 36 33 35 36 28 30 [40] 38 37 2C 2D 24 41 38 2D
+    page 279: 39 4E 2C 30 3A 31 28 30 [40] 55 41 38 2D 39 31 2D 2A
+  41: occurrences=3916; old output='ေ'; unresolved
+    page 279: 30 40 38 37 2C 2D 24 [41] 38 2D 24 39 31 2D 30 3D
+    page 279: 30 31 24 33 3E 38 31 24 [41] 38 2D 24 39 31 2D 33 35
+    page 279: [41] 33 3D 31 2C 28 47 41 24
+  42: occurrences=32; old output='္က'; multiple code points
+    page 279: 2F 30 2B 2C 30 31 39 33 [42] 38 31 43 2C 28 44 45 45
+    page 279: 2A 36 54 3A 32 2C 39 33 [42] 38 31 43 2C 33 35 36 28
+    page 279: 3F 28 39 33 [42] 38 31 43 2C 24 2A 35 36
+  45: occurrences=123; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 279: 33 42 38 31 43 2C 28 44 [45] 45 46
+    page 279: 42 38 31 43 2C 28 44 45 [45] 46
+    page 279: 31 2D 33 35 36 28 69 69 [45] 28 43 31 25 2C 2B 35 52
+  49: occurrences=719; old output='ီ'; unresolved
+    page 279: 3D 31 2C 28 47 41 24 48 [49] 46 23 23 28 38 31 32 36
+    page 279: 54 3A 35 52 2C 4B 28 30 [49] 2D 3B 36 25 2C 63 52 49
+    page 279: 49 2D 3B 36 25 2C 63 52 [49] 2D 24 36 25 2C 2A 27 33
+  4C: occurrences=345; old output='့'; unresolved
+    page 279: 30 3A 32 4B 28 41 25 27 [4C] 38 35 3A 2A 26 4D 38 39
+    page 279: 35 36 50 5C 28 41 25 27 [4C] 54 35 36 37 2C 39 4E 2C
+    page 279: 50 39 4E 2C 28 38 5E 51 [4C] 41 32 2D 2F 52 31 2D 41
+  4D: occurrences=1405; old output='့'; unresolved
+    page 279: 25 27 4C 38 35 3A 2A 26 [4D] 38 39 4E 2C 3F 28 4F 35
+    page 279: 51 36 2D 2F 52 53 2A 26 [4D] 41 39 31 28 2F 30 2B 2C
+    page 279: 31 39 4E 2C 54 3A 37 2C [4D] 24 30 57 28 52 51 36 39
+  50: occurrences=685; old output='့'; unresolved
+    page 279: 30 3A 32 4B 28 3C 41 2B [50] 24 4F 35 28 41 2A 25 2C
+    page 279: 24 33 3E 38 31 25 35 36 [50] 39 4E 2C 28 54 3A 32 2C
+    page 279: 3F 28 4F 35 36 39 35 36 [50] 41 2F 52 31 37 2C 2D 55
+  51: occurrences=1047; old output='ံ'; unresolved
+    page 279: 24 39 [51] 36 2D 2F 52 53 2A 26 4D
+    page 279: 37 2C 4D 24 30 57 28 52 [51] 36 39 58 31 2B 2C 24 34
+    page 279: 2C 2D 55 26 2A 26 4D 52 [51] 36 33 35 36 28 30 40 38
+  53: occurrences=628; old output='ု'; unresolved
+    page 279: 24 39 51 36 2D 2F 52 [53] 2A 26 4D 41 39 31 28 2F
+    page 279: 2D 30 3D 31 2D 28 2F 52 [53] 55 36 52 2C 52 40 41 43
+    page 279: 25 2C 2A 27 33 2C 2F 52 [53] 55 36 52 2C 2F 2A 37 2C
+  54: occurrences=890; old output='န'; multiple observed bytes share this output
+    page 279: 25 35 36 50 39 4E 2C 28 [54] 3A 32 2C 33 31 55 56 33
+    page 279: 56 33 31 55 31 39 4E 2C [54] 3A 37 2C 4D 24 30 57 28
+    page 279: 2D 2F 3B 37 2C 4D 39 35 [54] 35 36 37 2C 39 4E 2C 3F
+  56: occurrences=380; old output='ြ'; unresolved
+    page 279: 28 54 3A 32 2C 33 31 55 [56] 33 31 55 31 39 4E 2C 54
+    page 279: 40 41 43 31 2C 2A 26 4D [56] 33 39 4E 2C 3F 28 24 36
+    page 279: 52 5B 66 37 2C 2A 26 4D [56] 33 39 4E 2C 3F
+  57: occurrences=201; old output='ျှ'; unresolved
+    page 279: 2C 54 3A 37 2C 4D 24 30 [57] 28 52 51 36 39 58 31 2B
+    page 279: 2C 2D 33 35 36 39 35 55 [57] 37 2C 28
+    page 279: 27 4C 38 35 3A 38 39 30 [57] 28 2F 30 2B 2C 30 31 41
+  5E: occurrences=51; old output='ွှ'; unresolved
+    page 279: 35 36 50 39 4E 2C 28 38 [5E] 51 4C 41 32 2D 2F 52 31
+    page 279: 29 28 43 31 25 2C 24 4E [5E] 2B 2C 2D 30 3D 31 2D 33
+    page 305: 2F 52 33 35 2B 2C 2D 4E [5E] 2B 2C 2D 52 32 85 4E 2C
+  5F: occurrences=123; old output='ါ်'; unresolved
+    page 279: 32 2D 2F 52 31 2D 41 52 [5F] 25 27 37 2C 28 60 36 48
+    page 279: 27 37 2C 2D 59 36 41 2A [5F] 39 4E 2C 3F 28 32 5A 2C
+    page 279: 2C 2D 32 31 59 36 41 2A [5F] 39 4E 2C 3F 28 32 5A 2C
+  61: occurrences=77; old output='္ဓ'; multiple code points
+    page 279: 25 27 37 2C 28 60 36 48 [61] 62 36 52 2C 52 27 31 2D
+    page 280: 39 4E 2C 3F 28 60 36 48 [61] 66 37 2C 29 28 43 31 25
+    page 299: 48 92 72 7D 48 [61]
+  62: occurrences=275; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 279: 27 37 2C 28 60 36 48 61 [62] 36 52 2C 52 27 31 2D
+    page 279: 2B 35 52 5B 25 2C 28 39 [62] 36 52 2C 41 3B 31 2C 62
+    page 279: 62 36 52 2C 41 3B 31 2C [62] 36 52 2C 55 51 36 2D 29
+  63: occurrences=153; old output='ြ'; unresolved
+    page 279: 28 30 49 2D 3B 36 25 2C [63] 52 49 2D 24 36 25 2C 2A
+    page 279: 27 2F 52 53 55 36 52 2C [63] 52 49 2D 28
+    page 280: 4E 2C 3F 28 52 36 5D 51 [63] 30 35 53 4C 28 41 55 31
+  66: occurrences=1251; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 279: 25 35 36 37 2C 28 52 5B [66] 37 2C 2A 26 4D 56 33 39
+    page 279: 24 37 2C 2D [66] 29 28
+    page 280: 4E 2C 3F 28 60 36 48 61 [66] 37 2C 29 28 43 31 25 2C
+  68: occurrences=135; old output='ှု'; unresolved
+    page 279: 41 33 31 37 2C 2D 30 [68] 41 32 25 49 52 36 4F 35
+    page 279: 50 41 33 31 37 2C 2D 30 [68] 33 36 39 35 36 55 2C 54
+    page 279: 3D 31 2D 33 35 36 28 54 [68] 35 37 2C 2D 3C 3A 5A 2C
+  6A: occurrences=90; old output='္ပ'; multiple code points
+    page 279: 31 2D 33 35 36 28 33 30 [6A] 4E 2C 2D 24 33 3E 38 31
+    page 280: 38 3A 37 2C 65 28 33 30 [6A] 4E 2C 2D 30 3A 25 2C 25
+    page 297: 52 [6A] 60 90 30 91
+  6C: occurrences=654; old output='ြ'; unresolved
+    page 280: 2D 30 3A 28 43 31 25 2C [6C] 33 49 2D 34 3C 2C 64 26
+    page 281: 2C 28 30 40 55 33 28 24 [6C] 33 49 2D 24 41 39 2D 28
+    page 282: 55 51 36 2D [6C] 33 49 2D 25 37 2C
+  6D: occurrences=15; old output='ူ'; unresolved
+    page 280: 2D 55 36 52 2C 28 55 3A [6D] 48 5B 2B 2C 2D
+    page 302: 47 7C 4A 30 35 25 6E [6D] 30 35 25 2C 25 40
+    page 313: 31 39 4E 2C 3F 28 55 3A [6D]
+  71: occurrences=15; old output='္တ'; multiple code points
+    page 280: 36 37 2C 37 51 28 30 54 [71] 41 55 2D 38 25 2B 31 52
+    page 295: 3E 38 31 47 66 5D 87 54 [71] 4A
+    page 297: 47 66 5D 87 54 [71] 4A
+  75: occurrences=82; old output='ှ'; unresolved
+    page 281: 24 41 4E [75] 31 33 2C 25 35 36 33 41
+    page 281: 4F 35 36 24 41 4E [75] 31 33 2C 25 35 36 39 4E
+    page 301: 47 28 5D 28 4A 52 5A [75] 31 52 5A 2C 5A 75 31
+  77: occurrences=135; old output='င်္'; unresolved
+    page 282: 39 38 39 41 33 [77] 25 30 3D 31 2D 29 28
+    page 282: 52 31 37 2C 2D 39 41 33 [77] 25 30 3D 31 2D 29 28
+    page 289: 39 51 2F 3B 32 2C 24 5D [77] 5B 24 32 35 25 2C 24 52
+  7A: occurrences=12; old output='္ထ'; multiple code points
+    page 289: 39 51 36 2D 2A 51 66 25 [7A] 53 33 35 36 28
+    page 289: 39 51 36 2D 2A 51 66 25 [7A] 53 2F 3B 32 2C 4B 28
+    page 295: 32 25 36 25 [7A]
+  7E: occurrences=15; old output='ဋ'; multiple observed bytes share this output
+    page 292: 48 29 28 2B 29 28 55 3F [7E] 29 28 7F 29 28 80 29 28
+    page 292: [7E] 66 5D 2C 28 7D 28 25 66
+    page 294: [7E] 29 28 78 29 28 80 29 28
+  7F: occurrences=26; old output='ဋ္ဌ'; multiple code points
+    page 292: 2B 29 28 55 3F 7E 29 28 [7F] 29 28 80 29 28 81 29 28
+    page 295: 36 55 2C 29 28 24 72 35 [7F] 31 2B 2C 29 28 39 58 31
+    page 295: [7F] 29 28 58 29 28 32 86
+  84: occurrences=18; old output='္ဇ'; multiple code points
+    page 295: 25 6E 31 29 28 66 35 43 [84] 31 29 28 48 36 33 3E 29
+    page 295: 25 6E 29 28 43 [84] 29 28 33 3E 29 28 32 85
+    page 297: 32 85 43 [84] 4E
+  86: occurrences=18; old output='္ဆ'; multiple code points
+    page 295: 2B 2C 29 28 25 35 38 32 [86] 31 2B 2C
+    page 295: 38 32 [86] 31 2B 2C 28 32 39 4E 2C
+    page 295: 7F 29 28 58 29 28 32 [86]
+  87: occurrences=13; old output='္ဂ'; multiple code points
+    page 295: 24 33 3E 38 31 47 66 5D [87] 54 71 4A
+    page 297: 47 66 5D [87] 54 71 4A
+    page 297: 33 42 5D [87]
+  88: occurrences=4; old output='ဋ'; multiple observed bytes share this output
+    page 295: [88] 46 66 5D 2C 88 78 80 81
+    page 295: 88 46 66 5D 2C [88] 78 80 81 79
+    page 297: [88] 92 88 7D 8C
+  89: occurrences=15; old output='‘'; multiple observed bytes share this output
+    page 296: [89] 7C 29 28 83 29 28 81 29
+    page 296: 30 31 25 35 36 50 33 28 [89] 5D 29 28 43 29 28 80 29
+    page 296: 3C 31 2D 25 27 37 2C 28 [89] 72 2B 35 25 8A 28 59 36
+  8A: occurrences=15; old output='’'; multiple observed bytes share this output
+    page 296: 28 81 29 28 72 29 28 64 [8A] 24 33 3E 38 31 25 35 36
+    page 296: 28 80 29 28 48 29 28 60 [8A] 25 35 36 50 54 3A 37 2C
+    page 296: 37 2C 28 89 72 2B 35 25 [8A] 28 59 36 28 2F 52 39 4E
+  8C: occurrences=3; old output='ဋ္ဋ'; multiple code points
+    page 297: [8C] 8D 8E
+    page 297: 88 92 88 7D [8C]
+    page 297: 33 3F 28 28 28 3F 28 66 [8C] 3F
+  8D: occurrences=3; old output='ဍ္ဍ'; multiple code points
+    page 297: 8C [8D] 8E
+    page 297: 80 92 80 7D [8D]
+    page 297: 3F 28 28 28 3F 28 2A 35 [8D] 31 3F
+  8E: occurrences=4; old output='ဏ္ဏ'; multiple code points
+    page 297: 8C 8D [8E]
+    page 297: 79 92 79 7D [8E]
+    page 297: 33 3F 28 28 28 3F 28 24 [8E] 66 5B 29 28 52 8E 31 3F
+  8F: occurrences=3; old output='္န'; multiple code points
+    page 297: 25 6E 48 7B 54 [8F]
+    page 297: 2B 92 2B 7D 54 [8F]
+    page 297: 3F 28 28 28 3F 28 39 54 [8F] 35 7F 31 2B 2C 3F
+  90: occurrences=78; old output='္ဗ'; multiple code points
+    page 297: 52 6A 60 [90] 30 91
+    page 297: 60 92 60 7D 60 [90]
+    page 297: 28 28 28 3F 28 2B 35 60 [90] 31 2B 2C 29 28 48 35 60
+  93: occurrences=9; old output='္လ'; multiple code points
+    page 298: 28 28 3C 3D 28 28 28 55 [93] 28 28 94 95
+    page 298: 55 92 55 7D 55 [93]
+    page 298: 3F 28 28 28 3F 48 36 55 [93] 64 29 28 39 55 93 31 66
+  94: occurrences=17; old output='ဿ'; multiple observed bytes share this output
+    page 298: 3D 28 28 28 55 93 28 28 [94] 95
+    page 298: 39 92 39 7D [94] 95
+    page 298: 72 33 3F 28 28 28 3F 66 [94] 31 2B 2C 29 28 30 54 36
+  95: occurrences=4; old output='ဿ'; multiple observed bytes share this output
+    page 298: 28 28 28 55 93 28 28 94 [95]
+    page 298: 39 92 39 7D 94 [95]
+    page 298: 94 [95] 2F 3B 32 2C 55 31 39 4E
+  96: occurrences=1; old output='‘'; multiple observed bytes share this output
+    page 298: 28 41 24 31 33 2C 33 28 [96]
+  97: occurrences=1; old output='’'; multiple observed bytes share this output
+    page 298: 3C [97] 39 4E 2C 28 3C 52 37 2C
+  98: occurrences=2; old output='္ဃ'; multiple code points
+    page 298: 5D 92 7C 7D 5D [98]
+    page 298: 28 28 28 3F 28 24 2B 5D [98] 3F
+  99: occurrences=4; old output='္ဈ'; multiple code points
+    page 298: 7D 43 [99]
+    page 298: 3F 28 28 28 3F 28 30 43 [99] 35 30 29 28 5A 52 43 99
+    page 298: 99 35 30 29 28 5A 52 43 [99] 31 3C 2C 3F
+  9A: occurrences=3; old output='္ဖ'; multiple code points
+    page 299: 52 92 3B 7D 52 [9A]
+    page 299: 28 3F 28 43 31 25 35 52 [9A] 35 53 55 2C 3F
+    page 299: 6A 31 3C 2C 29 28 39 30 [9A] 52 6A 55 31 52 29 28 33
+  9B: occurrences=3; old output='္ဘ'; multiple code points
+    page 299: 60 92 64 7D 60 [9B]
+    page 299: 33 3F 28 28 28 3F 24 60 [9B] 54 71 38 3F
+    page 299: 30 90 55 31 29 28 33 30 [9B] 31 3F
+  9C: occurrences=1; old output='ဏ္ဌ'; multiple code points
+    page 299: 33 3F 28 28 28 3F 28 33 [9C] 41 33 31 32 29 28 39 58
+  9D: occurrences=89; old output='ဏ္ဍ'; multiple code points
+    page 299: 39 58 31 2B 2C 29 28 52 [9D] 35 25 3F
+    page 301: 47 33 4A 41 30 [9D] 33
+    page 301: 47 33 4A 41 39 31 [9D]
+  9E: occurrences=3; old output='င်္'; unresolved
+    page 300: 47 33 4A 39 35 5D [9E] 39 35 2B 2C 5D 49
+    page 328: 4A 52 37 2C 2B 49 24 33 [9E] 3D
+    page 329: 24 33 [9E] 3D 33 35 36 38 3A 31 39
+  9F: occurrences=107; old output='ျွ'; unresolved
+    page 303: 2C 2D 29 28 4F 40 2D 2A [9F] 2B 2C 30 68 29 28 39 33
+    page 303: 29 28 39 31 2D 29 28 33 [9F] 2B 2C 41 25 31 2C 3F
+    page 304: 28 39 30 49 2D 29 28 33 [9F] 2B 2C 30 3F
+
+==============================================================================
+mm-grammar.pdf /TT59 (ZUMCYJ+Arlarwade)
+SHA-256: b353b9e2e602b1a65ec182154e49d8d71d9ec9d613718f0dbf01ba02918b4a55
+Direct entries: 32; review resolutions: 0; unresolved byte slots: 32
+
+CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
+
+UNRESOLVED (the legacy output is not an answer):
+  22: occurrences=1; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 412: 21 [22] 21
+  27: occurrences=51; old output='ေ'; unresolved
+    page 412: [27] 28 29 2A 2B 2C 2D 2E 2F
+    page 412: 28 29 2A 2B 2C 2D 2E 2F [27] 30 29 30 31 2A 2D 32 2A
+    page 412: 35 36 29 33 37 38 39 3A [27] 3B 2F 3B 29 2B 2D 31 2A
+  29: occurrences=80; old output='ာ'; unresolved
+    page 412: 27 28 [29] 2A 2B 2C 2D 2E 2F 27 30
+    page 412: 2A 2B 2C 2D 2E 2F 27 30 [29] 30 31 2A 2D 32 2A 33 34
+    page 412: 30 31 2A 2D 32 2A 33 34 [29] 35 36 29 33 37 38 39 3A
+  2A: occurrences=67; old output='်'; unresolved
+    page 412: 27 28 29 [2A] 2B 2C 2D 2E 2F 27 30 29
+    page 412: 2D 2E 2F 27 30 29 30 31 [2A] 2D 32 2A 33 34 29 35 36
+    page 412: 27 30 29 30 31 2A 2D 32 [2A] 33 34 29 35 36 29 33 37
+  2B: occurrences=24; old output='ြ'; unresolved
+    page 412: 27 28 29 2A [2B] 2C 2D 2E 2F 27 30 29 30
+    page 412: 38 39 3A 27 3B 2F 3B 29 [2B] 2D 31 2A 33 2B 28 31 2A
+    page 412: 2F 3B 29 2B 2D 31 2A 33 [2B] 28 31 2A 2F 3A 3C 35 3D
+  2E: occurrences=1; old output='ဲ'; unresolved
+    page 412: 27 28 29 2A 2B 2C 2D [2E] 2F 27 30 29 30 31 2A 2D
+  2F: occurrences=15; old output='့'; unresolved
+    page 412: 27 28 29 2A 2B 2C 2D 2E [2F] 27 30 29 30 31 2A 2D 32
+    page 412: 29 33 37 38 39 3A 27 3B [2F] 3B 29 2B 2D 31 2A 33 2B
+    page 412: 2D 31 2A 33 2B 28 31 2A [2F] 3A 3C 35 3D 3E 3F 40 37
+  32: occurrences=10; old output='န'; multiple observed bytes share this output
+    page 412: 2F 27 30 29 30 31 2A 2D [32] 2A 33 34 29 35 36 29 33
+    page 412: 29 33 3A 27 2C 33 37 39 [32] 2A 45 26
+    page 412: 35 38 [32] 2A 4A 27 42 29 2A 35 57
+  33: occurrences=35; old output='း'; unresolved
+    page 412: 30 29 30 31 2A 2D 32 2A [33] 34 29 35 36 29 33 37 38
+    page 412: 32 2A 33 34 29 35 36 29 [33] 37 38 39 3A 27 3B 2F 3B
+    page 412: 3B 2F 3B 29 2B 2D 31 2A [33] 2B 28 31 2A 2F 3A 3C 35
+  36: occurrences=35; old output='ျ'; unresolved
+    page 412: 2A 2D 32 2A 33 34 29 35 [36] 29 33 37 38 39 3A 27 3B
+    page 412: 3A 3C 35 3D 3E 3F 40 37 [36] 37 41 42 34 2A 2D 39 35
+    page 412: 3F 40 37 [36] 27 43 29 45 3A 3C 27 2B
+  38: occurrences=38; old output='ိ'; unresolved
+    page 412: 33 34 29 35 36 29 33 37 [38] 39 3A 27 3B 2F 3B 29 2B
+    page 412: 2D 39 35 37 3A 2C 40 43 [38] 3D 30 44 2A 2F
+    page 412: 48 49 29 35 36 29 33 37 [38] 39 3A 30 38 43 38 3D 43
+  39: occurrences=39; old output='ု'; unresolved
+    page 412: 34 29 35 36 29 33 37 38 [39] 3A 27 3B 2F 3B 29 2B 2D
+    page 412: 37 36 37 41 42 34 2A 2D [39] 35 37 3A 2C 40 43 38 3D
+    page 412: 49 29 35 36 29 33 37 38 [39] 3A 30 38 43 38 3D 43 30
+  3D: occurrences=29; old output='ှ'; unresolved
+    page 412: 2B 28 31 2A 2F 3A 3C 35 [3D] 3E 3F 40 37 36 37 41 42
+    page 412: 39 35 37 3A 2C 40 43 38 [3D] 30 44 2A 2F
+    page 412: 37 38 39 3A 30 38 43 38 [3D] 43 30 44 2A 26
+  3E: occurrences=24; old output='ီ'; unresolved
+    page 412: 28 31 2A 2F 3A 3C 35 3D [3E] 3F 40 37 36 37 41 42 34
+    page 412: 3C 35 3D [3E] 3F 40 37 36 37 41 42 34
+    page 412: 4B 37 4C 3A 3C 35 3D [3E] 3F 40 37 36 37 41 35 36
+  3F: occurrences=32; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 412: 31 2A 2F 3A 3C 35 3D 3E [3F] 40 37 36 37 41 42 34 2A
+    page 412: [3F] 40 37 36 27 43 29 45 3A
+    page 412: 3C 35 3D 3E [3F] 40 37 36 37 41 42 34 2A
+  40: occurrences=37; old output='ါ'; unresolved
+    page 412: 2A 2F 3A 3C 35 3D 3E 3F [40] 37 36 37 41 42 34 2A 2D
+    page 412: 34 2A 2D 39 35 37 3A 2C [40] 43 38 3D 30 44 2A 2F
+    page 412: 3F [40] 37 36 27 43 29 45 3A 3C
+  41: occurrences=21; old output='ဏ္ဍ'; multiple code points
+    page 412: 35 3D 3E 3F 40 37 36 37 [41] 42 34 2A 2D 39 35 37 3A
+    page 412: 35 3D 3E 3F 40 37 36 37 [41] 42 34 2A 2D 39 35 37 2C
+    page 412: 35 3D 3E 3F 40 37 36 37 [41] 35 36 29 33 30 44 2A 3A
+  43: occurrences=24; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 412: 2A 2D 39 35 37 3A 2C 40 [43] 38 3D 30 44 2A 2F
+    page 412: 3F 40 37 36 27 [43] 29 45 3A 3C 27 2B 2D 2D
+    page 412: 29 33 37 38 39 3A 30 38 [43] 38 3D 43 30 44 2A 26
+  46: occurrences=13; old output='ံ'; unresolved
+    page 412: 29 45 3A 3C 27 2B 2D 2D [46] 30 27 47 29 3B 37 48 49
+    page 412: 4A 45 3A 3C 27 2B 2D 2D [46] 30 27 47 29 3B 37 48 49
+    page 412: 44 2A 3A 3C 35 3D 3E 2D [46] 3F 40 37 36 37 41 45 27
+  48: occurrences=6; old output='္ခ'; multiple code points
+    page 412: 2D 46 30 27 47 29 3B 37 [48] 49 29 35 36 29 33 37 38
+    page 412: 2D 46 30 27 47 29 3B 37 [48] 49 29 35 36 29 33
+  4A: occurrences=12; old output='့'; unresolved
+    page 412: 37 36 27 43 29 42 38 39 [4A] 45 3A 3C 27 2B 2D 2D 46
+    page 412: 38 50 51 43 3E 42 38 39 [4A] 30 44 2A 3A 47 39 43 29
+    page 412: 3E 33 31 54 2A 42 38 39 [4A] 37 38 39 3A
+  4D: occurrences=1; old output='့'; unresolved
+    page 412: 37 36 37 41 45 27 43 3D [4D] 4E 43 38 3D 30 44 2A 26
+  50: occurrences=3; old output='န'; multiple observed bytes share this output
+    page 412: 37 38 [50] 51 43 29 3A 37 38 50 51
+    page 412: 38 50 51 43 29 3A 37 38 [50] 51 43 3E 42 38 39 4A 30
+    page 412: 41 45 3A 37 42 59 29 33 [50] 3D 31 2A 2F 53 37 38 54
+  51: occurrences=2; old output='္န'; multiple code points
+    page 412: 37 38 50 [51] 43 29 3A 37 38 50 51 43
+    page 412: 50 51 43 29 3A 37 38 50 [51] 43 3E 42 38 39 4A 30 44
+  53: occurrences=4; old output='ြ'; unresolved
+    page 412: 30 34 2A 30 3E 33 [53] 37 3E 33 31 54 2A 42 38
+    page 412: 59 29 33 50 3D 31 2A 2F [53] 37 38 54 29 3C 5A 37 29
+    page 412: 4B [53] 37 38 54 29 4C
+  56: occurrences=10; old output='ွ'; unresolved
+    page 412: 55 [56] 42 2A 54 57 52
+    page 412: 2B 35 42 2A 34 [56] 29 47 39 43 29 33 30 44
+    page 412: 31 40 3C 27 35 [56]
+  57: occurrences=7; old output='ူ'; unresolved
+    page 412: 55 56 42 2A 54 [57] 52
+    page 412: 32 2A 4A 27 42 29 2A 35 [57] 45 26
+    page 412: 32 29 33 27 42 29 2A 35 [57] 3B 38 39 30 44 2A 3A 3A
+  59: occurrences=3; old output='္တ'; multiple code points
+    page 412: 37 36 37 41 45 3A 37 42 [59] 29 33 50 3D 31 2A 2F 53
+    page 412: 4B 37 42 [59] 29 33 4C
+    page 412: 4B 37 42 [59] 29 33 4C 3A 3A 3A 27 2D
+  5A: occurrences=1; old output='ြ'; unresolved
+    page 412: 2A 2F 53 37 38 54 29 3C [5A] 37 29 33 4E 3B 44 2A 33
+  5D: occurrences=1; old output='ု'; unresolved
+    page 412: 43 3D 31 2A 2B 2C [5D] 47 38 27 3B 29 2F 5C 39
+  5E: occurrences=5; old output='င်္'; unresolved
+    page 412: 2B 2D 27 30 [5E] 2F 30 44 2A 3A
+    page 412: 2B 2D 27 30 [5E] 2F 30 44 2A 3A 5F 38 39
+  60: occurrences=1; old output='ါ်'; unresolved
+    page 412: 29 33 4C 3A 3A 3A 27 2D [60] 52
+
+==============================================================================
+mm-grammar.pdf /TT62 (RXGFSZ+Arlarwade)
+SHA-256: 286c99574ea17ff9806328746e5d56fa4f3399863d44978413ba5ffc458eed59
+Direct entries: 48; review resolutions: 0; unresolved byte slots: 50
+
+CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
+
+UNRESOLVED (the legacy output is not an answer):
+  23: occurrences=720; old output='ာ'; unresolved
+    page 417: 21 22 [23] 24 25 26 27 24 28 29 2A
+    page 417: 2F 30 2D 22 2E 31 [23]
+    page 417: 2F 30 2B [23] 32 2C
+  24: occurrences=763; old output='း'; unresolved
+    page 417: 21 22 23 [24] 25 26 27 24 28 29 2A 2B
+    page 417: 21 22 23 24 25 26 27 [24] 28 29 2A 2B 2C 24
+    page 417: 26 27 24 28 29 2A 2B 2C [24]
+  26: occurrences=116; old output='ံ'; unresolved
+    page 417: 21 22 23 24 25 [26] 27 24 28 29 2A 2B 2C 24
+    page 417: 22 [26] 4D 43 30 47 52 47 43 30
+    page 417: 22 [26] 3B 27 62 2C 42 45 43 30
+  27: occurrences=362; old output='ု'; unresolved
+    page 417: 21 22 23 24 25 26 [27] 24 28 29 2A 2B 2C 24
+    page 417: 22 56 2E [27] 57 2C 24
+    page 417: 22 23 30 3E 35 21 2C 4A [27] 59 3B 5A 24 35 21 2C 4A
+  2A: occurrences=38; old output='ွှ'; unresolved
+    page 417: 23 24 25 26 27 24 28 29 [2A] 2B 2C 24
+    page 417: 3B 27 25 63 2E 5C 2C 29 [2A] 2B 2C 24 21 29 2C 24 40
+    page 417: 22 2E 2B 2C 24 29 [2A] 2B 2C 24 3B 21 3C 29 2C
+  2B: occurrences=474; old output='န'; multiple observed bytes share this output
+    page 417: 24 25 26 27 24 28 29 2A [2B] 2C 24
+    page 417: [2B]
+    page 417: 2F 30 [2B] 23 32 2C
+  2C: occurrences=1679; old output='်'; unresolved
+    page 417: 25 26 27 24 28 29 2A 2B [2C] 24
+    page 417: 2F 30 2B 23 32 [2C]
+    page 417: 30 2F 30 33 2E 34 35 [2C]
+  2D: occurrences=134; old output='ြ'; unresolved
+    page 417: [2D] 22 2E
+    page 417: 2F 30 [2D] 22 2E 31 23
+    page 417: [2D] 22 2E 33 2E
+  2E: occurrences=723; old output='ိ'; unresolved
+    page 417: 2D 22 [2E]
+    page 417: 2F 30 2D 22 [2E] 31 23
+    page 417: 30 30 33 [2E]
+  33: occurrences=367; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 417: 30 30 [33] 2E
+    page 417: 30 2F 30 [33] 2E 34 35 2C
+    page 417: 2D 22 2E [33] 2E
+  36: occurrences=474; old output='ေ'; unresolved
+    page 417: 30 2D 22 2E 31 23 33 2E [36] 37 37 2B
+    page 417: 2F 30 2B 23 32 33 2E [36] 37 37 2B 30 30 28 23
+    page 417: 30 2F 30 28 23 [36] 32 3D 2E 35 2C
+  38: occurrences=20; old output='္ဗ'; multiple code points
+    page 417: 30 2F 30 37 32 [38] 39 3A
+    page 417: 4A 4B 22 2C 4C 3B 37 32 [38] 39 3A
+    page 417: 2C 32 60 5F 4C 3B 37 32 [38] 39 3A
+  39: occurrences=73; old output='န'; multiple observed bytes share this output
+    page 417: 30 2F 30 37 32 38 [39] 3A
+    page 417: 4B 22 2C 4C 3B 37 32 38 [39] 3A
+    page 417: 32 60 5F 4C 3B 37 32 38 [39] 3A
+  3A: occurrences=20; old output='္ဓ'; multiple code points
+    page 417: 30 2F 30 37 32 38 39 [3A]
+    page 417: 22 2C 4C 3B 37 32 38 39 [3A]
+    page 417: 60 5F 4C 3B 37 32 38 39 [3A]
+  3C: occurrences=44; old output='္စ'; multiple code points
+    page 417: 2F 30 3B 21 [3C] 29 2C 24
+    page 417: 24 29 2A 2B 2C 24 3B 21 [3C] 29 2C 24 46 52 43 30 46
+    page 417: 24 29 2A 2B 2C 24 3B 21 [3C] 29 2C 24 30 3E 2D 22 2E
+  3F: occurrences=13; old output='္တ'; multiple code points
+    page 417: 22 30 3E 22 35 [3F] 23 24 33 2E 40 41 42 43
+    page 417: 22 35 [3F] 23 24 4D 43 30
+    page 417: 22 35 [3F] 23 24 3B 27 62 2C 42 45
+  44: occurrences=241; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 417: 24 33 2E 40 41 42 43 30 [44] 45 43 30 46 47 46 43 30
+    page 417: 30 46 47 46 43 30 46 42 [44] 43
+    page 417: 3E 2B 51 33 2E 40 46 52 [44] 43 30 48 41 46 43 30 47
+  45: occurrences=201; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 417: 33 2E 40 41 42 43 30 44 [45] 43 30 46 47 46 43 30 46
+    page 417: 48 47 48 43 30 47 [45] 42
+    page 417: 43 30 48 47 47 43 30 47 [45] 42
+  49: occurrences=80; old output='့'; unresolved
+    page 417: 22 30 3E 22 2B 2C [49] 37 35 2C 4A 4B 22 2C 4C
+    page 417: 22 60 5F 37 2E 27 [49] 30 3E 61 3B 32 23 21 29
+    page 417: 22 2B 2C [49] 37 35 2C 4A 4B 22 2C 4C
+  4B: occurrences=271; old output='ျ'; unresolved
+    page 417: 22 2B 2C 49 37 35 2C 4A [4B] 22 2C 4C 3B 37 32 2C 40
+    page 417: 22 30 3E 33 54 22 [4B] 55 22 2C 37 32 2C 40 46
+    page 417: 22 30 3E 28 4A [4B] 2E 2B 2C 4C 3B 33 2E 40
+  4C: occurrences=336; old output='ြ'; unresolved
+    page 417: 49 37 35 2C 4A 4B 22 2C [4C] 3B 37 32 2C 40 48 4D 41
+    page 417: 4F 22 2C 4A 4F 23 50 23 [4C] 3B 33 2E 40 41 42 43 30
+    page 417: 22 30 3E 36 2B 50 23 [4C] 3B 33 2E 40 41 42 43 30
+  4F: occurrences=87; old output='ွ'; unresolved
+    page 417: 22 30 3E 4E [4F] 22 2C 4A 4F 23 50 23 4C
+    page 417: 22 30 3E 4E 4F 22 2C 4A [4F] 23 50 23 4C 3B 33 2E 40
+    page 418: 22 [4F] 23 30 3E 33 54 22 4B 36
+  50: occurrences=172; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 417: 3E 4E 4F 22 2C 4A 4F 23 [50] 23 4C 3B 33 2E 40 41 42
+    page 417: 22 30 3E 36 2B [50] 23 4C 3B 33 2E 40 41 42
+    page 417: 22 23 [50] 2B 2C 25 2E 27 22 2C 2D
+  54: occurrences=157; old output='ါ'; unresolved
+    page 417: 22 30 3E 33 [54] 22 4B 55 22 2C 37 32 2C
+    page 417: 35 29 2C 24 22 30 3E 33 [54] 22 4B 55 22 2C 37 32 2C
+    page 417: 22 23 30 3E 33 [54] 22 4B 55 22 2C 37 32 2C
+  56: occurrences=16; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 417: 22 [56] 2E 27 57 2C 24
+    page 418: 22 2E 31 23 3B 27 62 2C [56] 2E 27 24 47 44 41
+    page 421: 24 75 65 36 37 23 30 3E [56] 65 3B 22 21 29 2C 24 40
+  59: occurrences=14; old output='ြ'; unresolved
+    page 417: 23 30 3E 35 21 2C 4A 27 [59] 3B 5A 24 35 21 2C 4A 27
+    page 417: 22 23 30 3E 35 21 2C [59] 3B 5B 2E 5C 2C 2B 22 2C
+    page 420: 35 21 2C 4A 27 [59] 3B 5A 24 35 21 2C 4A 27
+  5A: occurrences=21; old output='ီ'; unresolved
+    page 417: 3E 35 21 2C 4A 27 59 3B [5A] 24 35 21 2C 4A 27 4C 3B
+    page 418: 22 4B 21 [5A] 30 3E 37 4A 66 4B 23 36
+    page 419: 21 [5A] 30 3E 37 4A 4B 66 23 36
+  5B: occurrences=38; old output='ု'; unresolved
+    page 417: 23 30 3E 35 21 2C 59 3B [5B] 2E 5C 2C 2B 22 2C 4C 3B
+    page 417: 22 23 5C 2C 30 3E 32 4B [5B] 2E 24 4C 3B 21 29 2C 24
+    page 418: 22 4B [5B] 3B 2C 30 3E 2B 21 40 44
+  5D: occurrences=27; old output='ျှ'; unresolved
+    page 417: 22 23 32 [5D] 4C 5E 5C 2C 5F 30 3E 3B
+    page 420: 28 22 4B 5B 2E 24 36 32 [5D] 23 2C 4C 3B 37 32 2C 40
+    page 422: 39 68 5C 2C 5F 28 32 [5D] 30 3E 25 2E 27 22 2C 36
+  5F: occurrences=101; old output='့'; unresolved
+    page 417: 22 23 32 5D 4C 5E 5C 2C [5F] 30 3E 3B 32 23 57 4C 3B
+    page 417: 22 60 [5F] 37 2E 27 49 30 3E 61 3B
+    page 417: 22 26 28 4C 5E 29 2C [5F] 3B 27 62 2C 42 46
+  60: occurrences=56; old output='ဲ'; unresolved
+    page 417: 22 [60] 5F 37 2E 27 49 30 3E 61
+    page 417: 22 2B 2C 49 37 35 2C 32 [60] 5F 4C 3B 2D 22 2E 31 23
+    page 417: 22 2B 2C 49 37 35 2C 32 [60] 5F 4C 3B 37 32 38 39 3A
+  63: occurrences=3; old output='္လ'; multiple code points
+    page 417: 22 2E 27 30 3E 3B 27 25 [63] 2E 5C 2C 29 2A 2B 2C 24
+    page 421: 2B 3B 27 25 [63] 2E 5C 2C 46 45
+    page 423: 3B 27 25 [63] 2E 5C 2C 46 45 43 30 46
+  64: occurrences=16; old output='ဏ္ဍ'; multiple code points
+    page 417: 30 30 30 33 54 22 4B 22 [64] 48 41 44
+    page 417: 30 30 30 33 54 22 4B 22 [64] 48 41 52
+    page 418: 37 37 2B 33 54 22 4B 22 [64]
+  65: occurrences=49; old output='ူ'; unresolved
+    page 418: 2C 30 3E 36 4C 3B 23 37 [65] 2B 21 40 46 46 4D
+    page 418: 2C 30 3E 36 4C 3B 23 37 [65] 2B 21 40 46 46 4D 43 30
+    page 418: 67 22 23 24 2B 23 37 [65] 2B 23 32 2C 21 23 24 46
+  66: occurrences=42; old output='င်္'; unresolved
+    page 418: 22 4B 30 3E 37 4A [66] 4B 23 36 25 24 2B 22 2C
+    page 418: 22 4B 21 5A 30 3E 37 4A [66] 4B 23 36 25 24 2B 22 2C
+    page 418: 2E 32 2C 30 3E 37 4A 4B [66] 23 21 29 2C 24 40 47 46
+  67: occurrences=37; old output='ြ'; unresolved
+    page 418: [67] 22 30 3E 22 2E 2B 2C 24
+    page 418: [67] 22 30 3E 21 29 2C 24 40
+    page 418: [67] 22 22 27 2B 2C 30 3E 22
+  68: occurrences=88; old output='ှ'; unresolved
+    page 418: 67 22 23 24 39 [68] 5C 2C 5F 36 2B 23 22 2C
+    page 419: 5C [68] 23 30 3E 50 29 2C 21 65
+    page 419: 21 23 4A 4B 2B 2C 32 [68] 35 2C 30 3E 36 3B 31 4B
+  69: occurrences=9; old output='ျွ'; unresolved
+    page 418: 22 [69] 2B 2C 36 35 23 2C 30 3E
+    page 418: 22 [69] 39 27 2C 3B 2C 30 3E 36
+    page 418: 22 [69] 39 27 2C 3B 2C 30 3E 2B
+  6A: occurrences=7; old output='္ဂ'; multiple code points
+    page 418: 35 23 2C 30 3E 3B 27 58 [6A] 25 2B 21 40 4D 53
+    page 418: 2C 3B 2C 30 3E 3B 27 58 [6A] 25 2B 21 40 4D 53
+    page 418: 2B 2C 32 30 3E 3B 27 58 [6A] 25 2B 21 40 4D 53
+  6B: occurrences=19; old output='္ခ'; multiple code points
+    page 418: 36 4E 23 5C 2C 5F 28 22 [6B] 50 23 40 48 44 48
+    page 418: 33 2B 2C 24 30 3E 28 22 [6B] 50 23 28 33 2E 27 5C 2C
+    page 419: 36 6D 23 37 28 22 [6B] 50 23
+  6E: occurrences=12; old output='့'; unresolved
+    page 419: 22 23 24 37 26 5E 60 4F [6E] 4E 26 27 24 47 53 48
+    page 423: 21 3C 29 2C 24 36 50 68 [6E] 55 22 2C 2D 22 2E 31 23
+    page 423: 3B 27 62 2C 5E 60 4F [6E] 21 29 2C 24 3B 26 27 47
+  6F: occurrences=2; old output='္ထ'; multiple code points
+    page 419: 21 35 27 35 [6F] 28 22 6B 50 23
+    page 431: 82 35 [6F] 2E 25 2E 5C 2C
+  70: occurrences=3; old output='ှ'; unresolved
+    page 419: 21 2E 27 49 30 3E 29 [70] 2E 39 71 2E 5C 2C 24 33
+    page 420: 29 [70] 2E 39 71 2E 5C 2C 24 33
+    page 425: 36 28 23 5C 2C 30 3E 29 [70] 2E 39 71 2E 5C 2C 24 33
+  71: occurrences=21; old output='ှု'; unresolved
+    page 419: 27 49 30 3E 29 70 2E 39 [71] 2E 5C 2C 24 33 2E 40 46
+    page 420: 29 70 2E 39 [71] 2E 5C 2C 24 33 2E 34 35
+    page 421: 4E 22 2C 30 3E 39 2E [71] 5C 2C 24 31 68 61 2C 4C
+  73: occurrences=7; old output='္ဒ'; multiple code points
+    page 420: 55 39 [73] 29 2A 2B 2C 33 2E 34 35
+    page 420: 55 39 [73] 33 54 22 4B 46 42 4D 43
+    page 422: 3B 54 36 21 30 3E 55 39 [73] 29 2A 2B 2C 33 2E 40 46
+  74: occurrences=3; old output='္ဆ'; multiple code points
+    page 420: 35 22 23 30 3E 33 2E 21 [74] 23 21 29 2C 24 40 46 42
+    page 420: 5C 2C 24 30 3E 33 2E 21 [74] 23 21 29 2C 24 40 46 42
+    page 427: 33 2E 21 [74] 23 3B 21 3C 29 2C 24 46
+  77: occurrences=25; old output='္ပ'; multiple code points
+    page 421: 4A 54 30 3E 28 76 2E 3B [77] 23 31 2C 55 22 2C 37 32
+    page 421: 2C 5F 30 3E 28 76 2E 3B [77] 23 31 2C 55 22 2C 37 32
+    page 421: 22 2C 30 3E 28 76 2E 3B [77] 23 31 2C 55 22 2C 37 32
+  7C: occurrences=1; old output='္ဇ'; multiple code points
+    page 427: 33 2E 37 72 [7C] 2B 5A 47 4D 47
+  7D: occurrences=1; old output='္တ'; multiple code points
+    page 427: 33 58 6A 39 [7D] 6C 4B 29 2C 24 47 4D 4D
+  7E: occurrences=2; old output='ါ်'; unresolved
+    page 430: 28 36 3B [7E] 39 71 35 2C 4A 32 2C 24
+    page 430: 28 36 3B [7E] 37 4F 23 24 47 4D 47
+
+==============================================================================
+mm-grammar.pdf /TT65 (CYTAKH+Arlarwade)
+SHA-256: f7e6dc277e5783f5dfbddc1b023ed3bf98e0a0ab60a17d1a446c6c143c29d924
+Direct entries: 47; review resolutions: 3; unresolved byte slots: 47
+
+CONTEXT-SUPPORTED / REVIEW RESOLUTIONS (not globally verified):
+  2C = 'း'  candidate window ကား / 24 39 2C (page 432)
+  39 = 'ာ'  candidate window ပမာ / 38 41 39 (page 432)
+  3C = 'ျ'  candidate window ဗျာ / 62 3C 39 (page 432)
+
+UNRESOLVED (the legacy output is not an answer):
+  23: occurrences=177; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 432: 21 22 [23]
+    page 432: 22 45 45 33 28 34 [23] 21 33 28 34 45 2E 51 34
+    page 432: 33 28 34 2F 46 33 28 21 [23] 21
+  25: occurrences=338; old output='ု'; unresolved
+    page 432: 24 [25] 26 27 28 29 2A 2B 27 2C
+    page 432: 24 [25] 26 27 28 29 24 30 26 27
+    page 432: 24 30 [25] 35 27 28 29 36 37 38 39
+  26: occurrences=406; old output='န'; multiple observed bytes share this output
+    page 432: 24 25 [26] 27 28 29 2A 2B 27 2C 2D
+    page 432: 24 25 [26] 27 28 29 24 30 26 27 2C
+    page 432: 24 25 26 27 28 29 24 30 [26] 27 2C 2B 31 26 27 2C 2A
+  27: occurrences=1571; old output='်'; unresolved
+    page 432: 24 25 26 [27] 28 29 2A 2B 27 2C 2D
+    page 432: 24 25 26 [27] 28 29 24 30 26 27 2C 2B
+    page 432: 25 26 27 28 29 24 30 26 [27] 2C 2B 31 26 27 2C 2A 2B
+  30: occurrences=633; old output='ိ'; unresolved
+    page 432: 24 25 26 27 28 29 24 [30] 26 27 2C 2B 31 26 27 2C
+    page 432: 24 [30] 25 35 27 28 29 36 37 38
+    page 432: 47 24 28 29 24 [30] 26 27 2C 2B 31 26 27 2C
+  31: occurrences=29; old output='ွှ'; unresolved
+    page 432: 28 29 24 30 26 27 2C 2B [31] 26 27 2C 2A 2B 27 2C 2D
+    page 434: 4F 4A 6D 2B [31] 26 27 49 30 56 57 27
+    page 434: 28 29 24 30 26 27 2C 2B [31] 26 27 2C 2A 2B 27 2C 2D
+  36: occurrences=454; old output='ေ'; unresolved
+    page 432: 24 30 25 35 27 28 29 [36] 37 38 39 3A 3B 26 2A 2D
+    page 432: 3C 28 29 3A 3D 3E 3C 39 [36] 3F 2C 26 24 27 2A 2B 27
+    page 432: 40 28 29 3A 3D 3E 3C 39 [36] 3F 2C 26 24 27 2A 2B 27
+  37: occurrences=320; old output='ြ'; unresolved
+    page 432: 24 30 25 35 27 28 29 36 [37] 38 39 3A 3B 26 2A 2D
+    page 432: 39 27 28 29 38 41 39 42 [37] 38 2A 2B 27 2C 2D
+    page 432: 24 3C 43 38 27 28 29 36 [37] 38 39 3A 3B 26 2A 2D
+  3B: occurrences=49; old output='ူ'; unresolved
+    page 432: 27 28 29 36 37 38 39 3A [3B] 26 2A 2D
+    page 432: 47 24 39 2C 26 39 3A [3B] 26 39 41 27 2A 39 2C
+    page 432: 41 28 29 36 37 38 39 3A [3B] 26 2A 2D
+  3E: occurrences=42; old output='င်္'; unresolved
+    page 432: 24 3C 28 29 3A 3D [3E] 3C 39 36 3F 2C 26 24 27
+    page 432: 24 3C 2A 40 28 29 3A 3D [3E] 3C 39 36 3F 2C 26 24 27
+    page 432: 30 41 27 28 29 3A 3D 3C [3E] 39 2A 2B 27 2C 2D
+  40: occurrences=20; old output='ီ'; unresolved
+    page 432: 24 3C 2A [40] 28 29 3A 3D 3E 3C 39 36
+    page 433: 2A [40] 28 29 3A 3D 3C 3E 39 36
+    page 434: 57 2A 27 3D 25 71 38 [40] 2C 57 2A 27 3D 25 37 38
+  43: occurrences=36; old output='ု'; unresolved
+    page 432: 24 3C [43] 38 27 28 29 26 2A 2D
+    page 432: 24 3C [43] 38 27 28 29 36 37 38 39
+    page 432: 3D 25 28 29 41 3C [43] 30 2C 37 38 2A 2B 27 2C
+  44: occurrences=221; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 432: [44] 33 28 21 32 33 28 22 22
+    page 432: 21 33 28 34 45 2E 51 34 [44] 45 33 28 34 46 32 51 34
+    page 432: 34 2F 32 33 28 34 2F [44] 33 28 34 2F 46 33 28 21
+  47: occurrences=37; old output='ြ'; unresolved
+    page 432: [47] 24 28 29 24 30 26 27 2C
+    page 432: [47] 24 28 29 2A 2B 27 2C 2D
+    page 432: [47] 24 24 25 26 27 28 29 24
+  48: occurrences=74; old output='့'; unresolved
+    page 432: 47 24 2A 30 25 [48] 28 29 49 30 2D
+    page 433: 3D 26 27 [48] 28 29 3A 3D 3E 3C 39 2A
+    page 433: 2A 28 29 59 41 30 26 27 [48] 3D 3C 49 30 2D
+  49: occurrences=317; old output='၀'; same-shaped consonant/digit requires context
+    candidates requiring context: '၀', 'ဝ'
+    page 432: 47 24 2A 30 25 48 28 29 [49] 30 2D
+    page 432: 28 28 29 50 24 30 35 39 [49] 30 36 3A 3A 26 2D
+    page 432: 50 24 30 35 39 [49] 30 56 57 27
+  4A: occurrences=66; old output='န'; multiple observed bytes share this output
+    page 432: 47 24 39 2C [4A] 4B 4C 27 4D 36 26 39 24
+    page 432: 24 5B [4A] 25 27 38 27 28 29 36 37
+    page 432: 24 5B [4A] 25 27 38 27 28 29 26 2A
+  4B: occurrences=88; old output='ှ'; unresolved
+    page 432: 47 24 39 2C 4A [4B] 4C 27 4D 36 26 39 24 27
+    page 433: 4C [4B] 39 28 29 5E 2B 27 2A 3B
+    page 433: 2A 39 3D 3C 26 27 41 [4B] 57 27 28 29 36 38 35 3C
+  4D: occurrences=95; old output='့'; unresolved
+    page 432: 47 24 39 2C 4A 4B 4C 27 [4D] 36 26 39 24 27 38 2A 4E
+    page 432: 36 47 24 39 4C 27 [4D] 29 59 36 47 24 39 4C 27
+    page 432: 3D 5E 39 36 52 39 4C 27 [4D] 28 29 36 3F 2C 36 52 39
+  4E: occurrences=36; old output='္စ'; multiple code points
+    page 432: 4D 36 26 39 24 27 38 2A [4E] 2B 27 2C 4F 24 27
+    page 432: 39 36 52 39 24 27 38 2A [4E] 2B 27 2C
+    page 432: 50 24 30 35 39 38 2A [4E] 2B 27 2C
+  50: occurrences=109; old output='ြ'; unresolved
+    page 432: 28 28 28 28 28 29 [50] 24 30 35 39 49 30 36 3A
+    page 432: [50] 24 30 35 39
+    page 432: [50] 24 30 35 39 36 52 39 24
+  54: occurrences=152; old output='ါ'; unresolved
+    page 432: 27 3D 3C 4C 27 2C 36 38 [54] 4C 27 2C 2A 38 27 37 3D
+    page 432: 39 49 30 36 3A 3A 26 49 [54] 24 3C 24 58
+    page 432: 24 5A 39 28 29 49 [54] 24 3C 36 26 39 24 27 3F
+  55: occurrences=15; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 432: 24 30 35 39 38 25 53 27 [55] 30 25 2C
+    page 435: 2C 72 3B 36 3A 39 28 29 [55] 3B 38 24 2A 2B 27 2C 2D
+    page 435: 36 3A 3A 26 38 25 53 27 [55] 30 25 2C
+  58: occurrences=14; old output='ဏ္ဍ'; multiple code points
+    page 432: 3A 3A 26 49 54 24 3C 24 [58]
+    page 434: 28 28 49 54 24 3C 24 [58]
+    page 435: 3A 3A 26 49 54 24 3C 24 [58]
+  5A: occurrences=85; old output='ွ'; unresolved
+    page 432: 24 [5A] 39 28 29 49 54 24 3C 36
+    page 432: 24 [5A] 39 28 29 2A 2B 27 2C 2D
+    page 432: 24 [5A] 35 27 28 29 2A 2B 27 2C
+  5B: occurrences=9; old output='ျွ'; unresolved
+    page 432: 24 [5B] 26 27 36 57 39 27 28 29
+    page 432: 24 [5B] 4A 25 27 38 27 28 29 36
+    page 432: 24 [5B] 4A 25 27 38 27 28 29 26
+  5D: occurrences=7; old output='္ဂ'; multiple code points
+    page 432: 57 39 27 28 29 38 25 5C [5D] 3F 26 2A 2D
+    page 432: 27 38 27 28 29 38 25 5C [5D] 3F 26 2A 2D
+    page 432: 26 27 41 28 29 38 25 5C [5D] 3F 26 2A 2D
+  5E: occurrences=169; old output='ရ'; same-shaped consonant/digit requires context
+    candidates requiring context: 'ရ', '၇'
+    page 432: 3D [5E] 39 36 52 39 4C 27 4D 28
+    page 432: 52 39 4C 27 4D 59 24 5F [5E] 39 2D
+    page 432: 3D [5E] 39 49 26 27 2C 28 29 59
+  5F: occurrences=19; old output='္ခ'; multiple code points
+    page 432: 36 52 39 4C 27 4D 59 24 [5F] 5E 39 2D
+    page 432: 49 26 27 2C 28 29 59 24 [5F] 5E 39 59 49 30 25 4C 27
+    page 433: 36 63 39 3A 59 24 [5F] 5E 39
+  60: occurrences=53; old output='ဲ'; unresolved
+    page 432: 3D [60] 28 29 50 24 30 35 39 36
+    page 432: 3D [60] 28 29 2A 2B 27 2C 2D
+    page 432: 3D [60] 4D 28 29 50 24 30 35 39
+  61: occurrences=105; old output='ံ'; unresolved
+    page 432: 3D [61] 57 5A 4C 27 2C 36 38 54
+    page 433: 36 63 39 3A 28 29 3A [61] 37 38 4C 27 2C 2D 62 3C
+    page 433: 2A 24 39 2C 3F [61] 25 2C
+  65: occurrences=12; old output='့'; unresolved
+    page 433: 24 39 2C 3A 61 64 60 5A [65] 52 61 25 2C
+    page 437: 2A 4E 2B 27 2C 36 5E 4B [65] 4F 24 27 50 24 30 35 39
+    page 437: 38 25 53 27 64 60 5A [65] 2A 2B 27 2C 38 61 25
+  66: occurrences=2; old output='္ထ'; multiple code points
+    page 433: 2A 57 25 57 [66] 59 24 5F 5E 39
+    page 445: 81 57 [66] 30 3F 30 4C 27
+  67: occurrences=3; old output='ှ'; unresolved
+    page 433: 2A 30 25 48 28 29 2B [67] 30 4A 68 30 4C 27 2C 49
+    page 434: 2B [67] 30 4A 68 30 4C 27 2C 49
+    page 439: 36 59 39 4C 27 28 29 2B [67] 30 4A 68 30 4C 27 2C 49
+  68: occurrences=21; old output='ှု'; unresolved
+    page 433: 25 48 28 29 2B 67 30 4A [68] 30 4C 27 2C 49 30 2D
+    page 434: 2B 67 30 4A [68] 30 4C 27 2C 49 30 56 57
+    page 435: 52 24 27 28 29 4A 30 [68] 4C 27 2C 35 4B 69 27 37
+  6A: occurrences=6; old output='္တ'; multiple code points
+    page 434: 2A 30 57 [6A] 6B 26 39 41 27
+    page 439: 41 4B 39 28 29 24 57 [6A] 39 2C 49 30 2D
+    page 440: 3F 57 [6A] 61 65 28 29 49 30 2D
+  6C: occurrences=26; old output='ျှ'; unresolved
+    page 434: 59 24 3C 43 30 2C 36 41 [6C] 39 27 37 38 3A 41 27 2D
+    page 436: 4A 4B 4C 27 4D 59 41 [6C] 28 29 3F 30 25 24 27 36
+    page 438: 59 24 3C 43 30 2C 36 41 [6C] 39 27 37 38 3A 41 27 2D
+  6D: occurrences=7; old output='္ဒ'; multiple code points
+    page 434: 4F 4A [6D] 2B 31 26 27 49 30 56 57
+    page 434: 4F 4A [6D] 49 54 24 3C
+    page 436: 38 54 36 2A 28 29 4F 4A [6D] 2B 31 26 27 49 30 2D
+  6E: occurrences=13; old output='္ဗ'; multiple code points
+    page 434: 24 3C 4C 27 37 38 3A 41 [6E] 4A 6F
+    page 434: 2A 27 3D 25 37 38 3A 41 [6E] 4A 6F
+    page 434: 27 26 24 27 37 38 3A 41 [6E] 4A 6F
+  6F: occurrences=13; old output='္ဓ'; multiple code points
+    page 434: 4C 27 37 38 3A 41 6E 4A [6F]
+    page 434: 3D 25 37 38 3A 41 6E 4A [6F]
+    page 434: 24 27 37 38 3A 41 6E 4A [6F]
+  70: occurrences=3; old output='္ဆ'; multiple code points
+    page 434: 57 24 39 28 29 49 30 2A [70] 39 2A 2B 27 2C 2D
+    page 434: 4C 27 2C 28 29 49 30 2A [70] 39 2A 2B 27 2C 2D
+    page 441: 49 30 2A [70] 39 38 2A 4E 2B 27 2C
+  71: occurrences=12; old output='ြ'; unresolved
+    page 434: 57 2A 27 3D 25 [71] 38 40 2C 57 2A 27 3D 25
+    page 434: 57 2A 27 [71] 38 43 30 4C 27 26 24 27
+    page 436: 4A 4B 4C 27 4D 57 2A 27 [71] 38 43 30 4C 27 26 24 27
+  74: occurrences=25; old output='္ပ'; multiple code points
+    page 435: 3D 54 28 29 59 73 30 38 [74] 39 35 27 4F 24 27 3A 41
+    page 435: 27 4D 28 29 59 73 30 38 [74] 39 35 27 4F 24 27 3A 41
+    page 435: 24 27 28 29 59 73 30 38 [74] 39 35 27 4F 24 27 3A 41
+  75: occurrences=2; old output='္လ'; multiple code points
+    page 435: 26 38 25 3F [75] 30 4C 27
+    page 437: 38 25 3F [75] 30 4C 27
+  7A: occurrences=1; old output='္ဇ'; multiple code points
+    page 441: 49 30 3A 6B [7A] 26 40
+  7B: occurrences=1; old output='္တ'; multiple code points
+    page 441: 49 5C 5D 4A [7B] 62 3C 2B 27 2C
+  7C: occurrences=2; old output='ါ်'; unresolved
+    page 444: 59 36 38 [7C] 4A 68 57 27 3D 41 27 2C
+    page 444: 59 36 38 [7C] 3A 5A 39 2C

@@ -1,0 +1,95 @@
+Parser review evidence — 31 October 2026
+
+START HERE
+
+current-design/combined-default-manager.pdf contains the actual PDF results of
+34 Manager jobs, with an index and bookmarks. Each case number matches all the
+other files in this folder. The index is page 1; 362 output pages follow.
+
+current-design/source-samples/NN.pdf is the original first up to 10 pages for
+case NN. These are source PDFs, not screenshots or Parser outputs.
+current-design/output-pdfs/NN.pdf is that case's actual Manager PDF result.
+current-design/output-text/NN.txt is the actual Manager TXT result, with input
+page labels. It is useful where PDF lines are clipped, but it does not repair
+incorrectly decoded characters.
+current-design/case-summary.csv identifies the original PDF path on trash,
+combined-PDF page range, flags, and timing for every case.
+current-design/source-pages.csv lists routing and warnings for each input page.
+current-design/output-pages.csv lists visible-page geometry for each output
+page. Output page numbers can differ from input page numbers when the PDF
+writer adds pages; do not assume they always correspond one-to-one.
+current-design/visual-evidence/ contains the source and output renders used
+for specific visual checks.
+current-design/reports/ contains the raw metrics, per-page records, comparison
+results, and complete Parser test-suite log. Some raw JSON records retain the
+original temporary paths; use the case numbers and paths above after cloning.
+
+WHAT WAS TESTED
+
+The current Parser implementation was run through Manager with job extracting,
+method default, default cleanup setting, and PDF output. There were 34 jobs and
+331 input pages; all jobs completed. They were rerun as Manager TXT jobs and
+the returned texts matched the PDF jobs for all 34 cases. The earlier batch
+explicitly disabled optional cleanup; all 34 default-setting texts and all
+362 rendered output pages matched that batch. Equality is not proof of correct
+Burmese, and the generated PDFs still have the defects below.
+
+The batch reads embedded PDF text and graphics; it does not use OCR. Image-only
+text and covers are not expected to be transcribed here. The new image/OCR path
+was tested separately on one real mixed page and with rotation/offset geometry
+tests, not across this 34-file batch.
+
+The source originals came from trash commit
+50c6b9a18ba0f8113fb485295dae87a2c9578f17. The 34 samples and individual
+outputs are included here; full originals already exist on trash and are not
+duplicated in this branch. reports/inventory.json records their Git blobs.
+The first source PDF is 78,687,153 bytes, beyond Manager's default 64 MiB input
+limit: Manager was tested on its sample, not on that full original.
+
+The seven test PDFs deleted in commit 14206e2 have been restored at
+Junk/Parser/upload/pdf/. They include bg-mlc-1-1.pdf, bg-mlc-2-5.pdf,
+mm-grammar.pdf, sample.pdf, test.pdf, wininnwa-roundtrip-test.pdf, and
+ယဲ့နင် စာစဉ် a ၁.merged.merged.pdf. test.pdf is a 764-page section, not a
+verified complete ရှီယန် book. wininnwa-roundtrip-test.pdf is a historical
+experiment, not proof that the keyboard or font mapping is correct.
+
+ISSUES TO INVESTIGATE
+
+* Many result PDFs clip long lines outside the visible page. In 169 of 362
+  output pages, more than half the non-space/non-control text characters have
+  their centres outside the page, according to PyMuPDF geometry. This is not
+  the accepted zero-width-character omission. See output-pages.csv.
+* Case 04, source-samples/04.pdf page 3: visible Myanmar vector text gives
+  only whitespace/control characters in Parser output, with no warning.
+* Case 28, source-samples/28.pdf page 5: a Zawgyi-One header and a WinInnwa
+  body share a page. The shared route warns about the legacy font but emits
+  Latin/symbol gibberish for the body.
+* Case 03, source page 1, and case 24, source page 3, show bracket-hex tokens
+  in the Parser text in place of some visible characters. Bracket patterns in
+  the aggregate report are not automatically all proven unresolved glyphs.
+* The batch logged 23 text-after-checkpoint warnings and 92 encoding/Unicode
+  order review warnings. A warning is evidence for inspection, not by itself
+  proof of incorrect text.
+
+AUTOMATED TESTS
+
+The focused new-design checks in reports/parser-focused.txt contain 72 tests:
+66 passed, none failed, and 6 were skipped.
+The complete npm run test:parser log is in reports/parser-test-suite.txt:
+115 tests, 101 passed, 6 failed, 8 skipped. The failures are preserved:
+- parser-layout.test.js imports a no-longer-exported findModelPath helper;
+- scan-placement.test.js expects the old document-wide scan result;
+- vector-unknown.test.js S4 and S7, and vector.test.js, expect the old
+  vector/legacy route and Myanmar body on an English-prefixed mixed page;
+- zawgyi-cmap.test.js expects the old decodeKind value 'cmap' rather than the
+  current 'zawgyi-one' path.
+These descriptions do not dismiss the missing Myanmar body: it remains a real
+limitation under the requested page-prefix routing policy.
+
+OTHER EXPERIMENTS
+
+unused-experiments/previous-experiments.tar.xz holds the older available PDF,
+image, JSON, and script evidence, including the earlier batch. Its CSV manifest
+lists every archived file and SHA-256. It is isolated so it can be moved or
+deleted separately. Installed dependencies, npm/pip caches, credentials, and
+the plaintext Engine master are not included.
