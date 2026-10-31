@@ -118,6 +118,42 @@ export async function renderPdfPagePng(source, pageNumber, {
 
 
 
+export async function renderPdfRegionPng(source, pageNumber, bbox, {
+  scale = 3, maxPixels = Number.MAX_SAFE_INTEGER,
+} = {}) {
+  if (!Array.isArray(bbox) || bbox.length !== 4 || !bbox.every(Number.isFinite)) {
+    throw new TypeError("PDF image region must be a four-number bounding box");
+  }
+  const doc = await openPdf(source);
+  try {
+    if (pageNumber < 1 || pageNumber > doc.numPages) throw new RangeError(`Invalid PDF page ${pageNumber}`);
+    const page = await doc.getPage(pageNumber);
+    try {
+      const rendered = await renderPageCanvas(page, scale, { maxPixels });
+      // PDF.js exposes point conversion; transform every corner so the crop
+      // also follows page rotation and non-zero page origins.
+      const [left, bottom, right, top] = bbox;
+      const corners = [[left, bottom], [left, top], [right, bottom], [right, top]]
+        .map(([x, y]) => rendered.viewport.convertToViewportPoint(x, y));
+      const xs = corners.map(([x]) => x);
+      const ys = corners.map(([, y]) => y);
+      const x0 = Math.max(0, Math.floor(Math.min(...xs)));
+      const y0 = Math.max(0, Math.floor(Math.min(...ys)));
+      const x1 = Math.min(rendered.width, Math.ceil(Math.max(...xs)));
+      const y1 = Math.min(rendered.height, Math.ceil(Math.max(...ys)));
+      if (x1 <= x0 || y1 <= y0) throw new Error("PDF image region is outside the visible page");
+      const { createCanvas } = await loadCanvas();
+      const crop = createCanvas(x1 - x0, y1 - y0);
+      crop.getContext("2d").drawImage(rendered.canvas, x0, y0, x1 - x0, y1 - y0, 0, 0, x1 - x0, y1 - y0);
+      return { png: crop.toBuffer("image/png"), width: x1 - x0, height: y1 - y0, scale };
+    } finally {
+      page.cleanup();
+    }
+  } finally {
+    await doc.destroy();
+  }
+}
+
 export function cropCanvasRgba(canvas, bbox, { scale = 1, pad = 0 } = {}) {
   const x0 = Math.max(0, Math.floor((bbox.x0 - pad) * scale));
   const y0 = Math.max(0, Math.floor((bbox.y0 - pad) * scale));

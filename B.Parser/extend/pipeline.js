@@ -1,61 +1,30 @@
-import { parseTtfCmap } from "../main/parser/core/ttf-cmap.js";
 import { renderPdfPagePng } from "../main/parser/read/pdf-render.js";
 import { note } from "../main/parser/core/provenance.js";
+import { getEngineNormalize } from "../_path.js";
 import fs from "node:fs";
 import path from "node:path";
 
-import { ZawgyiDetector, containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts } from "../main/parser/text/detector.js";
+import { ZawgyiDetector, containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts, isZawgyiOneFont, isUnicodeFont } from "../main/parser/text/detector.js";
 import { preserveRegionalRuns } from "../main/parser/text/unicode-evidence.js";
 import { decryptPdf, isEncryptedPdf, hasObjectStreams, expandObjectStreams } from "../main/parser/read/decrypt.js";
 import { Rabbit } from "../main/parser/text/rabbit.js";
-import { createHash } from "node:crypto";
-import { countZawCodeEvidence, reorderZawCodeText } from "../main/parser/text/legacy-order.js";
-import zawCodeDraft from "../main/parser/jason-map/zawcode-draft-glyphs.json" with { type: "json" };
 import { cleanupText, orderText } from "../main/parser/text/cleanup.js";
 import { extractDocxParagraphs, extractDocxImages, validateDocxArchive } from "../main/parser/read/docx-extract.js";
 import { extractDocxParagraphsExternal } from "../main/parser/read/docx-external.js";
 import { scoreText } from "../main/parser/text/mm-score.js";
+import { choosePageParser, finishSharedPage, normalizePageLines } from "../main/parser/text/page-decision.js";
+import { countImpossiblePairs } from "../main/parser/text/scan.js";
+import { WININNWA_LEGACY_CODE_PAGE } from "../main/parser/codepage/registry.js";
 import { MAX_PAGES, MAX_TEXT_CHARS } from "../main/parser/core/limits.js";
 import {
-  parsePdfObjects, findFontStreams, findToUnicodeMaps, ARLARWADE_AYAR_MAP,
-  loadSidecarMap, pickEmbeddedFont, getStream, findRootPages, collectPages,
-  extractPageLines, pageHasImages, parseToUnicodeStream, extractMetadata,
+  parsePdfObjects, findRootPages, collectPages, extractPageLines, probePagePrefix, pageHasImages, extractMetadata,
 } from "../main/parser/read/pdf-extract.js";
-import {
-  CmapIdentityMap, LegacyAyarMap, DocumentDecoding, detectLegacyLayoutFonts,
-  legacyFontFaces,
-} from "../main/parser/read/pdf-fonts.js";
-import { LEGACY_CODE_PAGES, UNICODE_PATH, ZawCODE_PATH } from "../main/parser/codepage/registry.js";
-import { confirmedPdfProfile } from "../main/parser/codepage/confirmed-pdf-runs.js";
-import { normaliseFontName } from "../main/parser/codepage/names.js";
-import { zawCodeGuard } from "../main/parser/text/repair.js";
-import { loadScanDictionary, dictionaryWords } from "../main/parser/text/scan.js";
-import { chooseCodePage, prepareVectorLayout, LEGACY_QUALITY_FLOOR } from "../main/parser/codepage/resolve.js";
-import { buildVectorRepair } from "../main/parser/codepage/vector-repair.js";
+import { DocumentDecoding, PDF_PARSING_PATHS, pageFontDecoders } from "../main/parser/read/pdf-fonts.js";
+import { PAGE_CONTENT_PREFIX_BYTES } from "../main/parser/read/pdf-content-stream.js";
+import { PageSourceWriter } from "../main/parser/write/page-source.js";
+import { pyRound, RuntimeError, baseName } from "../main/parser/core/pylib.js";
 
-export { LEGACY_QUALITY_FLOOR };
-import { pyTruthy, pyRound, RuntimeError, baseName } from "../main/parser/core/pylib.js";
-
-
-
-export const DETECT_PROBE_PAGES = 20;
-
-
-const VECTOR_REPAIR_PROBE_PAGES = 12;
-
-
-
-
-
-
-
-
-function vectorRepairEnabled(decoding) {
-  if (!decoding) return false;
-  if (process.env.PRASER_VECTOR_REPAIR === "0") return false;
-  return decoding.kind === "cmap";
-}
-
+const normalizeWithEngine = await getEngineNormalize();
 
 export function normCategory(category) {
   const cat = String(category).toUpperCase();
@@ -77,20 +46,14 @@ export function loadDetector() {
 }
 
 
-export function streamPdfPages(source, detector = null, log = () => {}, { vectorLayout = null, provenance = null, textLayout = null } = {}) {
-  const setting = String(process.env.PRASER_ZAWCODE_DRAFT ?? "");
-  const layout = textLayout ?? (/^(1|true|yes|on)$/iu.test(setting) ? "zawcode"
-    : /^(0|false|no|off)$/iu.test(setting) ? "off" : "auto");
-  if (!["auto", "off", "zawcode"].includes(layout)) throw new Error(`Unsupported text layout: ${layout}`);
+export function streamPdfPages(source, detector = null, log = () => {}, {
+  provenance = null, sourceEncoding = "auto", onPageContent = null, onPagePrefix = null,
+} = {}) {
   const input = Buffer.isBuffer(source) || source instanceof Uint8Array
-    ? (Buffer.isBuffer(source) ? source : Buffer.from(source))
-    : fs.readFileSync(source);
+    ? (Buffer.isBuffer(source) ? source : Buffer.from(source)) : fs.readFileSync(source);
   log(`[+] PDF size: ${input.length.toLocaleString("en-US")} bytes`);
   if (isEncryptedPdf(input)) {
-    throw new RuntimeError(
-      "This PDF is password-protected; decrypt it before extraction "
-        + "(processBytesForMethod does this automatically).",
-    );
+    throw new RuntimeError("This PDF is password-protected; decrypt it before extraction.");
   }
   if (hasObjectStreams(input)) {
     throw new RuntimeError(
@@ -98,463 +61,144 @@ export function streamPdfPages(source, detector = null, log = () => {}, { vector
         + "(processBytesForMethod does this automatically).",
     );
   }
-  const raw = input;
-  const confirmedProfile = confirmedPdfProfile(createHash("sha256").update(raw).digest("hex"));
-
-  const objects = parsePdfObjects(raw);
-  log(`[+] Objects found: ${objects.size}`);
-
-
-
-
-  const metadata = extractMetadata(objects, raw);
-  note(provenance, { metadata });
-
-  const pagesObj = findRootPages(objects);
-  if (pagesObj === null || pagesObj === undefined) {
-    throw new RuntimeError("No page tree found in the PDF.");
-  }
-  const allPages = collectPages(objects, pagesObj);
+  const objects = parsePdfObjects(input);
+  const metadata = extractMetadata(objects, input);
+  const root = findRootPages(objects);
+  if (root === null || root === undefined) throw new RuntimeError("No page tree found in the PDF.");
+  const allPages = collectPages(objects, root);
   const npages = allPages.length;
-  note(provenance, { pages: npages });
-  if (npages > MAX_PAGES) {
-    throw new RuntimeError(`PDF exceeds the ${MAX_PAGES} page cap`);
-  }
-  log(`[+] Total pages: ${npages}`);
+  if (npages > MAX_PAGES) throw new RuntimeError(`PDF exceeds the ${MAX_PAGES} page cap`);
+  note(provenance, { metadata, pages: npages, decoding: { scope: "page/font resource" } });
+  log(`[+] Total pages: ${npages}; decoding by font resource`);
 
-  const page = (idx, codeToUni, textPath = null) => {
-    const [pnum, pgen] = allPages[idx];
-
-
-
-
-
-
-
-
-    const hasImg = pageHasImages(objects, pnum, pgen);
-    // Enable confirmed runs for the final legacy decoding, including a
-    // vector-derived map. Scoring probes do not see them; the decoder still
-    // requires the exact PDF hash, selected WinInnwa face, and font hash.
-    if (confirmedProfile && codeToUni?.kind === "legacy") {
-      codeToUni.confirmedPdfProfile = confirmedProfile;
+  const shared = new DocumentDecoding("font");
+  const legacy = new DocumentDecoding("legacy", new Map(), WININNWA_LEGACY_CODE_PAGE);
+  const sharedFontKinds = new WeakMap();
+  shared.fontKind = (font) => {
+    if (sharedFontKinds.has(font)) return sharedFontKinds.get(font);
+    let kind = "UNKNOWN";
+    if (isUnicodeFont(font.baseFont) || sourceEncoding === "unicode") kind = "UNICODE";
+    else if (isZawgyiOneFont(font.baseFont)) kind = "ZAWGYI";
+    else {
+      const clusters = font.toUnicode && !font._conflictingSpaceMap
+        ? [...font.toUnicode.values()].filter((value) => [...value].length > 1 && containsMyanmar(value)).length : 0;
+      if (clusters >= 4) kind = "UNICODE";
     }
-    const before = codeToUni?.zawcodeStats?.glyphs ?? 0;
-    const fontNames = new Set();
-    const [lines, w, h] = extractPageLines(objects, pnum, pgen, codeToUni,
-      { usedMyanmarFonts: fontNames });
-    const usedDraftFont = (codeToUni?.zawcodeStats?.glyphs ?? 0) > before;
-    const selectedLegacy = codeToUni?.legacyFontNames;
-    const selectedNames = selectedLegacy ? new Set([...selectedLegacy].map(normaliseFontName)) : null;
-    const legacyDecoded = codeToUni?.kind === "legacy" && codeToUni.legacyCodePage?.size > 0
-      && fontNames.size > 0 && selectedNames?.size > 0
-      && [...fontNames].every((name) => name && selectedNames.has(normaliseFontName(name)));
-    return {
-      idx,
-      lines,
-      wh: [w, h],
-      text: lines.map((l) => l[3]).join("\n"),
-      hasImg,
-
-
-
-      decodeKind: codeToUni && typeof codeToUni === "object" ? codeToUni.kind : null,
-      fontNames,
-      legacyDecoded,
-      textPath: textPath === ZawCODE_PATH && !usedDraftFont ? null : textPath,
-    };
+    sharedFontKinds.set(font, kind);
+    return kind;
   };
+  legacy.fontKind = (font) => font.needsLegacyTextFix ? "UNICODE" : shared.fontKind(font);
 
   function* generate() {
-    if (layout !== "off") {
-      const profilePresent = findFontStreams(objects).some(([num, gen]) => {
-        try {
-          const bytes = getStream(objects, num, gen);
-          return bytes && Object.hasOwn(zawCodeDraft.profiles, createHash("sha256").update(bytes).digest("hex"));
-        } catch { return false; }
-      });
-      if (!profilePresent && layout === "zawcode") {
-        throw new RuntimeError("ZawCode draft has no matching embedded-font profile for this PDF");
-      }
-      if (profilePresent) {
-        const stats = { glyphs: 0, strong: 0, page: 0, pages: new Set(), collecting: true };
-        const decoding = new DocumentDecoding("cmap", new Map());
-        decoding.trustFontToUnicode = true; // only the fingerprinted resource bypasses its ToUnicode
-        decoding.zawcodeProfiles = zawCodeDraft.profiles;
-        decoding.zawcodeTemplates = zawCodeDraft.templates;
-        decoding.zawcodeStats = stats;
-        decoding.zawcodeOrder = (text) => {
-          if (stats.collecting) {
-            const count = countZawCodeEvidence(text);
-            stats.strong += count;
-            if (count) stats.pages.add(stats.page);
+    for (let idx = 0; idx < npages; idx += 1) {
+      const [pnum, pgen] = allPages[idx];
+      const fontNames = new Set();
+      const fontKinds = new Set();
+      const usedLegacyFonts = new Set();
+      let parsingPath = PDF_PARSING_PATHS.ZAWGYI_ONE;
+      let checkpoint = null;
+      let confirmedRepair = null;
+      const [extractedLines, w, h, images] = extractPageLines(objects, pnum, pgen, shared, {
+        usedMyanmarFonts: fontNames,
+        usedFontKinds: fontKinds,
+        usedLegacyFonts,
+        inspectPrefix: (prefix, sharedFonts, loader) => {
+          if (legacy.loader !== loader) {
+            legacy.loader = loader;
+            legacy.resetFontCache();
           }
-          return reorderZawCodeText(text);
-        };
-        const probeN = Math.min(DETECT_PROBE_PAGES, npages);
-        const probe = [];
-        for (let idx = 0; idx < probeN; idx += 1) {
-          stats.page = idx;
-          probe.push(page(idx, decoding, ZawCODE_PATH));
-        }
-        if (layout === "zawcode" && !stats.glyphs) {
-          throw new RuntimeError("ZawCode draft profile is not used in the first probe pages");
-        }
-        if (stats.glyphs && (layout === "zawcode" || (stats.strong >= 2 && stats.pages.size >= 2))) {
-          stats.collecting = false;
-          note(provenance, { codepage: { chosen: ZawCODE_PATH, draft: true, source: "font-scoped raw glyph profile" } });
-          log("[+] ZawCode draft: font-scoped glyphs; unknown codes remain visible");
-          let fallback = null;
-          let fallbackIndex = 0;
-          const fallbackPage = (idx) => {
-            if (!fallback) {
-              [, , fallback] = streamPdfPages(input, detector, () => {},
-                { vectorLayout, textLayout: "off" });
-            }
-            let current;
-            while (fallbackIndex <= idx) {
-              const next = fallback.next();
-              if (next.done) throw new RuntimeError("Fallback page stream ended early");
-              current = next.value;
-              fallbackIndex += 1;
-            }
-            return current;
+          // Probe both existing parsers on the same bounded page prefix. No
+          // confirmed byte pair is used as a route-selection shortcut.
+          legacy.legacyFontNames = null;
+          const legacyFonts = pageFontDecoders(loader, pnum, pgen, legacy);
+          const probe = probePagePrefix(prefix, sharedFonts, legacyFonts);
+          const choice = choosePageParser(probe, { sourceEncoding });
+          parsingPath = choice.parser;
+          checkpoint = {
+            bytes: prefix.length,
+            reason: choice.reason,
+            ...(choice.english !== undefined ? { english: choice.english } : {}),
+            hasShownText: probe.hasShownText,
+            hasText: Boolean(probe.shared.trim() || probe.legacy.trim()),
           };
-          for (const item of probe) yield item.textPath ? item : fallbackPage(item.idx);
-          for (let idx = probeN; idx < npages; idx += 1) {
-            const item = page(idx, decoding, ZawCODE_PATH);
-            yield item.textPath ? item : fallbackPage(idx);
+          onPagePrefix?.(idx, prefix, parsingPath, checkpoint);
+          if (parsingPath !== PDF_PARSING_PATHS.LEGACY) return shared;
+
+          // Do not turn an English or Unicode face into WinInnwa merely
+          // because a different face on the same page is legacy.
+          const selected = new Set([...sharedFonts.values()]
+            .filter((font) => font.parsingPath === PDF_PARSING_PATHS.LEGACY)
+            .map((font) => font.baseFont).filter(Boolean));
+          if (!selected.size) {
+            for (const name of probe.usedFonts) {
+              const font = sharedFonts.get(name);
+              if (font && !font.isCid && !isUnicodeFont(font.baseFont) && font.baseFont) selected.add(font.baseFont);
+            }
           }
-          return;
-        }
-      }
-    }
-
-    const direct = new DocumentDecoding("identity");
-    if (detector !== null) {
-      const probeN = Math.min(DETECT_PROBE_PAGES, npages);
-      const probe = [];
-      for (let idx = 0; idx < probeN; idx += 1) probe.push(page(idx, direct));
-      let hasMyanmar = false;
-      for (const p of probe) {
-        if (containsMyanmar(p.text)) { hasMyanmar = true; break; }
-      }
-      if (hasMyanmar) {
-        log("[+] Identity-H direct decode — no font/CMap lookup needed");
-        for (const p of probe) yield p;
-        for (let idx = probeN; idx < npages; idx += 1) {
-          yield page(idx, direct);
-          if ((idx + 1) % 500 === 0) log(`    ... extracted ${idx + 1}/${npages} pages`);
-        }
-        return;
-      }
-      log("[i] No Myanmar found via direct decode; trying ToUnicode/font cmap");
-    }
-
-
-
-
-
-
-
-
-
-
-    const probeN2 = Math.min(DETECT_PROBE_PAGES, npages);
-    const decodesMyanmar = (strategy) => {
-      for (let i = 0; i < probeN2; i += 1) {
-        const [pnum, pgen] = allPages[i];
-        const [plines] = extractPageLines(objects, pnum, pgen, strategy);
-        const t = plines.map((x) => x[3]).join("\n");
-        if (containsMyanmar(t)) return true;
-      }
-      return false;
-    };
-
-    const cmapMap = new Map();
-    let conflicts = 0;
-    const fontRefs = findFontStreams(objects);
-    if (pyTruthy(fontRefs)) {
-      log(`[+] Embedded font-stream candidates: ${fontRefs.length}`);
-
-
-
-
-
-
-
-
-      const [ffRef, ttf0, cmap0] = pickEmbeddedFont(objects, fontRefs);
-      const ordered = [];
-      if (ffRef) ordered.push(ffRef);
-      for (const r of fontRefs) if (!(ffRef && r[0] === ffRef[0] && r[1] === ffRef[1])) ordered.push(r);
-      let used = 0;
-      for (const ref of ordered) {
-        let ttf;
-        let cmap;
-        if (ffRef && ref[0] === ffRef[0] && ref[1] === ffRef[1]) {
-          ttf = ttf0;
-          cmap = cmap0;
-        } else {
-          ttf = getStream(objects, ref[0], ref[1]);
-          cmap = pyTruthy(ttf) ? parseTtfCmap(ttf) : new Map();
-        }
-        if (!pyTruthy(cmap)) continue;
-        used += 1;
-        for (const [uni, gid] of cmap) {
-          if (!gid) continue;
-          if (cmapMap.has(gid)) {
-            if (cmapMap.get(gid) !== uni) conflicts += 1;
-            continue;
+          legacy.legacyFontNames = selected;
+          // The selected page parser may still encounter a Unicode font later
+          // in the page. Preserve that font's own shared decoder rather than
+          // interpreting its character codes as WinInnwa.
+          for (const [name, font] of sharedFonts) {
+            if (shared.fontKind(font) === "UNICODE") legacyFonts.set(name, font);
           }
-          cmapMap.set(gid, uni);
-        }
-      }
-      log(`[+] Merged font cmap entries: ${cmapMap.size} from ${used} font stream(s)`
-        + (conflicts ? `; ${conflicts} gid conflict(s) (first font wins)` : ""));
-    }
-
-
-
-
-
-    const legacyFonts = detectLegacyLayoutFonts(objects, getStream, parseToUnicodeStream);
-    if (legacyFonts.length) {
-      note(provenance, { fonts: legacyFontFaces(objects, getStream, parseToUnicodeStream) });
-    }
-    const tuMap = findToUnicodeMaps(objects);
-    const ownTu = tuMap.size;
-    const sidecar = loadSidecarMap();
-    for (const [code, uni] of sidecar) if (!tuMap.has(code)) tuMap.set(code, uni);
-    if (tuMap.size) {
-      log("[+] ToUnicode mappings: " + ownTu
-        + (sidecar.size ? ` (+${tuMap.size - ownTu} from sidecar cipher map)` : ""));
-    }
-
-
-
-
-
-
-    const unicodeStrategy = pyTruthy(cmapMap)
-      ? new DocumentDecoding("cmap", new CmapIdentityMap(cmapMap))
-      : (pyTruthy(tuMap) ? new DocumentDecoding("tounicode", tuMap) : null);
-    if (unicodeStrategy) {
-      log(`[+] Unicode path staged: ${unicodeStrategy.kind} (competing in the code page score)`);
-    }
-    let legacyMap = legacyFonts.length ? new LegacyAyarMap(ARLARWADE_AYAR_MAP) : new Map();
-    let legacyPage = null;
-    let legacyPageName = null;
-    let legacyFontNames = null;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    if (legacyMap.size) log(`[+] Legacy-layout fonts: ${legacyFonts.length}`);
-    {
-
-
-
-
-      const codePages = legacyMap.size
-        ? (vectorLayout
-            ? new Map([[vectorLayout.name, vectorLayout.table], ...LEGACY_CODE_PAGES])
-            : new Map(LEGACY_CODE_PAGES))
-        : new Map();
-      let [table, name, quality, ranking, candidateSamples] = chooseCodePage(objects, allPages, legacyMap, codePages, vectorLayout, unicodeStrategy);
-
-
-
-
-
-
-
-
-
-
-
-      let zawGuard = null;
-      if (name === UNICODE_PATH && unicodeStrategy) {
-        const chunks = [];
-        const fontNames = new Set();
-        for (const [pnum, pgen] of allPages.slice(0, DETECT_PROBE_PAGES)) {
-          try {
-            const [plines] = extractPageLines(objects, pnum, pgen, unicodeStrategy,
-              { usedMyanmarFonts: fontNames });
-            chunks.push(plines.map((x) => x[3]).join("\n"));
-          } catch { /* a page that will not parse tells the guard nothing */ }
-        }
-        const guardSample = chunks.join("\n") || candidateSamples?.get(UNICODE_PATH) || "";
-        if (guardSample) {
-          try {
-            const dictData = loadScanDictionary();
-            zawGuard = zawCodeGuard(
-              guardSample,
-              dictionaryWords(dictData),
-              dictData?.mapData?.newClause?.standalone || [],
-            );
-          } catch { zawGuard = null; }
-          if (zawGuard?.zawcode && hasOnlyZawgyiFonts(fontNames)) {
-            zawGuard = { ...zawGuard, zawcode: false, veto: "zawgyi-one-font" };
-          }
-          if (zawGuard?.zawcode) {
-            name = ZawCODE_PATH;
-            log(`[+] ZawCode guard: stored-order reading scans cleaner `
-              + `(gate ${zawGuard.pureGate} -> ${zawGuard.crossedGate} at score ${quality.toFixed(3)}) `
-              + `-- splitting the unicode win to "zawcode"`);
-          }
-        }
-      }
-      for (const [nm, sc] of ranking) {
-        const chosenMark = nm === name || (name === ZawCODE_PATH && nm === UNICODE_PATH);
-        log(`    text path ${JSON.stringify(nm)}: ${sc.toFixed(3)}${chosenMark ? "  <- chosen" : ""}`);
-      }
-      note(provenance, {
-        codepage: {
-          chosen: name,
-          score: quality,
-          floor: LEGACY_QUALITY_FLOOR,
-          accepted: quality >= LEGACY_QUALITY_FLOOR,
-          ranking: ranking.map(([nm, sc]) => [nm, sc]),
-          ...(name === ZawCODE_PATH && zawGuard
-            ? { splitFrom: UNICODE_PATH, zawCodeGuard: zawGuard }
-            : {}),
+          return legacy;
+        },
+        onPageContent: (streams, references, loader) => onPageContent?.(idx, streams, references, loader),
+        onConfirmedRepair: ({ before, after }) => {
+          confirmedRepair = {
+            changedLines: countDiffLines(before, after),
+            impossibleBefore: countImpossiblePairs(before),
+            impossibleAfter: countImpossiblePairs(after),
+          };
         },
       });
-
-
-
-
-
-      if (name === UNICODE_PATH || name === ZawCODE_PATH) {
-        log(`[+] Unicode path won the code page score (${quality.toFixed(3)}) `
-          + `-- using the font's own maps, no legacy table`);
+      const original = extractedLines.map((line) => line[3]).join("\n");
+      // Confirmed legacy repairs have already been applied by the extractor.
+      // Normalize the resulting Unicode once per line, as on the shared path.
+      const finished = parsingPath === PDF_PARSING_PATHS.LEGACY
+        ? { text: [...normalizePageLines(original, normalizeWithEngine)].join("\n"), decision: "legacy" }
+        : finishSharedPage(original, {
+          normalize: normalizeWithEngine,
+          sourceEncoding,
+          unicodeEvidence: fontKinds.has("UNICODE"),
+          zawgyiEvidence: fontKinds.size > 0 && [...fontKinds].every((kind) => kind === "ZAWGYI"),
+        });
+      const parts = finished.text.split("\n");
+      const lines = finished.text === original ? extractedLines
+        : parts.length === extractedLines.length
+          ? extractedLines.map((line, i) => [...line.slice(0, 3), parts[i]]) : [];
+      const warnings = [];
+      if (checkpoint && !checkpoint.hasText && checkpoint.bytes === PAGE_CONTENT_PREFIX_BYTES && original.trim()) {
+        const code = checkpoint.hasShownText ? "checkpoint-text-undecodable" : "text-after-checkpoint";
+        warnings.push({ code, page: idx + 1, checkpointBytes: PAGE_CONTENT_PREFIX_BYTES });
+        log(`[!] Page ${idx + 1}: no decodable text in the ${PAGE_CONTENT_PREFIX_BYTES}-byte checkpoint; page text was retained`);
       }
-      legacyPage = table;
-      legacyPageName = name;
-      legacyFontNames = vectorLayout && name === vectorLayout.name
-        ? [vectorLayout.fontName, ...(vectorLayout.sourceBaseFonts || [])]
-        : null;
-      if (name === UNICODE_PATH || name === ZawCODE_PATH) {
-
-
-
-
-
-        log(`[+] Text path: ${name} -- the document read as itself, from the `
-          + `font's own ${unicodeStrategy ? unicodeStrategy.kind : "unicode"} `
-          + `table (score ${quality.toFixed(3)}). No legacy table applied.`
-          + (quality < LEGACY_QUALITY_FLOOR
-            ? ` Below the ${LEGACY_QUALITY_FLOOR.toFixed(2)} floor, so this `
-              + `text may still be poor -- but nothing else scored higher.`
-            : ``));
-        legacyMap = new Map();
-        legacyPage = null;
-        legacyPageName = null;
-        legacyFontNames = null;
-      } else if (quality < LEGACY_QUALITY_FLOOR) {
-        log(`[!] No registered legacy layout fits this document `
-          + `(best ${JSON.stringify(name)} scores ${quality.toFixed(3)}, `
-          + `expected >= ${LEGACY_QUALITY_FLOOR.toFixed(2)}). Falling back to `
-          + `each font's own /ToUnicode. If the Myanmar text is wrong, `
-          + `add this document's code page to LEGACY_CODE_PAGES in `
-          + `codepage/registry.mjs.`);
-        legacyMap = new Map();
-        legacyPage = null;
-        legacyPageName = null;
-        legacyFontNames = null;
+      if (parsingPath === PDF_PARSING_PATHS.ZAWGYI_ONE && usedLegacyFonts.size) {
+        warnings.push({ code: "legacy-font-on-shared-page", page: idx + 1, fonts: [...usedLegacyFonts] });
       }
-    }
-
-
-
-
-    let decoding = null;
-    if (detector !== null) {
-      const legacyOptions = { legacyFontNames };
-      if (legacyMap.size && decodesMyanmar(new DocumentDecoding("legacy", legacyMap, legacyPage, legacyOptions))) {
-        decoding = new DocumentDecoding("legacy", legacyMap, legacyPage, legacyOptions);
-        log(`[+] Decoding via ${legacyPageName ? JSON.stringify(legacyPageName) : "legacy"} character map`);
-      } else if (pyTruthy(cmapMap) && decodesMyanmar(new DocumentDecoding("cmap", new CmapIdentityMap(cmapMap)))) {
-
-
-
-        decoding = new DocumentDecoding("cmap", new CmapIdentityMap(cmapMap));
-        log("[+] Decoding via embedded font cmap (glyph truth) "
-          + "+ identity fallback for exact-Unicode fonts");
-      } else if (pyTruthy(tuMap) && decodesMyanmar(new DocumentDecoding("tounicode", tuMap))) {
-        decoding = new DocumentDecoding("tounicode", tuMap);
-        log("[+] Decoding via ToUnicode/sidecar map");
+      if (finished.decision === "unaligned-unicode") {
+        warnings.push({ code: "unicode-order-needs-review", page: idx + 1 });
+      } else if (finished.decision === "unaligned-unknown") {
+        warnings.push({ code: "encoding-order-needs-review", page: idx + 1 });
+      } else if (finished.decision === "unaligned-zawgyi") {
+        warnings.push({ code: "conversion-characters-need-review", page: idx + 1 });
       }
-    }
-    if (decoding === null) {
-      if (legacyMap.size) decoding = new DocumentDecoding("legacy", legacyMap, legacyPage, { legacyFontNames });
-      else if (pyTruthy(cmapMap)) decoding = new DocumentDecoding("cmap", cmapMap);
-      else if (pyTruthy(tuMap)) decoding = new DocumentDecoding("tounicode", tuMap);
-      else decoding = new DocumentDecoding("none");
-    }
-
-    if (decoding.kind === "none") {
-      log("[!] No font cmap and no ToUnicode map; "
-        + "unmapped codes will appear as [XXXX] placeholders");
-    }
-
-
-
-
-
-
-
-
-
-
-
-    if (vectorRepairEnabled(decoding)) {
-      const blind = new Set();
-      decoding.recordBlind = blind;
-      const probeN = Math.min(VECTOR_REPAIR_PROBE_PAGES, npages);
-      for (let i = 0; i < probeN; i += 1) {
-        try {
-          extractPageLines(objects, allPages[i][0], allPages[i][1], decoding);
-        } catch { /* a page that will not parse tells us nothing more */ }
-      }
-      decoding.recordBlind = null;
-      if (blind.size) {
-        log(`[+] Vector repair: ${blind.size} unnameable glyph id(s)`
-          + ` over ${probeN} probe page(s) -- matching by outline`);
-        try {
-          const repair = buildVectorRepair({ objects, getStream, fontRefs }, blind, { log });
-          if (repair) {
-            decoding.vectorRepair = repair;
-            log(`[+] Vector repair: recovered ${repair.stats.recovered}`
-              + `/${repair.stats.asked} glyph id(s) from ${repair.stats.fonts} subset(s)`);
-          }
-        } catch (err) {
-          log(`[!] Vector repair unavailable: ${err && err.message ? err.message : err}`);
-        }
-      }
-    }
-
-    for (let idx = 0; idx < npages; idx += 1) {
-      yield page(idx, decoding);
+      const category = !containsMyanmar(finished.text) || finished.decision === "unaligned-unknown" ? "UNKNOWN"
+        : finished.decision === "rabbit" || finished.decision === "unaligned-zawgyi" ? "ZAWGYI" : "UNICODE";
+      shared._pageFonts.delete(`${pnum},${pgen}`);
+      legacy._pageFonts.delete(`${pnum},${pgen}`);
+      yield {
+        idx, lines, wh: [w, h], text: finished.text,
+        hasImg: images.length > 0 || pageHasImages(objects, pnum, pgen), images,
+        decodeKind: parsingPath, perFont: true, pageFinalized: true, category,
+        parsingPath, decision: finished.decision, fontNames, fontKinds, checkpoint,
+        ...(confirmedRepair ? { confirmedRepair } : {}),
+        ...(warnings.length ? { warnings } : {}),
+      };
       if ((idx + 1) % 500 === 0) log(`    ... extracted ${idx + 1}/${npages} pages`);
     }
   }
-
   return [metadata, npages, generate()];
 }
 
@@ -592,14 +236,22 @@ export function countDiffLines(base, clean) {
 export function processPageRecord(pg, detector, applyCleanup, log = () => {}, wantLayout = false, sourceEncoding = "auto") {
   const idx = pg.idx;
   const raw = pg.text;
-  if (pg.textPath === ZawCODE_PATH) {
-    // Profiled runs were already ordered once, while assembling each line.
-    const rep = { page: idx + 1, category: "UNICODE", prob: 0,
-      text: raw, nChanges: 0, textPath: ZawCODE_PATH };
+  if (pg.perFont) {
+    const kinds = pg.fontKinds || new Set();
+    const cat = pg.category ?? (kinds.size === 1 ? [...kinds][0] : "UNKNOWN");
+    const rep = { page: idx + 1, category: cat, prob: cat === "ZAWGYI" ? 1 : 0,
+      text: raw, nChanges: 0, perFont: true, pageFinalized: pg.pageFinalized === true,
+      scanEligible: !pg.pageFinalized && kinds.size > 0 && !kinds.has("UNKNOWN"),
+      ...(pg.decision === "zawcode" ? { textPath: "zawcode" } : {}),
+      ...(pg.checkpoint ? { checkpoint: pg.checkpoint } : {}),
+      ...(pg.confirmedRepair ? { confirmedRepair: pg.confirmedRepair } : {}),
+      ...(pg.warnings?.length ? { warnings: pg.warnings } : {}) };
     if (wantLayout) {
       rep.lines = pg.lines;
       rep.wh = pg.wh;
       rep.hasImg = pg.hasImg;
+      rep.images = pg.images;
+      rep.parsingPath = pg.parsingPath;
     }
     return rep;
   }
@@ -774,8 +426,9 @@ export function processPdfBytes(data, detector, filename = "upload.pdf", log = (
   const reports = [];
   const pages = [];
   const counts = { ZAWGYI: 0, UNICODE: 0, UNKNOWN: 0 };
+  const pagePaths = new Set();
+  const pageWarnings = [];
   let textChars = 0;
-  let encodingPath = null;
   for (const rep of reportsIter) {
     const cat = rep.category;
     const base = rep.text;
@@ -783,17 +436,29 @@ export function processPdfBytes(data, detector, filename = "upload.pdf", log = (
     if (textChars > MAX_TEXT_CHARS) {
       throw new RuntimeError(`Extracted text exceeds the ${MAX_TEXT_CHARS} character cap`);
     }
-    const clean = rep.textPath === ZawCODE_PATH ? null : cleanupFor(cat, base);
-    if (rep.textPath) encodingPath = rep.textPath;
+    const clean = rep.perFont ? null : cleanupFor(cat, base);
+    if (rep.parsingPath === PDF_PARSING_PATHS.LEGACY) pagePaths.add("wininnwa");
+    else if (rep.textPath) pagePaths.add(rep.textPath);
+    else if (cat === "ZAWGYI") pagePaths.add("zawgyi-one");
+    else if (cat === "UNICODE") pagePaths.add("unicode");
+    if (rep.warnings) pageWarnings.push(...rep.warnings);
     reports.push({ page: rep.page, category: cat, prob: rep.prob, base, clean,
-      ...(rep.textPath ? { textPath: rep.textPath } : {}) });
-    pages.push({ text: base, lines: rep.lines, wh: rep.wh, hasImg: rep.hasImg });
+      ...(rep.perFont ? { scanEligible: rep.scanEligible, pageFinalized: rep.pageFinalized } : {}),
+      ...(rep.textPath ? { textPath: rep.textPath } : {}),
+      ...(rep.checkpoint ? { checkpoint: rep.checkpoint } : {}),
+      ...(rep.confirmedRepair ? { confirmedRepair: rep.confirmedRepair } : {}),
+      ...(rep.warnings ? { warnings: rep.warnings } : {}) });
+    pages.push({ text: base, lines: rep.lines, wh: rep.wh, hasImg: rep.hasImg,
+      images: rep.images, parsingPath: rep.parsingPath });
     counts[cat] = (counts[cat] ?? 0) + 1;
   }
   const changes = collectChanges(reports);
+  const encodingPath = pagePaths.size === 1 ? [...pagePaths][0] : null;
   return {
     filename, kind: "pdf", reports, counts, metadata: {}, changes, pages, npages,
+    pageLocalDecoding: true,
     ...(encodingPath ? { encodingPath } : {}),
+    ...(pageWarnings.length ? { pageWarnings } : {}),
   };
 }
 
@@ -911,23 +576,48 @@ export function processBytes(data, kind, detector, filename = null, log = () => 
 
 export async function processBytesForMethod(data, kind, method, detector, filename = null, log = () => {}, options = {}) {
   const k = (kind || "").toLowerCase();
-  if (k === "pdf" && isEncryptedPdf(data)) data = await decryptPdf(data, log);
-  if (k === "pdf" && hasObjectStreams(data)) data = await expandObjectStreams(data, log);
-  const runOptions = { ...options };
-  const vectorEnabled = !/^(0|false|no|off)$/iu.test(String(process.env.PRASER_VECTOR_LAYOUT || "1"));
-  if (k === "pdf" && vectorEnabled && !runOptions.vectorLayout) {
-    runOptions.vectorLayout = await prepareVectorLayout(data, log);
-  }
   const m = String(method || "default").toLowerCase();
-  if (m === "manual") return processBytes(data, k, detector, filename, log, runOptions);
-  if (m === "null") {
-    if (k !== "docx") {
-      throw new Error(`method:"null" is DOCX-only (no PDF path emits it); got kind=${JSON.stringify(kind)}`);
-    }
-    return processBytes(data, k, detector, filename, log, runOptions);
+  if (!["default", "manual", "null"].includes(m)) {
+    throw new Error(`Unsupported method: ${JSON.stringify(method)} (use "default"/"manual"/"null")`);
   }
-  if (m === "default") return processBytesDefault(data, k, detector, filename, log, runOptions);
-  throw new Error(`Unsupported method: ${JSON.stringify(method)} (use "default"/"manual"/"null")`);
+  if (m === "null" && k !== "docx") {
+    throw new Error(`method:"null" is DOCX-only (no PDF path emits it); got kind=${JSON.stringify(kind)}`);
+  }
+  if (k !== "pdf") {
+    return m === "default" ? processBytesDefault(data, k, detector, filename, log, options)
+      : processBytes(data, k, detector, filename, log, options);
+  }
+  if (isEncryptedPdf(data)) data = await decryptPdf(data, log);
+  if (hasObjectStreams(data)) data = await expandObjectStreams(data, log);
+
+  const writer = new PageSourceWriter();
+  let retained = false;
+  try {
+    const runOptions = { ...options, onPageContent: (index, streams, refs, loader) => {
+      writer.addPage(index, streams);
+      options.onPageContent?.(index, streams, refs, loader);
+    } };
+    const job = m === "default" ? await processBytesDefault(data, k, detector, filename, log, runOptions)
+      : processBytes(data, k, detector, filename, log, runOptions);
+    try {
+      const source = await writer.finish(data);
+      note(options.provenance, { sourceLinearization: { linearized: true } });
+      if (source.warnings) log(`[i] qpdf linearization warning: ${source.warnings}`);
+      if (options.retainLinearizedSource) {
+        job.internalPdf = source;
+        retained = true;
+      }
+    } catch (error) {
+      // Keep the existing extraction available if a PDF cannot be rewritten.
+      // Never report the original as linearized when this pass failed.
+      job.linearizationError = error.message;
+      note(options.provenance, { sourceLinearization: { linearized: false, error: error.message } });
+      log(`[!] Source PDF linearization skipped: ${error.message}`);
+    }
+    return job;
+  } finally {
+    writer.close({ remove: !retained });
+  }
 }
 
 
@@ -949,9 +639,12 @@ export function buildFinalPages(job, applyCleanup) {
         lines: pg.lines.map(([x, y, s, t]) => [x, y, s, cleanupUnicode(t)]),
         wh: pg.wh,
         hasImg: pg.hasImg,
+        images: pg.images,
+        parsingPath: pg.parsingPath,
       });
     } else {
-      out.push({ text: pg.text, lines: pg.lines, wh: pg.wh, hasImg: pg.hasImg });
+      out.push({ text: pg.text, lines: pg.lines, wh: pg.wh, hasImg: pg.hasImg,
+        images: pg.images, parsingPath: pg.parsingPath });
     }
   }
   return out;

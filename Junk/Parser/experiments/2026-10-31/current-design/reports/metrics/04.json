@@ -1,0 +1,128 @@
+{
+  "case": "04",
+  "path": "pdfs/selected-pdfs/-1759341726906.pdf",
+  "blob": "9b1d6f6adb2d3664ef7850b49d1fa3e1785d9b8c",
+  "source_bytes": 4306486,
+  "source_pages": 135,
+  "selected_pages": 10,
+  "mode": "vector-text-default",
+  "sample_render_match": true,
+  "full_source": {
+    "original_pages": 135,
+    "read_ms": 1.8,
+    "decrypt_or_expand_ms": 0.32,
+    "setup_ms": 56.72,
+    "first_page_ms": 3.89,
+    "all_page_ms": 95.4,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {
+      "pageFontResources": {
+        "calls": 20,
+        "ms": 1.73
+      },
+      "reversedFontCmap": {
+        "calls": 18,
+        "ms": 2.15
+      },
+      "tounicodeOf": {
+        "calls": 18,
+        "ms": 2.39
+      },
+      "cidToGid": {
+        "calls": 8,
+        "ms": 0.06
+      }
+    },
+    "decisions": {
+      "aligned": 4,
+      "unaligned-unicode": 5,
+      "unaligned-unknown": 1
+    },
+    "paths": {
+      "zawgyi-one": 10
+    },
+    "warnings": {
+      "unicode-order-needs-review": 5,
+      "encoding-order-needs-review": 1
+    },
+    "chars": 12149,
+    "myanmar": 10864,
+    "bracket_hex_patterns": 23,
+    "max_prefix": 2048,
+    "blank_pages": 4,
+    "image_placements": 18,
+    "prefix_warnings": 0
+  },
+  "full_source_over_default_input_limit": false,
+  "sample": {
+    "original_pages": 10,
+    "read_ms": 0.11,
+    "decrypt_or_expand_ms": 0.03,
+    "setup_ms": 3.56,
+    "first_page_ms": 0.45,
+    "all_page_ms": 49.07,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {},
+    "decisions": {
+      "aligned": 4,
+      "unaligned-unicode": 5,
+      "unaligned-unknown": 1
+    },
+    "paths": {
+      "zawgyi-one": 10
+    },
+    "warnings": {
+      "unicode-order-needs-review": 5,
+      "encoding-order-needs-review": 1
+    },
+    "chars": 12149,
+    "myanmar": 10864,
+    "bracket_hex_patterns": 23,
+    "max_prefix": 2048,
+    "blank_pages": 4,
+    "image_placements": 18,
+    "prefix_warnings": 0
+  },
+  "sample_vs_original_differences": [],
+  "manager_ms": 925.88,
+  "manager_pages": 10,
+  "manager_counts": {
+    "ZAWGYI": 0,
+    "UNICODE": 5,
+    "UNKNOWN": 5
+  },
+  "output_path": "/home/user/.cache/parser-eye/trash-broad/results/04.pdf",
+  "output_bytes": 220100,
+  "encoding_path": "unicode",
+  "page_warnings": [
+    {
+      "code": "unicode-order-needs-review",
+      "page": 5
+    },
+    {
+      "code": "unicode-order-needs-review",
+      "page": 6
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 7
+    },
+    {
+      "code": "unicode-order-needs-review",
+      "page": 8
+    },
+    {
+      "code": "unicode-order-needs-review",
+      "page": 9
+    },
+    {
+      "code": "unicode-order-needs-review",
+      "page": 10
+    }
+  ],
+  "linearization_warning": null,
+  "manager_text_matches_sample": true,
+  "status": "ok"
+}

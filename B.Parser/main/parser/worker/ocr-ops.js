@@ -6,6 +6,7 @@ import {
   pdfPageCount,
   pageHasImage,
   ocrPdfPage,
+  ocrPdfRegion,
   ocrImage,
   ocrImageDetailed,
   closeOcr,
@@ -80,6 +81,8 @@ export async function handleOcrMessage(msg) {
       return await pageHasImage(bytes, pageNumber);
     case "ocrPage":
       return await ocrPdfPage(bytes, pageNumber);
+    case "ocrRegion":
+      return await ocrPdfRegion(bytes, pageNumber, msg.bbox);
     case "ocrImageDetailed":
       return await ocrImageDetailed(bytes);
     case "close":

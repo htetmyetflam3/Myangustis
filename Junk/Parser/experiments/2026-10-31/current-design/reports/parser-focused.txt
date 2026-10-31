@@ -1,0 +1,448 @@
+TAP version 13
+# Subtest: a format 4 segment reached through glyphIdArray reads the right glyph
+ok 1 - a format 4 segment reached through glyphIdArray reads the right glyph
+  ---
+  duration_ms: 1.782785
+  type: 'test'
+  ...
+# Subtest: a format 4 segment reached through idDelta still reads the right glyph
+ok 2 - a format 4 segment reached through idDelta still reads the right glyph
+  ---
+  duration_ms: 0.577291
+  type: 'test'
+  ...
+# Subtest: an entry is never spliced onto the tail of the entry before it
+ok 3 - an entry is never spliced onto the tail of the entry before it
+  ---
+  duration_ms: 0.905973
+  type: 'test'
+  ...
+# Subtest: a source code is read at the width it was written at
+ok 4 - a source code is read at the width it was written at
+  ---
+  duration_ms: 0.229663
+  type: 'test'
+  ...
+# (node:13528) ExperimentalWarning: WASI is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: legacy text is normalized after confirmed repairs, with synchronized layout
+ok 5 - legacy text is normalized after confirmed repairs, with synchronized layout
+  ---
+  duration_ms: 436.468185
+  type: 'test'
+  ...
+# Subtest: Ayar legacy resources use the same Engine normalization
+ok 6 - Ayar legacy resources use the same Engine normalization
+  ---
+  duration_ms: 1205.535592
+  type: 'test'
+  ...
+# (node:13549) ExperimentalWarning: WASI is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: object streams are detected by marker and expanded through qpdf
+ok 7 - object streams are detected by marker and expanded through qpdf
+  ---
+  duration_ms: 38.124511
+  type: 'test'
+  ...
+# Subtest: the sync extraction path names object streams instead of failing silently
+ok 8 - the sync extraction path names object streams instead of failing silently
+  ---
+  duration_ms: 168.309752
+  type: 'test'
+  ...
+# Subtest: region rendering converts PDF coordinates at each page rotation and offset
+ok 9 - region rendering converts PDF coordinates at each page rotation and offset
+  ---
+  duration_ms: 138.502575
+  type: 'test'
+  ...
+# Subtest: region rendering rejects invalid or invisible bounding boxes
+ok 10 - region rendering rejects invalid or invisible bounding boxes
+  ---
+  duration_ms: 3.547743
+  type: 'test'
+  ...
+# Subtest: qpdf is the decrypt and Fast Web View second pass
+ok 11 - qpdf is the decrypt and Fast Web View second pass
+  ---
+  duration_ms: 59.98474
+  type: 'test'
+  ...
+# Subtest: a ေ that is already home is left alone
+ok 12 - a ေ that is already home is left alone
+  ---
+  duration_ms: 20.097482
+  type: 'test'
+  ...
+# Subtest: KNOWN LIMITATION: သေမှ reads as သမှေ
+ok 13 - KNOWN LIMITATION: သေမှ reads as သမှေ
+  ---
+  duration_ms: 2.631042
+  type: 'test'
+  ...
+# Subtest: a ေ drawn ahead of its consonant moves behind it
+ok 14 - a ေ drawn ahead of its consonant moves behind it
+  ---
+  duration_ms: 0.207059
+  type: 'test'
+  ...
+# Subtest: a ေ opens the next cluster when the one behind it is already closed
+ok 15 - a ေ opens the next cluster when the one behind it is already closed
+  ---
+  duration_ms: 0.129886
+  type: 'test'
+  ...
+# Subtest: a medial that sorts after the mark behind it opens a new cluster
+ok 16 - a medial that sorts after the mark behind it opens a new cluster
+  ---
+  duration_ms: 0.181496
+  type: 'test'
+  ...
+# Subtest: a vowel sign that cannot follow ေ is dropped
+ok 17 - a vowel sign that cannot follow ေ is dropped
+  ---
+  duration_ms: 0.091435
+  type: 'test'
+  ...
+# Subtest: a legal ေ keeps everything that may follow it
+ok 18 - a legal ေ keeps everything that may follow it
+  ---
+  duration_ms: 0.124691
+  type: 'test'
+  ...
+# Subtest: the whole pass is idempotent
+ok 19 - the whole pass is idempotent
+  ---
+  duration_ms: 0.225015
+  type: 'test'
+  ...
+# Subtest: every ေ in a finished document can be followed only by what it may
+ok 20 - every ေ in a finished document can be followed only by what it may
+  ---
+  duration_ms: 2.039934
+  type: 'test'
+  ...
+# Subtest: movePrebaseMarks alone never touches a syllable that is in order
+ok 21 - movePrebaseMarks alone never touches a syllable that is in order
+  ---
+  duration_ms: 0.351448
+  type: 'test'
+  ...
+# Subtest: a ေ is not moved into a finished syllable
+ok 22 - a ေ is not moved into a finished syllable
+  ---
+  duration_ms: 0.14675
+  type: 'test'
+  ...
+# Subtest: zawcode: the split between two consonants
+ok 23 - zawcode: the split between two consonants
+  ---
+  duration_ms: 0.267019
+  type: 'test'
+  ...
+# Subtest: zawcode: pre-base runs land behind their consonant, default order elsewhere
+ok 24 - zawcode: pre-base runs land behind their consonant, default order elsewhere
+  ---
+  duration_ms: 0.098243
+  type: 'test'
+  ...
+# Subtest: zawcode: its own output is stable
+ok 25 - zawcode: its own output is stable
+  ---
+  duration_ms: 0.083607
+  type: 'test'
+  ...
+# Subtest: zawcode retrace: the u-sign ligature keeps only the u before ံ
+ok 26 - zawcode retrace: the u-sign ligature keeps only the u before ံ
+  ---
+  duration_ms: 0.228916
+  type: 'test'
+  ...
+# Subtest: zawcode retrace: a consonant standing where ြ belongs carries over
+ok 27 - zawcode retrace: a consonant standing where ြ belongs carries over
+  ---
+  duration_ms: 0.095975
+  type: 'test'
+  ...
+# Subtest: zawcode retrace: the ေ/ြ pair moves behind together, a lone ေ never
+ok 28 - zawcode retrace: the ေ/ြ pair moves behind together, a lone ေ never
+  ---
+  duration_ms: 0.062989
+  type: 'test'
+  ...
+# Subtest: zawcode retrace: the spread ့ ligature sheds its phantom ွ and ဲ
+ok 29 - zawcode retrace: the spread ့ ligature sheds its phantom ွ and ဲ
+  ---
+  duration_ms: 0.052631
+  type: 'test'
+  ...
+# Subtest: zawcode settle: only the ေ stranded behind the carrier အ moves
+ok 30 - zawcode settle: only the ေ stranded behind the carrier အ moves
+  ---
+  duration_ms: 0.110006
+  type: 'test'
+  ...
+# Subtest: zawcode retrace and settle are idempotent
+ok 31 - zawcode retrace and settle are idempotent
+  ---
+  duration_ms: 0.142609
+  type: 'test'
+  ...
+# Subtest: the three legacy homoglyph pairs are loaded
+ok 32 - the three legacy homoglyph pairs are loaded
+  ---
+  duration_ms: 1.06008
+  type: 'test'
+  ...
+# Subtest: variants swap in both directions and never include the input
+ok 33 - variants swap in both directions and never include the input
+  ---
+  duration_ms: 0.232434
+  type: 'test'
+  ...
+# Subtest: a token already in the dictionary is never touched
+ok 34 - a token already in the dictionary is never touched
+  ---
+  duration_ms: 0.120901
+  type: 'test'
+  ...
+# Subtest: a single resolving variant is the repair
+ok 35 - a single resolving variant is the repair
+  ---
+  duration_ms: 0.091406
+  type: 'test'
+  ...
+# Subtest: a token with no resolving variant is left alone
+ok 36 - a token with no resolving variant is left alone
+  ---
+  duration_ms: 0.074458
+  type: 'test'
+  ...
+# Subtest: ambiguity changes nothing
+ok 37 - ambiguity changes nothing
+  ---
+  duration_ms: 0.10165
+  type: 'test'
+  ...
+# Subtest: an empty or missing dictionary is a no-op
+ok 38 - an empty or missing dictionary is a no-op
+  ---
+  duration_ms: 0.108138
+  type: 'test'
+  ...
+# Subtest: whole-text repair rewrites and tallies
+ok 39 - whole-text repair rewrites and tallies
+  ---
+  duration_ms: 0.267914
+  type: 'test'
+  ...
+# Subtest: non-Myanmar text passes through untouched
+ok 40 - non-Myanmar text passes through untouched
+  ---
+  duration_ms: 0.201564
+  type: 'test'
+  ...
+# Subtest: a trailing page number is split off a heading
+ok 41 - a trailing page number is split off a heading
+  ---
+  duration_ms: 0.390523
+  type: 'test'
+  ...
+# Subtest: a leading list marker is split off a heading
+ok 42 - a leading list marker is split off a heading
+  ---
+  duration_ms: 0.18137
+  type: 'test'
+  ...
+# Subtest: a token already in the dictionary is never split
+ok 43 - a token already in the dictionary is never split
+  ---
+  duration_ms: 0.057723
+  type: 'test'
+  ...
+# Subtest: a split that leaves a non-word is refused
+ok 44 - a split that leaves a non-word is refused
+  ---
+  duration_ms: 0.048893
+  type: 'test'
+  ...
+# Subtest: ambiguity at both ends changes nothing
+ok 45 - ambiguity at both ends changes nothing
+  ---
+  duration_ms: 0.045688
+  type: 'test'
+  ...
+# Subtest: repairText applies swaps and splits together
+ok 46 - repairText applies swaps and splits together
+  ---
+  duration_ms: 0.155532
+  type: 'test'
+  ...
+# Subtest: repairText is a no-op without a dictionary
+ok 47 - repairText is a no-op without a dictionary
+  ---
+  duration_ms: 0.145276
+  type: 'test'
+  ...
+# Subtest: zawcode mend rewrites scan-flagged spans and nothing else
+ok 48 - zawcode mend rewrites scan-flagged spans and nothing else # SKIP MASTER_JSON_KEY required for sealed dictionary
+  ---
+  duration_ms: 0.042435
+  type: 'test'
+  ...
+# Subtest: zawcode guard splits stored order by readable result, not font name
+ok 49 - zawcode guard splits stored order by readable result, not font name # SKIP MASTER_JSON_KEY required for sealed dictionary
+  ---
+  duration_ms: 0.033343
+  type: 'test'
+  ...
+# Subtest: zawcode insertion variants offer the dropped glyphs
+ok 50 - zawcode insertion variants offer the dropped glyphs
+  ---
+  duration_ms: 0.694389
+  type: 'test'
+  ...
+# Subtest: zawcode mend retraces misnamed and dropped glyphs at scan coordinates
+ok 51 - zawcode mend retraces misnamed and dropped glyphs at scan coordinates # SKIP MASTER_JSON_KEY required for sealed dictionary
+  ---
+  duration_ms: 0.047238
+  type: 'test'
+  ...
+# Subtest: zawcode mend frames cover the damage that still segments
+ok 52 - zawcode mend frames cover the damage that still segments # SKIP MASTER_JSON_KEY required for sealed dictionary
+  ---
+  duration_ms: 0.031749
+  type: 'test'
+  ...
+# Subtest: repairFromScanVerdict mends only the zawcode path, text and lines together
+ok 53 - repairFromScanVerdict mends only the zawcode path, text and lines together # SKIP MASTER_JSON_KEY required for sealed dictionary
+  ---
+  duration_ms: 0.030214
+  type: 'test'
+  ...
+# Subtest: JavaScript scanner mirrors the structural scan rules
+ok 54 - JavaScript scanner mirrors the structural scan rules
+  ---
+  duration_ms: 2.433442
+  type: 'test'
+  ...
+# Subtest: sealed master map is loaded only by an explicit scanner dictionary request
+ok 55 - sealed master map is loaded only by an explicit scanner dictionary request # SKIP MASTER_JSON_KEY required for sealed dictionary
+  ---
+  duration_ms: 0.175346
+  type: 'test'
+  ...
+# (node:13627) ExperimentalWarning: WASI is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: the four indexed patterns preserve position zero
+ok 56 - the four indexed patterns preserve position zero
+  ---
+  duration_ms: 25.495316
+  type: 'test'
+  ...
+# Subtest: the four patterns can start at the beginning of a line
+ok 57 - the four patterns can start at the beginning of a line
+  ---
+  duration_ms: 0.175685
+  type: 'test'
+  ...
+# Subtest: safety pattern 01234 becomes 02134
+ok 58 - safety pattern 01234 becomes 02134
+  ---
+  duration_ms: 0.180074
+  type: 'test'
+  ...
+# Subtest: safety pattern 012345 becomes 021543
+ok 59 - safety pattern 012345 becomes 021543
+  ---
+  duration_ms: 0.204353
+  type: 'test'
+  ...
+# Subtest: safety patterns are arranged before per-line normalize
+ok 60 - safety patterns are arranged before per-line normalize
+  ---
+  duration_ms: 0.532478
+  type: 'test'
+  ...
+# Subtest: a previous e cannot be position zero for a new pattern
+ok 61 - a previous e cannot be position zero for a new pattern
+  ---
+  duration_ms: 0.08909
+  type: 'test'
+  ...
+# Subtest: other characters, marks and bases are not added or converted
+ok 62 - other characters, marks and bases are not added or converted
+  ---
+  duration_ms: 0.151526
+  type: 'test'
+  ...
+# Subtest: there is no maximum counter or search across intervening marks
+ok 63 - there is no maximum counter or search across intervening marks
+  ---
+  duration_ms: 0.088836
+  type: 'test'
+  ...
+# Subtest: base matching uses the Engine MMap.Base inventory
+ok 64 - base matching uses the Engine MMap.Base inventory
+  ---
+  duration_ms: 80.480802
+  type: 'test'
+  ...
+# Subtest: patterns do not cross line breaks or invisible characters
+ok 65 - patterns do not cross line breaks or invisible characters
+  ---
+  duration_ms: 0.466225
+  type: 'test'
+  ...
+# Subtest: scan ordering is ZawCode-only and requires a scan verdict
+ok 66 - scan ordering is ZawCode-only and requires a scan verdict
+  ---
+  duration_ms: 0.219753
+  type: 'test'
+  ...
+# Subtest: repair ordering precedes normalize once per line
+ok 67 - repair ordering precedes normalize once per line
+  ---
+  duration_ms: 0.180598
+  type: 'test'
+  ...
+# Subtest: Engine normalize, not mapperNormalize, follows repair ordering
+ok 68 - Engine normalize, not mapperNormalize, follows repair ordering
+  ---
+  duration_ms: 6.733167
+  type: 'test'
+  ...
+# Subtest: existing scan repair still fixes tokens without an ordering pattern
+ok 69 - existing scan repair still fixes tokens without an ordering pattern
+  ---
+  duration_ms: 1.973167
+  type: 'test'
+  ...
+# Subtest: Unicode mark order ignores spaces and accepts canonical asat order
+ok 70 - Unicode mark order ignores spaces and accepts canonical asat order
+  ---
+  duration_ms: 0.289747
+  type: 'test'
+  ...
+# Subtest: pass-through and ZawCode normalizers preserve zero-width characters
+ok 71 - pass-through and ZawCode normalizers preserve zero-width characters
+  ---
+  duration_ms: 0.501118
+  type: 'test'
+  ...
+# Subtest: normalization is a lazy generator with one Engine call per line
+ok 72 - normalization is a lazy generator with one Engine call per line
+  ---
+  duration_ms: 0.129137
+  type: 'test'
+  ...
+1..72
+# tests 72
+# suites 0
+# pass 66
+# fail 0
+# cancelled 0
+# skipped 6
+# todo 0
+# duration_ms 3074.436297

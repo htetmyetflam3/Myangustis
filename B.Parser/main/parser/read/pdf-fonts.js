@@ -438,7 +438,9 @@ export class CMapEncoding {
   constructor(identity = true) {
     this.identity = identity;
     this.widths = new Set();
+    this.spaces = [];
     this.single = new Map();
+    this.singleByWidth = new Map();
     this.ranges = [];
   }
 
@@ -446,47 +448,43 @@ export class CMapEncoding {
     return this.widths.size ? Array.from(this.widths).sort((a, b) => a - b) : [2];
   }
 
-  cidFor(code) {
+  cidFor(code, width = null) {
     if (this.identity) return code;
-    const cid = this.single.get(code);
+    const cid = width !== null && this.singleByWidth.size
+      ? this.singleByWidth.get(width)?.get(code) : this.single.get(code);
     if (cid !== undefined) return cid;
-    for (const [lo, hi, base] of this.ranges) {
-      if (lo <= code && code <= hi) return base + (code - lo);
+    for (const [lo, hi, base, rangeWidth] of this.ranges) {
+      if ((width === null || rangeWidth === undefined || rangeWidth === width) && lo <= code && code <= hi) {
+        return base + (code - lo);
+      }
     }
     return code;
   }
 
-  _inSpace(_code, width) {
-    return this.widths.has(width);
+  _inSpace(code, width) {
+    if (!this.spaces.length) return this.widths.size ? this.widths.has(width) : width === 2;
+    return this.spaces.some(([w, lo, hi]) => w === width && code >= lo && code <= hi);
   }
-
 
   * iterCodes(data) {
     const lengths = this.codeLengths();
-    let i = 0;
-    const n = data.length;
-    while (i < n) {
+    for (let i = 0; i < data.length;) {
       let matched = false;
       for (const width of lengths) {
-        if (i + width <= n) {
-          let code = 0;
-          for (let k = 0; k < width; k += 1) code = code * 256 + data.charCodeAt(i + k);
-          if (this.identity || width === lengths[lengths.length - 1] || this._inSpace(code, width)) {
-            yield [code, this.cidFor(code), width];
-            i += width;
-            matched = true;
-            break;
-          }
-        }
+        if (i + width > data.length) continue;
+        let code = 0;
+        for (let k = 0; k < width; k += 1) code = code * 256 + data.charCodeAt(i + k);
+        if (!this._inSpace(code, width)) continue;
+        yield [code, this.cidFor(code, width), width, false];
+        i += width;
+        matched = true;
+        break;
       }
       if (!matched) {
-        const width = lengths[lengths.length - 1];
-        let code = 0;
-        for (let k = 0; k < width; k += 1) {
-          code = code * 256 + (i + k < n ? data.charCodeAt(i + k) : 0);
-        }
-        yield [code, this.cidFor(code), width];
-        i += width;
+        // Do not pad a truncated/invalid code with zero or interpret it as a
+        // different CID. Retain each unmatched byte as an explicit unknown.
+        yield [data.charCodeAt(i), null, 1, true];
+        i += 1;
       }
     }
   }
@@ -508,14 +506,21 @@ export function parseCmapStream(data) {
   while ((m = CODESPACE_RE.exec(text)) !== null) {
     HEXPAIR_RE.lastIndex = 0;
     let p;
-    while ((p = HEXPAIR_RE.exec(m[1])) !== null) enc.widths.add(Math.max(1, Math.floor(p[1].length / 2)));
+    while ((p = HEXPAIR_RE.exec(m[1])) !== null) {
+      const width = p[1].length / 2;
+      if (!Number.isInteger(width) || width < 1 || width > 4 || p[2].length !== p[1].length) continue;
+      enc.widths.add(width);
+      enc.spaces.push([width, parseInt(p[1], 16), parseInt(p[2], 16)]);
+    }
   }
   CIDRANGE_RE.lastIndex = 0;
   while ((m = CIDRANGE_RE.exec(text)) !== null) {
     HEXNUM_RE.lastIndex = 0;
     let p;
     while ((p = HEXNUM_RE.exec(m[1])) !== null) {
-      enc.ranges.push([Number.parseInt(p[1], 16), Number.parseInt(p[2], 16), Number.parseInt(p[3], 10)]);
+      const width = p[1].length / 2;
+      if (!Number.isInteger(width) || width < 1 || width > 4 || p[2].length !== p[1].length) continue;
+      enc.ranges.push([Number.parseInt(p[1], 16), Number.parseInt(p[2], 16), Number.parseInt(p[3], 10), width]);
     }
   }
   CIDCHAR_RE.lastIndex = 0;
@@ -523,7 +528,13 @@ export function parseCmapStream(data) {
     HEXINT_RE.lastIndex = 0;
     let p;
     while ((p = HEXINT_RE.exec(m[1])) !== null) {
-      enc.single.set(Number.parseInt(p[1], 16), Number.parseInt(p[2], 10));
+      const width = p[1].length / 2;
+      if (!Number.isInteger(width) || width < 1 || width > 4) continue;
+      const code = Number.parseInt(p[1], 16);
+      const cid = Number.parseInt(p[2], 10);
+      if (!enc.singleByWidth.has(width)) enc.singleByWidth.set(width, new Map());
+      enc.singleByWidth.get(width).set(code, cid);
+      enc.single.set(code, cid);
     }
   }
   if (!enc.widths.size) enc.widths.add(2);
@@ -538,6 +549,12 @@ export function parseCmapStream(data) {
 
 export const IDENTITY = Symbol("IDENTITY");
 
+// These are parsing routes, not declarations that all text on the shared
+// Zawgyi-One route is Zawgyi encoded.
+export const PDF_PARSING_PATHS = Object.freeze({
+  ZAWGYI_ONE: "zawgyi-one",
+  LEGACY: "legacy",
+});
 
 export class CmapIdentityMap extends Map {}
 
@@ -596,8 +613,8 @@ export class DocumentDecoding {
   constructor(kind, mapping = null, legacyCodePage = null, { legacyFontNames = null, vectorRepair = null } = {}) {
     this.kind = kind;
     this.map = kind === "identity" ? IDENTITY : (mapping || new Map());
-    this.keyKind = kind === "cmap" ? "gid" : "code";
-    this.trustFontToUnicode = kind === "tounicode" || kind === "none";
+    this.keyKind = kind === "cmap" || kind === "font" ? "gid" : "code";
+    this.trustFontToUnicode = kind === "tounicode" || kind === "none" || kind === "font";
     this.legacyTextFix = kind === "legacy";
     this.legacyCodePage = legacyCodePage;
     this.legacyFontNames = legacyFontNames ? new Set(legacyFontNames) : null;
@@ -691,21 +708,18 @@ function resolveShapedGlyphs(fontBytes, table) {
     for (const group of slots) {
       const unknown = group.filter((g) => !table.has(g));
       if (!unknown.length) continue;
-      let best = undefined;
-      let bestRank = Number.POSITIVE_INFINITY;
+      const known = new Map();
       for (const gid of group) {
         const value = table.get(gid);
         if (value === undefined) continue;
         const text = typeof value === "number" ? String.fromCodePoint(value) : value;
-        if (!text) continue;
-
-
-
-        const rank = (reverse.has(gid) ? 10 : 0) + (text.length > 1 ? 1 : 0);
-        if (rank < bestRank) { bestRank = rank; best = value; }
+        if (text) known.set(text, value);
       }
-      if (best === undefined) continue;
-      for (const gid of unknown) { table.set(gid, best); added = true; }
+      // A shaping group can contain different characters or sequences. A
+      // single convenient-looking member is not evidence for the others.
+      if (known.size !== 1) continue;
+      const value = known.values().next().value;
+      for (const gid of unknown) { table.set(gid, value); added = true; }
     }
     if (!added) break;
   }
@@ -764,17 +778,25 @@ export class FontResourceLoader {
 
 
 
+        const direct = new Map();
+        const ambiguous = new Set();
+        const codepoints = new Map();
         for (const [uni, gid] of cmap) {
           if (!gid) continue;
+          if (!codepoints.has(gid)) codepoints.set(gid, new Set());
+          codepoints.get(gid).add(uni);
           const prev = table.get(gid);
           if (prev === undefined || uni < prev) table.set(gid, uni);
+          if (direct.has(gid) && direct.get(gid) !== uni) {
+            direct.delete(gid);
+            ambiguous.add(gid);
+          } else if (!ambiguous.has(gid)) {
+            direct.set(gid, uni);
+          }
         }
-
-
-
-
-
-
+        table.direct = direct;
+        table.ambiguous = ambiguous;
+        table.codepoints = codepoints;
         resolveShapedGlyphs(data, table);
       }
       this._gidCache.set(cacheKey, table);
@@ -784,13 +806,14 @@ export class FontResourceLoader {
   }
 
 
-  tounicodeOf(fontDict) {
+  tounicodeOf(fontDict, { preserveSpaces = false } = {}) {
     const ref = fontDict.get("ToUnicode");
     if (!(ref instanceof PdfRef)) return null;
-    const cacheKey = ref.key();
+    const cacheKey = `${ref.key()}:${preserveSpaces ? "all" : "filtered"}`;
     if (this._tuCache.has(cacheKey)) return this._tuCache.get(cacheKey);
     const data = this.streamOf(ref);
-    const mapping = data ? usableToUnicode(this._parseToUnicode(data)) : null;
+    const parsed = data ? this._parseToUnicode(data) : null;
+    const mapping = preserveSpaces ? (parsed?.size ? parsed : null) : usableToUnicode(parsed);
     this._tuCache.set(cacheKey, mapping);
     return mapping;
   }
@@ -923,7 +946,7 @@ export function legacyFontFaces(objects, getStreamFn, parseToUnicodeFn) {
 export class FontDecoder {
   constructor(name, {
     subtype = "", baseFont = "", isCid = false, cmap = null, toUnicode = null,
-    encoding = null, hasEncoding = false, ownGids = null, doc = null, cidToGid = null,
+    encoding = null, hasEncoding = false, hasPdfEncoding = hasEncoding, ownGids = null, doc = null, cidToGid = null,
     zawcodeGlyphs = null, confirmedRawRuns = null, fontLegacyCodePage = null,
   } = {}) {
     this.name = name;
@@ -934,12 +957,30 @@ export class FontDecoder {
     this.toUnicode = toUnicode;
     this.encoding = encoding || new Map();
     this.hasEncoding = hasEncoding;
+    this.hasPdfEncoding = hasPdfEncoding;
     this.ownGids = ownGids || new Map();
     this.zawcodeGlyphs = zawcodeGlyphs;
     this.confirmedRawRuns = confirmedRawRuns;
     this.fontLegacyCodePage = fontLegacyCodePage;
     this.doc = doc !== null ? doc : new DocumentDecoding("none");
     this._cidToGid = cidToGid;
+    this._conflictingSpaceMap = false;
+    if (this.doc.kind === "font" && this.isCid && this.toUnicode && this.ownGids.direct?.size) {
+      let contradictions = 0;
+      const groups = this.toUnicode.byWidth || new Map([[2, this.toUnicode]]);
+      for (const [width, entries] of groups) {
+        for (const [code, value] of entries) {
+          if (value !== " ") continue;
+          const cid = this.cmap.cidFor(code, width);
+          const gid = this.gidFor(cid);
+          const cp = this.ownGids.direct.get(gid);
+          if (cp !== undefined && !SPACE_CODES.has(cp)) contradictions += 1;
+        }
+      }
+      // Use only this resource's own direct cmap to detect a heavily
+      // contradictory ToUnicode map. A few shaped clusters are not enough.
+      this._conflictingSpaceMap = contradictions >= 4 && contradictions / this.toUnicode.size >= 0.08;
+    }
     // A mixed document can contain CID text alongside simple legacy fonts.
     // Use a substantial Myanmar ToUnicode map for that CID font's raw text,
     // not the other font's legacy table. This is not an encoding verdict;
@@ -950,6 +991,20 @@ export class FontDecoder {
     this._unicodeCidInLegacyDocument = this.doc.kind === "legacy" && this.isCid
       && this.zawcodeGlyphs === null && mappings.length >= 8 && myanmarMappings >= 4
       && myanmarMappings * 2 >= mappings.length && spaceMappings * 2 < mappings.length;
+  }
+
+  get parsingPath() {
+    // A font name is not a byte map. Only a matched resource profile supplies
+    // legacy byte mappings; unsupported legacy faces remain unresolved.
+    if (this.confirmedRawRuns || this.fontLegacyCodePage
+        || isUnresolvedLegacyFont(this.baseFont)) return PDF_PARSING_PATHS.LEGACY;
+    const name = normaliseFontName(this.baseFont);
+    if (!this.isCid && !this.hasPdfEncoding && /^(?:wininnwa|arlarwade|ayar)/u.test(name)) {
+      const unicodeMap = this.toUnicode && [...this.toUnicode.values()]
+        .some((value) => /[\u1000-\u109f\ua9e0-\ua9ff\uaa60-\uaa7f]/u.test(value));
+      if (!unicodeMap) return PDF_PARSING_PATHS.LEGACY;
+    }
+    return PDF_PARSING_PATHS.ZAWGYI_ONE;
   }
 
   get _isSelectedLegacyFont() {
@@ -1089,22 +1144,36 @@ export class FontDecoder {
   }
 
 
-  decodeCode(code, cid = null) {
-    if (isUnresolvedLegacyFont(this.baseFont) || this.confirmedRawRuns?.unresolved.has(code)) return null;
+  decodeCode(code, cid = null, width = this.isCid ? 2 : 1, useConfirmed = true) {
+    if (isUnresolvedLegacyFont(this.baseFont)
+        || (useConfirmed && this.confirmedRawRuns?.unresolved.has(code))) return null;
     // These are raw PDF codes, not /ToUnicode values or physical key positions.
-    const confirmed = !this.isCid ? this.confirmedRawRuns?.bytes?.get(code) : undefined;
+    const confirmed = useConfirmed && !this.isCid ? this.confirmedRawRuns?.bytes?.get(code) : undefined;
     if (confirmed !== undefined) return confirmed;
-    const tu = this._trustedToUnicode;
-    if (tu !== null) {
-      const hit = tu.get(code);
-      if (hit !== undefined) return hit;
+    if (!this.isCid && this.doc.kind === "font" && this.fontLegacyCodePage) {
+      const bridged = this._legacyLookup(code);
+      if (bridged !== null) return bridged;
     }
+    const tu = this._trustedToUnicode;
+    const hit = tu?.byWidth ? tu.byWidth.get(width)?.get(code) : tu?.get(code);
+    if (this.isCid && this.doc.kind === "font" && this._conflictingSpaceMap) {
+      // Reuse the existing font-cmap parser for this resource when its
+      // ToUnicode map is dominated by contradictory space mappings. Do not
+      // invent a new direct encoding or use a different font's glyph IDs.
+      const localCid = cid === null ? code : cid;
+      const gid = this.gidFor(localCid);
+      if (!this.ownGids.ambiguous?.has(gid)) {
+        const local = this._docLookup(gid, localCid);
+        if (local !== null) return local;
+      }
+    }
+    if (hit !== undefined) return hit;
     if (!this.isCid) {
       const bridged = this._legacyLookup(code);
       if (bridged !== null) return bridged;
       if (this.hasEncoding) {
-        const hit = this.encoding.get(code);
-        return hit === undefined ? null : hit;
+        const encoded = this.encoding.get(code);
+        return encoded === undefined ? null : encoded;
       }
       return this._docLookup(code);
     }
@@ -1114,9 +1183,10 @@ export class FontDecoder {
   }
 
 
-  decode(data) {
+  decode(data, { useConfirmed = true, skipUnknown = false } = {}) {
     if (!data) return "";
     if (isUnresolvedLegacyFont(this.baseFont)) {
+      if (skipUnknown) return "";
       // Keep raw character codes visible rather than applying a different
       // font's map, /ToUnicode, or a document-wide glyph fallback.
       const codes = this.isCid
@@ -1130,15 +1200,16 @@ export class FontDecoder {
     }
     let out = "";
     if (this.isCid) {
-      for (const [code, cid] of this.cmap.iterCodes(data)) {
-        const text = this.decodeCode(code, cid);
-        out += text !== null ? text : `[${code.toString(16).toUpperCase().padStart(4, "0")}]`;
+      for (const [code, cid, width, invalid] of this.cmap.iterCodes(data)) {
+        const text = invalid ? null : this.decodeCode(code, cid, width, useConfirmed);
+        if (text !== null) out += text;
+        else if (!skipUnknown) out += `[${code.toString(16).toUpperCase().padStart(width * 2, "0")}]`;
       }
       return out;
     }
     for (let i = 0; i < data.length; i += 1) {
       const code = data.charCodeAt(i);
-      if (this.confirmedRawRuns) {
+      if (useConfirmed && this.confirmedRawRuns) {
         const run = confirmedRunAt(this.confirmedRawRuns, data, i);
         if (run) {
           out += run.text;
@@ -1146,11 +1217,11 @@ export class FontDecoder {
           continue;
         }
         if (this.confirmedRawRuns.unresolved.has(code)) {
-          out += `[${code.toString(16).toUpperCase().padStart(2, "0")}]`;
+          if (!skipUnknown) out += `[${code.toString(16).toUpperCase().padStart(2, "0")}]`;
           continue;
         }
       }
-      let text = this.decodeCode(code);
+      let text = this.decodeCode(code, null, 1, useConfirmed);
       if (text === null) {
         text = ((code < 0x20 || (code >= 0x7f && code <= 0x9f)) && code !== 0x09 && code !== 0x0a && code !== 0x0d)
           ? "" : pyChr(code);
@@ -1272,44 +1343,39 @@ export function buildFontDecoder(loader, name, entry, doc) {
     }
     // A matched profile reads raw GIDs only. Other font resources retain
     // their own ToUnicode/encoding rather than inheriting this profile.
-    const toUnicode = zawcodeGlyphs === null ? loader.tounicodeOf(font) : null;
+    const toUnicode = zawcodeGlyphs === null
+      ? loader.tounicodeOf(font, { preserveSpaces: doc.kind === "font" }) : null;
     const ownGids = zawcodeGlyphs === null ? loader.reversedFontCmap(descriptor) : new Map();
     return new FontDecoder(name, {
       subtype, baseFont, isCid: true, cmap, toUnicode, ownGids, doc, zawcodeGlyphs,
-      cidToGid: loader.cidToGid(descendant),
+      hasPdfEncoding: font.has("Encoding"), cidToGid: loader.cidToGid(descendant),
     });
   }
 
   const [encoding, declared] = buildSimpleEncoding(font.get("Encoding"), (v) => loader.resolve(v));
   const descriptor = loader.resolve(font.get("FontDescriptor"));
-  const candidate = doc.confirmedPdfProfile;
   const normalizedFont = normaliseFontName(baseFont);
-  const selected = !doc.legacyFontNames
-    || [...doc.legacyFontNames].some((entry) => normaliseFontName(entry) === normalizedFont);
-  let confirmedRawRuns = null;
   let bridge = null;
-  if (doc.kind === "legacy" && descriptor instanceof Map) {
+  if (doc.kind === "legacy" && descriptor instanceof Map
+      && /^(?:wininnwa|arlarwade|amyanmar|ayar)/u.test(normalizedFont)) {
     const program = loader.streamOf(descriptor.get("FontFile2"));
     const digest = program ? createHash("sha256").update(program).digest("hex") : null;
     const toUnicodeStream = loader.streamOf(font.get("ToUnicode"));
     const toUnicodeSha256 = toUnicodeStream ? createHash("sha256").update(toUnicodeStream).digest("hex") : null;
+    // The bridge describes this exact font resource and its encoding, not the
+    // PDF file. Unmatched resources never inherit another subset's byte map.
     bridge = subsetFontBridge({
       fontSha256: digest, toUnicodeSha256, baseFont: normalizedFont,
       firstChar: font.get("FirstChar"), lastChar: font.get("LastChar"),
       hasEncoding: font.has("Encoding"),
     });
-    if (candidate && selected && normalizedFont.startsWith("wininnwa") && digest === candidate.fontSha256) {
-      confirmedRawRuns = bridge?.rawRuns
-        ? { ...candidate, bytes: new Map([...(bridge.rawRuns.bytes || []), ...(candidate.bytes || [])]) }
-        : candidate;
-    } else if (bridge?.rawRuns) {
-      confirmedRawRuns = bridge.rawRuns;
-    }
   }
+  const confirmedRawRuns = bridge?.rawRuns || null;
   const ownGids = loader.reversedFontCmap(font.get("FontDescriptor"));
-  const toUnicode = loader.tounicodeOf(font);
+  const toUnicode = loader.tounicodeOf(font, { preserveSpaces: doc.kind === "font" });
   return new FontDecoder(name, {
-    subtype, baseFont, isCid: false, toUnicode, encoding, hasEncoding: declared, ownGids, doc,
+    subtype, baseFont, isCid: false, toUnicode, encoding, hasEncoding: declared,
+    hasPdfEncoding: font.has("Encoding"), ownGids, doc,
     confirmedRawRuns, fontLegacyCodePage: bridge?.codePage || null,
   });
 }

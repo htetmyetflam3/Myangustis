@@ -1,0 +1,123 @@
+{
+  "case": "14",
+  "path": "pdfs/selected-pdfs/1705152502270.pdf",
+  "blob": "2bc78ddcb6c379ead6c59c0473b6fc258bc9bd5e",
+  "source_bytes": 8497720,
+  "source_pages": 74,
+  "selected_pages": 10,
+  "mode": "vector-text-default",
+  "sample_render_match": true,
+  "full_source": {
+    "original_pages": 74,
+    "read_ms": 8.42,
+    "decrypt_or_expand_ms": 0.86,
+    "setup_ms": 79.04,
+    "first_page_ms": 63.7,
+    "all_page_ms": 186.62,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {
+      "pageFontResources": {
+        "calls": 20,
+        "ms": 8.22
+      },
+      "reversedFontCmap": {
+        "calls": 14,
+        "ms": 2.26
+      },
+      "tounicodeOf": {
+        "calls": 14,
+        "ms": 3.88
+      }
+    },
+    "decisions": {
+      "rabbit": 9,
+      "unaligned-zawgyi": 1
+    },
+    "paths": {
+      "zawgyi-one": 10
+    },
+    "warnings": {
+      "legacy-font-on-shared-page": 3,
+      "conversion-characters-need-review": 1
+    },
+    "chars": 12601,
+    "myanmar": 7857,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 0,
+    "image_placements": 26,
+    "prefix_warnings": 0
+  },
+  "full_source_over_default_input_limit": false,
+  "sample": {
+    "original_pages": 10,
+    "read_ms": 0.31,
+    "decrypt_or_expand_ms": 0.13,
+    "setup_ms": 18.44,
+    "first_page_ms": 31.31,
+    "all_page_ms": 111.67,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {},
+    "decisions": {
+      "rabbit": 9,
+      "unaligned-zawgyi": 1
+    },
+    "paths": {
+      "zawgyi-one": 10
+    },
+    "warnings": {
+      "legacy-font-on-shared-page": 3,
+      "conversion-characters-need-review": 1
+    },
+    "chars": 12601,
+    "myanmar": 7857,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 0,
+    "image_placements": 26,
+    "prefix_warnings": 0
+  },
+  "sample_vs_original_differences": [],
+  "manager_ms": 1099.47,
+  "manager_pages": 10,
+  "manager_counts": {
+    "ZAWGYI": 10,
+    "UNICODE": 0,
+    "UNKNOWN": 0
+  },
+  "output_path": "/home/user/.cache/parser-eye/trash-broad/results/14.pdf",
+  "output_bytes": 221845,
+  "encoding_path": "zawgyi-one",
+  "page_warnings": [
+    {
+      "code": "legacy-font-on-shared-page",
+      "page": 2,
+      "fonts": [
+        "WinInnwa"
+      ]
+    },
+    {
+      "code": "conversion-characters-need-review",
+      "page": 2
+    },
+    {
+      "code": "legacy-font-on-shared-page",
+      "page": 3,
+      "fonts": [
+        "WinInnwa"
+      ]
+    },
+    {
+      "code": "legacy-font-on-shared-page",
+      "page": 7,
+      "fonts": [
+        "WinInnwa"
+      ]
+    }
+  ],
+  "linearization_warning": null,
+  "manager_text_matches_sample": true,
+  "status": "ok"
+}

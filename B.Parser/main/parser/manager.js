@@ -316,6 +316,8 @@ export class Manager {
         ...(reply.scanLog ? { scanLog: reply.scanLog } : {}),
         ...(reply.scanPath ? { scanPath: reply.scanPath } : {}),
         ...(reply.scanSummary?.length ? { scanSummary: reply.scanSummary } : {}),
+        ...(reply.linearizationWarning ? { linearizationWarning: reply.linearizationWarning } : {}),
+        ...(Array.isArray(reply.pageWarnings) ? { pageWarnings: reply.pageWarnings } : {}),
         ...(Array.isArray(reply.ocrPages) ? { ocrPages: reply.ocrPages } : {}),
         ...(job.includePreview ? { metadata: reply.metadata ?? {}, changes: reply.changes ?? [] } : {}),
 
@@ -329,45 +331,74 @@ export class Manager {
   }
 
   async _finishManualPdf(reply, job, outPath) {
-    if (!reply.deferredOutput || !Array.isArray(reply.pagesData)) {
-      throw new Error("Manual PDF extraction did not return page data");
-    }
-    const pages = reply.pagesData;
-    const scanned = [];
-    let source;
-    let pageHasRasterImage;
-    for (let index = 0; index < pages.length; index += 1) {
-      const page = pages[index];
-      if (String(page?.text ?? "").trim()) continue;
-      let hasImage = Boolean(page?.hasImg);
-      if (!hasImage) {
-        if (!pageHasRasterImage) {
-          ({ pageHasRasterImage } = await import("./read/pdf-render.js"));
-          source = job.inPath ? await fs.readFile(job.inPath) : job.data;
-          if (!source) throw new Error("Manual PDF input is missing");
-        }
-        hasImage = await pageHasRasterImage(source, index + 1);
+    try {
+      if (!reply.deferredOutput || !Array.isArray(reply.pagesData)) {
+        throw new Error("Manual PDF extraction did not return page data");
       }
-      if (hasImage) scanned.push(index);
+      const pages = reply.pagesData;
+      const tasks = [];
+      const sourcePath = reply.internalPdf?.path || job.inPath;
+      const sourceData = sourcePath ? undefined : job.data;
+      let source;
+      let pageHasRasterImage;
+      for (let index = 0; index < pages.length; index += 1) {
+        const page = pages[index];
+        const images = Array.isArray(page?.images) ? page.images : [];
+        const wholePage = images.find((image) => image.pageSized);
+        if (wholePage) {
+          // A scanner footer must not prevent OCR of an almost-page-sized image.
+          tasks.push({ index, type: "ocrPage", fullPage: true });
+          continue;
+        }
+        if (images.length) {
+          for (const image of images) tasks.push({ index, type: "ocrRegion", bbox: image.bbox, fullPage: false });
+          continue;
+        }
+        if (String(page?.text ?? "").trim()) continue;
+        let hasImage = Boolean(page?.hasImg);
+        if (!hasImage) {
+          if (!pageHasRasterImage) {
+            ({ pageHasRasterImage } = await import("./read/pdf-render.js"));
+            source = sourcePath ? await fs.readFile(sourcePath) : sourceData;
+            if (!source) throw new Error("Manual PDF input is missing");
+          }
+          hasImage = await pageHasRasterImage(source, index + 1);
+        }
+        if (hasImage) tasks.push({ index, type: "ocrPage", fullPage: true });
+      }
+      const scanned = [...new Set(tasks.map((task) => task.index))];
+      if (scanned.length > MAX_OCR_PAGES) {
+        throw new Error(`PDF has ${scanned.length} image pages; the OCR lane accepts at most ${MAX_OCR_PAGES} at a time`);
+      }
+      for (const task of tasks) {
+        const text = await this._dispatchOcr({
+          type: task.type, inPath: sourcePath, data: sourceData,
+          pageNumber: task.index + 1, ...(task.bbox ? { bbox: task.bbox } : {}),
+        }, 1);
+        if (typeof text !== "string") throw new Error(`OCR did not return text for page ${task.index + 1}`);
+        const page = pages[task.index];
+        const existing = String(page?.text ?? "");
+        const seen = new Set(existing.split("\n").map((line) => line.trim().replace(/\s+/gu, " ")).filter(Boolean));
+        const extra = text.split("\n").filter((line) => {
+          const normalized = line.trim().replace(/\s+/gu, " ");
+          return normalized && !seen.has(normalized);
+        }).join("\n");
+        if (extra) {
+          const merged = task.fullPage ? [extra, existing] : [existing, extra];
+          pages[task.index] = { ...page, text: merged.filter((part) => part.trim()).join("\n"), lines: [], hasImg: true };
+        }
+      }
+      const written = await writeOutput(outPath, pages, {
+        counts: reply.counts, source: job.filename ?? reply.filename ?? "",
+        includeText: job.includeText === true,
+      });
+      const ocrPages = scanned.map((index) => index + 1);
+      note(reply.provenance, { ocr: { pages: ocrPages } });
+      appendRecord(reply.provenance, { file: registerPath(REGISTER_LOG) });
+      return { ...reply, ...written, pages: pages.length, ocrPages };
+    } finally {
+      if (reply.internalPdf?.dir) await fs.rm(reply.internalPdf.dir, { recursive: true, force: true });
     }
-    if (scanned.length > MAX_OCR_PAGES) {
-      throw new Error(`PDF has ${scanned.length} image-only pages; the OCR lane accepts at most ${MAX_OCR_PAGES} at a time`);
-    }
-    for (const index of scanned) {
-      const text = await this._dispatchOcr({
-        type: "ocrPage", inPath: job.inPath, data: job.data, pageNumber: index + 1,
-      }, 1);
-      if (typeof text !== "string") throw new Error(`OCR did not return text for page ${index + 1}`);
-      pages[index] = { ...pages[index], text, lines: [], hasImg: true };
-    }
-    const written = await writeOutput(outPath, pages, {
-      counts: reply.counts, source: job.filename ?? reply.filename ?? "",
-      includeText: job.includeText === true,
-    });
-    const ocrPages = scanned.map((index) => index + 1);
-    note(reply.provenance, { ocr: { pages: ocrPages } });
-    appendRecord(reply.provenance, { file: registerPath(REGISTER_LOG) });
-    return { ...reply, ...written, pages: pages.length, ocrPages };
   }
 
   async _dispatchOcr(payload, count) {

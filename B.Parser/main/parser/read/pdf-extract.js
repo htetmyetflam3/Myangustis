@@ -8,8 +8,11 @@ import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../codepage/re
 import { containsMyanmar } from "../text/detector.js";
 import {
   Lexer, PdfName, PdfHexBytes, isNumeric, toNumber,
-  asDocumentDecoding, FontResourceLoader, LegacyAyarMap, UnsetFontDecoder, pageFontDecoders,
+  asDocumentDecoding, DocumentDecoding, FontResourceLoader, LegacyAyarMap, UnsetFontDecoder,
+  pageFontDecoders, PDF_PARSING_PATHS,
 } from "./pdf-fonts.js";
+import { readPageContent } from "./pdf-content-stream.js";
+import { PageImageCollector } from "./pdf-image-coverage.js";
 
 
 export const MAX_STREAM_MB = positiveLimit("PRASER_MAX_STREAM_MB", 128, 512);
@@ -315,7 +318,7 @@ const BRACKET_SPAN_RE = /\[[\s\S]*?\]/g;
 
 
 
-const CMAP_TOKEN_RE = /<([0-9A-Fa-f]+)>|\[([\s\S]*?)\]/g;
+const CMAP_TOKEN_RE = /<([0-9A-Fa-f]*)>|\[([\s\S]*?)\]/g;
 
 function* cmapTokens(body) {
   CMAP_TOKEN_RE.lastIndex = 0;
@@ -353,8 +356,23 @@ export function parseToUnicodeStream(data) {
     return new Map();
   }
   const mapping = new Map();
-  const put = (code, value) => {
+  // The same numeric value can occur at different source widths (<01> and
+  // <0001>). Keep them distinct for resource-local PDF decoding.
+  mapping.byWidth = new Map();
+  mapping.codeSpaces = [];
+  const spaces = /begincodespacerange([\s\S]*?)endcodespacerange/g;
+  for (const block of text.matchAll(spaces)) {
+    for (const match of block[1].matchAll(/<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/g)) {
+      const width = match[1].length / 2;
+      if (Number.isInteger(width) && width >= 1 && width <= 4 && match[2].length === match[1].length) {
+        mapping.codeSpaces.push([width, parseInt(match[1], 16), parseInt(match[2], 16)]);
+      }
+    }
+  }
+  const put = (code, value, width) => {
     if (mapping.size >= MAX_TOUNICODE_ENTRIES) return false;
+    if (!mapping.byWidth.has(width)) mapping.byWidth.set(width, new Map());
+    mapping.byWidth.get(width).set(code, value);
     mapping.set(code, value);
     return true;
   };
@@ -366,10 +384,12 @@ export function parseToUnicodeStream(data) {
     let src = null;
     for (const tok of cmapTokens(m[1])) {
       if (src === null) {
-        if (tok.hex !== undefined) src = Number(BigInt("0x" + tok.hex));
+        if (tok.hex && tok.hex.length <= 8 && tok.hex.length % 2 === 0) {
+          src = { code: parseInt(tok.hex, 16), width: tok.hex.length / 2 };
+        }
         continue;
       }
-      if (tok.hex !== undefined && !put(src, utf16beToStr(tok.hex))) return mapping;
+      if (tok.hex !== undefined && !put(src.code, utf16beToStr(tok.hex), src.width)) return mapping;
       src = null;
     }
   }
@@ -379,14 +399,24 @@ export function parseToUnicodeStream(data) {
   while ((m = BFRANGE_RE.exec(text)) !== null) {
     let lo = null;
     let hi = null;
+    let width = null;
     for (const tok of cmapTokens(m[1])) {
       if (lo === null) {
-        if (tok.hex !== undefined) lo = Number(BigInt("0x" + tok.hex));
+        if (tok.hex && tok.hex.length <= 8 && tok.hex.length % 2 === 0) {
+          lo = parseInt(tok.hex, 16);
+          width = tok.hex.length / 2;
+        }
         continue;
       }
       if (hi === null) {
-        if (tok.hex !== undefined) hi = Number(BigInt("0x" + tok.hex));
+        if (tok.hex && tok.hex.length === width * 2) hi = parseInt(tok.hex, 16);
         else lo = null;
+        continue;
+      }
+      if (!Number.isSafeInteger(lo) || !Number.isSafeInteger(hi) || hi < lo
+          || hi - lo + 1 > MAX_BFRANGE_CODES) {
+        lo = null;
+        hi = null;
         continue;
       }
       if (tok.array !== undefined) {
@@ -397,7 +427,7 @@ export function parseToUnicodeStream(data) {
         let i = 0;
         for (let code = lo; code <= hi; code += 1, i += 1) {
           if (i >= items.length) break;
-          if (!put(code, utf16beToStr(items[i]))) return mapping;
+          if (!put(code, utf16beToStr(items[i]), width)) return mapping;
         }
       } else {
         if (!Number.isSafeInteger(lo) || !Number.isSafeInteger(hi) || hi < lo
@@ -415,7 +445,7 @@ export function parseToUnicodeStream(data) {
         const raw = tok.hex.length % 2 === 0 ? tok.hex : `${tok.hex}0`;
         const destination = fromHexStrict(raw);
         for (let code = lo; code <= hi; code += 1) {
-          if (!put(code, utf16beBytesToStr(destination))) return mapping;
+          if (!put(code, utf16beBytesToStr(destination), width)) return mapping;
           if (code < hi && !incrementBigEndian(destination)) break;
         }
       }
@@ -743,13 +773,15 @@ function skipInlineImage(data, pos) {
   const m = INLINE_IMAGE_END_RE.exec(data);
   return m ? INLINE_IMAGE_END_RE.lastIndex : data.length;
 }
-function* iterContentOperations(data) {
+function* iterContentOperations(data, { prefix = false } = {}) {
   const lex = new Lexer(data);
   let operands = [];
   const containers = [];
   for (;;) {
     const tok = lex.nextToken();
-    if (tok === null) break;
+    // At a checkpoint the last token may continue in the next byte. Leave it
+    // for the full page parse instead of treating a truncated token as text.
+    if (tok === null || (prefix && lex.pos === data.length)) break;
     const [kind, value] = tok;
     if (kind === "aopen") { containers.push({ type: "a", mark: operands.length }); continue; }
     if (kind === "dopen") { containers.push({ type: "d", mark: operands.length }); continue; }
@@ -786,6 +818,8 @@ function* iterContentOperations(data) {
       operands.splice(0, operands.length - 16);
     }
   }
+  // An unfinished array is not necessarily a TJ operation. Its strings
+  // remain buffered for the complete-page parse, not for route selection.
 }
 
 
@@ -800,6 +834,45 @@ function shownStrings(op, operands) {
     if (Array.isArray(last)) return last.filter((item) => typeof item === "string" || item instanceof PdfHexBytes);
   }
   return [];
+}
+
+// Decode only text strings that begin and end inside the checkpoint. Both
+// decoders see the same page-font resource and the same raw PDF strings.
+export function probePagePrefix(prefix, sharedFonts, legacyFonts) {
+  const chunks = { shared: [], legacy: [] };
+  const usedFonts = new Set();
+  let active = null;
+  let inText = false;
+  let hasShownText = false;
+  const record = (shown) => {
+    const arg = shown instanceof PdfHexBytes ? shown.s : shown;
+    if (typeof arg !== "string" || !arg.length) return;
+    hasShownText = true;
+    if (!active) return;
+    const shared = sharedFonts.get(active);
+    const legacy = legacyFonts.get(active);
+    if (!shared || !legacy) return;
+    usedFonts.add(active);
+    chunks.shared.push(shared.decode(arg, { useConfirmed: false, skipUnknown: true }));
+    chunks.legacy.push(legacy.decode(arg, { useConfirmed: false, skipUnknown: true }));
+  };
+  for (const [op, operands] of iterContentOperations(prefix.toString("latin1"), { prefix: true })) {
+    if (op === "BT") { inText = true; continue; }
+    if (op === "ET") {
+      inText = false;
+      chunks.shared.push("\n");
+      chunks.legacy.push("\n");
+      continue;
+    }
+    if (op === "Tf") {
+      const name = operands.at(-2);
+      if (name instanceof PdfName) active = String(name);
+      continue;
+    }
+    if (!inText) continue;
+    for (const shown of shownStrings(op, operands)) record(shown);
+  }
+  return { shared: chunks.shared.join(""), legacy: chunks.legacy.join(""), usedFonts, hasShownText };
 }
 
 
@@ -835,28 +908,30 @@ function joinDraftRuns(pieces, order) {
   return out;
 }
 
-export function extractPageLines(objects, pageNum, pageGen, decoding, { usedMyanmarFonts = null } = {}) {
-  const doc = asDocumentDecoding(decoding);
+export function extractPageLines(objects, pageNum, pageGen, decoding, {
+  usedMyanmarFonts = null, usedFontKinds = null, usedLegacyFonts = null,
+  inspectPrefix = null, onPageContent = null, onConfirmedRepair = null,
+} = {}) {
+  let doc = asDocumentDecoding(decoding);
   const loader = documentLoader(doc, objects);
-  const decoders = pageFontDecoders(loader, pageNum, pageGen, doc);
-  const unsetFont = new UnsetFontDecoder("", { doc });
-
-  const pdBuf = objects.get(`${pageNum},${pageGen}`);
-  const pdStr = pdBuf === undefined ? "" : pdBuf.toString("latin1");
-  let streams = [];
-  const cm = CONTENTS_REF_RE.exec(pdStr);
-  if (cm) {
-    streams = [pyInt(cm[1])];
-  } else {
-    const ca = CONTENTS_ARR_RE.exec(pdStr);
-    if (ca) {
-      ANY_REF_RE.lastIndex = 0;
-      streams = [];
-      let x;
-      while ((x = ANY_REF_RE.exec(ca[1])) !== null) streams.push(pyInt(x[1]));
-    }
-  }
-
+  let decoders = pageFontDecoders(loader, pageNum, pageGen, doc);
+  let unsetFont = new UnsetFontDecoder("", { doc });
+  const { streams, references } = readPageContent(loader, pageNum, pageGen, {
+    maxBytes: MAX_STREAM_MB * 1024 * 1024,
+    inspect: (prefix) => {
+      const selected = inspectPrefix?.(prefix, decoders, loader);
+      if (!(selected instanceof DocumentDecoding) || selected === doc) return;
+      doc = selected;
+      if (doc.loader !== loader) {
+        doc.loader = loader;
+        doc.resetFontCache();
+      }
+      decoders = pageFontDecoders(loader, pageNum, pageGen, doc);
+      unsetFont = new UnsetFontDecoder("", { doc });
+    },
+  });
+  onPageContent?.(streams, references, loader);
+  const imageCollector = new PageImageCollector(loader, pageNum, pageGen, iterContentOperations);
   const pieces = [];
 
 
@@ -865,9 +940,11 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, { usedMyan
 
   let active = null;
 
-  for (const sn of streams) {
-    const s = getStream(objects, sn);
-    if (!pyTruthy(s)) continue;
+  // A /Contents array is one logical sequence of page commands. Keep the
+  // original stream boundaries for the writer, but do not reset text or
+  // graphics state between them while parsing.
+  for (const s of streams.length ? [Buffer.concat(streams)] : []) {
+    if (!s.length) continue;
     const content = s.toString("latin1");
 
     let inBlock = false;
@@ -879,19 +956,29 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, { usedMyan
     let leading = 0.0;
     let pendingDecoder = null;
     let pendingBytes = "";
-    const recordText = (decoder, text) => {
-      if (usedMyanmarFonts && containsMyanmar(text)) usedMyanmarFonts.add(decoder.baseFont || "");
+    const recordText = (decoder, text, confirmedText = text) => {
+      if (text && decoder.parsingPath === PDF_PARSING_PATHS.LEGACY) usedLegacyFonts?.add(decoder.baseFont || "");
+      if (containsMyanmar(confirmedText) || decoder.fontLegacyCodePage || decoder.confirmedRawRuns) {
+        if (usedMyanmarFonts) usedMyanmarFonts.add(decoder.baseFont || "");
+        if (usedFontKinds && doc.fontKind) usedFontKinds.add(doc.fontKind(decoder));
+      }
       blockTexts.push(text);
-      if (doc.zawcodeOrder) blockRuns.push([decoder.zawcodeGlyphs != null, text]);
-      else if (doc.legacyTextFix) blockRuns.push([decoder.needsLegacyTextFix, text]);
+      if (doc.kind === "font") blockRuns.push([decoder, text, confirmedText]);
+      else if (doc.zawcodeOrder) blockRuns.push([decoder.zawcodeGlyphs != null, text, confirmedText]);
+      else if (doc.legacyTextFix) blockRuns.push([decoder.needsLegacyTextFix, text, confirmedText]);
     };
     const flushConfirmedRun = () => {
-      if (pendingDecoder) recordText(pendingDecoder, pendingDecoder.decode(pendingBytes));
+      if (pendingDecoder) {
+        const original = pendingDecoder.decode(pendingBytes, { useConfirmed: false });
+        const confirmed = pendingDecoder.decode(pendingBytes, { useConfirmed: true });
+        recordText(pendingDecoder, original, confirmed);
+      }
       pendingDecoder = null;
       pendingBytes = "";
     };
 
     for (const [op, operands] of iterContentOperations(content)) {
+      imageCollector.consume(op, operands);
       // Match only adjacent text-show bytes in the same font and positioning
       // run, the boundary used by the recorded PDF evidence.
       if (["BT", "ET", "Tf", "Tm", "Td", "TD", "T*", "'", '"'].includes(op)) flushConfirmedRun();
@@ -968,7 +1055,7 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, { usedMyan
           // including U+102F U+102F. Only the later position-based duplicate
           // piece check has evidence that two separate draws are overprints.
           pieces.push([blockXy[1], blockXy[0], blockSize === null ? 12.0 : blockSize, text,
-            doc.zawcodeOrder || doc.legacyTextFix ? blockRuns : null]);
+            doc.kind === "font" || doc.zawcodeOrder || doc.legacyTextFix ? blockRuns : null]);
         }
         blockTexts = [];
         blockRuns = [];
@@ -1006,6 +1093,19 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, { usedMyan
 
 
 
+  // Confirmed byte/run pairs are applied only after the full page has been
+  // parsed. They remain scoped to the matching font resource and run.
+  if (doc.kind === "legacy") {
+    const before = pieces.map((piece) => piece[3]).join("\n");
+    for (const piece of pieces) {
+      if (!Array.isArray(piece[4])) continue;
+      for (const run of piece[4]) run[1] = run[2];
+      piece[3] = piece[4].map((run) => run[1]).join("");
+    }
+    const after = pieces.map((piece) => piece[3]).join("\n");
+    if (before !== after) onConfirmedRepair?.({ before, after });
+  }
+
   const uniquePieces = [];
   for (const piece of pieces) {
     const [y, x, , text] = piece;
@@ -1030,7 +1130,7 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, { usedMyan
   pieces.push(...uniquePieces);
 
   const [pageW, pageH] = getPageMediabox(objects, pageNum, pageGen);
-  if (!pieces.length) return [[], pageW, pageH];
+  if (!pieces.length) return [[], pageW, pageH, imageCollector.images];
 
   pieces.sort((a, b) => (b[0] - a[0]) || (a[1] - b[1]));
 
@@ -1045,7 +1145,24 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, { usedMyan
     let maxSize = -Infinity;
     for (const [, s] of ordered) if (s > maxSize) maxSize = s;
     let joined;
-    if (doc.zawcodeOrder) {
+    if (doc.kind === "font") {
+      let decoder = null;
+      let pending = "";
+      const transformed = [];
+      const flushRun = () => {
+        if (decoder) transformed.push(doc.transformRun ? doc.transformRun(decoder, pending) : pending);
+        pending = "";
+      };
+      for (const [, , text, runs] of ordered) {
+        for (const [font, part] of runs || [[null, text]]) {
+          if (font !== decoder) { flushRun(); decoder = font; }
+          pending += part;
+        }
+      }
+      if (decoder) flushRun();
+      else if (pending) transformed.push(pending);
+      joined = transformed.join("");
+    } else if (doc.zawcodeOrder) {
       joined = joinDraftRuns(ordered, doc.zawcodeOrder);
     } else if (doc.legacyTextFix) {
       const page = doc.legacyCodePage;
@@ -1070,7 +1187,7 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, { usedMyan
   }
   if (currentLine.length) flush();
 
-  return [lines, pageW, pageH];
+  return [lines, pageW, pageH, imageCollector.images];
 }
 const isAsciiDigitOrDot = (ch) => (ch >= "0" && ch <= "9") || ch === ".";
 export function extractPageTextLayout(objects, pageNum, pageGen, codeToUni) {

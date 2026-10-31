@@ -39,6 +39,17 @@ const STRAY_MARKS = new Set(DATA.strayMarks);
 
 const IMPOSSIBLE = DATA.impossible.map(([pattern, title, why]) => [new RegExp(pattern, "gu"), title, why]);
 
+// A flag is review evidence, not proof that a confirmed character is wrong.
+export function countImpossiblePairs(text) {
+  const input = String(text ?? "");
+  let total = 0;
+  for (const [pattern] of IMPOSSIBLE) {
+    pattern.lastIndex = 0;
+    for (const _match of input.matchAll(pattern)) total += 1;
+  }
+  return total;
+}
+
 function isBase(ch) {
   return BASES.has(ch) || EXTRA_BASES.has(ch) || PLACEHOLDER_BASES.has(ch);
 }

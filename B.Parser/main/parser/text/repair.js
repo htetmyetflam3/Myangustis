@@ -31,6 +31,7 @@ import {
   medialFollows, reorderMarks,
 } from "./cleanup.js";
 import { scoreText, isIndex } from "./mm-score.js";
+import { arrangeZawCodeOrder } from "./zawcode-order.js";
 
 // Raw-font evidence is available to a repair caller that retained provenance.
 // These lookups return candidates only; they never alter text automatically.
@@ -397,8 +398,10 @@ function zawCodeFrameFix(token, words, standalone) {
   return null;
 }
 
-export function mendZawCodeText(text, words, standalone = []) {
+export function mendZawCodeText(text, words, standalone = [], { skipTokens = null } = {}) {
   if (!text || !words || !words.size) return { text, repairs: [] };
+  const isProtected = (token) => skipTokens?.size
+    && (token.match(MM_RUN) || []).some((part) => skipTokens.has(part));
   const spans = scanBrokenSpans(String(text), { dictionary: words, standalone });
   const tally = new Map();
   const tallyAdd = (from, to) => {
@@ -418,12 +421,14 @@ export function mendZawCodeText(text, words, standalone = []) {
 
 
 
+    if (isProtected(token)) continue;
     const fixed = mendCached(token);
     if (!fixed) continue;
     tallyAdd(token, fixed);
     out = out.slice(0, start) + fixed + out.slice(end);
   }
   out = out.replace(MM_RUN, (token) => {
+    if (isProtected(token)) return token;
     const fixed = zawCodeFrameFix(token, words, standalone);
     if (!fixed) return token;
     tallyAdd(token, fixed);
@@ -457,12 +462,23 @@ export function mendZawCodeText(text, words, standalone = []) {
 
 
 
-export function repairFromScanVerdict(pages, report, words, { path = null, standalone = [] } = {}) {
+export function repairFromScanVerdict(pages, report, words, {
+  path = null, standalone = [], preserveZawCodeOrder = false,
+} = {}) {
   if (path !== "zawcode" || !report || !words || !words.size) return pages;
   return pages.map((page) => {
     const text = page?.text || "";
     if (!text) return page;
-    const mended = mendZawCodeText(text, words, standalone);
+    const skipTokens = new Set();
+    if (preserveZawCodeOrder) {
+      const sources = [text, ...(Array.isArray(page.lines) ? page.lines.map((line) => String(line[3] ?? "")) : [])];
+      for (const source of sources) {
+        for (const match of source.matchAll(MM_RUN)) {
+          if (arrangeZawCodeOrder(match[0]) !== match[0]) skipTokens.add(match[0]);
+        }
+      }
+    }
+    const mended = mendZawCodeText(text, words, standalone, { skipTokens });
     if (mended.text === text) return page;
     const byToken = new Map(mended.repairs.map(({ from, to }) => [from, to]));
     let lines = Array.isArray(page.lines)
@@ -480,7 +496,7 @@ export function repairFromScanVerdict(pages, report, words, { path = null, stand
       && lines.every((line, i) => line[3] === page.lines[i][3])) {
       lines = page.lines.map(([x, y, size, lineText]) => [
         x, y, size,
-        mendZawCodeText(String(lineText ?? ""), words, standalone).text,
+        mendZawCodeText(String(lineText ?? ""), words, standalone, { skipTokens }).text,
       ]);
     }
     return { ...page, text: mended.text, ...(lines ? { lines } : {}) };

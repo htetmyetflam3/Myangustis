@@ -1,0 +1,136 @@
+{
+  "case": "31",
+  "path": "pdfs/selected-pdfs/best-theory-of-physical-education-1693147797764.pdf",
+  "blob": "54ea10085c469b416392385f90a51155ab98f917",
+  "source_bytes": 9692963,
+  "source_pages": 117,
+  "selected_pages": 10,
+  "mode": "vector-text-default",
+  "sample_render_match": true,
+  "full_source": {
+    "original_pages": 117,
+    "read_ms": 13.81,
+    "decrypt_or_expand_ms": 1.01,
+    "setup_ms": 86.75,
+    "first_page_ms": 42.49,
+    "all_page_ms": 171.12,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {
+      "pageFontResources": {
+        "calls": 20,
+        "ms": 3.04
+      },
+      "reversedFontCmap": {
+        "calls": 18,
+        "ms": 2.19
+      },
+      "tounicodeOf": {
+        "calls": 18,
+        "ms": 2.42
+      },
+      "cidToGid": {
+        "calls": 6,
+        "ms": 0.03
+      }
+    },
+    "decisions": {
+      "aligned": 1,
+      "unaligned-unknown": 9
+    },
+    "paths": {
+      "zawgyi-one": 10
+    },
+    "warnings": {
+      "encoding-order-needs-review": 9
+    },
+    "chars": 13866,
+    "myanmar": 11209,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 0,
+    "image_placements": 33,
+    "prefix_warnings": 0
+  },
+  "full_source_over_default_input_limit": false,
+  "sample": {
+    "original_pages": 10,
+    "read_ms": 0.19,
+    "decrypt_or_expand_ms": 0.05,
+    "setup_ms": 14.35,
+    "first_page_ms": 9.34,
+    "all_page_ms": 66.53,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {},
+    "decisions": {
+      "aligned": 1,
+      "unaligned-unknown": 9
+    },
+    "paths": {
+      "zawgyi-one": 10
+    },
+    "warnings": {
+      "encoding-order-needs-review": 9
+    },
+    "chars": 13866,
+    "myanmar": 11209,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 0,
+    "image_placements": 33,
+    "prefix_warnings": 0
+  },
+  "sample_vs_original_differences": [],
+  "manager_ms": 1009.89,
+  "manager_pages": 10,
+  "manager_counts": {
+    "ZAWGYI": 0,
+    "UNICODE": 0,
+    "UNKNOWN": 10
+  },
+  "output_path": "/home/user/.cache/parser-eye/trash-broad/results/31.pdf",
+  "output_bytes": 223986,
+  "encoding_path": null,
+  "page_warnings": [
+    {
+      "code": "encoding-order-needs-review",
+      "page": 2
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 3
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 4
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 5
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 6
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 7
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 8
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 9
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 10
+    }
+  ],
+  "linearization_warning": null,
+  "manager_text_matches_sample": true,
+  "status": "ok"
+}

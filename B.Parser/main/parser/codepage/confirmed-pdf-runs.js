@@ -22,7 +22,10 @@ const PROFILES = new Map([
   }],
   ["254712db152e350e69df5edcfa6ace40313bcd75f2fc571fa5bb7fdd3ec2b06c", {
     fontSha256: "31e1447e813a2b15bee4bc4b1be515764554378cfd254ee45d9f9c0a7eda686b",
+    // Independently confirmed for this second PDF's subset.
+    bytes: new Map([[0x07, "ဒ"], [0x08, "္ဒ"]]),
     runs: [
+      { bytes: [0x06, 0x07, 0x08, 0x09], text: "သဒ္ဒါ" },
       { bytes: [0x0B, 0x64], text: "တ္တ" },
       { bytes: [0x1D, 0x6C], text: "န္တ" },
     ],

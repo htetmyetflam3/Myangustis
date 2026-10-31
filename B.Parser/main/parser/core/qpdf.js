@@ -2,12 +2,14 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 const QPDF_BIN = process.env.PRASER_QPDF_BIN || "qpdf";
+const WASM_QPDF = fileURLToPath(new URL("./qpdf-wasm.js", import.meta.url));
 
-function execute(args) {
+function run(binary, args) {
   return new Promise((resolve, reject) => {
-    const child = spawn(QPDF_BIN, args, {
+    const child = spawn(binary, args, {
       windowsHide: true,
       stdio: ["ignore", "ignore", "pipe"],
     });
@@ -16,7 +18,7 @@ function execute(args) {
     child.stderr.on("data", (chunk) => { stderr += chunk; });
     child.once("error", (cause) => reject(new Error(
       cause?.code === "ENOENT"
-        ? `qpdf executable not found (${JSON.stringify(QPDF_BIN)}); install qpdf or set PRASER_QPDF_BIN`
+        ? `qpdf executable not found (${JSON.stringify(binary)})`
         : `qpdf failed to start: ${cause?.message || cause}`,
       { cause },
     )));
@@ -27,6 +29,15 @@ function execute(args) {
       else reject(new Error(`qpdf exited with ${signal ? `signal ${signal}` : `status ${code}`}${stderr.trim() ? `: ${stderr.trim()}` : ""}`));
     });
   });
+}
+
+async function execute(args) {
+  try {
+    return await run(QPDF_BIN, args);
+  } catch (error) {
+    if (error.cause?.code !== "ENOENT" || process.env.PRASER_QPDF_BIN) throw error;
+    return run(process.execPath, [WASM_QPDF, ...args]);
+  }
 }
 
 export async function qpdfAvailable() {

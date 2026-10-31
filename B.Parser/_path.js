@@ -30,6 +30,10 @@ export async function getEngineData() {
   const entry = await import('./_index.js');
   return entry.getEngineData();
 }
+export async function getEngineNormalize() {
+  const entry = await import('./_index.js');
+  return entry.getEngineNormalize();
+}
 
 export const RUNTIME_ROOT = resolved.shared ? path.join(BASE_DIR, "Parser") : COMPONENT_ROOT;
 const FONT_ROOT = path.join(BASE_DIR, "fonts");

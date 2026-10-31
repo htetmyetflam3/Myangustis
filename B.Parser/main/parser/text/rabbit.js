@@ -19,6 +19,15 @@ function compileLocal() {
 let compiled = null;
 let external = null;
 
+function applyLocal(text, { preserveZeroWidth = false } = {}) {
+  for (const [rx, to] of compiled) {
+    // The original Rabbit table drops U+200B. Page extraction must retain it.
+    if (preserveZeroWidth && rx.source === "\u200b" && to === "") continue;
+    text = text.replace(new RegExp(rx.source, "gu"), to);
+  }
+  return text;
+}
+
 async function load() {
   if (external !== null) return external;
   const mod = process.env.PRASER_RABBIT_MODULE;
@@ -32,26 +41,17 @@ async function load() {
     return external;
   }
   compiled = compiled ?? compileLocal();
-  external = {
-    external: false,
-    fn: (text) => {
-      for (const [rx, to] of compiled) text = text.replace(new RegExp(rx.source, "gu"), to);
-      return text;
-    },
-  };
+  external = { external: false, fn: applyLocal };
   return external;
 }
 
 export class Rabbit {
-  static zg2uni(text) {
+  static zg2uni(text, options = {}) {
     if (external === null) {
-      
-      
       if (compiled === null) compiled = compileLocal();
-      for (const [rx, to] of compiled) text = text.replace(new RegExp(rx.source, "gu"), to);
-      return text;
+      return applyLocal(text, options);
     }
-    return external.fn(text);
+    return external.fn(text, options);
   }
 }
 

@@ -1,0 +1,114 @@
+{
+  "case": "34",
+  "path": "pdfs/selected-pdfs/curiosity-science-magazine-year-2-issue-4-1696435591836.pdf",
+  "blob": "6ea36c6abbe16e0657fcbb341adc022dfa17a3ce",
+  "source_bytes": 5903301,
+  "source_pages": 88,
+  "selected_pages": 10,
+  "mode": "vector-text-default",
+  "sample_render_match": true,
+  "full_source": {
+    "original_pages": 88,
+    "read_ms": 2.77,
+    "decrypt_or_expand_ms": 0.65,
+    "setup_ms": 68.75,
+    "first_page_ms": 31.57,
+    "all_page_ms": 166.98,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {
+      "pageFontResources": {
+        "calls": 20,
+        "ms": 2.01
+      },
+      "reversedFontCmap": {
+        "calls": 54,
+        "ms": 21.09
+      },
+      "tounicodeOf": {
+        "calls": 54,
+        "ms": 2
+      },
+      "cidToGid": {
+        "calls": 6,
+        "ms": 0.06
+      }
+    },
+    "decisions": {
+      "aligned": 3,
+      "legacy": 4,
+      "rabbit": 1,
+      "unaligned-unicode": 2
+    },
+    "paths": {
+      "zawgyi-one": 6,
+      "legacy": 4
+    },
+    "warnings": {
+      "unicode-order-needs-review": 2
+    },
+    "chars": 7563,
+    "myanmar": 4305,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 1,
+    "image_placements": 27,
+    "prefix_warnings": 0
+  },
+  "full_source_over_default_input_limit": false,
+  "sample": {
+    "original_pages": 10,
+    "read_ms": 0.35,
+    "decrypt_or_expand_ms": 0.19,
+    "setup_ms": 21.13,
+    "first_page_ms": 2.35,
+    "all_page_ms": 78.59,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {},
+    "decisions": {
+      "aligned": 3,
+      "legacy": 4,
+      "rabbit": 1,
+      "unaligned-unicode": 2
+    },
+    "paths": {
+      "zawgyi-one": 6,
+      "legacy": 4
+    },
+    "warnings": {
+      "unicode-order-needs-review": 2
+    },
+    "chars": 7563,
+    "myanmar": 4305,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 1,
+    "image_placements": 27,
+    "prefix_warnings": 0
+  },
+  "sample_vs_original_differences": [],
+  "manager_ms": 1134.21,
+  "manager_pages": 10,
+  "manager_counts": {
+    "ZAWGYI": 1,
+    "UNICODE": 5,
+    "UNKNOWN": 4
+  },
+  "output_path": "/home/user/.cache/parser-eye/trash-broad/results/34.pdf",
+  "output_bytes": 220521,
+  "encoding_path": null,
+  "page_warnings": [
+    {
+      "code": "unicode-order-needs-review",
+      "page": 9
+    },
+    {
+      "code": "unicode-order-needs-review",
+      "page": 10
+    }
+  ],
+  "linearization_warning": null,
+  "manager_text_matches_sample": true,
+  "status": "ok"
+}

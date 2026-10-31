@@ -49,4 +49,9 @@ export async function getEngineBinding() {
   return entry.BindEngine;
 }
 
-export default { JUNK_DIR, ENV_RESULT, getEngineData, getLogen, getEngineBinding };
+export async function getEngineNormalize() {
+  const entry = await import('./Architecture/Engine/MonoSyllabism/map/loader.js');
+  return entry.normalize;
+}
+
+export default { JUNK_DIR, ENV_RESULT, getEngineData, getLogen, getEngineBinding, getEngineNormalize };

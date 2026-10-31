@@ -8,6 +8,7 @@ import {
   pageHasRasterImage,
   pdfPageCount as countPdfPages,
   renderPdfPagePng,
+  renderPdfRegionPng,
 } from "./pdf-render.js";
 
 const OCR_CACHE_DIR = path.join(os.tmpdir(), "linga-ocr");
@@ -159,6 +160,14 @@ export async function ocrPdfPage(source, pageNumber, { scale = 3, log = () => {}
   return ocrImage(rendered.png, { log });
 }
 
+
+export async function ocrPdfRegion(source, pageNumber, bbox, { scale = 3, log = () => {} } = {}) {
+  if (!Number.isFinite(scale) || scale <= 0 || scale > 4) {
+    throw new Error("OCR scale must be greater than zero and at most 4");
+  }
+  const rendered = await renderPdfRegionPng(source, pageNumber, bbox, { scale, maxPixels: MAX_OCR_PIXELS });
+  return ocrImage(rendered.png, { log });
+}
 
 export async function closeOcr() {
   if (!workerPromise) return;

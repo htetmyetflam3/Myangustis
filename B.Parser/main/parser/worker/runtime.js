@@ -1,4 +1,4 @@
-import { getLogen } from "../../../_path.js";
+import { getEngineNormalize, getLogen } from "../../../_path.js";
 const { emitEvent, installPassiveLog } = (await getLogen()).siteLog;
 import fs from "node:fs";
 import path from "node:path";
@@ -7,6 +7,7 @@ import { loadDetector, processBytesForMethod, buildFinalPages, markPdfImagePages
 import { writeOutput } from "../write/emit.js";
 import { scanText, formatScanReport, loadScanDictionary, dictionaryWords } from "../text/scan.js";
 import { repairText, repairFromScanVerdict } from "../text/repair.js";
+import { orderZawCodePages } from "../text/zawcode-order.js";
 
 import { MAX_INPUT_BYTES, MAX_INPUT_MB } from "../core/limits.js";
 import { REGISTER_LOG } from "../../../_path.js";
@@ -137,6 +138,7 @@ export function createSourceRunner({ kind, method, docxImages = false, pdfImages
       ? (imageDir = fs.mkdtempSync(path.join(os.tmpdir(), "linga-img-"))) && { imageDir, provenance }
       : { provenance };
     options.sourceEncoding = msg.sourceEncoding ?? "auto";
+    options.retainLinearizedSource = kind === "pdf" && msg.deferOutput === true;
     const job = await processBytesForMethod(
       bytes,
       kind,
@@ -150,6 +152,8 @@ export function createSourceRunner({ kind, method, docxImages = false, pdfImages
 
 
 
+    let handedOffSource = false;
+    try {
     if (pdfImages && imageDir) job.imageFiles = await markPdfImagePages(bytes, job, imageDir);
 
     if (!outPath) return { result: job };
@@ -162,21 +166,31 @@ export function createSourceRunner({ kind, method, docxImages = false, pdfImages
 
     const chosenPath = provenance?.codepage?.chosen ?? job.encodingPath ?? null;
     const isDraft = provenance?.codepage?.draft === true;
-    const dictData = isDraft ? null : dictionaryOnce();
-    const words = isDraft ? new Set() : dictionaryWords(dictData);
+    const pageLocal = job.pageLocalDecoding === true;
+    const dictData = isDraft || pageLocal ? null : dictionaryOnce();
+    const words = dictData ? dictionaryWords(dictData) : new Set();
     const standalone = dictData?.mapData?.newClause?.standalone || [];
     const applyCleanup = msg.applyCleanup !== false;
     const finalPages = buildFinalPages(job, applyCleanup);
-    const eligible = (index) => job.reports[index]?.category !== "UNKNOWN";
+    // PDF pages have already made their whole-page decision. Do not apply a
+    // document-wide scan/repair or run ZawCode normalization a second time.
+    const eligible = (index) => !pageLocal && job.reports[index]?.category !== "UNKNOWN";
     const { pages: repairedPages, totals: repairTotals } = applyCleanup
       ? repairPages(finalPages, words, eligible)
       : { pages: finalPages, totals: { pages: 0, repairs: 0, splits: 0 } };
-    const { report, scanLog, scanSummary, scanTotals } = isDraft
+    const { report, scanLog, scanSummary, scanTotals } = isDraft || pageLocal
       ? { report: null, scanLog: null, scanSummary: [], scanTotals: null }
       : scanPathVerdict(repairedPages, outPath, chosenPath);
     const scanRepairedPages = isDraft || !applyCleanup ? repairedPages
-      : repairFromScanVerdict(repairedPages, report, words, { path: chosenPath, standalone });
-    const pages = scanRepairedPages.map((page, index) => eligible(index) ? page : finalPages[index]);
+      : repairFromScanVerdict(repairedPages, report, words, {
+        path: chosenPath, standalone, preserveZawCodeOrder: chosenPath === "zawcode",
+      });
+    const orderedPages = !isDraft && applyCleanup && chosenPath === "zawcode" && report
+      ? orderZawCodePages(scanRepairedPages, report, {
+        path: chosenPath, normalize: await getEngineNormalize(),
+      })
+      : scanRepairedPages;
+    const pages = orderedPages.map((page, index) => eligible(index) ? page : finalPages[index]);
     const scanRepairPages = pages.reduce(
       (n, page, i) => n + ((page?.text || "") !== (repairedPages[i]?.text || "") ? 1 : 0),
       0,
@@ -201,16 +215,23 @@ export function createSourceRunner({ kind, method, docxImages = false, pdfImages
       ...(scanSummary?.length ? { scanSummary } : {}),
       ...(msg.includePreview ? { metadata: job.metadata ?? {}, changes: job.changes ?? [] } : {}),
       ...(job.imageFiles ? { imageFiles: job.imageFiles, imageDir } : {}),
+      ...(job.linearizationError ? { linearizationWarning: job.linearizationError } : {}),
+      ...(job.pageWarnings?.length ? { pageWarnings: job.pageWarnings } : {}),
       ...repaired,
       ...scanRepaired,
     };
     if (msg.deferOutput) {
-      return { ...common, deferredOutput: true, pagesData: pages, provenance };
+      handedOffSource = true;
+      return { ...common, deferredOutput: true, pagesData: pages, provenance,
+        ...(job.internalPdf ? { internalPdf: job.internalPdf } : {}) };
     }
     const written = await writeOutput(outPath, pages, {
       counts: job.counts, source: name ?? "", includeText: msg.includeText === true,
     });
     appendRecord(provenance, { file: registerPath(REGISTER_LOG) });
     return { ...common, pages: pages.length, ...written };
+    } finally {
+      if (!handedOffSource && job.internalPdf?.dir) fs.rmSync(job.internalPdf.dir, { recursive: true, force: true });
+    }
   };
 }
