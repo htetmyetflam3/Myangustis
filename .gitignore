@@ -4,7 +4,8 @@
 unused-exports.json
 Architecture/Engine/.data/master.json.cache*
 *site.db
-
+*env*
+*lock*
 
 # Logs
 logs
