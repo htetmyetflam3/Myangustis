@@ -34,6 +34,15 @@ export async function getEngineNormalize() {
   const entry = await import('./_index.js');
   return entry.getEngineNormalize();
 }
+export async function getOwnerKeyMatcher() {
+  try {
+    const entry = await import('./_index.js');
+    return typeof entry.keyMatches === "function" ? entry.keyMatches : () => false;
+  } catch {
+    // A standalone Parser can still serve bounded jobs, but cannot grant owner access.
+    return () => false;
+  }
+}
 
 export const RUNTIME_ROOT = resolved.shared ? path.join(BASE_DIR, "Parser") : COMPONENT_ROOT;
 const FONT_ROOT = path.join(BASE_DIR, "fonts");

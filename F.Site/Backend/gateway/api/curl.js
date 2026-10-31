@@ -99,6 +99,8 @@ export function createCurlRouter() {
 
     try {
       const text = await entry.parser().parse(uploaded, null, {
+        // Manager re-verifies the same key; it is not included in the job or reply.
+        ownerKey: presentedKey(req),
         // The smallest intent the praser accepts. Plain conversion to text:
         // no analysis, no engine, no queue.
         intent: {

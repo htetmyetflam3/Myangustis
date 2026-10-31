@@ -1,15 +1,15 @@
 import fs from "node:fs";
 import { readCentralDirectory, readEntry } from "../core/zip.js";
 import { ValueError } from "../core/pylib.js";
-import { positiveLimit } from "../core/limits.js";
+import { OWNER_PARSER_WORKER, resourceLimit } from "../core/limits.js";
 import { containsMyanmar } from "../text/detector.js";
 
 
 
-export const MAX_MEMBER_MB = positiveLimit("PRASER_MAX_MEMBER_MB", 64, 256);
-export const MAX_DOCX_TOTAL_MB = positiveLimit("PRASER_MAX_DOCX_TOTAL_MB", 128, 512);
-export const MAX_DOCX_ENTRIES = positiveLimit("PRASER_MAX_DOCX_ENTRIES", 4096, 20000);
-export const MAX_MEMBER_RATIO = 200; 
+export const MAX_MEMBER_MB = resourceLimit("PRASER_MAX_MEMBER_MB", 64, 256);
+export const MAX_DOCX_TOTAL_MB = resourceLimit("PRASER_MAX_DOCX_TOTAL_MB", 128, 512);
+export const MAX_DOCX_ENTRIES = resourceLimit("PRASER_MAX_DOCX_ENTRIES", 4096, 20000);
+export const MAX_MEMBER_RATIO = OWNER_PARSER_WORKER ? Infinity : 200;
 
 const W_URI = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 export const DOCUMENT_XML = "word/document.xml";

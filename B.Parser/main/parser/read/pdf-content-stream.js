@@ -98,7 +98,9 @@ function readFromStream(state, requested) {
 // returned stream buffers contain that prefix exactly once, in their original
 // stream boundaries; it is not parsed separately or decompressed again.
 export function readPageContent(loader, pageNum, pageGen, { maxBytes, inspect = () => {} } = {}) {
-  if (!Number.isSafeInteger(maxBytes) || maxBytes < 1) throw new RangeError("A content stream limit is required");
+  if (maxBytes !== Infinity && (!Number.isSafeInteger(maxBytes) || maxBytes < 1)) {
+    throw new RangeError("A content stream limit is required");
+  }
   const page = loader.resolve(new PdfRef(pageNum, pageGen));
   const references = page instanceof Map ? streamReferences(loader, page.get("Contents")) : [];
   const streams = references.map((ref) => openStream(loader, ref, maxBytes));

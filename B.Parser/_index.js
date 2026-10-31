@@ -1,1 +1,1 @@
-export { JUNK_DIR, getEngineData, getLogen, getEngineNormalize } from '../index-path.js';
+export { JUNK_DIR, getEngineData, getLogen, getEngineNormalize, keyMatches } from '../index-path.js';

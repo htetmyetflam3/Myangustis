@@ -29,7 +29,9 @@ function countLines(texts) {
 }
 
 
-export async function writeOutput(outPath, pages, { counts = {}, source = "", log = () => {}, includeText = false } = {}) {
+export async function writeOutput(outPath, pages, {
+  counts = {}, source = "", log = () => {}, includeText = false, owner = false,
+} = {}) {
   let out = outPath;
   let ext = path.extname(out).toLowerCase();
   if (ext === "") {
@@ -38,16 +40,18 @@ export async function writeOutput(outPath, pages, { counts = {}, source = "", lo
   }
   fs.mkdirSync(path.dirname(out), { recursive: true });
 
-  if (!Array.isArray(pages) || pages.length > MAX_PAGES) {
-    throw new Error(`Output exceeds the ${MAX_PAGES} page cap`);
+  const maxPages = owner ? Infinity : MAX_PAGES;
+  const maxTextChars = owner ? Infinity : MAX_TEXT_CHARS;
+  if (!Array.isArray(pages) || pages.length > maxPages) {
+    throw new Error(`Output exceeds the ${maxPages} page cap`);
   }
   const norm = pages.map((p) => (typeof p === "string" ? { text: p } : p || { text: "" }));
   const texts = norm.map((p) => p.text ?? "");
   let textChars = 0;
   for (const text of texts) {
     textChars += text.length;
-    if (textChars > MAX_TEXT_CHARS) {
-      throw new Error(`Output text exceeds the ${MAX_TEXT_CHARS} character cap`);
+    if (textChars > maxTextChars) {
+      throw new Error(`Output text exceeds the ${maxTextChars} character cap`);
     }
   }
   const joined = texts.join("\n\n");

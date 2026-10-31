@@ -17,6 +17,7 @@ import {
   MAX_INPUT_MB,
   MAX_PAGES,
   MAX_TEXT_CHARS,
+  OWNER_PARSER_WORKER,
 } from "../core/limits.js";
 
 export function loadOcrBytes({ inPath, data }) {
@@ -54,7 +55,7 @@ export async function ocrToFile(msg) {
 
 export async function ocrImageFiles(msg) {
   const files = Array.isArray(msg.files) ? msg.files : [];
-  if (files.length > 4096) throw new Error("DOCX image count exceeds the OCR limit");
+  if (!OWNER_PARSER_WORKER && files.length > 4096) throw new Error("DOCX image count exceeds the OCR limit");
   const results = [];
   for (const file of files) {
     const image = fs.readFileSync(file.path);

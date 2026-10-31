@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import zlib from "node:zlib";
 import { Readable } from "node:stream";
-import { positiveLimit } from "./limits.js";
+import { resourceLimit } from "./limits.js";
 
-const MAX_ZIP_ENTRIES = positiveLimit("PRASER_MAX_DOCX_ENTRIES", 4096, 20000);
+const MAX_ZIP_ENTRIES = resourceLimit("PRASER_MAX_DOCX_ENTRIES", 4096, 20000);
 const EOCD_SIG = 0x06054b50;
 const CD_SIG = 0x02014b50;
 const LOCAL_SIG = 0x04034b50;
@@ -109,7 +109,10 @@ export function readEntry(buf, entry, { maxOutputBytes = null } = {}) {
     out = data;
   } else {
     try {
-      out = zlib.inflateRawSync(data, maxOutputBytes ? { maxOutputLength: maxOutputBytes } : undefined);
+      const options = Number.isFinite(maxOutputBytes) && maxOutputBytes > 0
+        ? { maxOutputLength: maxOutputBytes }
+        : undefined;
+      out = zlib.inflateRawSync(data, options);
     } catch (e) {
       if (e && e.code === "ERR_BUFFER_TOO_LARGE") throw e;
       throw new BadZipFile(`Bad CRC-32 for file ${JSON.stringify(entry.name)}`);
