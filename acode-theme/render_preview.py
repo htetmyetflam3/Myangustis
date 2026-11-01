@@ -67,8 +67,10 @@ CODE = [
 ]
 
 RAINBOW = [
-    "#FF0000", "#7870DE", "#FFCC00", "#FF8B3D", "#82E2F6", "#F98BC3",
-    "#F98BC3", "#82E2F6", "#FF8B3D", "#FFCC00", "#7870DE", "#FF0000",
+    "#FFCC00", "#7870DE", "#FF0000",
+    "#FF8B3D", "#82E2F6", "#F98BC3",
+    "#FCBFDE", "#BAEFFA", "#FFBF94",
+    "#FF7373", "#B5B0ED", "#FFE373",
 ]
 
 
@@ -158,7 +160,7 @@ for idx, (name, colors, sub) in enumerate(FAMILIES):
 # rainbow bracket ladder
 ry = ly + 4 * 62 + 8
 d.text((34, ry), "BRACKETS", font=SMB, fill="#9A9A9A")
-d.text((34 + 96, ry + 2), "outermost = red", font=SM, fill="#5A5A5A")
+d.text((34 + 96, ry + 2), "outermost = gold", font=SM, fill="#5A5A5A")
 bx = 34 + 96 + 215
 for c in RAINBOW:
     d.rounded_rectangle([bx, ry - 2, bx + 38, ry + 20], radius=4, fill=c)

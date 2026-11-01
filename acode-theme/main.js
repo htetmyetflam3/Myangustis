@@ -85,18 +85,18 @@
      pink · pink · sky · orange · gold · blue · red  (12 levels, cycled).
      ------------------------------------------------------------------ */
   var BRACKET_LADDER = [
-    "#FF0000", // 0  outermost  red
-    "#7870DE", // 1  const blue
-    "#FFCC00", // 2  gold
-    "#FF8B3D", // 3  light orange
-    "#82E2F6", // 4  sky blue
-    "#F98BC3", // 5  pink
-    "#F98BC3", // 6  pink
-    "#82E2F6", // 7  sky blue
-    "#FF8B3D", // 8  light orange
-    "#FFCC00", // 9  gold
-    "#7870DE", // 10 const blue
-    "#FF0000", // 11 red
+    "#FFCC00", //  0  gold
+    "#7870DE", //  1  indigo
+    "#FF0000", //  2  red
+    "#FF8B3D", //  3  orange
+    "#82E2F6", //  4  sky
+    "#F98BC3", //  5  pink
+    "#FCBFDE", //  6  pink tint
+    "#BAEFFA", //  7  sky tint
+    "#FFBF94", //  8  orange tint
+    "#FF7373", //  9  red tint
+    "#B5B0ED", // 10  indigo tint
+    "#FFE373", // 11  gold tint
   ];
 
   var SKIP_NODE = /string|comment|regexp|template|character/i;
