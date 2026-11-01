@@ -1,56 +1,76 @@
 #!/usr/bin/env python3
-"""Download the books in mangled-pdf-names.txt from the scraper VPS.
+"""Download PDFs (or any other files) from the scraper VPS. Standard library only.
 
-SSH settings come from your existing .env: SSH_HOST, SSH_USER, SSH_PORT,
-SSH_KEY and SSH_DIR. The current directory's .env is used by default; point
---env to it if it is elsewhere. Process environment variables and explicit
-command-line options override file values, as in the scraper configuration.
+Everything the script needs comes from a .env file: connection details, the
+remote directory that holds the files, and the local directory to write into.
+No third-party packages are imported; there is nothing to pip install.
 
-Examples:
-  python3 download-pdfs.py --env /path/to/.env
-  python3 download-pdfs.py --env /path/to/.env --book=1704101675047
-  python3 download-pdfs.py --env /path/to/.env --limit 10
-  python3 download-pdfs.py --env /path/to/.env --offset 10 --limit 10
-  python3 download-pdfs.py --env /path/to/.env --sizes-only
-  python3 download-pdfs.py --env /path/to/.env --search-by-hash
-  python3 download-pdfs.py --env /path/to/.env --ledger /path/to/uploaded-host.txt
-  python3 download-pdfs.py --env /path/to/.env --all --limit 30
-  python3 download-pdfs.py --dry-run
+Usage
+-----
+  uv run download-pdfs.py -- ./path/to/filenamelist
+  uv run download-pdfs.py -- 1708528931770.pdf
+  uv run download-pdfs.py -- -1708528931770.pdf 1680800753958.pdf 1681716042142.pdf
 
-By default the curated selection in representative-pdf-names.txt is requested;
-representative-pdf-types.txt explains the visible symptoms and limitations. Use
---limit or --book for smaller batches; --all explicitly selects the much larger
-review index. Filenames append .pdf to dataset book names; original extension
-case and the sizes of the original PDFs are not yet known.
+How arguments are read
+----------------------
+  * ``name.pdf`` (something with an extension) is downloaded as-is.
+  * ``listfile`` or ``listfile.txt`` (no extension, or a .txt extension) is a
+    text file with one file name per line; every line must include the
+    extension.  One name downloads one file, ten names download ten files.
+  * Leading dashes are fine, so ``-1708528931770.pdf`` is a file name and not
+    an option.  ``--`` may be used exactly as in the examples above.
+  * With no arguments the bundled mangled-pdf-names.txt is used.
 
-The script searches SSH_DIR recursively. If names are missing or changed, an
-uploader ledger can locate paths by hash, or --search-by-hash can read and hash
-all remote PDFs under SSH_DIR without downloading them. The hash scan may take
-considerable time and server I/O. --remote-dir overrides SSH_DIR for one run.
+.env keys
+---------
+  SSH_HOST       VPS host name or address                     (required)
+  SSH_USER       SSH user                                     (required)
+  SSH_DIR        directory on the VPS that holds the files     (required)
+  SSH_PORT       SSH port                                     (default 22)
+  SSH_KEY        private key file, ~ is expanded               (optional)
+  DOWNLOAD_DIR   local directory to write into                 (default ./pdf-downloads)
+                 PDF_DEST and DOWNLOAD_PATH are accepted too.
 
---sizes-only reports the byte sizes of located candidate paths without
-transferring PDFs; those paths and sizes are not hash-verified by this check.
-Every download is checked against the source PDF SHA-256. At most one file is
-saved per selected book; existing files are never overwritten. The default
-local directory is outside the repository. No files are added to Git, and
-nothing on the VPS is modified. Review candidates are not confirmed errors.
+Process environment variables override the file, and command-line options
+override both.  Values are never printed.
+
+Behaviour
+---------
+One SSH directory scan locates every requested name, then each file is
+downloaded in turn, streamed straight to disk as the bytes arrive: the script
+never buffers a whole file and never waits for the batch to finish before
+writing.  Files land as ``.<name>.part`` and are renamed when complete, so an
+interrupted run cannot leave a truncated file behind.  When a SHA-256 is known
+for a name it is verified before the rename; a mismatch deletes the partial
+file.  Existing files are never overwritten unless --force is given.
+
+Examples
+--------
+  uv run download-pdfs.py -- ./mangled-pdf-names.txt
+  uv run download-pdfs.py -- names.txt --dest /data/pdfs
+  uv run download-pdfs.py -- 1704101675047.pdf --env /srv/scraper/.env
+  uv run download-pdfs.py -- ./mangled-pdf-names.txt --limit 5 --dry-run
 """
 
 from __future__ import annotations
 
-import argparse
 import hashlib
 import os
 import shlex
-import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
-# Filled from the verified public dataset, not from font/keyboard guesses.
+CHUNK_SIZE = 1024 * 1024
+DEFAULT_LIST = Path(__file__).resolve().parent / "mangled-pdf-names.txt"
+ENV_KEYS = ("SSH_HOST", "SSH_USER", "SSH_PORT", "SSH_KEY", "SSH_DIR",
+            "DOWNLOAD_DIR", "PDF_DEST", "DOWNLOAD_PATH")
+
+# Verified SHA-256 of the original PDFs, taken from the public dataset.
 PDF_SHA256 = {
     "-1708528931770": "f9e1f34c38c180bd6b280436c916acf17f20941d89e8c1da6f4cec507d1a7292",
     "-1758614468061": "2a30c3a85ad1c4312382a226912b48e2c41178a9afd997f0149670eaff3673ec",
@@ -221,13 +241,9 @@ PDF_SHA256 = {
     "100-years-of-general-aung-san-100-letters-1758627755471": "4d4ca3dde9d56eb13be1f1b44f3142654eb98465a5d9ff616ddc6416492be217",
 }
 
-DEFAULT_LIST = Path(__file__).resolve().with_name("mangled-pdf-names.txt")
-DEFAULT_REPRESENTATIVE_LIST = Path(__file__).resolve().with_name("representative-pdf-names.txt")
-DEFAULT_DEST = Path.home() / "mangled-pdf-downloads"
-
 
 class DownloadError(Exception):
-    pass
+    """A configuration, connection or transfer problem."""
 
 
 @dataclass(frozen=True)
@@ -239,131 +255,297 @@ class SSHConfig:
     directory: str
 
 
-def env_values(path: Path, *, required: bool) -> dict[str, str]:
-    """Read only SSH settings; never print or persist the file contents."""
+class Options:
+    def __init__(self) -> None:
+        self.env: Path | None = None
+        self.dest: Path | None = None
+        self.remote_dir: str | None = None
+        self.limit: int | None = None
+        self.offset = 0
+        self.force = False
+        self.dry_run = False
+        self.verify = True
+        self.items: list[str] = []
+
+
+# ---------------------------------------------------------------------------
+# .env
+# ---------------------------------------------------------------------------
+
+def read_env_file(path: Path) -> dict[str, str]:
+    """Parse a small .env file. Unknown keys and comments are ignored."""
     try:
-        lines = path.expanduser().read_text(encoding="utf-8-sig").splitlines()
+        text = path.expanduser().read_text(encoding="utf-8-sig")
     except FileNotFoundError:
-        if required:
-            raise DownloadError(f"Environment file not found: {path}") from None
-        return {}
+        raise DownloadError(f"environment file not found: {path}") from None
+    except OSError as error:
+        raise DownloadError(f"cannot read {path}: {error.strerror}") from None
     values: dict[str, str] = {}
-    for number, line in enumerate(lines, 1):
+    for number, line in enumerate(text.splitlines(), 1):
         entry = line.strip()
+        if not entry or entry.startswith("#"):
+            continue
         if entry.startswith("export "):
             entry = entry[7:].lstrip()
-        if not entry or entry.startswith("#") or "=" not in entry:
+        if "=" not in entry:
             continue
         name, value = entry.split("=", 1)
         name = name.strip()
-        if name not in {"SSH_HOST", "SSH_USER", "SSH_PORT", "SSH_KEY", "SSH_DIR"}:
+        if name not in ENV_KEYS:
             continue
         value = value.strip()
-        if value[:1] in ('"', "'"):
-            closing = value.find(value[0], 1)
+        if value[:1] in ("'", '"'):
+            quote = value[0]
+            closing = value.find(quote, 1)
             if closing < 0:
-                raise DownloadError(f"Unterminated quoted {name} in {path} at line {number}")
+                raise DownloadError(f"{path} line {number}: unterminated quote for {name}")
             value = value[1:closing]
         else:
-            value = value.split("#", 1)[0].strip()
+            value = value.split(" #", 1)[0].rstrip()
         values[name] = value
     return values
 
 
-def load_config(args: argparse.Namespace) -> SSHConfig:
-    path = args.env if args.env is not None else Path(".env")
-    values = env_values(path, required=args.env is not None)
-
-    def setting(name: str, override: str | None = None, default: str = "") -> str:
-        if override is not None:
-            return override.strip()
-        return os.environ.get(name, "").strip() or values.get(name, "").strip() or default
-
-    host = setting("SSH_HOST", args.host)
-    user = setting("SSH_USER", args.user)
-    directory = setting("SSH_DIR", args.remote_dir)
-    if not host or not user or not directory:
-        raise DownloadError(f"Set SSH_HOST, SSH_USER and SSH_DIR in {path} or the environment")
-    if any(item.startswith("-") or any(ch.isspace() or ch == "\x00" for ch in item)
-           for item in (host, user)):
-        raise DownloadError("SSH_HOST and SSH_USER must be single valid SSH arguments")
-    if any(ch in directory for ch in "\x00\r\n"):
-        raise DownloadError("SSH_DIR contains invalid characters")
-    try:
-        port = int(setting("SSH_PORT", args.port, "22"))
-        if not 1 <= port <= 65535:
-            raise ValueError
-    except ValueError:
-        raise DownloadError("SSH_PORT must be a number from 1 to 65535") from None
-    key = setting("SSH_KEY", args.key)
-    return SSHConfig(host, user, port, Path(key).expanduser() if key else None, directory)
+def find_env_file(explicit: Path | None) -> Path | None:
+    if explicit is not None:
+        return explicit.expanduser()
+    for candidate in (Path.cwd() / ".env", Path(__file__).resolve().parent / ".env"):
+        if candidate.is_file():
+            return candidate
+    return None
 
 
-def digest_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+class Settings:
+    """Configuration resolved from .env, the environment and the command line."""
+
+    def __init__(self, options: Options) -> None:
+        env_path = find_env_file(options.env)
+        file_values: dict[str, str] = {}
+        if env_path is not None:
+            if options.env is not None or env_path.is_file():
+                file_values = read_env_file(env_path)
+            self.env_path = env_path
+        else:
+            self.env_path = None
+
+        def value(name: str, override: str | None = None) -> str:
+            if override is not None:
+                return override.strip()
+            return os.environ.get(name, "").strip() or file_values.get(name, "").strip()
+
+        host = value("SSH_HOST")
+        user = value("SSH_USER")
+        directory = value("SSH_DIR", options.remote_dir)
+        if not host or not user or not directory:
+            where = env_path if env_path is not None else ".env"
+            raise DownloadError(
+                f"set SSH_HOST, SSH_USER and SSH_DIR in {where} (or in the environment)")
+        if any(item.startswith("-") or any(ch.isspace() or ch == "\x00" for ch in item)
+               for item in (host, user)):
+            raise DownloadError("SSH_HOST and SSH_USER must be single valid SSH arguments")
+        if any(ch in directory for ch in "\x00\r\n"):
+            raise DownloadError("SSH_DIR contains characters that cannot be passed to ssh")
+        try:
+            port = int(value("SSH_PORT") or 22)
+            if not 1 <= port <= 65535:
+                raise ValueError
+        except ValueError:
+            raise DownloadError("SSH_PORT must be a number from 1 to 65535") from None
+        key = value("SSH_KEY")
+        self.ssh = SSHConfig(host, user, port,
+                             Path(key).expanduser() if key else None, directory)
+
+        destination = value("DOWNLOAD_DIR") or value("PDF_DEST") or value("DOWNLOAD_PATH")
+        if options.dest is not None:
+            destination = str(options.dest)
+        self.destination = (Path(destination).expanduser() if destination
+                            else Path("pdf-downloads"))
 
 
-def names_from(path: Path) -> list[str]:
-    names: list[str] = []
-    seen: set[str] = set()
-    for number, filename in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-        if not filename:
+# ---------------------------------------------------------------------------
+# Command line
+# ---------------------------------------------------------------------------
+
+FLAGS = {
+    "--force": "force",
+    "--dry-run": "dry_run",
+    "--no-verify": "no_verify",
+}
+VALUES = {
+    "--env": "env",
+    "--dest": "dest",
+    "--remote-dir": "remote_dir",
+    "--limit": "limit",
+    "--offset": "offset",
+}
+
+
+def parse_arguments(argv: list[str]) -> Options:
+    options = Options()
+    index = 0
+    while index < len(argv):
+        argument = argv[index]
+        if argument == "--":
+            index += 1
             continue
-        if (filename.strip() != filename or any(ch in filename for ch in "/\\\x00")
-                or not filename.lower().endswith(".pdf")):
-            raise DownloadError(f"Unsafe or non-PDF filename on line {number}: {filename!r}")
-        name = filename[:-4]
-        if name in ("", ".", "..") or name not in PDF_SHA256:
-            raise DownloadError(f"No recorded PDF hash for {filename!r}; refusing an unverified download")
-        if name not in seen:
-            names.append(name)
-            seen.add(name)
+        if argument in ("-h", "--help"):
+            print(__doc__)
+            raise SystemExit(0)
+        name, separator, inline = argument.partition("=")
+        if name in FLAGS and not separator:
+            setattr(options, FLAGS[name], True)
+            index += 1
+            continue
+        if name in VALUES:
+            if separator:
+                raw = inline
+            else:
+                index += 1
+                if index >= len(argv):
+                    raise DownloadError(f"{name} needs a value")
+                raw = argv[index]
+            field = VALUES[name]
+            if field in ("limit", "offset"):
+                if not raw.isdigit():
+                    raise DownloadError(f"{name} needs a non-negative number, not {raw!r}")
+                setattr(options, field, int(raw))
+            elif field == "env":
+                options.env = Path(raw)
+            elif field == "dest":
+                options.dest = Path(raw)
+            else:
+                options.remote_dir = raw
+            index += 1
+            continue
+        if argument.startswith("--"):
+            # 'uv run download-pdfs.py --1708528931770.pdf' means the file name.
+            stripped = argument.lstrip("-")
+            if stripped and Path(stripped).suffix:
+                print(f"note: {argument} is read as the file name {stripped}",
+                      file=sys.stderr)
+                options.items.append(stripped)
+                index += 1
+                continue
+            raise DownloadError(f"unknown option {argument!r}; use --help for usage")
+        options.items.append(argument)
+        index += 1
+    if options.limit is not None and options.limit < 1:
+        raise DownloadError("--limit must be at least 1")
+    if options.offset < 0:
+        raise DownloadError("--offset must not be negative")
+    return options
+
+
+def has_extension(name: str) -> bool:
+    return bool(Path(name).suffix)
+
+
+def read_name_list(path: Path) -> list[str]:
+    try:
+        text = path.expanduser().read_text(encoding="utf-8-sig")
+    except FileNotFoundError:
+        raise DownloadError(f"list file not found: {path}") from None
+    except OSError as error:
+        raise DownloadError(f"cannot read {path}: {error.strerror}") from None
+    names: list[str] = []
+    for number, line in enumerate(text.splitlines(), 1):
+        name = line.strip()
+        if not name or name.startswith("#"):
+            continue
+        if not has_extension(name):
+            raise DownloadError(
+                f"{path} line {number}: {name!r} has no extension; "
+                "every name in a list file must be a full file name such as 1708528931770.pdf")
+        names.append(name)
     if not names:
-        raise DownloadError(f"No book names found in {path}")
+        raise DownloadError(f"no file names found in {path}")
     return names
 
 
-def ssh_args(config: SSHConfig, command: str) -> list[str]:
-    # Follow vps.py's non-interactive SSH behavior without changing host-key checks.
-    argv = [
-        "ssh", "-p", str(config.port), "-o", "BatchMode=yes", "-o", "ConnectTimeout=20",
-        "-o", "ServerAliveInterval=30", "-l", config.user,
-    ]
+def resolve_names(options: Options) -> list[str]:
+    names: list[str] = []
+    for item in options.items:
+        path = Path(item).expanduser()
+        suffix = path.suffix.lower()
+        if not suffix:
+            candidate = path if path.is_file() else path.with_name(path.name + ".txt")
+            if not candidate.is_file():
+                raise DownloadError(
+                    f"{item!r} has no extension and no list file {candidate} exists")
+            names.extend(read_name_list(candidate))
+        elif suffix == ".txt":
+            names.extend(read_name_list(path))
+        else:
+            names.append(path.name)
+    if not names:
+        if DEFAULT_LIST.is_file():
+            names = read_name_list(DEFAULT_LIST)
+        else:
+            raise DownloadError("no file names given; pass a name or a list file")
+    unique: list[str] = []
+    seen: set[str] = set()
+    for name in names:
+        if name not in seen:
+            seen.add(name)
+            unique.append(name)
+    for name in unique:
+        if not name or name in (".", "..") or any(ch in name for ch in "/\\\x00"):
+            raise DownloadError(f"unsafe file name: {name!r}")
+        if len(name.encode("utf-8")) > 255:
+            raise DownloadError(f"file name is too long: {name[:40]!r}...")
+    return unique
+
+
+def select(names: list[str], options: Options) -> list[str]:
+    if options.offset:
+        names = names[options.offset:]
+    if options.limit is not None:
+        names = names[:options.limit]
+    if not names:
+        raise DownloadError("the selection is empty after applying --offset/--limit")
+    return names
+
+
+# ---------------------------------------------------------------------------
+# SSH
+# ---------------------------------------------------------------------------
+
+def ssh_command(config: SSHConfig, command: str) -> list[str]:
+    argv = ["ssh", "-p", str(config.port), "-o", "BatchMode=yes",
+            "-o", "ConnectTimeout=20", "-o", "ServerAliveInterval=30",
+            "-l", config.user]
     if config.key:
         argv.extend(["-i", str(config.key), "-o", "IdentitiesOnly=yes"])
-    return [*argv, config.host, command]
+    argv.extend([config.host, command])
+    return argv
 
 
-def ssh(config: SSHConfig, command: str, stdout=subprocess.PIPE) -> subprocess.CompletedProcess:
+def run_ssh(config: SSHConfig, command: str) -> subprocess.CompletedProcess:
     try:
-        return subprocess.run(ssh_args(config, command), stdout=stdout, stderr=subprocess.PIPE, check=False)
-    except FileNotFoundError as error:
-        raise DownloadError("ssh not found; install an OpenSSH client") from error
+        return subprocess.run(ssh_command(config, command),
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+    except FileNotFoundError:
+        raise DownloadError("ssh not found; install an OpenSSH client") from None
 
 
-def failure(result: subprocess.CompletedProcess) -> str:
-    stderr = (result.stderr or b"").decode("utf-8", "replace").strip().splitlines()
-    return stderr[-1] if stderr else f"ssh exit {result.returncode}"
+def ssh_error(result: subprocess.CompletedProcess) -> str:
+    message = (result.stderr or b"").decode("utf-8", "replace").strip().splitlines()
+    return message[-1] if message else f"ssh exited with {result.returncode}"
 
 
-def home_directory(config: SSHConfig) -> str:
+def remote_home(config: SSHConfig) -> str:
     if config.key and not config.key.is_file():
         raise DownloadError(f"SSH key file not found: {config.key}")
-    result = ssh(config, 'printf "%s" "$HOME"')
+    result = run_ssh(config, 'printf "%s" "$HOME"')
     if result.returncode:
-        raise DownloadError(f"Cannot connect to SSH_HOST: {failure(result)}")
+        raise DownloadError(f"cannot connect to {config.host}: {ssh_error(result)}")
     home = os.fsdecode(result.stdout).strip()
-    if not home.startswith("/") or "\n" in home:
-        raise DownloadError("The VPS did not return a usable absolute home directory")
+    if not home.startswith("/"):
+        raise DownloadError("the server did not return an absolute home directory")
     return home
 
 
-def remote_path(raw: str, home: str) -> str:
-    # Same home-relative and ~ handling as vps.py; quote the result for ssh.
+def absolute_remote_path(raw: str, home: str) -> str:
     path = raw.strip()
     if path.startswith("~"):
         path = path[1:].lstrip("/")
@@ -372,252 +554,193 @@ def remote_path(raw: str, home: str) -> str:
     return f"{home.rstrip('/')}/{path}" if path else home
 
 
-def ledger_paths(path: Path, selected: list[str], home: str) -> dict[str, list[str]]:
-    hashes: dict[str, list[str]] = defaultdict(list)
-    for line in path.read_text(encoding="utf-8").splitlines():
-        fields = line.split("\t")
-        if len(fields) >= 4 and fields[2]:
-            remote = remote_path(fields[2], home)
-            digest = fields[0].lower()
-            if remote not in hashes[digest]:
-                hashes[digest].append(remote)
-    return {name: hashes[PDF_SHA256[name]] for name in selected}
-
-
-def discover_paths(config: SSHConfig, directory: str, selected: list[str]) -> dict[str, list[str]]:
-    # NUL delimiters keep spaces and non-ASCII filenames intact. `find` is
-    # read-only and does not follow symlinked directories.
-    command = f"find {shlex.quote(directory)} -type f -iname '*.pdf' -print0"
-    result = ssh(config, command)
+def find_remote_paths(config: SSHConfig, directory: str,
+                      names: list[str]) -> dict[str, list[str]]:
+    """One read-only scan of the remote directory, mapped by file name."""
+    extensions = sorted({Path(name).suffix.lower() for name in names if Path(name).suffix})
+    if not extensions:
+        raise DownloadError("none of the requested names has a file extension")
+    conditions = " -o ".join(f"-iname {shlex.quote('*' + extension)}"
+                             for extension in extensions)
+    command = (f"find {shlex.quote(directory)} -type f \( {conditions} \) -print0")
+    result = run_ssh(config, command)
     if result.returncode:
-        raise DownloadError(f"Cannot search SSH_DIR on the VPS: {failure(result)}")
-    wanted = set(selected)
+        raise DownloadError(
+            f"cannot search SSH_DIR ({directory}) on {config.host}: {ssh_error(result)}")
+    wanted = {name.lower(): name for name in names}
     found: dict[str, list[str]] = defaultdict(list)
-    pdf_count = 0
+    scanned = 0
     for raw in result.stdout.split(b"\x00"):
         if not raw:
             continue
+        scanned += 1
         path = os.fsdecode(raw)
         leaf = path.rsplit("/", 1)[-1]
-        if not leaf.lower().endswith(".pdf"):
-            continue
-        pdf_count += 1
-        if leaf[:-4] in wanted:
-            found[leaf[:-4]].append(path)
-    matches = sum(bool(found[name]) for name in selected)
-    print(f"Found {pdf_count} PDF files under SSH_DIR; {matches}/{len(selected)} selected names matched.", flush=True)
-    if matches < len(selected):
-        print("Some names were not found. Check SSH_DIR, use --ledger, or try --search-by-hash "
-              "for renamed originals (reads all remote PDFs).", file=sys.stderr)
-    return {name: sorted(set(found[name])) for name in selected}
+        name = wanted.get(leaf.lower())
+        if name is not None and path not in found[name]:
+            found[name].append(path)
+    matched = sum(bool(found[name]) for name in names)
+    print(f"scanned {scanned} file(s) under SSH_DIR; located {matched}/{len(names)} requested name(s)",
+          flush=True)
+    missing = [name for name in names if not found[name]]
+    if missing:
+        print(f"not located on the server: {', '.join(missing[:10])}"
+              + (" ..." if len(missing) > 10 else ""), file=sys.stderr)
+    return {name: sorted(found[name]) for name in names}
 
 
-def discover_hash_paths(config: SSHConfig, directory: str, selected: list[str]) -> dict[str, list[str]]:
-    # This scans server-side bytes but transfers only checksums and paths. The
-    # NUL-delimited GNU sha256sum format preserves spaces and newlines in names.
-    print("Hashing PDFs under SSH_DIR to find renamed originals; this may take time and disk I/O.", flush=True)
-    command = f"find {shlex.quote(directory)} -type f -iname '*.pdf' -exec sha256sum -z -- {{}} +"
-    result = ssh(config, command)
-    if result.returncode:
-        raise DownloadError(f"Cannot hash remote PDFs (requires sha256sum -z): {failure(result)}")
-    by_hash: dict[str, list[str]] = defaultdict(list)
-    for name in selected:
-        by_hash[PDF_SHA256[name]].append(name)
-    found: dict[str, list[str]] = defaultdict(list)
-    for record in result.stdout.split(b"\x00"):
-        if not record:
-            continue
-        if len(record) < 67 or record[64:66] not in (b"  ", b" *"):
-            raise DownloadError("Unexpected remote sha256sum output; use an uploader ledger instead")
-        try:
-            digest = record[:64].decode("ascii").lower()
-        except UnicodeDecodeError:
-            raise DownloadError("Unexpected remote sha256sum output; use an uploader ledger instead") from None
-        if digest in by_hash:
-            path = os.fsdecode(record[66:])
-            for name in by_hash[digest]:
-                found[name].append(path)
-    matches = sum(bool(found[name]) for name in selected)
-    print(f"Remote hash scan matched {matches}/{len(selected)} selected PDF hashes.", flush=True)
-    return {name: sorted(set(found[name])) for name in selected}
+# ---------------------------------------------------------------------------
+# Transfer
+# ---------------------------------------------------------------------------
+
+def human_bytes(size: float) -> str:
+    for unit in ("B", "KiB", "MiB", "GiB"):
+        if size < 1024 or unit == "GiB":
+            return f"{size:.0f} {unit}" if unit == "B" else f"{size:.2f} {unit}"
+        size /= 1024
+    return f"{size:.2f} GiB"
 
 
-def report_candidate_sizes(config: SSHConfig, names: list[str], paths: dict[str, list[str]]) -> int:
-    """Read sizes only; a same-named path is not necessarily the requested PDF."""
-    failures = 0
-    single_sizes: list[int] = []
-    for name in names:
-        candidates = paths[name]
-        if not candidates:
-            print(f"NOT LOCATED by this search: {name}", file=sys.stderr)
-            failures += 1
-            continue
-        sizes = []
-        for path in candidates:
-            result = ssh(config, f"wc -c < {shlex.quote(path)}")
-            if result.returncode:
-                print(f"ERROR checking size of {path!r}: {failure(result)}", file=sys.stderr)
-                continue
+def existing_state(target: Path, expected: str | None) -> str:
+    """Return 'ok', 'differs' or 'unknown' for a file that is already there."""
+    if not target.is_file():
+        return "missing"
+    if not expected:
+        return "unknown"
+    digest = hashlib.sha256()
+    with target.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(CHUNK_SIZE), b""):
+            digest.update(chunk)
+    return "ok" if digest.hexdigest() == expected else "differs"
+
+
+def download(config: SSHConfig, name: str, remote_paths: list[str], destination: Path,
+             expected: str | None, verify: bool) -> None:
+    """Stream one remote file to disk, then rename it into place."""
+    target = destination / name
+    partial = destination / f".{name}.part"
+    destination.mkdir(parents=True, exist_ok=True)
+    partial.unlink(missing_ok=True)      # a leftover from an interrupted run
+    for remote in remote_paths:
+        digest = hashlib.sha256()
+        written = 0
+        started = time.time()
+        with tempfile.TemporaryFile() as errors:
             try:
-                size = int(result.stdout.strip())
-                if size < 0:
-                    raise ValueError
-            except ValueError:
-                print(f"ERROR invalid size returned for {path!r}", file=sys.stderr)
-                continue
-            sizes.append(size)
-            print(f"{name}\t{size} bytes\t{path!r}")
-        if not sizes:
-            failures += 1
-        elif len(candidates) == 1 and len(sizes) == 1:
-            single_sizes.append(sizes[0])
-    if len(single_sizes) == len(names):
-        print(f"Provisional total of one candidate per book: {sum(single_sizes)} bytes.")
-    else:
-        print("No total: some books have missing, unreadable or multiple candidate paths.")
-    print("Candidate paths and sizes are not verified by this check; no PDFs downloaded.")
-    return 1 if failures else 0
-
-
-def install_without_overwrite(temp: Path, target: Path) -> None:
-    """Publish a verified temp file with exclusive creation, even under races."""
-    try:
-        os.link(temp, target)
+                process = subprocess.Popen(
+                    ssh_command(config, f"cat -- {shlex.quote(remote)}"),
+                    stdout=subprocess.PIPE, stderr=errors)
+            except FileNotFoundError:
+                raise DownloadError("ssh not found; install an OpenSSH client") from None
+            try:
+                with partial.open("wb") as output:
+                    assert process.stdout is not None
+                    while True:
+                        chunk = process.stdout.read(CHUNK_SIZE)
+                        if not chunk:
+                            break
+                        output.write(chunk)          # written as it arrives
+                        digest.update(chunk)
+                        written += len(chunk)
+                        if sys.stderr.isatty() and time.time() - started > 2:
+                            print(f"      {human_bytes(written)} received", file=sys.stderr,
+                                  end="\r", flush=True)
+                    output.flush()
+                    os.fsync(output.fileno())
+            finally:
+                if process.stdout is not None:
+                    process.stdout.close()
+                code = process.wait()
+                errors.seek(0)
+                message = errors.read().decode("utf-8", "replace").strip().splitlines()
+        if sys.stderr.isatty():
+            print(" " * 40, end="\r", file=sys.stderr)
+        if code != 0:
+            partial.unlink(missing_ok=True)
+            detail = message[-1] if message else f"ssh exited with {code}"
+            print(f"      {remote}: {detail}", file=sys.stderr)
+            continue
+        actual = digest.hexdigest()
+        if verify and expected and actual != expected:
+            partial.unlink(missing_ok=True)
+            print(f"      SHA-256 mismatch for {name}: expected {expected}, got {actual}",
+                  file=sys.stderr)
+            continue
+        os.replace(partial, target)
+        elapsed = max(time.time() - started, 0.001)
+        print(f"      saved {human_bytes(written)} in {elapsed:.1f}s "
+              f"({human_bytes(written / elapsed)}/s) sha256={actual}", flush=True)
         return
-    except FileExistsError:
-        raise
-    except OSError:
-        # A filesystem without hard-link support still gets exclusive creation.
-        created = False
-        try:
-            with target.open("xb") as destination:
-                created = True
-                with temp.open("rb") as source:
-                    shutil.copyfileobj(source, destination, length=1024 * 1024)
-        except BaseException:
-            if created:
-                target.unlink(missing_ok=True)
-            raise
+    raise DownloadError(
+        f"no usable copy of {name} on the server" if len(remote_paths) > 1
+        else f"{name} could not be downloaded")
 
 
-def download_one(config: SSHConfig, name: str, candidates: list[str], dest: Path) -> bool:
-    expected = PDF_SHA256[name]
-    target = dest / f"{name}.pdf"
-    if target.exists():
-        if target.is_file() and digest_file(target) == expected:
-            print(f"SKIP verified existing: {name}")
-            return True
-        print(f"ERROR existing file differs; not overwritten: {target}", file=sys.stderr)
-        return False
-    if not candidates:
-        print(f"NOT LOCATED by this search: {name} (it may be renamed or outside SSH_DIR)", file=sys.stderr)
-        return False
-    dest.mkdir(parents=True, exist_ok=True)
-    for remote in candidates:
-        fd, temp_name = tempfile.mkstemp(prefix=".pdf-download-", suffix=".part", dir=dest)
-        temp = Path(temp_name)
-        try:
-            with os.fdopen(fd, "wb") as output:
-                result = ssh(config, f"cat -- {shlex.quote(remote)}", stdout=output)
-            if result.returncode:
-                print(f"ERROR reading {remote}: {failure(result)}", file=sys.stderr)
-                continue
-            actual = digest_file(temp)
-            if actual != expected:
-                print(f"HASH MISMATCH for {name}: expected {expected}, got {actual}; trying any other match", file=sys.stderr)
-                continue
-            try:
-                install_without_overwrite(temp, target)
-            except FileExistsError:
-                if target.is_file() and digest_file(target) == expected:
-                    print(f"SKIP concurrently created verified file: {name}")
-                    return True
-                print(f"ERROR file appeared during download; not overwritten: {target}", file=sys.stderr)
-                return False
-            print(f"OK {name}  {expected}  {target}")
-            return True
-        finally:
-            temp.unlink(missing_ok=True)
-    print(f"FAILED no matching PDF among located paths for {name}", file=sys.stderr)
-    return False
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--list", type=Path, default=DEFAULT_LIST, help="all review-candidate names (default: alongside script)")
-    parser.add_argument("--representative-list", type=Path, default=DEFAULT_REPRESENTATIVE_LIST,
-                        help="curated default selection (default: alongside script)")
-    parser.add_argument("--dest", type=Path, default=DEFAULT_DEST, help="local directory (default: ~/mangled-pdf-downloads)")
-    parser.add_argument("--env", type=Path, help="path to existing .env (default: ./.env)")
-    parser.add_argument("--remote-dir", help="override SSH_DIR from the environment/.env")
-    parser.add_argument("--ledger", type=Path, help="local scraper uploaded-host.txt: find remote paths by PDF hash instead")
-    parser.add_argument("--search-by-hash", action="store_true", help="hash every remote PDF to find renamed originals; may be slow")
-    parser.add_argument("--host", help="override SSH_HOST from the environment/.env")
-    parser.add_argument("--user", help="override SSH_USER from the environment/.env")
-    parser.add_argument("--port", help="override SSH_PORT from the environment/.env")
-    parser.add_argument("--key", help="override SSH_KEY from the environment/.env")
-    selection = parser.add_mutually_exclusive_group()
-    selection.add_argument("--representatives", action="store_true", help="select the curated examples (the default)")
-    selection.add_argument("--all", action="store_true", help="select all review candidates, not just the curated examples")
-    selection.add_argument("--book", action="append", help="select one book name or PDF filename; repeat (use --book=NAME)")
-    parser.add_argument("--limit", type=int, help="maximum selected books to download in this run")
-    parser.add_argument("--offset", type=int, default=0, help="skip this many selected books before applying --limit")
-    preview = parser.add_mutually_exclusive_group()
-    preview.add_argument("--dry-run", action="store_true", help="list selections and expected hashes without connecting")
-    preview.add_argument("--sizes-only", action="store_true", help="show unverified remote candidate sizes without downloading")
-    args = parser.parse_args()
-    if args.limit is not None and args.limit < 1:
-        parser.error("--limit must be a positive number")
-    if args.offset < 0:
-        parser.error("--offset must be zero or greater")
+def main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
     try:
-        names = names_from(args.list)
-        if not args.all:
-            requested = names_from(args.representative_list) if not args.book else [
-                item[:-4] if item.lower().endswith(".pdf") else item for item in args.book
-            ]
-            missing = [name for name in requested if name not in names]
-            if missing:
-                raise DownloadError(f"Requested names are not in {args.list}: {', '.join(missing)}")
-            names = list(dict.fromkeys(requested))
-        if args.offset >= len(names):
-            raise DownloadError(f"--offset {args.offset} skips all {len(names)} selected books")
-        names = names[args.offset:]
-        if args.limit is not None:
-            names = names[:args.limit]
-        if args.dry_run:
-            for name in names:
-                print(f"{name}\t{PDF_SHA256[name]}")
-            print(f"{len(names)} selected; dry run did not connect to the VPS.", file=sys.stderr)
-            return 0
-        config = load_config(args)
-        home = home_directory(config)
-        directory = remote_path(config.directory, home)
-        if args.ledger:
-            paths = ledger_paths(args.ledger, names, home)
-            matches = sum(bool(paths[name]) for name in names)
-            print(f"Ledger has paths for {matches}/{len(names)} selected hashes; remote availability is not yet verified.")
-        else:
-            paths = discover_paths(config, directory, names)
-        if args.search_by_hash:
-            hashed = discover_hash_paths(config, directory, names)
-            paths = {name: list(dict.fromkeys(paths[name] + hashed[name])) for name in names}
-        if args.sizes_only:
-            return report_candidate_sizes(config, names, paths)
-        failures = 0
-        for index, name in enumerate(names, 1):
-            print(f"[{index}/{len(names)}] {name}", flush=True)
-            try:
-                if not download_one(config, name, paths[name], args.dest):
-                    failures += 1
-            except OSError as error:
-                failures += 1
-                print(f"ERROR {name}: {error}", file=sys.stderr)
-        print(f"Done: {len(names) - failures} verified, {failures} missing or failed; no remote files modified.")
-        return 1 if failures else 0
-    except (OSError, UnicodeError, DownloadError) as error:
+        options = parse_arguments(argv)
+        names = select(resolve_names(options), options)
+    except DownloadError as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
+
+    if options.dry_run:
+        try:
+            destination = Settings(options).destination
+        except DownloadError as error:
+            destination = options.dest or Path("pdf-downloads")
+            print(f"note: {error}", file=sys.stderr)
+        print(f"{len(names)} file(s) -> {destination}")
+        for index, name in enumerate(names, 1):
+            expected = PDF_SHA256.get(Path(name).stem)
+            print(f"  {index:3d}. {name}" + (f"  sha256={expected}" if expected else ""))
+        print("dry run: nothing was downloaded")
+        return 0
+
+    try:
+        settings = Settings(options)
+    except DownloadError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    print(f"{len(names)} file(s) -> {settings.destination}")
+
+    try:
+        home = remote_home(settings.ssh)
+        directory = absolute_remote_path(settings.ssh.directory, home)
+        paths = find_remote_paths(settings.ssh, directory, names)
+        settings.destination.mkdir(parents=True, exist_ok=True)
+    except DownloadError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+
+    failures = 0
+    for index, name in enumerate(names, 1):
+        target = settings.destination / name
+        expected = PDF_SHA256.get(Path(name).stem) if Path(name).suffix.lower() == ".pdf" else None
+        state = existing_state(target, expected)
+        print(f"[{index}/{len(names)}] {name}", flush=True)
+        if state in ("ok", "unknown") and not options.force:
+            print("      already present; skipped (use --force to replace)", flush=True)
+            continue
+        if state == "differs" and not options.force:
+            print("      a file with this name exists but its SHA-256 differs; "
+                  "not overwritten (use --force)", file=sys.stderr)
+            failures += 1
+            continue
+        if not paths[name]:
+            print(f"      not found under SSH_DIR on {settings.ssh.host}", file=sys.stderr)
+            failures += 1
+            continue
+        try:
+            download(settings.ssh, name, paths[name], settings.destination,
+                     expected, options.verify)
+        except (DownloadError, OSError) as error:
+            print(f"      {error}", file=sys.stderr)
+            failures += 1
+
+    print(f"done: {len(names) - failures} file(s) ready, {failures} failed")
+    return 1 if failures else 0
 
 
 if __name__ == "__main__":

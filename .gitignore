@@ -181,3 +181,9 @@ vite.config.ts.timestamp-*
 /tools-box/kit/box/payload.bin
 /tools-box/kit/build/payload.key.txt
 /tools-box/kit/build/payload.bin
+
+# Local artefacts from mergedpdf.py and download-pdfs.py (never tracked).
+merged.pdf
+merged.txt
+merged.docx
+*.part
