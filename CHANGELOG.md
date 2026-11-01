@@ -136,3 +136,15 @@
 ### Verification
 - Live isolated Site and real Engine host: analysis PDF completed as conversion, analysis text returned HTTP 200 after saving, and the Engine job list remained empty. This was an HTTP check, not a frontend browser click-through.
 - Node: 267 tests, 259 passed, 8 skipped; targeted ESLint and `git diff --check` passed. Python: 343 passed, 7 failed, 3 skipped, 35 subtests passed; six failures require `MASTER_JSON_KEY` and one needs the unported comparison POS view.
+
+## [Unreleased] - 2026-11-01 — Streamed Parser and POS reports
+### Changed / Fixed / Removed
+- Replay the authenticated-owner Parser limits and streamed PDF/DOCX processing onto the rewritten main branch; retain main's `D.Scraper` layout and update its workspace and test references.
+- Run Parser unknown-word reports through the Engine's hash-free POS output, retaining original page and line text, contextual tags and short page-number lines.
+- Warn on every raster/SVG matcher call against recovering text-based PDFs; add first-use terminal guidance with a 24-hour quiet option.
+- Keep the locally generated large benchmark PDF out of the new commits and retain the historical environment-chain test.
+### Verification
+- Full Node suite: 339 passed, 12 failed, 11 skipped. Six failures require unavailable PDF fixtures, one has a stale Parser layout import, and five have stale Site fixture imports.
+- Full Python suite: 352 passed, 2 failed, 3 skipped, and 35 subtests passed. The failures concern the unported comparison POS exporter and a space/mark ordering expectation.
+- Focused Node suite: 101 passed, 1 skipped; real image-only PDF and manual DOCX OCR/POS tests passed. The `D.Scraper` continuous OCR worker also processed a real one-page image PDF.
+- POS processing is per line and does not reproduce three historical repair cases; PDF `job: "null"` has not been wired to OCR. These are not claims of full behavioral equivalence.
