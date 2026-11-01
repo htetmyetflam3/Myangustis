@@ -26,8 +26,8 @@ DIM, WHITE = "#BEBEBE", "#FFFFFF"
 
 K = BLUE        # structure keywords  import / export / const / function
 KC = ORANGE     # control keywords    if / return / throw / new
-V = GOLD        # variable use
-ND = ORANGE_L   # declaration name    const X = ...
+V = ORANGE_L    # variable use
+ND = GOLD       # declaration name    const X = ...
 FN = SKY        # function / method
 P = PINK        # property
 S = LIME        # string
@@ -60,8 +60,8 @@ CODE = [
 ]
 
 FAMILIES = [
-    ("GOLD", [GOLD_L, GOLD, GOLD_D], "numbers / variables / labels"),
-    ("ORANGE", [ORANGE_L, ORANGE], "declarations / keywords"),
+    ("GOLD", [GOLD_L, GOLD, GOLD_D], "numbers / declared names"),
+    ("ORANGE", [ORANGE_L, ORANGE], "variable uses / keywords"),
     ("BLUE", [SKY, BLUE], "functions / structure words"),
     ("PINK", [PINK_L, PINK, PINK_D], "keys / properties"),
     ("GREEN", [LIME, GREEN_M], "strings / escapes"),
@@ -113,5 +113,6 @@ for idx, (name, colors, sub) in enumerate(FAMILIES):
         sx += 70
     d.text((sx + 8, cy + 2), sub, font=SM, fill="#5A5A5A")
 
-img.save("/home/user/acode-theme/preview.png")
+import os
+img.save(os.path.join(os.path.dirname(os.path.abspath(__file__)), "preview.png"))
 print("saved", img.size)

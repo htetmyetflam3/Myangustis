@@ -39,12 +39,12 @@
     searchMatch: "#FFCC00",
     searchMatchSelected: "#FFCC00",
 
-    // ---- GOLD · numbers, variables, rare names ----
+    // ---- GOLD · numbers, declared names, rare names ----
     goldLight: "#FFE066",
     gold: "#FFCC00",
     goldDeep: "#E0A800",
 
-    // ---- ORANGE · declarations, control keywords ----
+    // ---- ORANGE · variable uses, control keywords ----
     orangeLight: "#FF8B3D",
     orange: "#FF6600",
 
@@ -101,15 +101,15 @@
       { tag: t.moduleKeyword, color: p.blue },
       { tag: t.definitionKeyword, color: p.blue },
 
-      // ---- GOLD · names in use ----
-      { tag: t.variableName, color: p.gold },
+      // ---- ORANGE (light) · names in use ----
+      { tag: t.variableName, color: p.orangeLight },
       { tag: t.labelName, color: p.goldDeep },
       { tag: t.namespace, color: p.goldDeep },
       { tag: t.macroName, color: p.goldDeep },
 
-      // ---- ORANGE (light) · names being born ----
-      { tag: t.definition(t.variableName), color: p.orangeLight },
-      { tag: t.local(t.variableName), color: p.orangeLight },
+      // ---- GOLD · names being born ----
+      { tag: t.definition(t.variableName), color: p.gold },
+      { tag: t.local(t.variableName), color: p.gold },
 
       // ---- BLUE (sky) · functions ----
       { tag: t.function(t.variableName), color: p.sky },
@@ -329,7 +329,7 @@
         number: palette.goldLight,
         comment: palette.violet,
         function: palette.sky,
-        variable: palette.gold,
+        variable: palette.orangeLight,
         type: palette.teal,
         class: palette.teal,
         constant: palette.violetLight,
