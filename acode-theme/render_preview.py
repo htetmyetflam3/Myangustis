@@ -5,7 +5,7 @@ theme, so the palette can be judged before pasting the plugin into Acode.
 """
 from PIL import Image, ImageDraw, ImageFont
 
-W, H = 1240, 1010
+W, H = 1240, 1090
 BG = "#0F0F0F"
 GUTTER = "#1A1A1A"
 LINENO = "#5C5C5C"
@@ -48,6 +48,13 @@ CODE = [
     [(K, "export"), (DC, " "), (K, "const"), (DC, " "), (ND, "MASTER_ENC"), (DC, " = "), (V, "path"), (DC, "."),
      (FN, "join"), (DC, "("), (ND, "HERE"), (DC, ", "), (S, "'master.json.enc'"), (DC, ");")],
     [(K, "const"), (DC, " "), (ND, "IV_BYTES"), (DC, " = "), (N, "12"), (DC, ";")],
+    [(K, "const"), (DC, " "), (ND, "raw"), (DC, " = "), (V, "JSON"), (DC, "."), (FN, "parse"),
+     (DC, "("), (V, "fs"), (DC, "."), (FN, "readFileSync"), (DC, "("), (V, "path"), (DC, "."),
+     (FN, "join"), (DC, "("), (ND, "HERE"), (DC, ", "), (S, "'cache.json'"), (DC, ")"),
+     (DC, ")"), (DC, ")"), (DC, ";")],
+    [(K, "const"), (DC, " "), (ND, "opts"), (DC, " = "), (DC, "{ "), (P, "key"), (DC, ": "),
+     (V, "process"), (DC, "."), (P, "env"), (DC, ", "), (P, "deep"), (DC, ": { "), (P, "a"), (DC, ": "),
+     (N, "1"), (DC, " } };")],
     [(DC, "")],
     [(K, "function"), (DC, " "), (FN, "loadKey"), (DC, "() {")],
     [(K, "  let"), (DC, " "), (ND, "hex"), (DC, " = ("), (V, "process"), (DC, "."), (P, "env"), (DC, "."), (P, "MASTER_JSON_KEY"),
@@ -58,6 +65,29 @@ CODE = [
     [(KC, "  return"), (DC, " "), (ND, "hex"), (DC, ";")],
     [(DC, "}")],
 ]
+
+RAINBOW = [
+    "#FF0000", "#7870DE", "#FFCC00", "#FF8B3D", "#82E2F6", "#F98BC3",
+    "#F98BC3", "#82E2F6", "#FF8B3D", "#FFCC00", "#7870DE", "#FF0000",
+]
+
+
+def split_brackets(line):
+    out = []
+    for c, t in line:
+        buf = ""
+        for ch in t:
+            if ch in "()[]{}":
+                if buf:
+                    out.append((c, buf))
+                    buf = ""
+                out.append(("__BR__", ch))
+            else:
+                buf += ch
+        if buf:
+            out.append((c, buf))
+    return out
+
 
 FAMILIES = [
     ("GOLD", [GOLD_L, GOLD, GOLD_D], "numbers / declared names"),
@@ -70,8 +100,10 @@ FAMILIES = [
     ("NEUTRAL", [WHITE, DIM], "text / operators"),
 ]
 
-FT = ImageFont.truetype(FONT, 25)
-FTB = ImageFont.truetype(FONTB, 25)
+CODE = [split_brackets(line) for line in CODE]
+
+FT = ImageFont.truetype(FONT, 23)
+FTB = ImageFont.truetype(FONTB, 23)
 SM = ImageFont.truetype(FONT, 16)
 SMB = ImageFont.truetype(FONTB, 16)
 
@@ -79,7 +111,7 @@ img = Image.new("RGB", (W, H), BG)
 d = ImageDraw.Draw(img)
 
 adv = d.textlength("M", font=FT)
-line_h = 40
+line_h = 38
 top = 46
 gutter_w = 76
 
@@ -89,6 +121,7 @@ d.rectangle([0, top + line_h - 6, gutter_w, top + line_h * 2 - 6], fill=ACTIVE)
 
 x0 = gutter_w + 22
 y = top
+depth = 0
 for i, line in enumerate(CODE, start=1):
     d.text((gutter_w - 20, y), str(i), font=FT, fill=LINENO, anchor="rt")
     if not line or line[0][0] == DC and line[0][1] == "":
@@ -96,6 +129,15 @@ for i, line in enumerate(CODE, start=1):
         continue
     x = x0
     for color, text in line:
+        if color == "__BR__":
+            if text in "([{":
+                color = RAINBOW[depth % len(RAINBOW)]
+                depth += 1
+            else:
+                depth -= 1
+                if depth < 0:
+                    depth = 0
+                color = RAINBOW[depth % len(RAINBOW)]
         d.text((x, y), text, font=FT, fill=color)
         x += d.textlength(text, font=FT)
     y += line_h
@@ -112,6 +154,15 @@ for idx, (name, colors, sub) in enumerate(FAMILIES):
         d.rounded_rectangle([sx, cy - 2, sx + 62, cy + 20], radius=5, fill=c)
         sx += 70
     d.text((sx + 8, cy + 2), sub, font=SM, fill="#5A5A5A")
+
+# rainbow bracket ladder
+ry = ly + 4 * 62 + 8
+d.text((34, ry), "BRACKETS", font=SMB, fill="#9A9A9A")
+d.text((34 + 96, ry + 2), "outermost = red", font=SM, fill="#5A5A5A")
+bx = 34 + 96 + 215
+for c in RAINBOW:
+    d.rounded_rectangle([bx, ry - 2, bx + 38, ry + 20], radius=4, fill=c)
+    bx += 44
 
 import os
 img.save(os.path.join(os.path.dirname(os.path.abspath(__file__)), "preview.png"))

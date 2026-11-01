@@ -5,6 +5,7 @@
   var THEME_ID = "godot.colors.4.7";
   var THEME_CAPTION = "Godot Colors";
   var IS_DARK = true;
+  var RAINBOW_BRACKETS = true;   // set false to keep brackets neutral
 
   /* ------------------------------------------------------------------
      Eight hue families, three rungs each (light / base / deep).
@@ -77,6 +78,122 @@
 
   var editorThemesApi = null;
   var cm6Registered = false;
+
+  /* ------------------------------------------------------------------
+     Rainbow brackets: outermost = bright red, then the ladder runs
+     inward and mirrors back out:  red · blue · gold · orange · sky ·
+     pink · pink · sky · orange · gold · blue · red  (12 levels, cycled).
+     ------------------------------------------------------------------ */
+  var BRACKET_LADDER = [
+    "#FF0000", // 0  outermost  red
+    "#7870DE", // 1  const blue
+    "#FFCC00", // 2  gold
+    "#FF8B3D", // 3  light orange
+    "#82E2F6", // 4  sky blue
+    "#F98BC3", // 5  pink
+    "#F98BC3", // 6  pink
+    "#82E2F6", // 7  sky blue
+    "#FF8B3D", // 8  light orange
+    "#FFCC00", // 9  gold
+    "#7870DE", // 10 const blue
+    "#FF0000", // 11 red
+  ];
+
+  var SKIP_NODE = /string|comment|regexp|template|character/i;
+
+  function rainbowBrackets() {
+    var CM = acode.require("codemirror");
+    if (!CM || !CM.view || !CM.state) return [];
+
+    var view = CM.view;
+    var state = CM.state;
+    var language = CM.language;
+    var Decoration = view.Decoration;
+    var ViewPlugin = view.ViewPlugin;
+    var RangeSetBuilder = state.RangeSetBuilder;
+
+    var marks = BRACKET_LADDER.map(function (hex) {
+      return Decoration.mark({ attributes: { style: "color:" + hex } });
+    });
+
+    function build(v) {
+      var st = v.state;
+      var ranges = v.visibleRanges;
+      var end = ranges.length ? ranges[ranges.length - 1].to : 0;
+      if (!end || end > 250000) return Decoration.none;
+
+      var text = st.doc.sliceString(0, end);
+
+      // ranges that must not be counted: strings, comments, regexps
+      var skips = [];
+      try {
+        language.syntaxTree(st).iterate({
+          from: 0,
+          to: end,
+          enter: function (n) {
+            if (!n.type.isAnonymous && SKIP_NODE.test(n.name)) {
+              skips.push(n.from, n.to);
+              return false;
+            }
+          },
+        });
+      } catch (e) {
+        skips = [];
+      }
+
+      var hits = [];
+      var stack = [];
+      var si = 0;
+      var ri = 0;
+
+      function isVisible(pos) {
+        while (ri < ranges.length && ranges[ri].to <= pos) ri++;
+        return ri < ranges.length && ranges[ri].from <= pos && pos < ranges[ri].to;
+      }
+
+      for (var i = 0; i < text.length; i++) {
+        var ch = text.charAt(i);
+        if (ch !== "(" && ch !== ")" && ch !== "[" && ch !== "]" && ch !== "{" && ch !== "}")
+          continue;
+
+        while (si + 1 < skips.length && skips[si + 1] <= i) si += 2;
+        if (si + 1 < skips.length && skips[si] <= i && i < skips[si + 1]) continue;
+
+        var depth;
+        if (ch === "(" || ch === "[" || ch === "{") {
+          depth = stack.length;
+          stack.push(ch);
+        } else {
+          if (stack.length) stack.pop();
+          depth = stack.length;
+        }
+        if (isVisible(i)) hits.push(i, depth % BRACKET_LADDER.length);
+      }
+
+      var builder = new RangeSetBuilder();
+      for (var k = 0; k < hits.length; k += 2) {
+        builder.add(hits[k], hits[k] + 1, marks[hits[k + 1]]);
+      }
+      return builder.finish();
+    }
+
+    return ViewPlugin.fromClass(
+      function (v) {
+        var self = this;
+        this.decorations = build(v);
+        this.update = function (update) {
+          if (update.docChanged || update.viewportChanged) {
+            self.decorations = build(update.view);
+          }
+        };
+      },
+      {
+        decorations: function (v) {
+          return v.decorations;
+        },
+      }
+    );
+  }
 
   function buildCM6Theme() {
     editorThemesApi = editorThemesApi || acode.require("editorThemes");
@@ -208,7 +325,7 @@
 
     var highlightStyle = editorThemesApi.createHighlightStyle(rules);
 
-    return editorThemesApi.createTheme({
+    var theme = editorThemesApi.createTheme({
       dark: IS_DARK,
       highlightStyle: highlightStyle,
       styles: {
@@ -306,6 +423,8 @@
         },
       },
     });
+
+    return [theme, RAINBOW_BRACKETS ? rainbowBrackets() : []];
   }
 
   function registerCM6Theme() {
