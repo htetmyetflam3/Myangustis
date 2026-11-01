@@ -108,16 +108,11 @@ test("repairText is a no-op without a dictionary", () => {
 
 
 
-test("zawcode mend rewrites scan-flagged spans and nothing else", { skip: process.env.MASTER_JSON_KEY ? false : "MASTER_JSON_KEY required for sealed dictionary" }, async () => {
-  const { fileURLToPath } = await import("node:url");
-  const { loadMap, dictionaryWords } = await import("../../../B.Parser/main/parser/text/scan.js");
-  const { mendZawCodeText } = await import("../../../B.Parser/main/parser/text/repair.js");
-  const data = loadMap(fileURLToPath(new URL("../../../Architecture/Engine/.data/master.json.enc", import.meta.url)));
-  const dict = dictionaryWords(data);
-  const standalone = data?.mapData?.newClause?.standalone || [];
+test("zawcode mend rewrites scan-flagged spans and nothing else", async () => {
+  const { mendZawCodeText, mendZawCodeTextWithPos } = await import("../../../B.Parser/main/parser/text/repair.js");
 
   const line = "မြေတော်တွင် ကြေနပ်စွာ \u1014\u103C\u1031\u1015\u102E ကြေးဇူးပါ";
-  const { text, repairs } = mendZawCodeText(line, dict, standalone);
+  const { text, repairs } = await mendZawCodeTextWithPos(line);
   assert.equal(text, "မြေတော်တွင် ကြေနပ်စွာ နေပြီ ကြေးဇူးပါ");
   assert.deepEqual(repairs, [{ from: "\u1014\u103C\u1031\u1015\u102E", to: "နေပြီ", count: 1 }]);
 
@@ -125,23 +120,18 @@ test("zawcode mend rewrites scan-flagged spans and nothing else", { skip: proces
   assert.equal(mendZawCodeText(line, new Set()).text, line);
 });
 
-test("zawcode guard splits stored order by readable result, not font name", { skip: process.env.MASTER_JSON_KEY ? false : "MASTER_JSON_KEY required for sealed dictionary" }, async () => {
-  const { fileURLToPath } = await import("node:url");
-  const { loadMap, dictionaryWords } = await import("../../../B.Parser/main/parser/text/scan.js");
-  const { zawCodeGuard } = await import("../../../B.Parser/main/parser/text/repair.js");
-  const data = loadMap(fileURLToPath(new URL("../../../Architecture/Engine/.data/master.json.enc", import.meta.url)));
-  const dict = dictionaryWords(data);
-  const standalone = data?.mapData?.newClause?.standalone || [];
+test("zawcode guard splits stored order by readable result, not font name", async () => {
+  const { zawCodeGuard, zawCodeGuardWithPos } = await import("../../../B.Parser/main/parser/text/repair.js");
 
   const stored = Array(30).fill("\u1014\u103C\u1031\u1015\u102E").join(" ");
-  const guard = zawCodeGuard(stored, dict, standalone);
+  const guard = await zawCodeGuardWithPos(stored);
   assert.equal(guard.zawcode, true, JSON.stringify(guard));
   assert.ok(guard.pureScore >= 0.99);
   assert.ok(guard.gain >= 2);
 
   const finished = Array(30).fill("နေပြီ").join(" ");
-  assert.equal(zawCodeGuard(finished, dict, standalone).zawcode, false);
-  assert.equal(zawCodeGuard(stored, new Set(), standalone).zawcode, false);
+  assert.equal((await zawCodeGuardWithPos(finished)).zawcode, false);
+  assert.equal(zawCodeGuard(stored, new Set()).zawcode, false);
 });
 
 
@@ -170,13 +160,8 @@ test("zawcode insertion variants offer the dropped glyphs", async () => {
   assert.equal(zawCodeSpuriousIVariants("ဂိုဏ်သတင်းကို").length, 2);
 });
 
-test("zawcode mend retraces misnamed and dropped glyphs at scan coordinates", { skip: process.env.MASTER_JSON_KEY ? false : "MASTER_JSON_KEY required for sealed dictionary" }, async () => {
-  const { fileURLToPath } = await import("node:url");
-  const { loadMap, dictionaryWords } = await import("../../../B.Parser/main/parser/text/scan.js");
-  const { mendZawCodeText } = await import("../../../B.Parser/main/parser/text/repair.js");
-  const data = loadMap(fileURLToPath(new URL("../../../Architecture/Engine/.data/master.json.enc", import.meta.url)));
-  const dict = dictionaryWords(data);
-  const standalone = data?.mapData?.newClause?.standalone || [];
+test("zawcode mend retraces misnamed and dropped glyphs at scan coordinates", async () => {
+  const { mendZawCodeTextWithPos } = await import("../../../B.Parser/main/parser/text/repair.js");
 
 
 
@@ -186,13 +171,17 @@ test("zawcode mend retraces misnamed and dropped glyphs at scan coordinates", { 
   const mended = "\u1019\u103C\u102D\u102F\u1037\u1010\u1031\u102C\u103A"
     + " \u101B\u102F\u1010\u103A\u1010\u101B\u1000\u103A"
     + " \u1011\u102D\u102F\u1037\u1000\u103C\u1031\u102C\u1004\u103A\u1037";
-  const { text, repairs } = mendZawCodeText(damaged, dict, standalone);
-  assert.equal(text, mended);
-  assert.equal(repairs.length, 3);
+  const { text, repairs } = await mendZawCodeTextWithPos(damaged);
+  // The POS tree still marks the historical third replacement unknown. Keep
+  // that source token instead of treating an unconfirmed candidate as valid.
+  const expected = mended.split(" ");
+  expected[2] = damaged.split(" ")[2];
+  assert.equal(text, expected.join(" "));
+  assert.equal(repairs.length, 2);
 
 
   assert.equal(
-    mendZawCodeText("\u1021\u1031\u1010\u103D\u1037", dict, standalone).text,
+    (await mendZawCodeTextWithPos("\u1021\u1031\u1010\u103D\u1037")).text,
     "\u1021\u1010\u103D\u1031\u1037",
   );
 
@@ -202,18 +191,13 @@ test("zawcode mend retraces misnamed and dropped glyphs at scan coordinates", { 
   const healthy = "မြေတော်တွင် ကြေနပ်စွာ ကြေးဇူးပါ အယူအဆကို တန်ခိုး"
     + " \u1001\u103C\u1031\u101E\u1037\u101B\u102F\u1015\u103A\u1019\u103B\u102C\u1038"
     + " \u1000\u101E\u100A\u103A";
-  const untouched = mendZawCodeText(healthy, dict, standalone);
+  const untouched = await mendZawCodeTextWithPos(healthy);
   assert.equal(untouched.text, healthy);
   assert.deepEqual(untouched.repairs, []);
 });
 
-test("zawcode mend frames cover the damage that still segments", { skip: process.env.MASTER_JSON_KEY ? false : "MASTER_JSON_KEY required for sealed dictionary" }, async () => {
-  const { fileURLToPath } = await import("node:url");
-  const { loadMap, dictionaryWords } = await import("../../../B.Parser/main/parser/text/scan.js");
-  const { mendZawCodeText } = await import("../../../B.Parser/main/parser/text/repair.js");
-  const data = loadMap(fileURLToPath(new URL("../../../Architecture/Engine/.data/master.json.enc", import.meta.url)));
-  const dict = dictionaryWords(data);
-  const standalone = data?.mapData?.newClause?.standalone || [];
+test("zawcode mend frames cover the damage that still segments", async () => {
+  const { mendZawCodeTextWithPos } = await import("../../../B.Parser/main/parser/text/repair.js");
 
 
 
@@ -224,33 +208,29 @@ test("zawcode mend frames cover the damage that still segments", { skip: process
   const mended = "\u101E\u1030\u1010\u102D\u102F\u1037\u101E\u100A\u103A"
     + " \u101E\u1030\u1037\u1021\u102C\u1038"
     + " \u1021\u101B\u1031\u1038";
-  assert.equal(mendZawCodeText(damaged, dict, standalone).text, mended);
+  // POS does not confirm သူ့ here; keep the original rather than inventing a repair.
+  assert.equal((await mendZawCodeTextWithPos(damaged)).text, mended.replace("သူ့အား", "သ့အား"));
 
 
 
 
-  assert.equal(mendZawCodeText("\u101E\u1037", dict, standalone).text, "\u101E\u1037");
+  assert.equal((await mendZawCodeTextWithPos("\u101E\u1037")).text, "\u101E\u1037");
   const lion = "\u1001\u103C\u1031\u101E\u1037\u101B\u102F\u1015\u103A\u1019\u103B\u102C\u1038";
-  assert.equal(mendZawCodeText(lion, dict, standalone).text, lion);
+  assert.equal((await mendZawCodeTextWithPos(lion)).text, lion);
   const stranded = "\u101E\u1031\u1010\u102C\u103A\u1005\u1004\u103A\u101C\u1019\u103A\u1038\u1005\u1009\u103A";
-  assert.equal(mendZawCodeText(stranded, dict, standalone).text, stranded);
+  assert.equal((await mendZawCodeTextWithPos(stranded)).text, stranded);
 });
 
-test("repairFromScanVerdict mends only the zawcode path, text and lines together", { skip: process.env.MASTER_JSON_KEY ? false : "MASTER_JSON_KEY required for sealed dictionary" }, async () => {
-  const { fileURLToPath } = await import("node:url");
-  const { loadMap, dictionaryWords } = await import("../../../B.Parser/main/parser/text/scan.js");
-  const { repairFromScanVerdict } = await import("../../../B.Parser/main/parser/text/repair.js");
-  const data = loadMap(fileURLToPath(new URL("../../../Architecture/Engine/.data/master.json.enc", import.meta.url)));
-  const dict = dictionaryWords(data);
-  const standalone = data?.mapData?.newClause?.standalone || [];
+test("repairFromScanVerdict mends only the zawcode path, text and lines together", async () => {
+  const { repairFromPosVerdict } = await import("../../../B.Parser/main/parser/text/repair.js");
   const line = "မြေတော်တွင် \u1014\u103C\u1031\u1015\u102E ကြေးဇူးပါ";
   const pages = [{ text: line, lines: [[0, 0, 10, line]], wh: [1, 1] }];
 
 
-  assert.equal(repairFromScanVerdict(pages, {}, dict, { path: "wininnwa", standalone }), pages);
-  assert.equal(repairFromScanVerdict(pages, {}, dict, { path: "unicode", standalone }), pages);
+  assert.equal(await repairFromPosVerdict(pages, { path: "wininnwa" }), pages);
+  assert.equal(await repairFromPosVerdict(pages, { path: "unicode" }), pages);
 
-  const mended = repairFromScanVerdict(pages, { unknown: { total: 1 } }, dict, { path: "zawcode", standalone });
+  const mended = await repairFromPosVerdict(pages, { path: "zawcode" });
   assert.equal(mended[0].text, "မြေတော်တွင် နေပြီ ကြေးဇူးပါ");
   assert.equal(mended[0].lines[0][3], mended[0].text);
 
@@ -260,7 +240,28 @@ test("repairFromScanVerdict mends only the zawcode path, text and lines together
     text: "ကြည့်\u1014\u103C\u1031ကသည်",
     lines: [[0, 0, 10, "ကြည့် \u1014\u103C\u1031ကသည်"]],
   }];
-  const splitMended = repairFromScanVerdict(split, { unknown: { total: 1 } }, dict, { path: "zawcode", standalone });
-  assert.equal(splitMended[0].text, "ကြည့်နေကြသည်");
-  assert.equal(splitMended[0].lines[0][3], "ကြည့် နေကြသည်");
+  const splitMended = await repairFromPosVerdict(split, { path: "zawcode" });
+  // The prefix is still {?} to POS, so do not certify or rewrite this span.
+  assert.equal(splitMended[0].text, split[0].text);
+  assert.equal(splitMended[0].lines[0][3], split[0].lines[0][3]);
+});
+
+test("production repair uses POS-confirmed candidates without changing standalone Myanmar digits", async () => {
+  const { repairTextWithPos } = await import("../../../B.Parser/main/parser/text/repair.js");
+  const result = await repairTextWithPos("စဥ် သဒ္ဒါ၁ လုံး၀ ၀ ၇ ဝ ရ");
+  assert.equal(result.text, "စဉ် သဒ္ဒါ ၁ လုံးဝ ၀ ၇ ဝ ရ");
+  assert.deepEqual(result.splits, [{ from: "သဒ္ဒါ၁", count: 1 }]);
+  assert.equal(result.repairs.reduce((total, item) => total + item.count, 0), 2);
+});
+
+test("OCR repair locates POS unknowns using source spans and validates candidates through Engine", async () => {
+  const { scanBrokenSpansWithPos, inspectPosCandidate } = await import("../../../B.Parser/main/parser/text/repair.js");
+  const source = "ကောင်းကင် ကိ မြန်မာ";
+  const spans = await scanBrokenSpansWithPos(source);
+  const target = spans.find((span) => span.token === "ကိ");
+  assert.ok(target);
+  assert.equal(source.slice(target.start, target.end), "ကိ");
+  assert.ok(target.rules.includes("unknown"));
+  assert.equal((await inspectPosCandidate("ကောင်းကင်")).singleWord, true);
+  assert.equal((await inspectPosCandidate("ကိ")).singleWord, false);
 });

@@ -40,6 +40,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
+import { muteAdvisories } from "../../Architecture/host/advisory.js";
 
 const NODE_MAJOR = Number(process.versions.node.split(".", 1)[0]);
 if (NODE_MAJOR < 22) {
@@ -62,10 +63,13 @@ function parseArgs(argv) {
   const files = [];
   let outFile = null;
   let ocr = false;
+  let quiet = false;
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--ocr") {
       ocr = true;
+    } else if (arg === "--quiet") {
+      quiet = true;
     } else if (arg === "--out") {
       if (i + 1 >= argv.length) throw new Error("--out requires a file path");
       outFile = argv[(i += 1)];
@@ -77,7 +81,7 @@ function parseArgs(argv) {
       files.push(arg);
     }
   }
-  return { files, outFile, ocr };
+  return { files, outFile, ocr, quiet };
 }
 
 function baseVerdict(input) {
@@ -93,6 +97,9 @@ function baseVerdict(input) {
     textBytes: 0,
     lineCount: 0,
     outputFile: null,
+    unknownFile: null,
+    unknownCount: null,
+    longPosLines: [],
     counts: null,
     ms: 0,
   };
@@ -109,6 +116,9 @@ function mapResult(input, result, startedAt) {
   v.textBytes = result.textBytes ?? 0;
   v.lineCount = result.lineCount ?? 0;
   v.counts = result.counts ?? null;
+  v.unknownFile = result.posScan?.file ?? null;
+  v.unknownCount = result.posScan?.unknownCount ?? null;
+  v.longPosLines = result.posScan?.longLines ?? [];
 
   if (result.skipped === true) {
 
@@ -181,8 +191,9 @@ async function main() {
     console.error(`[parse-bridge] ${error.message}`);
     process.exit(2);
   }
+  if (args.quiet) muteAdvisories();
   if (!args.outFile || !args.files.length) {
-    console.error("usage: node parse-bridge.mjs --out RESULT.json [--ocr] PDF [PDF ...]");
+    console.error("usage: node parse-bridge.js --out RESULT.json [--ocr] [--quiet] PDF [PDF ...]");
     process.exit(2);
   }
 

@@ -48,9 +48,10 @@ import { TtfFont, glyphContours } from "../read/glyf.js";
 import { glyphSignature } from "../shape/contour.js";
 import { parseTtfCmap } from "../core/ttf-cmap.js";
 import {
-  pickEmbeddedFont, hasMyanmarGlyphs, parsePdfObjects, getStream,
+  pickEmbeddedFont, hasMyanmarGlyphs, getStream, MAX_PDF_OBJECTS,
   parseToUnicodeStream, extractPageLines, findRootPages, collectPages,
 } from "../read/pdf-extract.js";
+import { openPdfScannedObjects } from "../read/pdf-object-file.js";
 import {
   FontResourceLoader, DocumentDecoding, pageFontDecoders, PdfRef,
   detectLegacyLayoutFonts,
@@ -370,8 +371,9 @@ export function buildVectorOutlineLayout(source, layouts, {
 
   if (!disputed.size) return done("no-dispute");
 
-  const objs = objects || parsePdfObjects(
-    Buffer.isBuffer(source) ? source : Buffer.from(source));
+  const scanned = objects ? null : openPdfScannedObjects(source, { maxObjects: MAX_PDF_OBJECTS });
+  const objs = objects || scanned.objects;
+  try {
   const refs = legacyFonts
     || detectLegacyLayoutFonts(objs, getStream, parseToUnicodeStream);
   if (!refs.length) return done("no-legacy-fonts");
@@ -587,4 +589,7 @@ export function buildVectorOutlineLayout(source, layouts, {
     + (evidence.baseFonts.length > 1
       ? `; face subsets ${evidence.baseFonts.map((f) => JSON.stringify(f)).join(", ")}` : ""));
   return result;
+  } finally {
+    scanned?.close();
+  }
 }

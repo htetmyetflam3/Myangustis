@@ -15,7 +15,7 @@ let _idToAscii = null;
 let _burmeseToId = null;
 let _idToBurmese = null;
 
-function loadMappings() {
+function loadMappings(log = true) {
 	if (_asciiToId) return;
 
 	_asciiToId = new Map();
@@ -40,7 +40,7 @@ function loadMappings() {
 		}
 	}
 
-	console.log(
+	if (log) console.log(
 		`[syllableToID] Loaded ` +
 		`${_asciiToId.size} ascii→id, ` +
 		`${_idToBurmese.size} id→burmese`
@@ -48,9 +48,9 @@ function loadMappings() {
 }
 
 
-export function burmeseToId(syllable) {
+export function burmeseToId(syllable, { log = true } = {}) {
 	if (!syllable) return null;
-	loadMappings();
+	loadMappings(log);
 	return _burmeseToId.get(syllable) ?? null;
 }
 

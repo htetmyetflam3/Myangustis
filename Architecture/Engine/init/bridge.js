@@ -3,19 +3,20 @@
 // pipeline when processing the received string; normal output is not written.
 import { randomUUID } from 'node:crypto';
 import { SlotLimiter } from '../../host/job-store.js';
+import { advisoryOnce, muteAdvisories } from '../../host/advisory.js';
 
 const webSlots = new SlotLimiter(2);
 
 // Every lane shares text collection, normalization, segmentation and the
 // per-line entry holder. POS adds the two-full-stop holder after that stage.
-async function* Engine({ sourceText, flag }, hash, positional) {
+async function* Engine({ sourceText, flag, log }, hash, positional) {
   const [{ readFromApi }, { runSegmentor }, { toLineStrings }, formatter] = await Promise.all([
     import('../MonoSyllabism/generators/input.js'),
     import('../MonoSyllabism/main/phoneme/lexer.js'),
     import('../MonoSyllabism/generators/SfomatterForP.js'),
     import('../MonoSyllabism/utilities/formatter.js'),
   ]);
-  const lines = toLineStrings(runSegmentor(readFromApi(sourceText)));
+  const lines = toLineStrings(runSegmentor(readFromApi(sourceText), { log }));
   if (flag === 'syllable') {
     if (positional) {
       const { positionalSyllableLines } = await import('./tokenizer.js');
@@ -31,7 +32,7 @@ async function* Engine({ sourceText, flag }, hash, positional) {
     import('../MonoSyllabism/main/phoneme/phonology.js'),
     import('../bridge/Ginit.js'),
   ]);
-  const tagged = runTagger(fullstopHolder(lines), hash);
+  const tagged = runTagger(fullstopHolder(lines), hash, { log });
   for await (const line of runRuleEngine(tagged, hash)) {
     yield {
       syllable: formatter.toBurmeseLine(line),
@@ -83,13 +84,23 @@ export function BindEngine(request) {
   if (typeof isDebug !== 'boolean') {
     throw new TypeError('BindEngine: debug must be a boolean');
   }
+  const log = request.log === undefined ? true : request.log;
+  if (typeof log !== 'boolean') {
+    throw new TypeError('BindEngine: log must be a boolean');
+  }
+  const quiet = request.quiet === undefined ? false : request.quiet;
+  if (typeof quiet !== 'boolean') {
+    throw new TypeError('BindEngine: quiet must be a boolean');
+  }
   const callerHasHash = request.hash !== undefined && request.hash !== null;
   if (callerHasHash && (typeof request.hash !== 'string' ||
       !/^[A-Za-z0-9._-]{72}$/.test(request.hash) || request.hash.includes('..'))) {
     throw new TypeError('BindEngine: caller hash must be 72 safe characters');
   }
+  if (quiet) muteAdvisories();
+  advisoryOnce('engine', '[Engine] BindEngine accepts sourceText and streams hash-free syllable or POS results as an async iterator. For large files, feed text in manageable lines; use POS for word validation. --quiet mutes advisories for 24 hours.');
   const hash = callerHasHash ? request.hash : randomUUID();
-  const input = { sourceText: request.sourceText, flag: request.flag };
+  const input = { sourceText: request.sourceText, flag: request.flag, log };
   if (isDebug) return debug(input, hash, callerHasHash);
   const result = stream(input, hash, callerHasHash);
   if (callerHasHash && input.flag === 'pos') {

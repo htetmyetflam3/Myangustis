@@ -65,9 +65,6 @@ function* walkLine(burmeseTokens, idTokens) {
 		const burmeseTok = burmeseTokens[pos];
 		const idTok = idTokens[pos];
 
-
-
-
 		if (burmeseTok === BURMESE_FULLSTOP) {
 			yield {
 				syllables: [asEos(BURMESE_FULLSTOP)],
@@ -112,8 +109,8 @@ function* walkLine(burmeseTokens, idTokens) {
 	}
 }
 
-export async function* runTagger(unitGen, hash) {
-	taggerStart({ hash });
+export async function* runTagger(unitGen, hash, { log = true } = {}) {
+	if (log) taggerStart({ hash });
 
 	const startTime = Date.now();
 	let tokenCount = 0;
@@ -121,7 +118,7 @@ export async function* runTagger(unitGen, hash) {
 
 	for await (const lineStr of unitGen) {
 		const burmeseTokens = splitSyllables(lineStr);
-		const idTokens = burmeseTokens.map((t) => burmeseToId(t) ?? t);
+		const idTokens = burmeseTokens.map((t) => burmeseToId(t, { log }) ?? t);
 
 		const lastTok = burmeseTokens[burmeseTokens.length - 1];
 		const hasFullStop = lastTok === BURMESE_FULLSTOP;
@@ -152,11 +149,12 @@ export async function* runTagger(unitGen, hash) {
 		};
 	}
 
-	tagTokenReceived(tokenCount);
-	tagWordCount(wordCount);
-
-	const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-	taggerEnd({ tokenCount, wordCount, elapsedSec: elapsed });
+	if (log) {
+		tagTokenReceived(tokenCount);
+		tagWordCount(wordCount);
+		const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+		taggerEnd({ tokenCount, wordCount, elapsedSec: elapsed });
+	}
 }
 
 export default { runTagger };

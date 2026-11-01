@@ -33,14 +33,13 @@ const { emitEvent } = (await getLogen()).coreLog;
 
 
 
-import fs from "node:fs";
-
 import { orderText } from "../text/cleanup.js";
 import { scoreText } from "../text/mm-score.js";
 import {
-  extractPageLines, parsePdfObjects, getStream, parseToUnicodeStream,
+  extractPageLines, getStream, parseToUnicodeStream, MAX_PDF_OBJECTS,
 } from "../read/pdf-extract.js";
 import { DocumentDecoding, detectLegacyLayoutFonts } from "../read/pdf-fonts.js";
+import { openPdfScannedObjects } from "../read/pdf-object-file.js";
 import { LEGACY_CODE_PAGES, UNICODE_PATH } from "./registry.js";
 import { buildVectorOutlineLayout } from "./vector-repair.js";
 
@@ -138,16 +137,18 @@ export function chooseCodePage(objects, allPages, legacyMap, codePages = LEGACY_
 
 
 export async function prepareVectorLayout(source, log = () => {}) {
-  const input = Buffer.isBuffer(source) || source instanceof Uint8Array
-    ? (Buffer.isBuffer(source) ? source : Buffer.from(source))
-    : fs.readFileSync(source);
-  let objects;
+  let scanned;
   try {
-    objects = parsePdfObjects(input);
+    scanned = openPdfScannedObjects(source, { maxObjects: MAX_PDF_OBJECTS });
   } catch {
     return null;
   }
-  const legacyFonts = detectLegacyLayoutFonts(objects, getStream, parseToUnicodeStream);
-  if (!legacyFonts.length) return null;
-  return buildVectorOutlineLayout(input, LEGACY_CODE_PAGES, { objects, legacyFonts, log });
+  try {
+    const { objects } = scanned;
+    const legacyFonts = detectLegacyLayoutFonts(objects, getStream, parseToUnicodeStream);
+    if (!legacyFonts.length) return null;
+    return buildVectorOutlineLayout(source, LEGACY_CODE_PAGES, { objects, legacyFonts, log });
+  } finally {
+    scanned.close();
+  }
 }

@@ -59,7 +59,7 @@ function createPraserParser(label) {
           filename,
           inputKind: intent.inputFormat,
           outPath,
-        }, 'site', { ownerKey: options.ownerKey });
+        }, 'site', options.authenticatedUser);
         await fs.chmod(reply.file || outPath, 0o600);
       } catch (err) {
         await fs.unlink(outPath).catch(() => {});

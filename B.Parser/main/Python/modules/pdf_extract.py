@@ -628,7 +628,7 @@ def fix_digit_consonant_confusion(text):
 
 
 _PREPOSED_RE = re.compile(
-    r"([ြေ]+)"                       # the preposed vowel(s)
+    r"((?:ေ?ြ[ွှ]+)|[ြေ]+)"         # preposed slots, including compound ra
     r"([က-အ၀၈၇])"                 # its base
     r"(င်္)?"                       # kinzi, written after the base
     r"((?:္[က-အ])*)"                # any stacked consonants
@@ -665,10 +665,11 @@ def legacy_ayar_to_unicode(text, *, apply_aa_vowel_rule=True):
     """Put Ayar's visual/legacy order into normal Myanmar code-point order.
 
     This is intentionally small and conservative.  It mirrors the established
-    Ayar -> Myanmar3 conversion rules: move preposed ြ/ေ after the base,
-    move င်္ clusters into their Unicode order, and remove the legacy ZWSP.
+    Ayar -> Myanmar3 conversion rules: move preposed ြ/ေ after the base
+    and move င်္ clusters into their Unicode order. Preserve zero-width text.
     """
-    text = text.replace("\u200b", "")
+    # A combined kinzi/vowel glyph can precede medials in legacy order.
+    text = re.sub(r"([က-အ])(င်္)([ိီံ])([ျြွှ]+)", r"\1\2\4\3", text)
     # ONE left-to-right pass for the preposed vowels. Two passes cannot work:
     # the first would place သေကင်္တ correctly as သင်္ကေတ, and the second
     # would then see that same ေ sitting in front of တ and move it AGAIN,
@@ -679,9 +680,13 @@ def legacy_ayar_to_unicode(text, *, apply_aa_vowel_rule=True):
     #   base            ေက        -> ကေ
     #   stacked pair    ေဏ္ဏ     -> ဏ္ဏေ      (not ဏေ္ဏ)
     #   kinzi           ေကင်္    -> င်္ကေ     (kinzi leads the cluster)
-    text = _PREPOSED_RE.sub(
-        lambda m: (m.group(3) or "") + m.group(2) + (m.group(4) or "") + m.group(1),
-        text)
+    def reorder_preposed(match):
+        vowel = match.group(1)
+        if vowel.startswith("ေြ") and ("ွ" in vowel or "ှ" in vowel):
+            vowel = vowel[1:] + "ေ"
+        return (match.group(3) or "") + match.group(2) + (match.group(4) or "") + vowel
+
+    text = _PREPOSED_RE.sub(reorder_preposed, text)
 
     # A kinzi that is NOT followed by a consonant cannot belong to one on its
     # right, so it belongs to the cluster on its left and moves in front of
@@ -706,8 +711,8 @@ def legacy_ayar_to_unicode(text, *, apply_aa_vowel_rule=True):
     text = re.sub(r"([\u1000-\u1021][\u102b-\u103e]*)"
                   r"(\u1004\u103a\u1039)(?![\u1000-\u1021])",
                   r"\2\1", text)
-    # Only pair the immediately following ya/ra with its base; leave the
-    # remaining marks in their original order.
+    # Pair medials with the base before ေ, including a combined ya/wa/ha.
+    text = re.sub(r"([က-အ၀၇၈])ေ([ျြ]?)([ွှ]+)", r"\1\2\3ေ", text)
     text = re.sub(r"([က-အ၀၇၈])(ေ)([ျြ])", r"\1\3\2", text)
     text = re.sub(r"([က-အ])([က-အ])(င်္)", r"\1\3\2", text)
     # Ayar writes ဦး as ဦး in a number of older subsets.

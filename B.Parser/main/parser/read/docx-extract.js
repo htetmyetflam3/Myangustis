@@ -1,4 +1,6 @@
 import fs from "node:fs";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { readCentralDirectory, readEntry } from "../core/zip.js";
 import { ValueError } from "../core/pylib.js";
 import { OWNER_PARSER_WORKER, resourceLimit } from "../core/limits.js";
@@ -12,6 +14,12 @@ export const MAX_DOCX_ENTRIES = resourceLimit("PRASER_MAX_DOCX_ENTRIES", 4096, 2
 export const MAX_MEMBER_RATIO = OWNER_PARSER_WORKER ? Infinity : 200;
 
 const W_URI = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const DRAWING_URI = "http://schemas.openxmlformats.org/drawingml/2006/main";
+const VML_URI = "urn:schemas-microsoft-com:vml";
+const RELATIONSHIP_URIS = new Set([
+  "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+  "http://purl.oclc.org/ooxml/officeDocument/relationships",
+]);
 export const DOCUMENT_XML = "word/document.xml";
 
 
@@ -128,7 +136,14 @@ function* walkXml(xml) {
     scope.push({ selfClosing });
 
     const [uri, local] = parseName(rawName);
-    yield { kind: "open", uri, local, selfClosing, attrs };
+    const imageNode = (uri === DRAWING_URI && local === "blip") || (uri === VML_URI && local === "imagedata");
+    const namespacedAttrs = imageNode ? attrs.map(([name, value]) => {
+      const colon = name.indexOf(":");
+      return colon < 0
+        ? { uri: "", local: name, value }
+        : { uri: map.get(name.slice(0, colon)) ?? "", local: name.slice(colon + 1), value };
+    }) : [];
+    yield { kind: "open", uri, local, selfClosing, attrs, namespacedAttrs };
     if (selfClosing) {
       nsStack.pop();
       scope.pop();
@@ -138,11 +153,13 @@ function* walkXml(xml) {
 }
 
 
-export function extractDocxParagraphs(docxPath, { fontNamesByParagraph = null } = {}) {
+export function extractDocxParagraphs(docxPath, {
+  fontNamesByParagraph = null, imageDir = null, imageFiles = null,
+} = {}) {
   const buf = Buffer.isBuffer(docxPath) || docxPath instanceof Uint8Array
     ? Buffer.from(docxPath.buffer, docxPath.byteOffset, docxPath.byteLength)
     : fs.readFileSync(docxPath);
-  return parseDocxParagraphs(buf, { fontNamesByParagraph });
+  return parseDocxParagraphs(buf, { fontNamesByParagraph, imageDir, imageFiles });
 }
 
 
@@ -226,39 +243,63 @@ function orderedParts(names) {
   return ordered;
 }
 
-export function parseDocxParagraphs(zipBuf, { includeImageMarkers = false, fontNamesByParagraph = null } = {}) {
+function imageRelationships(zipBuf, entries, part) {
+  const relsName = path.posix.join(path.posix.dirname(part), "_rels", `${path.posix.basename(part)}.rels`);
+  const info = entries.get(relsName);
+  const relationships = new Map();
+  if (!info) return relationships;
+  for (const ev of walkXml(readMemberXml(zipBuf, info, relsName))) {
+    if (ev.kind !== "open" || ev.local !== "Relationship") continue;
+    const attrs = Object.fromEntries(ev.attrs);
+    if (!attrs.Id || !attrs.Target || !String(attrs.Type || "").endsWith("/image")
+        || String(attrs.TargetMode || "").toLowerCase() === "external") continue;
+    let target;
+    try { target = decodeURIComponent(attrs.Target.split("#", 1)[0]); } catch { continue; }
+    if (target.includes("\\") || target.includes("\0") || target.includes("://")) continue;
+    const member = target.startsWith("/")
+      ? path.posix.normalize(target).slice(1)
+      : path.posix.normalize(path.posix.join(path.posix.dirname(part), target));
+    if (!member.startsWith("../") && entries.has(member)) relationships.set(attrs.Id, member);
+  }
+  return relationships;
+}
+
+export function parseDocxParagraphs(zipBuf, {
+  imageDir = null, imageFiles = null, fontNamesByParagraph = null,
+} = {}) {
   const entries = validateDocxArchive(zipBuf);
+  if (imageDir && !Array.isArray(imageFiles)) throw new TypeError("imageFiles must be an array for DOCX image extraction");
   const paragraphs = [];
+  const images = new Map();
+  const markerPrefix = imageDir ? `\uE000OCR-${randomUUID()}-` : "";
+  const registerImage = (member) => {
+    if (!member || !entries.has(member)) return "";
+    if (images.has(member)) return images.get(member);
+    const id = String(images.size + 1).padStart(4, "0");
+    const name = path.posix.basename(member).replace(/[^a-zA-Z0-9._-]/gu, "_");
+    fs.mkdirSync(imageDir, { recursive: true, mode: 0o700 });
+    const target = path.join(imageDir, `${id}-${name}`);
+    const bytes = readEntry(zipBuf, entries.get(member), { maxOutputBytes: (MAX_MEMBER_MB + 1) * 1024 * 1024 });
+    fs.writeFileSync(target, bytes, { flag: "wx", mode: 0o600 });
+    const marker = `${markerPrefix}${id}\uE001`;
+    imageFiles.push({ id, path: target, marker });
+    images.set(member, marker);
+    return marker;
+  };
   for (const name of orderedParts([...entries.keys()])) {
     const info = entries.get(name);
     if (!info) continue;
-    paragraphs.push(...collectParagraphs(readMemberXml(zipBuf, info, name),
-      { includeImageMarkers, fontNamesByParagraph }));
+    const relationships = imageDir ? imageRelationships(zipBuf, entries, name) : null;
+    const resolveImage = relationships ? (id) => registerImage(relationships.get(id)) : null;
+    paragraphs.push(...collectParagraphs(readMemberXml(zipBuf, info, name), { resolveImage, fontNamesByParagraph }));
   }
   return paragraphs;
 }
 
 
-export function extractDocxImages(zipBuf, directory) {
-  const entries = validateDocxArchive(Buffer.isBuffer(zipBuf) ? zipBuf : Buffer.from(zipBuf));
-  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
-  const files = [];
-  for (const name of [...entries.keys()].filter((n) => /^word\/media\//i.test(n) && !n.endsWith("/")).sort()) {
-    const info = entries.get(name);
-    const safe = `${String(files.length + 1).padStart(4, "0")}-${name.slice(name.lastIndexOf("/") + 1)}`;
-    const target = fs.realpathSync(directory) + "/" + safe;
-    const bytes = readEntry(zipBuf, info, { maxOutputBytes: (MAX_MEMBER_MB + 1) * 1024 * 1024 });
-    fs.writeFileSync(target, bytes, { mode: 0o600 });
-    files.push({ id: String(files.length + 1).padStart(4, "0"), path: target });
-  }
-  return files;
-}
-
-
-export function collectParagraphs(xml, { includeImageMarkers = false, fontNamesByParagraph = null } = {}) {
+export function collectParagraphs(xml, { resolveImage = null, fontNamesByParagraph = null } = {}) {
   const paragraphs = [];
   const paragraphFonts = [];
-  let imageMarkerCount = 1;
   const openParagraphs = [];
   const openRuns = [];
   const elStack = [];        
@@ -284,9 +325,13 @@ export function collectParagraphs(xml, { includeImageMarkers = false, fontNamesB
         openRuns[openRuns.length - 1].fonts = themed ? [""] : relevant.map(([, value]) => value || "");
       }
       if (openParagraphs.length) {
-        if (includeImageMarkers && ev.uri === W_URI && ev.local === "drawing") {
-          const marker = `[[IMAGE_${String(imageMarkerCount++).padStart(4, "0")}]]`;
-          for (const ctx of openParagraphs) ctx.parts.push(marker);
+        const imageNode = (ev.uri === DRAWING_URI && ev.local === "blip")
+          || (ev.uri === VML_URI && ev.local === "imagedata");
+        if (resolveImage && imageNode) {
+          const reference = ev.namespacedAttrs.find((attr) => RELATIONSHIP_URIS.has(attr.uri)
+            && (attr.local === "embed" || attr.local === "id"));
+          const marker = reference ? resolveImage(reference.value) : "";
+          if (marker) for (const ctx of openParagraphs) ctx.parts.push(marker);
         } else if (ev.uri === W_URI && ev.local === "br") {
           for (const ctx of openParagraphs) ctx.parts.push("\n");
         } else if (ev.uri === W_URI && ev.local === "tab") {

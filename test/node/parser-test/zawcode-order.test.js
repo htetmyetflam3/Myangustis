@@ -1,10 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { getEngineNormalize } from "../../../B.Parser/_path.js";
 import { arrangeZawCodeOrder, orderZawCodePages } from "../../../B.Parser/main/parser/text/zawcode-order.js";
 import { repairFromScanVerdict } from "../../../B.Parser/main/parser/text/repair.js";
 import { scanText } from "../../../B.Parser/main/parser/text/scan.js";
-import { finishSharedPage, markOrderAligned, normalizePageLines } from "../../../B.Parser/main/parser/text/page-decision.js";
+import { markOrderAligned, normalizePageLines } from "../../../B.Parser/main/parser/text/page-decision.js";
+import { finishPageToFile } from "../../../B.Parser/main/parser/text/page-file-decision.js";
 
 const E = "\u1031";
 const RA = "\u103C";
@@ -176,13 +180,22 @@ test("Unicode mark order ignores spaces and accepts canonical asat order", () =>
 test("pass-through and ZawCode normalizers preserve zero-width characters", async () => {
   const normalize = await getEngineNormalize();
   const zeroWidth = "\u200b";
-  const unchanged = finishSharedPage(zeroWidth + "ြ", { normalize });
-  assert.equal(unchanged.decision, "aligned");
-  assert.equal(unchanged.text, zeroWidth + "ြ");
-  const ordered = finishSharedPage(zeroWidth + "ြက", { normalize });
-  assert.equal(ordered.decision, "zawcode");
-  assert.equal(ordered.text, zeroWidth + "ကြ");
-  assert.equal(finishSharedPage("#\u00a0\u200d", { normalize }).text, "#\u00a0\u200d");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "zawcode-page-test-"));
+  const finish = (input) => {
+    const store = { *lines() { yield [0, 0, 10, input]; } };
+    const result = finishPageToFile(store, { directory: dir, parsingPath: "zawgyi-one", normalize });
+    try { return { decision: result.decision, text: [...result.text.chunks()].join("") }; }
+    finally { result.text.close(); }
+  };
+  try {
+    const unchanged = finish(zeroWidth + "ြ");
+    assert.equal(unchanged.decision, "aligned");
+    assert.equal(unchanged.text, zeroWidth + "ြ");
+    const ordered = finish(zeroWidth + "ြက");
+    assert.equal(ordered.decision, "zawcode");
+    assert.equal(ordered.text, zeroWidth + "ကြ");
+    assert.equal(finish("#\u00a0\u200d").text, "#\u00a0\u200d");
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
 test("normalization is a lazy generator with one Engine call per line", () => {

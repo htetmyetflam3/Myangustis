@@ -5,16 +5,11 @@ import { openPdf, renderPageCanvas, cropCanvasRgba } from '../../../../B.Parser/
 import { Manager } from '../../../../B.Parser/main/parser/manager.js';
 import { getDefaultVectorIndex } from '../../../../B.Parser/main/parser/shape/match.js';
 import { matchPixelsToVector } from '../../../../B.Parser/main/parser/codepage/vote.js';
-import { loadScanDictionary, dictionaryWords, scanBrokenSpans } from '../../../../B.Parser/main/parser/text/scan.js';
-import { repairText, HOMOGLYPH_PAIRS } from '../../../../B.Parser/main/parser/text/repair.js';
+import { inspectPosCandidate, scanBrokenSpansWithPos, repairTextWithPos, HOMOGLYPH_PAIRS } from '../../../../B.Parser/main/parser/text/repair.js';
 import { normalizeText } from '../../../../B.Parser/main/parser/text/normalize.js';
 import { MAX_OCR_PIXELS } from '../../../../B.Parser/main/parser/core/limits.js';
 
 const reply = (v) => process.stdout.write('OCR_RESULT ' + JSON.stringify(v) + '\n');
-const data = loadScanDictionary();
-const words = dictionaryWords(data);
-if (!words?.size) throw new Error('OCR scan dictionary is empty; refusing unguarded repair');
-const standalone = data?.mapData?.newClause?.standalone || [];
 const index = getDefaultVectorIndex();
 const manager = new Manager();
 try {
@@ -23,7 +18,7 @@ try {
   await manager.close();
   throw error;
 }
-reply({ ready: true, vectorEntries: index.entries.length, dictionaryWords: words.size });
+reply({ ready: true, vectorEntries: index.entries.length, wordValidation: 'engine-pos' });
 
 function isHomoglyphOnly(a, b) {
   const x = [...a], y = [...b];
@@ -42,7 +37,7 @@ async function run(request) {
         const rendered = await renderPageCanvas(page, 3, { maxPixels: MAX_OCR_PIXELS });
         const ocr = await manager.dispatchOcrImageDetailed(rendered.canvas.toBuffer('image/png'));
         let text = ocr.text;
-        const spans = scanBrokenSpans(text, { dictionary: words, standalone });
+        const spans = await scanBrokenSpansWithPos(text);
 
         const edits = [];
         let cursor = 0;
@@ -57,12 +52,14 @@ async function run(request) {
           const match = matchPixelsToVector(crop, { index });
           if (!match.accepted || !match.text || isHomoglyphOnly(region.text, match.text)) continue;
           const candidate = normalizeText(match.text);
-          if (!words.has(candidate) || words.has(normalizeText(region.text))) continue;
+          const candidatePos = await inspectPosCandidate(candidate);
+          const originalPos = await inspectPosCandidate(normalizeText(region.text));
+          if (!candidatePos.singleWord || originalPos.singleWord) continue;
           edits.push({ start: at, end: cursor, text: candidate });
         }
         for (const edit of edits.reverse()) text = text.slice(0, edit.start) + edit.text + text.slice(edit.end);
         vectorRepairs += edits.length;
-        text = repairText(normalizeText(text), words).text;
+        text = (await repairTextWithPos(normalizeText(text))).text;
         chars += text.trim().length;
         fs.writeSync(fd, JSON.stringify({ page: n, text }) + '\n');
         process.stderr.write(`[ocr-page] ${n}/${doc.numPages}\n`);

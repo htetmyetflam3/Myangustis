@@ -1,9 +1,16 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
-import { getEngineData } from "../../../../index-path.js";
-const { readSecureJson, readMasterJson } = await getEngineData();
-import { loadMapJson, mapNameForPath } from "../core/json-map.js";
+import readline from "node:readline";
+import { randomUUID } from "node:crypto";
+import { getEngineBinding } from "../../../../index-path.js";
+import { loadMapJson } from "../core/json-map.js";
+import { MAX_LINE_BYTES } from "../../../../Architecture/Engine/MonoSyllabism/generators/SfomatterForP.js";
+import { textLines } from "./page-file-decision.js";
 import { MARKS as MM_MARKS } from "./mm-score.js";
+
+// Do not read the Engine master or build a dictionary matcher to validate
+// words. Ask BindEngine's hash-free POS lane and keep its actual tagged output.
 
 
 
@@ -124,114 +131,6 @@ const RULES = [
   ["virama", "U+1039 with nothing stacked after it", findVirama],
 ];
 
-function loadMap(filePath) {
-  if (!filePath) return null;
-  const absolute = path.resolve(filePath);
-  if (absolute.endsWith(".enc")) return readSecureJson(absolute);
-  if (absolute.endsWith(".db") || absolute.endsWith(".sqlite") || absolute.endsWith(".sqlite3")) {
-    throw new Error("SQLite dictionary scanning is not available in the JavaScript scanner; export the master_json table to JSON or .enc first");
-  }
-  const mapName = mapNameForPath(absolute);
-  return mapName ? loadMapJson(mapName) : JSON.parse(fs.readFileSync(absolute, "utf8"));
-}
-
-function dictionaryWords(data) {
-  if (!data) return null;
-  const result = new Set();
-  const resolution = data.resolution || {};
-  for (const section of Object.values(resolution)) {
-    if (!section || typeof section !== "object") continue;
-    for (const form of Object.keys(section)) {
-      const value = form.replace(/\s+/gu, "");
-      if (value) result.add(value);
-    }
-  }
-  const walk = (value) => {
-    if (typeof value === "string") {
-      let word = value.replace(/\s+/gu, "");
-      if (!word || word.startsWith("!")) return;
-      word = word.replace(/\.[wcp]$/u, "");
-      if (word) result.add(word);
-    } else if (Array.isArray(value)) value.forEach(walk);
-    else if (value && typeof value === "object") Object.values(value).forEach(walk);
-  };
-  walk(Object.fromEntries(Object.entries(data).filter(([key]) => key !== "mapData")));
-  return result;
-}
-
-let scanDictionaryCache = undefined;
-
-
-
-
-
-
-
-function loadScanDictionary() {
-  if (scanDictionaryCache !== undefined) return scanDictionaryCache;
-
-
-
-  const override = process.env.PRASER_SCAN_DICTIONARY;
-  try {
-    scanDictionaryCache = override ? (loadMap(path.resolve(override)) ?? {}) : readMasterJson();
-  } catch {
-    scanDictionaryCache = {};
-  }
-  return scanDictionaryCache;
-}
-
-function segmentable(token, dictionary, memo, longest) {
-  if (dictionary.has(token)) return true;
-  if (memo.has(token)) return memo.get(token);
-  memo.set(token, false);
-  for (let end = Math.min(token.length, longest); end > 0; end -= 1) {
-    if (dictionary.has(token.slice(0, end)) && segmentable(token.slice(end), dictionary, memo, longest)) {
-      memo.set(token, true);
-      return true;
-    }
-  }
-  return false;
-}
-
-
-
-
-
-
-const longestCache = new WeakMap();
-function longestWordLength(dictionary) {
-  const hit = longestCache.get(dictionary);
-  if (hit && hit.size === dictionary.size) return hit.longest;
-  const longest = Math.max(0, ...[...dictionary].map((word) => word.length));
-  longestCache.set(dictionary, { size: dictionary.size, longest });
-  return longest;
-}
-
-function unknownWords(text, dictionary, standalone = []) {
-  const counts = new Map();
-  const first = new Map();
-  const positions = [];
-  const memo = new Map();
-  const longest = longestWordLength(dictionary);
-  let total = 0;
-  for (const [token, index] of words(text)) {
-    if (token.length < 2 || /^[\u1040-\u1049]+$/u.test(token)) continue;
-    let core = token;
-    for (const form of [...standalone].sort((a, b) => b.length - a.length)) {
-      if (core.startsWith(form) && core.length > form.length) core = core.slice(form.length);
-      if (core.endsWith(form) && core.length > form.length) core = core.slice(0, -form.length);
-    }
-    total += 1;
-    if (core && !segmentable(core, dictionary, memo, longest)) {
-      counts.set(token, (counts.get(token) || 0) + 1);
-      if (!first.has(token)) first.set(token, index);
-      positions.push(index);
-    }
-  }
-  return { counts, first, total, positions };
-}
-
 function reportClusters(text, hits, limit) {
   const grouped = new Map();
   for (const index of hits) {
@@ -255,16 +154,11 @@ function reportClusters(text, hits, limit) {
     });
 }
 
-export function scanText(text, { dictionary = null, standalone = [], perRule = 25 } = {}) {
+export function scanText(text, { perRule = 25 } = {}) {
   const report = {};
   for (const [key, title, finder] of RULES) {
     const hits = finder(text);
     report[key] = { total: hits.length, distinct: new Set(hits.map((i) => clusterAt(text, i))).size, title, clusters: reportClusters(text, hits, perRule) };
-  }
-  if (dictionary) {
-    const unknown = unknownWords(text, dictionary, standalone);
-    const hits = [...unknown.counts.entries()].flatMap(([word, count]) => Array.from({ length: count }, () => unknown.first.get(word)));
-    report.unknown = { total: hits.length, distinct: unknown.counts.size, tokens: unknown.total, title: "not covered by dictionary", clusters: reportClusters(text, hits, perRule) };
   }
   return report;
 }
@@ -292,20 +186,13 @@ function tokenSpanAt(text, index) {
 
 
 export function scanBrokenSpans(text, {
-  dictionary = null,
-  standalone = [],
-  rules = ["orphan", "impossible", "stray", "virama", "unknown"],
+  rules = ["orphan", "impossible", "stray", "virama"],
 } = {}) {
   const wanted = new Set(rules);
   const hits = [];
   for (const [key, , finder] of RULES) {
     if (!wanted.has(key)) continue;
     for (const index of finder(text)) hits.push([key, index]);
-  }
-  if (dictionary && wanted.has("unknown")) {
-    for (const index of unknownWords(text, dictionary, standalone).positions) {
-      hits.push(["unknown", index]);
-    }
   }
   const bySpan = new Map();
   for (const [rule, index] of hits) {
@@ -342,10 +229,251 @@ export function formatScanReport(report, { source = "", totalChars = 0 } = {}) {
 
 
 
-export function clauseModel(filePath) {
-  const mapData = (loadMap(filePath) || {}).mapData || {};
-  const newClause = mapData.newClause || {};
-  return [newClause.standalone || [], newClause.stick || []];
+export { RULES };
+
+// Change this one value if a book needs a shorter page-number heuristic.
+export const MAX_PAGE_NUMBER_DIGITS = 4;
+const NON_WORD_TAGS = new Set(['pan', 'eos', 'en', 'count', 'phone', 'addr', 'year', 'exactdate', 'page number', 'page marker']);
+const TAGGED_TOKEN = /^(.*?)\{([^{}]+)\}$/u;
+const PAGE_MARKER = /^\s*(?:-{2,}\s*)?page\s*[-:]?\s*([0-9၀-၉]+)\s*(?:-{2,})?\s*$/iu;
+
+function pageNumber(value) {
+  const digits = String(value).replace(/[၀-၉]/gu, (ch) => String('၀၁၂၃၄၅၆၇၈၉'.indexOf(ch)));
+  const result = Number(digits);
+  return Number.isSafeInteger(result) && result > 0 ? result : null;
 }
 
-export { loadMap, loadScanDictionary, dictionaryWords, unknownWords, RULES };
+export function isPageNumberLine(value) {
+  const line = String(value ?? '').trim();
+  return /^[0-9၀-၉]+$/u.test(line) && line.length <= MAX_PAGE_NUMBER_DIGITS;
+}
+
+function posSourceLine(source) {
+  // The Engine mapper also treats Latin letters as internal syllable codes.
+  // Do not misreport English as Burmese unknowns; retain the untouched source
+  // line in the report and let the Engine classify the remaining text.
+  if (!/\p{Script=Myanmar}/u.test(source) && !/^[\s0-9.,/+\-]+$/u.test(source)) return '';
+  return source.replace(/\p{Script=Latin}+/gu, ' ');
+}
+
+export function parseTaggedLine(raw) {
+  return raw.split('  ').map((part) => part.trim()).filter(Boolean).map((formatted) => {
+    const match = TAGGED_TOKEN.exec(formatted);
+    if (!match) return { formatted, word: formatted, tags: [], kind: 'other' };
+    const tags = match[2].split(',').map((tag) => tag.trim()).filter(Boolean);
+    const unknown = tags.length === 1 && tags[0] === '?';
+    const word = tags.some((tag) => tag !== '?' && !NON_WORD_TAGS.has(tag));
+    return { formatted, word: match[1], tags, kind: unknown ? 'unknown' : word ? 'known' : 'other' };
+  });
+}
+
+export async function tagPosLine(sourceText, bindEngine = null) {
+  const bind = bindEngine ?? await getEngineBinding();
+  const tagged = bind({ flag: 'pos', sourceText, log: false });
+  let rawPos = '';
+  for await (const unit of tagged) {
+    if (typeof unit?.rawPos !== 'string') throw new TypeError('Engine POS output must include rawPos');
+    if (rawPos) rawPos += '  ';
+    rawPos += unit.rawPos;
+  }
+  return rawPos;
+}
+
+function unknownContexts(tokens) {
+  const results = [];
+  for (let i = 0; i < tokens.length;) {
+    if (tokens[i].kind !== 'unknown') { i += 1; continue; }
+    let end = i + 1;
+    while (end < tokens.length && tokens[end].kind === 'unknown') end += 1;
+    const before = [];
+    for (let p = i - 1; p >= 0 && before.length < 2; p -= 1) {
+      if (tokens[p].kind === 'known') before.unshift(tokens[p]);
+    }
+    const after = [];
+    const wantedAfter = end - i > 1 ? 2 : 1;
+    for (let p = end; p < tokens.length && after.length < wantedAfter; p += 1) {
+      if (tokens[p].kind === 'known') after.push(tokens[p]);
+    }
+    results.push({
+      count: end - i,
+      context: [...before, ...tokens.slice(i, end), ...after].map((token) => token.formatted).join('  '),
+    });
+    i = end;
+  }
+  return results;
+}
+
+function writeAll(fd, value) {
+  const bytes = Buffer.from(value, 'utf8');
+  let offset = 0;
+  while (offset < bytes.length) {
+    const count = fs.writeSync(fd, bytes, offset, bytes.length - offset);
+    if (!count) throw new Error('Could not write the POS scan file');
+    offset += count;
+  }
+}
+
+async function* readRecords(file) {
+  const input = fs.createReadStream(file, { encoding: 'utf8' });
+  const lines = readline.createInterface({ input, crlfDelay: Infinity });
+  try {
+    for await (const line of lines) if (line) yield JSON.parse(line);
+  } finally {
+    lines.close();
+    input.destroy();
+  }
+}
+
+// A second writer records source pages while the normal document writer runs.
+// Only after it closes do we stream each source line through the hash-free POS
+// bridge. A private staging file lets the tagged output replace the same spool
+// without truncating it while it is being read.
+export class PosScanner {
+  constructor({ directory = os.tmpdir(), bindEngine = null } = {}) {
+    this.directory = fs.mkdtempSync(path.join(directory, 'linga-pos-scan-'));
+    fs.chmodSync(this.directory, 0o700);
+    this.file = path.join(this.directory, 'pages.txt');
+    try {
+      this.fd = fs.openSync(this.file, 'wx', 0o600);
+    } catch (error) {
+      fs.rmSync(this.directory, { recursive: true, force: true });
+      throw error;
+    }
+    this.binding = bindEngine;
+    this.closed = false;
+    this.complete = false;
+    this.unpagedStarted = false;
+  }
+
+  async writePage(page, chunks) {
+    if (this.closed || this.complete) throw new Error('POS scanner is closed');
+    if (page !== null && (!Number.isInteger(page) || page < 1)) throw new TypeError('Expected a positive page number or null');
+    if (page !== null || !this.unpagedStarted) {
+      writeAll(this.fd, `${JSON.stringify({ type: 'page', page, marker: page === null ? null : `--- Page ${page} ---` })}\n`);
+      this.unpagedStarted = page === null;
+    }
+    for (const line of textLines(chunks)) {
+      writeAll(this.fd, `${JSON.stringify({ type: 'line', text: line })}\n`);
+    }
+  }
+
+  async finish(outputPath) {
+    if (this.complete || this.closed) throw new Error('POS scanner is closed');
+    if (typeof outputPath !== 'string' || !outputPath) throw new TypeError('An output path is required for the POS scan');
+    this.complete = true;
+    try {
+      fs.closeSync(this.fd);
+      this.fd = null;
+      const taggedPath = path.join(this.directory, 'tagged-stage.txt');
+      const longLines = [];
+      const taggedFd = fs.openSync(taggedPath, 'wx', 0o600);
+      let physicalPage = false;
+      let page = null;
+      let lineNumber = 0;
+      let sequence = 0;
+      try {
+        for await (const record of readRecords(this.file)) {
+          if (record.type === 'page') {
+            page = record.page;
+            physicalPage = page !== null;
+            lineNumber = 0;
+            continue;
+          }
+          const source = record.text;
+          const marker = PAGE_MARKER.exec(source);
+          if (marker && !physicalPage) {
+            page = pageNumber(marker[1]);
+            lineNumber = 0;
+            continue;
+          }
+          lineNumber += 1;
+          sequence += 1;
+          if (Buffer.byteLength(source, 'utf8') > MAX_LINE_BYTES) longLines.push({ page, line: lineNumber });
+          let rawPos = '';
+          const numericPage = isPageNumberLine(source);
+          if (numericPage) {
+            rawPos = `${source.trim()}{page number}`;
+          } else if (marker) {
+            rawPos = `${source.trim()}{page marker}`;
+          } else {
+            const input = posSourceLine(source);
+            if (input.trim()) {
+              this.binding ??= await getEngineBinding();
+              rawPos = await tagPosLine(input, this.binding);
+            }
+          }
+          writeAll(taggedFd, `${JSON.stringify({ type: 'line', page, line: lineNumber, sequence, source, rawPos, numericPage })}\n`);
+        }
+      } finally {
+        fs.closeSync(taggedFd);
+      }
+      fs.renameSync(taggedPath, this.file);
+
+      // A physical PDF page or explicit Page-N marker is authoritative. In an
+      // unpaged document, a short numeric footer can label the lines before it.
+      const ranges = [];
+      let first = null;
+      for await (const record of readRecords(this.file)) {
+        if (record.page !== null) { first = null; continue; }
+        first ??= record.sequence;
+        const number = record.numericPage ? pageNumber(record.source.trim()) : null;
+        if (number !== null) {
+          ranges.push({ first, last: record.sequence, page: number });
+          first = null;
+        }
+      }
+
+      const destination = path.resolve(`${outputPath}.unknown.txt`);
+      fs.mkdirSync(path.dirname(destination), { recursive: true });
+      const outputStage = path.join(path.dirname(destination), `.${path.basename(destination)}-${randomUUID()}.tmp`);
+      let outputFd = null;
+      let unknownCount = 0;
+      let contextCount = 0;
+      let rangeIndex = 0;
+      try {
+        outputFd = fs.openSync(outputStage, 'wx', 0o600);
+        for await (const record of readRecords(this.file)) {
+          while (rangeIndex < ranges.length && ranges[rangeIndex].last < record.sequence) rangeIndex += 1;
+          const range = ranges[rangeIndex];
+          const fallback = record.page === null && range && record.sequence >= range.first && record.sequence <= range.last;
+          const foundPage = fallback ? range.page : record.page;
+          const foundLine = fallback ? record.sequence - range.first + 1 : record.line;
+          const hits = unknownContexts(parseTaggedLine(record.rawPos));
+          for (const hit of hits) {
+            unknownCount += hit.count;
+            contextCount += 1;
+            writeAll(outputFd, `Page ${foundPage ?? 'unknown'}, line ${foundLine}\nOriginal: ${record.source}\nContext: ${hit.context}\n\n`);
+          }
+        }
+        fs.fsyncSync(outputFd);
+        fs.closeSync(outputFd);
+        outputFd = null;
+        fs.renameSync(outputStage, destination);
+      } finally {
+        if (outputFd !== null) fs.closeSync(outputFd);
+        fs.rmSync(outputStage, { force: true });
+      }
+      return { file: destination, unknownCount, contextCount, longLines };
+    } finally {
+      await this.close();
+    }
+  }
+
+  async close() {
+    if (this.closed) return;
+    this.closed = true;
+    if (this.fd !== null) fs.closeSync(this.fd);
+    this.fd = null;
+    fs.rmSync(this.directory, { recursive: true, force: true });
+  }
+}
+
+export async function scanTextWithPos(text, { page = null, directory, bindEngine, outputPath } = {}) {
+  const scanner = new PosScanner({ directory, bindEngine });
+  try {
+    await scanner.writePage(page, [String(text ?? '')]);
+    return await scanner.finish(outputPath);
+  } finally {
+    await scanner.close();
+  }
+}

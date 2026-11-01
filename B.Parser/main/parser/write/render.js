@@ -8,6 +8,9 @@ import {
   registerPdfFonts,
   applyPdfRole,
 } from "./fonts.js";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { OUTPUT_FONT_DIR } from "../../../_path.js";
 
 const BURMESE_DOCX_NAME = BURMESE_FONTS[DEFAULT_BURMESE_KEY].docx;
@@ -15,6 +18,7 @@ import { PdfWriter } from "./pdf-writer.js";
 import { writeOptimizedPdf } from "./pdf-optimize.js";
 import { ZipStreamWriter } from "../core/zip.js";
 import { pyRound, RuntimeError } from "../core/pylib.js";
+import { textLines } from "../text/page-file-decision.js";
 
 export function esc(s) {
   
@@ -32,7 +36,7 @@ export function pdfLineHeight(pdf, role) {
 
 
 
-export async function writePdf(outPath, texts, metadata, pdfPath, npages, log = () => {}) {
+export async function writePdf(outPath, texts, metadata, pdfPath, npages, log = () => {}, workDir = null) {
   const engReg = ANONYMOUS_PRO_FILES[""];
   if (!engReg || !isFile(engReg)) {
     throw new RuntimeError(
@@ -40,7 +44,11 @@ export async function writePdf(outPath, texts, metadata, pdfPath, npages, log = 
     );
   }
 
-  const pdf = new PdfWriter();
+  const directory = fs.mkdtempSync(workDir
+    ? path.join(workDir, "pdf-output-") : path.join(os.tmpdir(), "linga-pdf-output-"));
+  let pdf;
+  try {
+  pdf = new PdfWriter(directory);
   pdf.setFooter((self) => {
     self.setY(-15);
     applyPdfRole(self, "page_number");
@@ -64,7 +72,8 @@ export async function writePdf(outPath, texts, metadata, pdfPath, npages, log = 
     pdf.ln(5);
   };
 
-  texts.forEach((txt, idx) => {
+  let idx = 0;
+  for await (const txt of texts) {
     pdf.addPage();
     pdf.setXY(left, top);
     if (idx === 0) {
@@ -72,7 +81,8 @@ export async function writePdf(outPath, texts, metadata, pdfPath, npages, log = 
       pdf.ln(3);
     }
     let prevBlank = true;
-    for (const line of String(txt ?? "").split("\n")) {
+    const chunks = typeof txt?.textChunks === "function" ? txt.textChunks() : [String(txt ?? "")];
+    for (const line of textLines(chunks)) {
       const role = classifyTextRole(line, prevBlank);
       if (role === "blank") {
         pdf.ln(pdfLineHeight(pdf, "paragraph") * 0.5);
@@ -85,13 +95,17 @@ export async function writePdf(outPath, texts, metadata, pdfPath, npages, log = 
       });
       prevBlank = false;
     }
-  });
+    idx += 1;
+  }
 
-  
-  
-  
-  await writeOptimizedPdf(outPath, pdf.toBuffer(), log);
+  const firstPass = path.join(directory, "first-pass.pdf");
+  await pdf.output(firstPass);
+  await writeOptimizedPdf(outPath, firstPass, log);
   return outPath;
+  } finally {
+    pdf?.close();
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
 }
 
 
@@ -149,23 +163,21 @@ const DOC_HEAD = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
   + '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>';
 
 
-export async function writeDocxLayout(outPath, pages, pdfPath) {
-  void pdfPath; 
-  const n = pages.length;
-
+export async function writeDocxLayout(outPath, pages, pdfPath, pageCount = pages.length) {
+  void pdfPath;
   async function* body() {
     yield DOC_HEAD;
-    for (let i = 0; i < n; i += 1) {
-      const pg = pages[i];
-      const chunk = [];
+    let i = 0;
+    for await (const pg of pages) {
       const [wPt, hPt] = pg.wh ?? [612.0, 792.0];
-      const lines = pg.lines ?? [];
-      if (!lines.length && String(pg.text ?? "").trim()) {
-        for (const line of String(pg.text).split("\n")) {
-          chunk.push(line ? layoutPara(20 * TWIPS, 0, 11, line) : "<w:p/>");
-        }
-      } else if (!lines.length && pg.hasImg) {
-        chunk.push(layoutPara(20 * TWIPS, 20 * TWIPS, 10, "[image-only page]"));
+      const count = pg.lineCount ?? pg.lines?.length ?? 0;
+      const lines = typeof pg.lines === "function" ? pg.lines() : (pg.lines ?? []);
+      const hasText = pg.hasText ?? Boolean(String(pg.text ?? "").trim());
+      if (!count && hasText) {
+        const text = typeof pg.textChunks === "function" ? pg.textChunks() : [String(pg.text ?? "")];
+        for (const line of textLines(text)) yield line ? layoutPara(20 * TWIPS, 0, 11, line) : "<w:p/>";
+      } else if (!count && pg.hasImg) {
+        yield layoutPara(20 * TWIPS, 20 * TWIPS, 10, "[image-only page]");
       }
       let prevBase = null;
       let prevH = 0.0;
@@ -177,21 +189,26 @@ export async function writeDocxLayout(outPath, pages, pdfPath) {
         else before = Math.max(0.0, baseTop - prevBase - prevH);
         prevBase = baseTop;
         prevH = size * LH;
-        chunk.push(layoutPara(x * TWIPS, before * TWIPS, size, text));
+        yield layoutPara(x * TWIPS, before * TWIPS, size, text);
       }
-      if (i < n - 1) chunk.push(`<w:p><w:pPr>${sectPr(wPt, hPt)}</w:pPr></w:p>`);
-      else chunk.push(sectPr(wPt, hPt));
-      yield chunk.join("");
+      if (i < pageCount - 1) yield `<w:p><w:pPr>${sectPr(wPt, hPt)}</w:pPr></w:p>`;
+      else yield sectPr(wPt, hPt);
+      i += 1;
     }
-    if (n === 0) yield sectPr(612.0, 792.0);
+    if (i !== pageCount) throw new Error("Page count changed while writing DOCX");
+    if (pageCount === 0) yield sectPr(612.0, 792.0);
     yield "</w:body></w:document>";
   }
 
   const zip = new ZipStreamWriter(outPath);
-  await zip.writestr("[Content_Types].xml", CONTENT_TYPES);
-  await zip.writestr("_rels/.rels", RELS);
-  await zip.member("word/document.xml").stream(body());
-  await zip.close();
+  try {
+    await zip.writestr("[Content_Types].xml", CONTENT_TYPES);
+    await zip.writestr("_rels/.rels", RELS);
+    await zip.member("word/document.xml").stream(body());
+    await zip.close();
+  } finally {
+    zip.abort();
+  }
   return outPath;
 }
 
@@ -199,23 +216,21 @@ export async function writeDocxLayout(outPath, pages, pdfPath) {
 export async function writeDocxPlain(outPath, text) {
   async function* body() {
     yield DOC_HEAD;
-    const lines = String(text ?? "").split("\n");
-    const step = 2000;
-    for (let i = 0; i < lines.length; i += step) {
-      const chunk = [];
-      for (const line of lines.slice(i, i + step)) {
-        if (line) chunk.push(layoutPara(0.0, 0.0, 11.0, line));
-        else chunk.push("<w:p/>");
-      }
-      yield chunk.join("");
+    const chunks = typeof text === "string" || text == null ? [String(text ?? "")] : text;
+    for (const line of textLines(chunks)) {
+      yield line ? layoutPara(0.0, 0.0, 11.0, line) : "<w:p/>";
     }
     yield sectPr(612.0, 792.0);
     yield "</w:body></w:document>";
   }
   const zip = new ZipStreamWriter(outPath);
-  await zip.writestr("[Content_Types].xml", CONTENT_TYPES);
-  await zip.writestr("_rels/.rels", RELS);
-  await zip.member("word/document.xml").stream(body());
-  await zip.close();
+  try {
+    await zip.writestr("[Content_Types].xml", CONTENT_TYPES);
+    await zip.writestr("_rels/.rels", RELS);
+    await zip.member("word/document.xml").stream(body());
+    await zip.close();
+  } finally {
+    zip.abort();
+  }
   return outPath;
 }

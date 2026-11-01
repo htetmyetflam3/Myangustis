@@ -11,10 +11,12 @@ function needsProtection(ch) {
 
 // Conversion must not silently lose spaces, joiners or other protected PDF
 // characters. These sequences deliberately exclude ordinary converted text.
-export function sameProtectedCharacters(before, after) {
-  const protectedPart = (value) => [...String(value ?? "")]
-    .filter((ch) => needsProtection(ch) || WHITESPACE.test(ch)).join("");
-  return protectedPart(before) === protectedPart(after);
+export function protectedCharacters(value) {
+  let out = "";
+  for (const ch of String(value ?? "")) {
+    if (needsProtection(ch) || WHITESPACE.test(ch)) out += ch;
+  }
+  return out;
 }
 
 // Engine normalize removes Glue characters (including zero-width characters,
@@ -23,7 +25,11 @@ export function sameProtectedCharacters(before, after) {
 export function preserveCharacters(text, transform) {
   const input = String(text ?? "");
   if (typeof transform !== "function") throw new TypeError("Expected a text transformation");
-  if (![...input].some(needsProtection)) return transform(input);
+  let hasProtected = false;
+  for (const ch of input) {
+    if (needsProtection(ch)) { hasProtected = true; break; }
+  }
+  if (!hasProtected) return transform(input);
 
   let prefix = "\ue000";
   while (input.includes(prefix)) prefix += "\ue000";

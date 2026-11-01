@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import { Readable } from 'node:stream';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -15,14 +17,15 @@ process.env.PRASER_MAX_TEXT_CHARS = '10';
 process.env.PRASER_MAX_STREAM_MB = '1';
 process.env.PRASER_MAX_DOCX_ENTRIES = '2';
 process.env.PRASER_MAX_OCR_PAGES = '1';
-const ownerKey = 'unit-test-owner-key';
-const fallbackKey = 'unit-test-fallback-key';
-const ownerHash = crypto.createHash('sha256').update(ownerKey).digest('hex');
-process.env.CURL_KEY_SHA256 = ownerHash;
-process.env.CURL_KEY = fallbackKey;
+const siteKey = 'unit-test-site-key';
+const siteHash = crypto.createHash('sha256').update(siteKey).digest('hex');
+process.env.CURL_KEY_SHA256 = siteHash;
+process.env.CURL_KEY = 'unit-test-plain-site-key';
 
 const { Manager } = await import('../../../B.Parser/main/parser/manager.js');
 const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'parser-owner-test-'));
+const register = path.join(directory, 'register.log');
+process.env.PRASER_REGISTER = register;
 const manager = new Manager({ outputDir: directory });
 
 test.after(async () => {
@@ -51,28 +54,30 @@ const pdfJob = (file, extra = {}) => ({
   job: 'extracting', method: 'default', output: 'txt', inputKind: 'pdf',
   filename: path.basename(file), inPath: file, includeText: true, ...extra,
 });
-const signed = { ownerKey };
+const trusted = Object.freeze({ userId: crypto.createHash('sha256').update('authenticated-test-request').digest('hex') });
 
 const twoPage = await makePdf('two-pages.pdf', ['One', 'Two']);
 const textPage = await makePdf('text.pdf', ['Hello World']);
 const streamPage = await makePdf('large-stream.pdf', ['A'], { largeStream: true });
 const filePage = await makePdf('large-input.pdf', ['A'], { largeFile: true });
 
-test('only the verified key lifts page limits; owner workers never become public workers', async () => {
+test('only a separate trusted user ID lifts Site page limits', async () => {
   const job = pdfJob(twoPage);
   await assert.rejects(manager.dispatch(job), /1 page cap/);
-  await assert.rejects(manager.dispatch(job, 'site', { ownerKey: fallbackKey }), /Invalid owner key/);
-  await assert.rejects(manager.dispatch(job, 'site', { ownerKey: 'wrong' }), /Invalid owner key/);
-  await assert.rejects(manager.dispatch({ ...job, ownerKey, owner: true, unlimited: true }, 'site',
-    { owner: true, unlimited: true }), /1 page cap/);
+  await assert.rejects(manager.dispatch(job, 'local'), /1 page cap/);
+  await assert.rejects(manager.dispatch(job, 'site', 'wrong'), /trusted user ID/);
+  await assert.rejects(manager.dispatch(job, 'site', { owner: true }), /trusted user ID/);
+  await assert.rejects(manager.dispatch(job, 'site', { userId: ' ' }), /trusted user ID/);
+  await assert.rejects(manager.dispatch({ ...job, userId: trusted.userId, owner: true, unlimited: true,
+    meta: { userId: trusted.userId } }), /1 page cap/);
 
-  const owner = await manager.dispatch(job, 'site', signed);
+  const owner = await manager.dispatch({ ...job, userId: 'forged', meta: { userId: 'forged' } }, 'site', trusted);
   assert.equal(owner.pages, 2);
-  assert.doesNotMatch(JSON.stringify(owner), /unit-test-owner-key/);
+  assert.equal(owner.userId, trusted.userId);
   await assert.rejects(manager.dispatch(job), /1 page cap/);
 
   const [first, second] = await Promise.allSettled([
-    manager.dispatch(job, 'site', signed), manager.dispatch(job),
+    manager.dispatch(job, 'site', trusted), manager.dispatch(job),
   ]);
   assert.equal(first.status, 'fulfilled');
   assert.equal(first.value.pages, 2);
@@ -82,21 +87,20 @@ test('only the verified key lifts page limits; owner workers never become public
   assert.equal(manager.workers, undefined);
 });
 
-test('the existing plain key is accepted only when the hash is not configured', async () => {
+test('the in-process user ID is metadata, not another key check', async () => {
   process.env.CURL_KEY_SHA256 = '';
+  process.env.CURL_KEY = '';
   try {
-    assert.equal((await manager.dispatch(pdfJob(twoPage), 'site', { ownerKey: fallbackKey })).pages, 2);
-    await assert.rejects(manager.dispatch(pdfJob(twoPage), 'site', signed), /Invalid owner key/);
-    process.env.CURL_KEY = '';
-    await assert.rejects(manager.dispatch(pdfJob(twoPage), 'site', { ownerKey: fallbackKey }), /Invalid owner key/);
+    assert.equal((await manager.dispatch(pdfJob(twoPage), 'site', trusted)).pages, 2);
+    await assert.rejects(manager.dispatch(pdfJob(twoPage), 'site', siteKey), /trusted user ID/);
   } finally {
-    process.env.CURL_KEY_SHA256 = ownerHash;
-    process.env.CURL_KEY = fallbackKey;
+    process.env.CURL_KEY_SHA256 = siteHash;
+    process.env.CURL_KEY = 'unit-test-plain-site-key';
   }
 });
 
 test('owner authorization also reaches the main-thread manual PDF writer', async () => {
-  const result = await manager.dispatch(pdfJob(twoPage, { method: 'manual' }), 'site', signed);
+  const result = await manager.dispatch(pdfJob(twoPage, { method: 'manual' }), 'site', trusted);
   assert.equal(result.pages, 2);
   assert.deepEqual(result.ocrPages, []);
   await assert.rejects(manager.dispatch(pdfJob(twoPage, { method: 'manual' })), /1 page cap/);
@@ -104,13 +108,14 @@ test('owner authorization also reaches the main-thread manual PDF writer', async
 
 test('text, input-size and decompressed content-stream caps remain public-only', async () => {
   await assert.rejects(manager.dispatch(pdfJob(textPage)), /10 character cap/);
-  assert.ok((await manager.dispatch(pdfJob(textPage), 'site', signed)).textChars > 10);
+  assert.ok((await manager.dispatch(pdfJob(textPage), 'site', trusted)).textChars > 10);
 
   await assert.rejects(manager.dispatch(pdfJob(filePage)), /1 MB cap/);
-  assert.equal((await manager.dispatch(pdfJob(filePage), 'site', signed)).pages, 1);
+  await assert.rejects(manager.dispatch(pdfJob(filePage), 'scraper'), /1 MB cap/);
+  assert.equal((await manager.dispatch(pdfJob(filePage), 'site', trusted)).pages, 1);
 
   await assert.rejects(manager.dispatch(pdfJob(streamPage)), /content stream exceeds/);
-  assert.equal((await manager.dispatch(pdfJob(streamPage), 'site', signed)).pages, 1);
+  assert.equal((await manager.dispatch(pdfJob(streamPage), 'site', trusted)).pages, 1);
 });
 
 test('plain text rendering and DOCX archive processing honor the same authorization', async () => {
@@ -118,43 +123,252 @@ test('plain text rendering and DOCX archive processing honor the same authorizat
   const output = path.join(directory, 'input.docx');
   await fs.writeFile(input, 'Hello World');
   await assert.rejects(manager.renderPlainText({ inPath: input, outPath: output }), /10 character cap/);
-  const rendered = await manager.renderPlainText({ inPath: input, outPath: output }, signed);
+  const rendered = await manager.renderPlainText({ inPath: input, outPath: output }, trusted);
   assert.equal(rendered.text, 'Hello World');
   const job = {
     job: 'extracting', method: 'default', output: 'txt', inputKind: 'docx',
     filename: 'input.docx', inPath: output, includeText: true,
   };
   await assert.rejects(manager.dispatch(job), /2 member cap/);
-  assert.ok((await manager.dispatch(job, 'site', signed)).textChars > 10);
+  assert.ok((await manager.dispatch(job, 'site', trusted)).textChars > 10);
 });
 
-test('the Python bridge sends the key separately and Node verifies it', async () => {
+test('local callers stream PDF bytes without the public page limit', async () => {
+  const expected = await manager.dispatch(pdfJob(twoPage, { filename: 'local-stream.pdf' }), 'site', trusted);
+  const before = await fs.readFile(register, 'utf8');
+  const source = createReadStream(twoPage, { highWaterMark: 17 });
+  const result = await manager.dispatchStream(source, {
+    filename: 'local-stream.pdf', outPath: path.join(directory, 'local.txt'), includeText: true,
+  });
+  assert.equal(result.caller, 'local');
+  assert.equal(result.pages, 2);
+  assert.equal(result.text, expected.text);
+  assert.deepEqual(await fs.readFile(result.file), await fs.readFile(expected.file));
+  assert.equal(source.readableEnded, true);
+  assert.equal(result.userId, undefined);
+  const newRecord = (await fs.readFile(register, 'utf8')).slice(before.length);
+  assert.match(newRecord, /^local-stream\.pdf$/mu);
+  assert.match(newRecord, /"sourcePath": "local-stream\.pdf"/);
+});
+
+test('local PDF streams produce DOCX and PDF for default and manual jobs without public limits', async () => {
+  for (const method of ['default', 'manual']) {
+    for (const output of ['docx', 'pdf']) {
+      const outPath = path.join(directory, `stream-${method}.${output}`);
+      await assert.rejects(manager.dispatch(pdfJob(twoPage, { method, output, outPath })), /1 page cap/);
+      const source = createReadStream(twoPage, { highWaterMark: 17 });
+      const result = await manager.dispatchStream(source, {
+        filename: 'two-pages.pdf', method, output, outPath, includeText: true,
+      });
+      assert.equal(result.caller, 'local');
+      assert.equal(result.pages, 2);
+      assert.equal(result.text, 'One\n\nTwo');
+      if (method === 'manual') assert.deepEqual(result.ocrPages, []);
+      assert.ok((await fs.stat(outPath)).size > 0);
+      assert.equal(source.readableEnded, true);
+    }
+  }
+});
+
+test('local callers also transfer DOCX as a byte stream', async () => {
+  const input = path.join(directory, 'docx-source.txt');
+  const docx = path.join(directory, 'local-source.docx');
+  await fs.writeFile(input, 'Hello World');
+  await manager.renderPlainText({ inPath: input, outPath: docx }, trusted);
+  const source = createReadStream(docx, { highWaterMark: 19 });
+  const result = await manager.dispatchStream(source, {
+    filename: 'local-source.docx', outPath: path.join(directory, 'docx-result.txt'), includeText: true,
+  });
+  assert.equal(result.caller, 'local');
+  assert.match(result.text, /Hello World/);
+  assert.equal(source.readableEnded, true);
+});
+
+test('local binary providers may reuse their transfer buffer', async () => {
+  const bytes = await fs.readFile(twoPage);
+  async function* source() {
+    const chunk = Buffer.alloc(17);
+    for (let offset = 0; offset < bytes.length; offset += chunk.length) {
+      const count = bytes.copy(chunk, 0, offset, offset + chunk.length);
+      yield chunk.subarray(0, count);
+    }
+  }
+  const result = await manager.dispatchStream(source(), {
+    filename: 'two-pages.pdf', outPath: path.join(directory, 'reused-buffer.txt'), includeText: true,
+  });
+  assert.equal(result.pages, 2);
+  assert.match(result.text, /One/);
+  assert.match(result.text, /Two/);
+});
+
+test('local stream is pulled incrementally and accepts a web byte stream', async () => {
+  const bytes = await fs.readFile(twoPage);
+  let offset = 0;
+  let pulls = 0;
+  const source = new ReadableStream({
+    pull(controller) {
+      pulls += 1;
+      if (offset >= bytes.length) return controller.close();
+      const end = Math.min(offset + 29, bytes.length);
+      controller.enqueue(bytes.subarray(offset, end));
+      offset = end;
+    },
+  });
+  const result = await manager.dispatchStream(source, {
+    filename: 'two-pages.pdf', outPath: path.join(directory, 'web-stream.txt'),
+  });
+  assert.equal(result.pages, 2);
+  assert.ok(pulls > 1);
+  assert.equal(offset, bytes.length);
+});
+
+test('local file transfer writes chunks before the producer finishes', async () => {
+  const tmp = path.join(directory, 'incremental-temp');
+  await fs.mkdir(tmp);
+  const previous = process.env.TMPDIR;
+  process.env.TMPDIR = tmp;
+  let wroteBeforeEnd = false;
+  try {
+    async function* source() {
+      const chunk = Buffer.alloc(64 * 1024, 1);
+      for (let i = 0; i < 16; i += 1) {
+        yield chunk;
+        if (i === 8) {
+          const [jobDir] = await fs.readdir(tmp);
+          const dirStat = await fs.stat(path.join(tmp, jobDir));
+          const stat = await fs.stat(path.join(tmp, jobDir, 'input.pdf'));
+          if (process.platform !== 'win32') {
+            assert.equal(dirStat.mode & 0o077, 0);
+            assert.equal(stat.mode & 0o077, 0);
+          }
+          wroteBeforeEnd = stat.size > 0;
+        }
+      }
+      throw new Error('stop after transfer');
+    }
+    await assert.rejects(manager.dispatchStream(source(), { filename: 'transfer.pdf' }), /stop after transfer/);
+    assert.equal(wroteBeforeEnd, true);
+    assert.deepEqual(await fs.readdir(tmp), []);
+  } finally {
+    if (previous === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = previous;
+  }
+});
+
+test('file-backed PDF jobs clean input and work files after worker and writer errors', async () => {
+  const tmp = path.join(directory, 'failed-pdf-temp');
+  await fs.mkdir(tmp);
+  const previous = process.env.TMPDIR;
+  process.env.TMPDIR = tmp;
+  try {
+    for (const method of ['default', 'manual']) {
+      for (const output of ['docx', 'pdf']) {
+        await assert.rejects(manager.dispatchStream(Readable.from([Buffer.from('not a PDF')]), {
+          filename: 'bad.pdf', method, output, outPath: path.join(directory, `bad-${method}.${output}`),
+        }));
+        assert.deepEqual(await fs.readdir(tmp), []);
+      }
+    }
+    for (const output of ['docx', 'pdf']) {
+      const blocked = path.join(directory, `blocked.${output}`);
+      await fs.mkdir(blocked);
+      await assert.rejects(manager.dispatchStream(createReadStream(twoPage), {
+        filename: 'two-pages.pdf', method: 'manual', output, outPath: blocked,
+      }));
+      assert.deepEqual(await fs.readdir(tmp), []);
+    }
+  } finally {
+    if (previous === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = previous;
+  }
+});
+
+test('local entry rejects paths, non-byte streams and cleans failed spools', async () => {
+  await assert.rejects(manager.dispatchStream(twoPage, { filename: 'two-pages.pdf' }), /readable byte stream/);
+  let consumed = false;
+  async function* notConsumed() { consumed = true; yield Buffer.from('data'); }
+  await assert.rejects(manager.dispatchStream(notConsumed(), { filename: 'two-pages.pdf', inPath: twoPage }), /not an input path/);
+  assert.equal(consumed, false);
+  await assert.rejects(manager.dispatchStream(notConsumed(), { filename: 'bad.txt' }), /PDF or DOCX/);
+  assert.equal(consumed, false);
+
+  const tmp = path.join(directory, 'local-temp');
+  await fs.mkdir(tmp);
+  const previous = process.env.TMPDIR;
+  process.env.TMPDIR = tmp;
+  try {
+    async function* failed() {
+      yield Buffer.from('%PDF');
+      throw new Error('upstream stream failed');
+    }
+    await assert.rejects(manager.dispatchStream(failed(), { filename: 'broken.pdf' }), /upstream stream failed/);
+    await assert.rejects(manager.dispatchStream(Readable.from(['not bytes']), { filename: 'broken.pdf' }), /must yield bytes/);
+    await assert.rejects(manager.dispatchStream(Readable.from([Buffer.from('not a PDF')]), { filename: 'broken.pdf' }));
+    assert.deepEqual(await fs.readdir(tmp), []);
+  } finally {
+    if (previous === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = previous;
+  }
+});
+
+test('Python local stream is uncapped while Python path dispatch remains public', () => {
   const modulePath = path.resolve('B.Parser/main/Python/modules/node_manager.py');
-  const out = path.join(directory, 'python.txt');
+  const out = path.join(directory, 'python-stream.txt');
   const script = `
-import importlib.util, json, sys
+import importlib.util, io, sys
 spec = importlib.util.spec_from_file_location('parser_node_manager', sys.argv[1])
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
-key = json.loads(sys.stdin.read())['ownerKey']
 try:
-    module.dispatch_path(sys.argv[2], sys.argv[3], method='default', owner_key='wrong')
-    raise AssertionError('wrong key accepted')
+    module.dispatch_path(sys.argv[2], sys.argv[3], method='default')
+    raise AssertionError('public path bypassed the limit')
 except module.ManagerError as exc:
-    assert 'Invalid owner key' in str(exc)
-result = module.dispatch_path(sys.argv[2], sys.argv[3], method='default', owner_key=key)
+    assert '1 page cap' in str(exc)
+class CheckedStream:
+    def __init__(self, source):
+        self.source, self.reads = source, 0
+    def read(self, size):
+        assert 0 < size <= 65536
+        self.reads += 1
+        return self.source.read(min(size, 23))
+with open(sys.argv[2], 'rb') as file:
+    stream = CheckedStream(file)
+    result = module.dispatch_stream(stream, sys.argv[3], filename='two-pages.pdf',
+                                    method='default', include_text=True)
+    assert stream.reads > 1
+    assert not file.closed
+assert result['caller'] == 'local'
 assert result['pages'] == 2
-assert key not in json.dumps(result)
+assert 'One' in result['text'] and 'Two' in result['text']
+for method in ('default', 'manual'):
+    for extension in ('docx', 'pdf'):
+        with open(sys.argv[2], 'rb') as file:
+            stream = CheckedStream(file)
+            converted = module.dispatch_stream(stream, sys.argv[3] + '-' + method + '.' + extension,
+                                               filename='two-pages.pdf', method=method, include_text=True)
+            assert stream.reads > 1
+        assert converted['caller'] == 'local' and converted['pages'] == 2
+        assert converted['text'] == 'One\\n\\nTwo'
+try:
+    module.dispatch_stream(io.StringIO('not bytes'), sys.argv[3], filename='bad.pdf')
+    raise AssertionError('text stream accepted')
+except TypeError:
+    pass
+try:
+    module.dispatch_stream(io.BytesIO(b'text'), sys.argv[3], filename='not-a-document.txt')
+    raise AssertionError('text file accepted')
+except ValueError:
+    pass
 print('ok')
 `;
   const child = spawnSync('python3', ['-c', script, modulePath, twoPage, out], {
-    input: JSON.stringify({ ownerKey }), encoding: 'utf8', env: process.env, timeout: 30000,
+    encoding: 'utf8', env: process.env, timeout: 30000,
   });
   assert.equal(child.status, 0, child.stderr);
   assert.equal(child.stdout.trim(), 'ok');
 });
 
-test('Python wrapper does not impose its timeout on a supplied owner key', () => {
+test('Python public wrapper retains its timeout and cannot request local stream mode', () => {
   const modulePath = path.resolve('B.Parser/main/Python/modules/node_manager.py');
   const script = `
 import importlib.util, json, os, sys, types
@@ -164,65 +378,43 @@ spec.loader.exec_module(module)
 os.environ['PRASER_PYTHON_TIMEOUT_SECONDS'] = '3'
 calls = []
 def run(*args, **kwargs):
-    if args[0][-1] == '--verify-owner':
-        calls.append(('verify', kwargs['timeout'], kwargs['input']))
-        if kwargs['input'] == 'bad':
-            return types.SimpleNamespace(returncode=1, stderr='Invalid owner key')
-        return types.SimpleNamespace(returncode=0, stderr='')
-    payload = kwargs['input']
-    presented = None
-    if args[0][-1] == '--owner-request':
-        header, payload = payload.split('\\n', 1)
-        presented = json.loads(header)['ownerKey']
-    request = json.loads(payload)
-    assert 'ownerKey' not in request and 'ownerKey' not in request['job']
-    calls.append(('job', kwargs['timeout'], presented))
+    request = json.loads(kwargs['input'])
+    assert args[0][-1].endswith('python-entry.js')
+    calls.append(kwargs['timeout'])
     with open(request['responsePath'], 'w', encoding='utf-8') as response:
         json.dump({'ok': True}, response)
     return types.SimpleNamespace(returncode=0, stderr='')
 module.subprocess.run = run
-module._request({})
-module._request({}, owner_key='test')
-try:
-    module._request({}, owner_key='bad')
-    raise AssertionError('invalid key accepted')
-except module.ManagerError:
-    pass
-assert calls == [('job', 3, None), ('verify', 3, 'test'), ('job', None, 'test'), ('verify', 3, 'bad')]
+assert module._request({}) == {'ok': True}
+assert calls == [3]
 `;
   const child = spawnSync('python3', ['-c', script, modulePath], { encoding: 'utf8' });
   assert.equal(child.status, 0, child.stderr);
 });
 
-test('the Python bridge checks the owner header before accepting a large request', async () => {
+test('Python bridge bounds public metadata and ignores forged job identities', () => {
   const entry = path.resolve('B.Parser/extend/python-entry.js');
-  const responsePath = path.join(directory, 'large-response.json');
+  const responsePath = path.join(directory, 'bridge-response.json');
   const request = {
-    job: pdfJob(twoPage, { meta: { padding: 'x'.repeat(1_000_001) } }),
+    job: pdfJob(twoPage, { userId: trusted.userId, meta: { userId: trusted.userId } }),
     caller: 'site', responsePath,
   };
-  const body = JSON.stringify(request);
-  const publicCall = spawnSync(process.execPath, [entry], { input: body, encoding: 'utf8', timeout: 30000 });
+  const forged = spawnSync(process.execPath, [entry], {
+    input: JSON.stringify(request), encoding: 'utf8', timeout: 30000,
+  });
+  assert.notEqual(forged.status, 0);
+  assert.match(forged.stderr, /1 page cap/);
+  const publicCall = spawnSync(process.execPath, [entry], {
+    input: JSON.stringify({ ...request, job: { ...request.job, meta: { padding: 'x'.repeat(1_000_001) } } }),
+    encoding: 'utf8', timeout: 30000,
+  });
   assert.notEqual(publicCall.status, 0);
   assert.match(publicCall.stderr, /Manager request is too large/);
-  const invalid = spawnSync(process.execPath, [entry, '--owner-request'], {
-    input: `${JSON.stringify({ ownerKey: 'wrong' })}\n{}`, encoding: 'utf8', timeout: 30000,
+  const unsupported = spawnSync(process.execPath, [entry], {
+    input: JSON.stringify({ ...request, operation: 'dispatchStream' }), encoding: 'utf8', timeout: 30000,
   });
-  assert.notEqual(invalid.status, 0);
-  assert.match(invalid.stderr, /Invalid owner key/);
-  const malformed = spawnSync(process.execPath, [entry, '--owner-request'], {
-    input: `{"ownerKey":"${ownerKey}" bad}\n{}`, encoding: 'utf8', timeout: 30000,
-  });
-  assert.notEqual(malformed.status, 0);
-  assert.match(malformed.stderr, /Invalid owner authorization/);
-  assert.doesNotMatch(malformed.stderr, /unit-test-owner-key/);
-  const authorized = spawnSync(process.execPath, [entry, '--owner-request'], {
-    input: `${JSON.stringify({ ownerKey })}\n${body}`, encoding: 'utf8', timeout: 30000,
-  });
-  assert.equal(authorized.status, 0, authorized.stderr);
-  const response = await fs.readFile(responsePath, 'utf8');
-  assert.equal(JSON.parse(response).pages, 2);
-  assert.doesNotMatch(response, /unit-test-owner-key/);
+  assert.notEqual(unsupported.status, 0);
+  assert.match(unsupported.stderr, /Unsupported Manager operation/);
 });
 
 test('owner worker resource profiles remove PDF, DOCX and OCR quotas', async () => {
@@ -291,7 +483,9 @@ test('owner jobs are not subject to the public worker timeout', async () => {
       const job = {job:'extracting',method:'default',output:'txt',inputKind:'pdf',inPath:process.argv[2]};
       try {
         await assert.rejects(m.dispatch(job), /worker exceeded 1 ms/);
-        assert.equal((await m.dispatch(job, 'site', {ownerKey:process.env.TEST_OWNER_KEY})).pages, 2);
+        assert.equal((await m.dispatch(job, 'site', {userId:process.env.TEST_TRUSTED_USER_ID})).pages, 2);
+        const source = require('node:fs').createReadStream(process.argv[2]);
+        assert.equal((await m.dispatchStream(source, {filename:'two-pages.pdf'})).pages, 2);
       } finally { await m.close(); }
     })().catch(error => { console.error(error); process.exitCode = 1; });
   `;
@@ -299,12 +493,12 @@ test('owner jobs are not subject to the public worker timeout', async () => {
   await fs.writeFile(file, script);
   const child = spawnSync(process.execPath, [file, twoPage, directory], {
     encoding: 'utf8', timeout: 30000,
-    env: { ...process.env, PRASER_TIMEOUT_MS: '1', TEST_OWNER_KEY: ownerKey },
+    env: { ...process.env, PRASER_TIMEOUT_MS: '1', TEST_TRUSTED_USER_ID: trusted.userId },
   });
   assert.equal(child.status, 0, child.stderr);
 });
 
-test('the authenticated Site curl route forwards the key without changing the public path', async (t) => {
+test('the Site key gate alone injects a fresh user ID into the Manager handoff', async (t) => {
   const express = await import('express').then((mod) => mod.default, () => null);
   const multerAvailable = await import('multer').then(() => true, () => false);
   if (!express || !multerAvailable) return t.skip('Site dependencies are not installed');
@@ -315,29 +509,67 @@ test('the authenticated Site curl route forwards the key without changing the pu
   const { closePraserManager, createPdfParser } = await import('../../../F.Site/Backend/file/praser.js');
   const intent = {
     source: 'converter', job: 'extracting', method: 'default', outputFormat: 'txt',
-    inputFormat: 'pdf', uploadName: 'two-pages.pdf',
+    inputFormat: 'pdf', uploadName: 'two-pages.pdf', userId: trusted.userId,
   };
-  await assert.rejects(createPdfParser().parse(twoPage, null, { intent }),
-    (error) => error.cause && /1 page cap/.test(error.cause.message));
-  const app = express();
-  const { path: suffix, router } = createCurlRouter();
-  app.use(suffix, router);
-  const server = await new Promise((resolve) => {
-    const instance = app.listen(0, '127.0.0.1', () => resolve(instance));
-  });
-  const url = `http://127.0.0.1:${server.address().port}${suffix}`;
+  const calls = [];
+  const dispatch = Manager.prototype.dispatch;
+  Manager.prototype.dispatch = function (job, caller, identity) {
+    calls.push({ job, caller, identity });
+    return dispatch.call(this, job, caller, identity);
+  };
+  let server;
   try {
+    await assert.rejects(createPdfParser().parse(twoPage, null, { intent }),
+      (error) => error.cause && /1 page cap/.test(error.cause.message));
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].identity, undefined);
+    assert.equal(calls[0].job.userId, undefined);
+
+    const app = express();
+    const { path: suffix, router } = createCurlRouter();
+    app.use(suffix, router);
+    server = await new Promise((resolve) => {
+      const instance = app.listen(0, '127.0.0.1', () => resolve(instance));
+    });
+    const url = `http://127.0.0.1:${server.address().port}${suffix}`;
     const wrong = await fetch(url, { method: 'POST', headers: { 'x-curl-key': 'wrong' } });
+    const missing = await fetch(url, { method: 'POST' });
     assert.equal(wrong.status, 404);
-    const form = new FormData();
-    form.append('file', new Blob([await fs.readFile(twoPage)], { type: 'application/pdf' }), 'two-pages.pdf');
-    const response = await fetch(url, { method: 'POST', headers: { 'x-curl-key': ownerKey }, body: form });
-    const text = await response.text();
-    assert.equal(response.status, 200, text);
+    assert.equal(missing.status, 404);
+    assert.equal(calls.length, 1);
+
+    async function authorizedUpload(file, filename, type) {
+      const form = new FormData();
+      form.append('file', new Blob([await fs.readFile(file)], { type }), filename);
+      form.append('userId', 'client-forged-id');
+      return fetch(url, { method: 'POST', headers: { 'x-curl-key': siteKey }, body: form });
+    }
+    const first = await authorizedUpload(twoPage, 'two-pages.pdf', 'application/pdf');
+    const text = await first.text();
+    assert.equal(first.status, 200, text);
     assert.ok(text.length > 0);
-    assert.doesNotMatch(text, /unit-test-owner-key/);
+    assert.equal(calls.length, 2);
+    const firstId = calls[1].identity.userId;
+    assert.match(firstId, /^[a-f0-9]{64}$/);
+    assert.notEqual(firstId, siteHash);
+    assert.notEqual(firstId, 'client-forged-id');
+    assert.equal(text.includes(firstId), false);
+    assert.doesNotMatch(text, /unit-test-site-key/);
+
+    const textSource = path.join(directory, 'site-docx-source.txt');
+    const docx = path.join(directory, 'site-docx.docx');
+    await fs.writeFile(textSource, 'Hello World');
+    await manager.renderPlainText({ inPath: textSource, outPath: docx }, trusted);
+    const second = await authorizedUpload(docx, 'site-docx.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    const docxText = await second.text();
+    assert.equal(second.status, 200, docxText);
+    assert.match(docxText, /Hello World/);
+    assert.equal(calls[2].job.inputKind, 'docx');
+    assert.match(calls[2].identity.userId, /^[a-f0-9]{64}$/);
+    assert.notEqual(calls[2].identity.userId, firstId);
   } finally {
-    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    if (server) await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     await closePraserManager();
+    Manager.prototype.dispatch = dispatch;
   }
 });

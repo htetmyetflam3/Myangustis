@@ -1,8 +1,8 @@
 import { isMainThread, workerData } from 'node:worker_threads';
 import { ValueError } from './pylib.js';
 
-// Only Manager creates this worker after verifying the owner's existing key.
-// Request data cannot select this profile inside a shared public worker.
+// Manager creates this profile for a trusted local stream or an identity
+// handed off by an authenticated caller, never from public job metadata.
 export const OWNER_PARSER_WORKER = !isMainThread && workerData?.parserOwner === true;
 
 export function positiveLimit(name, fallback, maximum) {

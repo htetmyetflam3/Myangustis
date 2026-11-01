@@ -752,7 +752,7 @@ AYAR_LEGACY_CODE_PAGE = {
     0xb1: '\u1039\u1018',        # ္ဘ    ကမ္ဘာ 9
     0x7e: '\u1039\u1014',        # ္န    ပိန္နဲ 2, ကိန္နရာ, ကိန္နရီ
     0xdb: '\u1039\u1008',        # ္ဈ    မဇ္ဈိမ
-    0xc7: '\u1004\u103a\u1039',  # င်္   kinzi: အင်္ကျ 4, သူ့အင်္ကျသည်, ပင်နီအင်္ကျ
+    0xc7: '\u1004\u103a\u1039\u102e',  # င်္ီ: အင်္ကျီ 4, သူ့အင်္ကျီသည်, ပင်နီအင်္ကျီ; သိင်္ဂီ
     0xcc: '\u1039\u1003',        # ္ဃ    အနဂ္ဃ -- the book's own table says ဂ+ဃ, not ဂ+ဂ
     0xf1: '\u1029',              # ဩ     အံ့ဩခြင်း
 
@@ -815,41 +815,58 @@ AYAR_LEGACY_CODE_PAGE = {
                                 # own character, not a သ+သ ligature -- so it drops.
 }
 
-# WinInnwa / "Wwin Burmese" layout, used by the Windows-era Myanmar fonts in
-# Praser/fonts/window/. A different keyboard from the Ayar layout above and
-# they disagree on nearly every slot, so one table cannot serve both: under
-# the Ayar table these documents show ~30% orphan marks, under this one ~2.4%.
+# WinInnwa legacy character slots, not PDF-local byte codes or physical keys.
+# TODO: Verify the original version-specific WinInnwa keyboard layout, modifier
+# layers, and output slots against vendor materials when they become available.
+# This converter map is not proof of the original keyboard layout.
+# Do not assume that Wwin or another family uses the same map. U+007C is
+# ambiguous; conflicting, unobserved slots are also left unresolved.
 WININNWA_LEGACY_CODE_PAGE = {
- 0x21:'\u100a',0x22:'\u1013',0x23:'\u103b\u103e',0x24:'\u103d\u103e',0x25:'\u100f',
- 0x26:'\u101b',0x27:'\u1012',0x28:'(',0x29:')',0x2a:'\u1002',0x2b:'\u103c',
- 0x2c:'\u101a',0x2d:'\u2014',0x2e:'\u104f',0x2f:'\u104a',
- 0x30:'\u1040',0x31:'\u1041',0x32:'\u1042',0x33:'\u1043',0x34:'\u1044',
- 0x35:'\u1045',0x36:'\u1046',0x37:'\u1047',0x38:'\u1048',0x39:'\u1049',
- 0x3a:'\u102b\u103a',0x3b:'\u1038',0x3c:'\u1039\u1013',0x3d:'\u103c',
- 0x3e:'\u1039\u1006',0x3f:'\u104b',0x40:'\u1037',
- 0x41:'\u1017',0x42:'\u1039\u1018',0x43:'\u1003',0x44:'\u102e',0x45:'\u1014',
- 0x46:'\u1004\u103a\u1039',0x47:'\u103d',0x48:'\u1036',0x49:'\u104d',0x4a:'\u1032',
- 0x4b:'\u102f',0x4c:'\u1030',0x4d:'\u103c',0x4e:'\u1039\u1012',0x4f:'\u1025',
- 0x50:'\u1039\u1005',0x51:'\u1039\u1001',0x52:'\u1039\u1019',0x53:'\u103e',0x54:'\u1024',
- 0x55:'\u1039\u1000',0x56:'\u1020',0x57:'\u1039\u1010',0x58:'\u100c',0x59:'\u104c',
- 0x5a:'\u1007',0x5b:'\u101f',0x5c:'\u103f',0x5d:'=',0x5e:'\u1009',0x5f:'\u103e\u102f',
- 0x60:'\u1039\u1015',
- 0x61:'\u1031',0x62:'\u1018',0x63:'\u1001',0x64:'\u102d',0x65:'\u1014',0x66:'\u103a',
- 0x67:'\u102b',0x68:'\u1037',0x69:'\u1004',0x6a:'\u103c',0x6b:'\u102f',0x6c:'\u1030',
- 0x6d:'\u102c',0x6e:'\u100a',0x6f:'\u101e',0x70:'\u1005',0x71:'\u1006',0x72:'\u1019',
- 0x73:'\u103b',0x74:'\u1021',0x75:'\u1000',0x76:'\u101c',0x77:'\u1010',0x78:'\u1011',
- 0x79:'\u1015',0x7a:'\u1016',0x7b:'\u1027',0x7c:'\u103b\u103d',0x7d:'\u103c',
- 0x7e:'\u1039\u1002',
- 0xa1:'[',0xa2:']',0xa4:'$',0xa7:'/',0xaa:'\u103e\u1030',
- 0xb1:'\u101b',0xb2:'\u1037',0xb3:'\u1037',0xb4:'\u1039\u1012',0xb5:'%',0xb6:'\u101b',0xb7:'*',
- 0xb8:'\u103d\u103e',0xb9:'\u103c',0xba:'\u103c',
- 0xbe:'\u100f\u1039\u100d',0xbf:'\u100f\u1039\u100c',0xc0:'\u100f\u1039\u100f',
- 0xe6:'\u2026',0xe9:'\u103b\u103d\u103e',0xea:'\u103e',0xeb:'\u103d',
- 0xec:'\u103d\u103e',0xed:'\u103b\u103d',0xee:'\u103b\u103d\u103e',0xef:'\u103d\u103e',
- 0xf0:'\u103c\u102f',0xf1:'\u103c\u102f',0xf2:'\u103c\u102f',0xf3:'\u103c\u102f',
- 0xf4:'\u1004\u103a\u1039\u102e',0xf5:'\u1004\u103a\u1039\u102d',0xf6:'\u102d\u1036',
- 0xf8:'\u1004\u103a\u1039\u1036',
+    0x20: " ", 0x21: "\u100d", 0x22: "\u1013", 0x23: "\u100b",
+    0x26: "\u101b", 0x27: "\u1012",
+    0x28: "(", 0x29: ")", 0x2a: "\u1002", 0x2b: "+",
+    0x2c: "\u101a", 0x2d: "\u2014", 0x2e: ".", 0x2f: "\u104b",
+    0x30: "\u1040", 0x31: "\u1041", 0x32: "\u1042", 0x33: "\u1043",
+    0x34: "\u1044", 0x35: "\u1045", 0x36: "\u1046", 0x37: "\u1047",
+    0x38: "\u1048", 0x39: "\u1049", 0x3a: "\u102b\u103a", 0x3b: "\u1038",
+    0x3c: "\u103c\u103d", 0x3d: "=", 0x3e: "\u103c\u103d", 0x3f: "\u104a",
+    0x40: "\u100f\u1039\u100d", 0x41: "\u1017", 0x42: "\u103c", 0x43: "\u1003",
+    0x44: "\u102e", 0x45: "\u1014", 0x46: "\u1004\u103a\u1039", 0x47: "\u103d",
+    0x48: "\u1036", 0x49: "\u103e\u102f", 0x4a: "\u1032", 0x4b: "\u102f",
+    0x4c: "\u1030", 0x4d: "\u103c", 0x4e: "\u103c", 0x4f: "\u1025",
+    0x50: "\u100f", 0x51: "\u103b\u103e", 0x52: "\u103b\u103d", 0x53: "\u103e",
+    0x54: "\u103d\u103e", 0x55: "\u1037", 0x56: "\u1020", 0x57: "\u103b\u103d\u103e",
+    0x58: "\u100c", 0x59: "\u1037", 0x5a: "\u1007", 0x5b: "\u101f",
+    0x5c: "\u104f", 0x5d: "\u2018", 0x5e: "/", 0x5f: "\u00d7",
+    0x60: "\u103c", 0x61: "\u1031", 0x62: "\u1018", 0x63: "\u1001",
+    0x64: "\u102d", 0x65: "\u1014", 0x66: "\u103a", 0x67: "\u102b",
+    0x68: "\u1037", 0x69: "\u1004", 0x6a: "\u103c", 0x6b: "\u102f",
+    0x6c: "\u1030", 0x6d: "\u102c", 0x6e: "\u100a", 0x6f: "\u101e",
+    0x70: "\u1005", 0x71: "\u1006", 0x72: "\u1019", 0x73: "\u103b",
+    0x74: "\u1021", 0x75: "\u1000", 0x76: "\u101c", 0x77: "\u1010",
+    0x78: "\u1011", 0x79: "\u1015", 0x7a: "\u1016", 0x7b: "\u1027",
+    0x7d: "\u2019", 0x7e: "\u103c", 0xa1: "\u100e", 0xa2: "\u1039\u1003",
+    0xa3: "\u1023", 0xa4: "\u104e", 0xa5: "\u100b\u1039\u100b", 0xa6: "\u1039\u1011", 0xa7: "\u103e",
+    0xa8: "\u1039\u1013", 0xa9: "\u1039\u1001", 0xaa: "\u103e\u1030", 0xac: "\u1039\u1011",
+    0xae: "\u1039\u1019", 0xb1: "\u101b", 0xb2: "\u1039\u100c", 0xb3: "\u1039\u100b",
+    0xb4: "\u1039\u1012", 0xb6: "\u101b", 0xb7: "*",
+    0xb8: "\u103d\u103e", 0xb9: "\u100d\u1039\u100e", 0xba: "\u103c", 0xbd: "\u101b",
+    0xbe: "\u1039\u1002", 0xbf: "?",
+    # The earlier WinInnwa table maps C0 to the complete stack.
+    0xc0: "\u100f\u1039\u100f", 0xc1: "\u1039\u1017",
+    0xc5: "\u1039\u1010", 0xc6: "\u1039\u1007", 0xc7: "\u1039\u1018",
+    0xc9: "\u1039\u1010\u103d", 0xcd: "\u1009",
+    0xd0: "\u1004\u103a\u1039\u102e", 0xd1: "\u1039\u1008", 0xd3: "\u1009\u102c", 0xd6: "\u1039\u100f",
+    0xd7: "\u100d\u1039\u100d", 0xd8: "\u1004\u103a\u1039\u102d", 0xda: "\u1009", 0xdc: "\u1039\u1015",
+    0xe4: "\u1039\u1006", 0xe5: "\u1039\u1010", 0xe6: "\u1039\u1016",
+    0xe7: ",", 0xe9: "\u1039\u1014", 0xeb: "\u103d", 0xec: "\u103d\u103e", 0xed: "\u104d",
+    0xee: "\u103b\u103d\u103e", 0xef: "\u103d\u103e", 0xf0: "\u102d\u1036", 0xf1: "\u100a",
+    0xf2: "\u103c\u102f", 0xf3: "\u103f", 0xf4: "\u1004\u103a\u1039\u102e", 0xf5: "\u1004\u103a\u1039\u102d",
+    0xf6: "\u1039\u1005", 0xf8: "\u1004\u103a\u1039\u1036", 0xfa: "\u1039\u1000", 0xfc: "\u104c",
+    0xfe: "\u1024", 0x2019: "\u1039\u101c",
 }
+# U+0025 was questioned and was not observed in the surveyed editions.
+WININNWA_UNRESOLVED_SLOTS = frozenset({0x24, 0x25, 0x7c, 0xb5, 0xea})
 
 
 # The ZawCode Keymagic layout table: keyboard slot -> Myanmar text, from
@@ -1347,7 +1364,12 @@ class FontDecoder:
             return None
         out = []
         for ch in src:
-            hit = page.get(ord(ch))
+            slot = ord(ch)
+            # Keep the legacy character visible when its reading is ambiguous.
+            if page is WININNWA_LEGACY_CODE_PAGE and slot in WININNWA_UNRESOLVED_SLOTS:
+                out.append(ch)
+                continue
+            hit = page.get(slot)
             if hit is None:
                 return None
             out.append(hit)

@@ -1,5 +1,4 @@
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -40,26 +39,13 @@ async function execute(args) {
   }
 }
 
-export async function qpdfAvailable() {
-  try {
-    await execute(["--version"]);
-    return true;
-  } catch {
-    return false;
+// File-to-file processing avoids copying the input and output PDFs through
+// JavaScript buffers. The caller owns both files and their temporary directory.
+export async function runQpdfFile(input, output, args = []) {
+  if (typeof input !== "string" || typeof output !== "string" || !input || !output) {
+    throw new TypeError("qpdf requires input and output file paths");
   }
-}
-
-
-export async function runQpdf(bytes, args = []) {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "linga-qpdf-"));
-  const input = path.join(dir, "input.pdf");
-  const output = path.join(dir, "output.pdf");
-  try {
-    await fs.writeFile(input, Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes), { mode: 0o600 });
-    const result = await execute([...args, "--", input, output]);
-    const data = await fs.readFile(output);
-    return { data, warnings: result.warnings };
-  } finally {
-    await fs.rm(dir, { recursive: true, force: true });
-  }
+  const result = await execute([...args, "--", path.resolve(input), path.resolve(output)]);
+  await fs.chmod(output, 0o600);
+  return result;
 }

@@ -13,6 +13,12 @@ test("site caller parses every measured path, including old fonts", () => {
   }
 });
 
+test("local file streams use the full parsing policy", () => {
+  assert.equal(normalizeCaller("local"), "local");
+  assert.deepEqual(decideForCaller("local", { encodingPath: "wininnwa", lane: "extract" }),
+    { action: "parse", caller: "local" });
+});
+
 test("scraper parses only Unicode and ZawCode in the extract lane", () => {
   assert.equal(decideForCaller("scraper", { encodingPath: "unicode", lane: "extract" }).action, "parse");
   assert.equal(decideForCaller("scraper", { encodingPath: "zawcode", lane: "extract" }).action, "parse");

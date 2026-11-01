@@ -1,7 +1,8 @@
 import { parseTtfCmap } from "../core/ttf-cmap.js";
 import fs from "node:fs";
+import path from "node:path";
 import zlib from "node:zlib";
-import { ValueError, pyTruthy, pyInt, pyFloat, fromHexStrict, pyStripBytes } from "../core/pylib.js";
+import { ValueError, pyTruthy, pyInt, pyFloat, fromHexStrict } from "../core/pylib.js";
 import { loadMapJson, mapNameForPath } from "../core/json-map.js";
 import { MAX_PAGES, OWNER_PARSER_WORKER, resourceLimit } from "../core/limits.js";
 import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../codepage/registry.js";
@@ -11,7 +12,9 @@ import {
   asDocumentDecoding, DocumentDecoding, FontResourceLoader, LegacyAyarMap, UnsetFontDecoder,
   pageFontDecoders, PDF_PARSING_PATHS,
 } from "./pdf-fonts.js";
-import { readPageContent } from "./pdf-content-stream.js";
+import { spoolPageContent } from "./pdf-content-file.js";
+import { PdfFileLexer } from "./pdf-file-lexer.js";
+import { PdfPagePieces } from "./pdf-page-pieces.js";
 import { PageImageCollector } from "./pdf-image-coverage.js";
 
 
@@ -71,51 +74,9 @@ function inflateTolerant(buf, limit) {
 
 
 
-const B_ENDOBJ = Buffer.from("endobj");
 const B_STREAM = Buffer.from("stream");
 const B_ENDSTREAM = Buffer.from("endstream");
 const B_FLAKE = Buffer.from("/FlateDecode");
-
-const isDigit = (c) => c >= 0x30 && c <= 0x39;
-
-const isWsByte = (c) => c === 0x20 || (c >= 0x09 && c <= 0x0d);
-
-export function parsePdfObjects(raw) {
-  const objects = new Map();
-  const n = raw.length;
-  let i = 0;
-  while (i < n) {
-    if (!isDigit(raw[i])) { i += 1; continue; }
-    let j = i;
-    while (j < n && isDigit(raw[j])) j += 1;
-    const numStr = raw.toString("latin1", i, j);
-    let k = j;
-    while (k < n && isWsByte(raw[k])) k += 1;
-    if (k === j || k >= n || !isDigit(raw[k])) { i = j; continue; }
-    let m = k;
-    while (m < n && isDigit(raw[m])) m += 1;
-    const genStr = raw.toString("latin1", k, m);
-    let p = m;
-    while (p < n && isWsByte(raw[p])) p += 1;
-    if (p - m === 0) { i = j; continue; }
-    if (raw.toString("latin1", p, p + 3) === "obj") {
-      const start = p + 3;
-      const end = raw.indexOf(B_ENDOBJ, start);
-      if (end !== -1) {
-        const key = `${pyInt(numStr)},${pyInt(genStr)}`;
-        objects.set(key, pyStripBytes(raw.subarray(start, end)));
-        if (objects.size > MAX_PDF_OBJECTS) {
-          throw new ValueError(`PDF exceeds the ${MAX_PDF_OBJECTS} object cap`);
-        }
-      }
-      i = start;
-    } else {
-      i = j;
-    }
-  }
-  return objects;
-}
-
 
 export function getStream(objects, num, gen = 0) {
   const d = objects.get(`${num},${gen}`);
@@ -509,8 +470,12 @@ export function loadSidecarMap(p = null) {
 const MEDIABOX_RE = /\/MediaBox\s*\[\s*([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s*\]/;
 const PARENT_RE = /\/Parent\s+(\d+)\s+(\d+)\s+R/;
 
+function objectDictionary(objects, key) {
+  return objects.dictionary ? objects.dictionary(key) : objects.get(key);
+}
+
 export function getPageMediabox(objects, pageNum, pageGen) {
-  let d = objects.get(`${pageNum},${pageGen}`);
+  let d = objectDictionary(objects, `${pageNum},${pageGen}`);
   if (d === undefined) d = Buffer.alloc(0);
   let text = d.toString("latin1");
   for (let hop = 0; hop < 8; hop += 1) {
@@ -522,7 +487,7 @@ export function getPageMediabox(objects, pageNum, pageGen) {
     }
     const pm = PARENT_RE.exec(text);
     if (!pm) break;
-    const parent = objects.get(`${pyInt(pm[1])},${pyInt(pm[2])}`);
+    const parent = objectDictionary(objects, `${pyInt(pm[1])},${pyInt(pm[2])}`);
     text = parent === undefined ? "" : parent.toString("latin1");
   }
   return [612.0, 792.0];
@@ -535,10 +500,10 @@ const ANY_REF_RE = /(\d+)\s+\d+\s+R/g;
 
 export function pageHasImages(objects, pageNum, pageGen) {
   const get = (refNum) => {
-    const raw = objects.get(`${pyInt(refNum)},0`);
+    const raw = objectDictionary(objects, `${pyInt(refNum)},0`);
     return raw === undefined ? "" : raw.toString("latin1");
   };
-  const pageBuf = objects.get(`${pageNum},${pageGen}`);
+  const pageBuf = objectDictionary(objects, `${pageNum},${pageGen}`);
   const d = pageBuf === undefined ? "" : pageBuf.toString("latin1");
   let res = d;
   const m = RES_REF_RE.exec(d);
@@ -563,7 +528,7 @@ export function collectPages(
 ) {
   const key = `${pageNum},${gen}`;
   if (state.visiting.has(key)) throw new ValueError("Cycle found in PDF page tree");
-  const buf = objects.get(key);
+  const buf = objectDictionary(objects, key);
   const dStr = buf === undefined ? "" : buf.toString("latin1");
   if (/\/Type\s*\/Page(?!s)/.test(dStr)) {
     if (state.seenPages.has(key)) return [];
@@ -599,6 +564,11 @@ export function collectPages(
 }
 
 export function findRootPages(objects) {
+  if (objects.rootKey) {
+    const catalog = objectDictionary(objects, objects.rootKey)?.toString("latin1") ?? "";
+    const pages = /\/Pages\s+(\d+)\s+\d+\s+R/.exec(catalog);
+    if (pages) return pyInt(pages[1]);
+  }
   for (const [key, d] of objects) {
     const dStr = d.toString("latin1");
     if (/\/Type\s*\/Catalog/.test(dStr)) {
@@ -723,14 +693,18 @@ export function collapseOverprint(text) {
 
 
 export function legacyAyarToUnicode(text, { applyAaVowelRule = true } = {}) {
-  text = text.replace(/\u200b/g, "");
-
-
-
-
+  // Combined kinzi/vowel glyphs may be followed by medials in legacy order.
+  // Preserve the vowel, placing the medials before it for Unicode.
+  text = text.replace(/([က-အ])(င်္)([ိီံ])([ျြွှ]+)/gu, "$1$2$4$3");
+  // Handle ordinary and compound pre-base slots in one pass. A second pass
+  // could steal the preceding syllable's ေ when another cluster follows.
   text = text.replace(
-    /([ေြ]+)([က-အ၀၇၈])(င်္)?((?:္[က-အ])*)/g,
-    (_m, vowel, base, kinzi, stacked) => (kinzi || "") + base + (stacked || "") + vowel,
+    /((?:ေ?ြ[ွှ]+)|[ေြ]+)([က-အ၀၇၈])(င်္)?((?:္[က-အ])*)/gu,
+    (_m, vowel, base, kinzi, stacked) => {
+      const preposed = vowel.startsWith("ေြ") && /[ွှ]/u.test(vowel)
+        ? `${vowel.slice(1)}ေ` : vowel;
+      return (kinzi || "") + base + (stacked || "") + preposed;
+    },
   );
 
 
@@ -742,7 +716,8 @@ export function legacyAyarToUnicode(text, { applyAaVowelRule = true } = {}) {
     /([က-အ][ါ-ှ]*)(င်္)(?![က-အ])/g,
     "$2$1",
   );
-  // Pair the immediate ya/ra with the base; preserve the remaining marks.
+  // Pair medials with the base before ေ, including a combined ya/wa/ha.
+  text = text.replace(/([က-အ၀၇၈])ေ([ျြ]?)([ွှ]+)/gu, "$1$2$3ေ");
   text = text.replace(/([က-အ၀၇၈])(ေ)([ျြ])/g, "$1$3$2");
   text = text.replace(/([က-အ])([က-အ])(င်္)/g, "$1$3$2");
 
@@ -775,8 +750,8 @@ function skipInlineImage(data, pos) {
   const m = INLINE_IMAGE_END_RE.exec(data);
   return m ? INLINE_IMAGE_END_RE.lastIndex : data.length;
 }
-function* iterContentOperations(data, { prefix = false } = {}) {
-  const lex = new Lexer(data);
+export function* iterContentOperations(data, { prefix = false } = {}) {
+  const lex = typeof data === "string" ? new Lexer(data) : data;
   let operands = [];
   const containers = [];
   for (;;) {
@@ -806,7 +781,8 @@ function* iterContentOperations(data, { prefix = false } = {}) {
       if (containers.length) { operands.push(value); continue; }
       const op = String(value);
       if (op === "ID") {
-        lex.pos = skipInlineImage(data, lex.pos);
+        if (typeof lex.skipInlineImage === "function") lex.skipInlineImage();
+        else lex.pos = skipInlineImage(data, lex.pos);
         operands = [];
         continue;
       }
@@ -910,15 +886,44 @@ function joinDraftRuns(pieces, order) {
   return out;
 }
 
+function joinOrderedLine(ordered, doc) {
+  if (doc.kind === "font") {
+    let decoder = null;
+    let pending = "";
+    const transformed = [];
+    const flushRun = () => {
+      if (decoder) transformed.push(doc.transformRun ? doc.transformRun(decoder, pending) : pending);
+      pending = "";
+    };
+    for (const [, , text, runs] of ordered) {
+      for (const [font, part] of runs || [[null, text]]) {
+        if (font !== decoder) { flushRun(); decoder = font; }
+        pending += part;
+      }
+    }
+    if (decoder) flushRun();
+    else if (pending) transformed.push(pending);
+    return transformed.join("");
+  }
+  if (doc.zawcodeOrder) return joinDraftRuns(ordered, doc.zawcodeOrder);
+  if (doc.legacyTextFix) {
+    const page = doc.legacyCodePage;
+    const applyAaVowelRule = (page == null && doc.map instanceof LegacyAyarMap)
+      || page === AYAR_LEGACY_CODE_PAGE || page === WININNWA_LEGACY_CODE_PAGE;
+    return joinDraftRuns(ordered, (text) => legacyAyarToUnicode(text, { applyAaVowelRule }));
+  }
+  return ordered.map(([, , text]) => text).join("");
+}
+
 export function extractPageLines(objects, pageNum, pageGen, decoding, {
   usedMyanmarFonts = null, usedFontKinds = null, usedLegacyFonts = null,
-  inspectPrefix = null, onPageContent = null, onConfirmedRepair = null,
+  inspectPrefix = null, onPageContent = null, onConfirmedRepair = null, scratchDir = null, pieceStore = null,
 } = {}) {
   let doc = asDocumentDecoding(decoding);
   const loader = documentLoader(doc, objects);
   let decoders = pageFontDecoders(loader, pageNum, pageGen, doc);
   let unsetFont = new UnsetFontDecoder("", { doc });
-  const { streams, references } = readPageContent(loader, pageNum, pageGen, {
+  const contentOptions = {
     maxBytes: MAX_STREAM_MB * 1024 * 1024,
     inspect: (prefix) => {
       const selected = inspectPrefix?.(prefix, decoders, loader);
@@ -931,10 +936,15 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, {
       decoders = pageFontDecoders(loader, pageNum, pageGen, doc);
       unsetFont = new UnsetFontDecoder("", { doc });
     },
-  });
-  onPageContent?.(streams, references, loader);
+  };
+  const spooled = spoolPageContent(loader, pageNum, pageGen, { ...contentOptions, scratchDir });
+  const suppliedStore = pieceStore;
+  try {
+  pieceStore ??= new PdfPagePieces(path.dirname(spooled.file));
+  const { streams, references } = spooled;
+  pieceStore.begin(doc);
+  onPageContent?.(streams, references, loader, spooled);
   const imageCollector = new PageImageCollector(loader, pageNum, pageGen, iterContentOperations);
-  const pieces = [];
 
 
 
@@ -945,9 +955,8 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, {
   // A /Contents array is one logical sequence of page commands. Keep the
   // original stream boundaries for the writer, but do not reset text or
   // graphics state between them while parsing.
-  for (const s of streams.length ? [Buffer.concat(streams)] : []) {
-    if (!s.length) continue;
-    const content = s.toString("latin1");
+  const sources = spooled.size ? [new PdfFileLexer(spooled.fd, spooled.size)] : [];
+  for (const content of sources) {
 
     let inBlock = false;
     let blockTexts = [];
@@ -1056,8 +1065,9 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, {
           // Repeated characters in a text-show operation can be deliberate,
           // including U+102F U+102F. Only the later position-based duplicate
           // piece check has evidence that two separate draws are overprints.
-          pieces.push([blockXy[1], blockXy[0], blockSize === null ? 12.0 : blockSize, text,
-            doc.kind === "font" || doc.zawcodeOrder || doc.legacyTextFix ? blockRuns : null]);
+          const piece = [blockXy[1], blockXy[0], blockSize === null ? 12.0 : blockSize, text,
+            doc.kind === "font" || doc.zawcodeOrder || doc.legacyTextFix ? blockRuns : null];
+          pieceStore.add(piece);
         }
         blockTexts = [];
         blockRuns = [];
@@ -1095,101 +1105,15 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, {
 
 
 
-  // Confirmed byte/run pairs are applied only after the full page has been
-  // parsed. They remain scoped to the matching font resource and run.
-  if (doc.kind === "legacy") {
-    const before = pieces.map((piece) => piece[3]).join("\n");
-    for (const piece of pieces) {
-      if (!Array.isArray(piece[4])) continue;
-      for (const run of piece[4]) run[1] = run[2];
-      piece[3] = piece[4].map((run) => run[1]).join("");
-    }
-    const after = pieces.map((piece) => piece[3]).join("\n");
-    if (before !== after) onConfirmedRepair?.({ before, after });
-  }
-
-  const uniquePieces = [];
-  for (const piece of pieces) {
-    const [y, x, , text] = piece;
-    let drop = false;
-    for (let k = 0; k < uniquePieces.length; k += 1) {
-      const [oldY, oldX, , oldText] = uniquePieces[k];
-      if (Math.abs(x - oldX) > 1.0 || Math.abs(y - oldY) > 1.0) continue;
-      if (text === oldText || oldText.includes(text)) {
-        drop = true;
-        break;
-      }
-      if (text.includes(oldText)) {
-
-        uniquePieces[k] = piece;
-        drop = true;
-        break;
-      }
-    }
-    if (!drop) uniquePieces.push(piece);
-  }
-  pieces.length = 0;
-  pieces.push(...uniquePieces);
-
   const [pageW, pageH] = getPageMediabox(objects, pageNum, pageGen);
-  if (!pieces.length) return [[], pageW, pageH, imageCollector.images];
-
-  pieces.sort((a, b) => (b[0] - a[0]) || (a[1] - b[1]));
-
-  const lines = [];
-  let currentY = pieces[0][0];
-  let currentLine = [];
-  const flush = () => {
-
-
-
-    const ordered = [...currentLine].sort((p, q) => p[0] - q[0]);
-    let maxSize = -Infinity;
-    for (const [, s] of ordered) if (s > maxSize) maxSize = s;
-    let joined;
-    if (doc.kind === "font") {
-      let decoder = null;
-      let pending = "";
-      const transformed = [];
-      const flushRun = () => {
-        if (decoder) transformed.push(doc.transformRun ? doc.transformRun(decoder, pending) : pending);
-        pending = "";
-      };
-      for (const [, , text, runs] of ordered) {
-        for (const [font, part] of runs || [[null, text]]) {
-          if (font !== decoder) { flushRun(); decoder = font; }
-          pending += part;
-        }
-      }
-      if (decoder) flushRun();
-      else if (pending) transformed.push(pending);
-      joined = transformed.join("");
-    } else if (doc.zawcodeOrder) {
-      joined = joinDraftRuns(ordered, doc.zawcodeOrder);
-    } else if (doc.legacyTextFix) {
-      const page = doc.legacyCodePage;
-      const applyAaVowelRule = (page == null && doc.map instanceof LegacyAyarMap)
-        || page === AYAR_LEGACY_CODE_PAGE || page === WININNWA_LEGACY_CODE_PAGE;
-      // A page may mix legacy and Unicode fonts. Do not reorder or normalize
-      // a non-legacy font's text merely because a different font was legacy.
-      joined = joinDraftRuns(ordered, (text) => legacyAyarToUnicode(text, { applyAaVowelRule }));
-    } else {
-      joined = ordered.map(([, , t]) => t).join("");
-    }
-    lines.push([ordered[0][0], currentY, maxSize, joined]);
-  };
-
-  for (const [y, x, size, text, runs] of pieces) {
-    if (Math.abs(y - currentY) > 3) {
-      flush();
-      currentLine = [];
-      currentY = y;
-    }
-    currentLine.push([x, size, text, runs]);
-  }
-  if (currentLine.length) flush();
-
+  pieceStore.finish({ onConfirmedRepair, joinRuns: joinOrderedLine });
+  const lines = suppliedStore ? pieceStore : [...pieceStore.lines()];
   return [lines, pageW, pageH, imageCollector.images];
+  } finally {
+    pieceStore?.abort();
+    if (!suppliedStore) pieceStore?.close();
+    spooled.close();
+  }
 }
 const isAsciiDigitOrDot = (ch) => (ch >= "0" && ch <= "9") || ch === ".";
 export function extractPageTextLayout(objects, pageNum, pageGen, codeToUni) {

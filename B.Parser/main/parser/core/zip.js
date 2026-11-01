@@ -217,6 +217,11 @@ export class ZipStreamWriter {
     await new Member(this, name).stream([buf]);
   }
 
+  abort() {
+    if (this.fd != null) fs.closeSync(this.fd);
+    this.fd = null;
+  }
+
   async close() {
     const cdStart = this.pos;
     for (const e of this.entries) {
@@ -249,6 +254,6 @@ export class ZipStreamWriter {
     eocd.writeUInt32LE(cdSize, 12);
     eocd.writeUInt32LE(cdStart, 16);
     this.write(eocd);
-    fs.closeSync(this.fd);
+    this.abort();
   }
 }
