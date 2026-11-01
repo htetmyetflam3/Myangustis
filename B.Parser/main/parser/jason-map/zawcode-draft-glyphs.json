@@ -1,0 +1,1298 @@
+{
+  "status": "draft; provisional cmap and bounded GSUB readings, not keyboard bytes",
+  "source": "tools-box/python/zawcode-order-evidence.py",
+  "referenceFontSha256": "5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9",
+  "templates": {
+    "5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9": {
+      "encoding": "Identity-H",
+      "cidToGid": "Identity",
+      "glyphs": {
+        "0003": " ",
+        "0004": "!",
+        "0005": "\"",
+        "0006": "#",
+        "0007": "$",
+        "0008": "%",
+        "0009": "&",
+        "000A": "'",
+        "000B": "(",
+        "000C": ")",
+        "000D": "*",
+        "000E": "+",
+        "000F": ",",
+        "0010": "-",
+        "0011": ".",
+        "0012": "/",
+        "0013": "0",
+        "0014": "1",
+        "0015": "2",
+        "0016": "3",
+        "0017": "4",
+        "0018": "5",
+        "0019": "6",
+        "001A": "7",
+        "001B": "8",
+        "001C": "9",
+        "001D": ":",
+        "001E": ";",
+        "001F": "<",
+        "0020": "=",
+        "0021": ">",
+        "0022": "?",
+        "0023": "@",
+        "0024": "A",
+        "0025": "B",
+        "0026": "C",
+        "0027": "D",
+        "0028": "E",
+        "0029": "F",
+        "002A": "G",
+        "002B": "H",
+        "002C": "I",
+        "002D": "J",
+        "002E": "K",
+        "002F": "L",
+        "0030": "M",
+        "0031": "N",
+        "0032": "O",
+        "0033": "P",
+        "0034": "Q",
+        "0035": "R",
+        "0036": "S",
+        "0037": "T",
+        "0038": "U",
+        "0039": "V",
+        "003A": "W",
+        "003B": "X",
+        "003C": "Y",
+        "003D": "Z",
+        "003E": "[",
+        "003F": "\\",
+        "0040": "]",
+        "0041": "^",
+        "0042": "_",
+        "0043": "`",
+        "0044": "a",
+        "0045": "b",
+        "0046": "c",
+        "0047": "d",
+        "0048": "e",
+        "0049": "f",
+        "004A": "g",
+        "004B": "h",
+        "004C": "i",
+        "004D": "j",
+        "004E": "k",
+        "004F": "l",
+        "0050": "m",
+        "0051": "n",
+        "0052": "o",
+        "0053": "p",
+        "0054": "q",
+        "0055": "r",
+        "0056": "s",
+        "0057": "t",
+        "0058": "u",
+        "0059": "v",
+        "005A": "w",
+        "005B": "x",
+        "005C": "y",
+        "005D": "z",
+        "005E": "{",
+        "005F": "|",
+        "0060": "}",
+        "0061": "~",
+        "0062": "×",
+        "0063": "‘",
+        "0064": "’",
+        "0065": "“",
+        "0066": "”",
+        "0067": "–",
+        "0068": "—",
+        "0069": "က",
+        "006A": "ခ",
+        "006B": "ဂ",
+        "006C": "ဃ",
+        "006D": "င",
+        "006E": "စ",
+        "006F": "ဆ",
+        "0070": "ဇ",
+        "0071": "ဈ",
+        "0072": "ဉ",
+        "0073": "ည",
+        "0074": "ဋ",
+        "0075": "ဌ",
+        "0076": "ဍ",
+        "0077": "ဎ",
+        "0078": "ဏ",
+        "0079": "တ",
+        "007A": "ထ",
+        "007B": "ဒ",
+        "007C": "ဓ",
+        "007D": "န",
+        "007E": "ပ",
+        "007F": "ဖ",
+        "0080": "ဗ",
+        "0081": "ဘ",
+        "0082": "မ",
+        "0083": "ယ",
+        "0084": "ရ",
+        "0085": "လ",
+        "0086": "ဝ",
+        "0087": "သ",
+        "0088": "ဟ",
+        "0089": "ဠ",
+        "008A": "အ",
+        "008B": "ဣ",
+        "008C": "ဤ",
+        "008D": "ဥ",
+        "008E": "ဦ",
+        "008F": "ဧ",
+        "0090": "ဩ",
+        "0091": "ဪ",
+        "0092": "ါ",
+        "0093": "ာ",
+        "0094": "ိ",
+        "0095": "ီ",
+        "0096": "ု",
+        "0097": "ူ",
+        "0098": "ေ",
+        "0099": "ဲ",
+        "009A": "ံ",
+        "009B": "့",
+        "009C": "း",
+        "009D": "္",
+        "009E": "်",
+        "009F": "ျ",
+        "00A0": "ြ",
+        "00A1": "ွ",
+        "00A2": "ှ",
+        "00A3": "ဿ",
+        "00A4": "၀",
+        "00A5": "၁",
+        "00A6": "၂",
+        "00A7": "၃",
+        "00A8": "၄",
+        "00A9": "၅",
+        "00AA": "၆",
+        "00AB": "၇",
+        "00AC": "၈",
+        "00AD": "၉",
+        "00AE": "၊",
+        "00AF": "။",
+        "00B0": "၌",
+        "00B1": "၍",
+        "00B2": "၎",
+        "00B3": "၏",
+        "00B4": "ၐ",
+        "00B5": "ၑ",
+        "00B6": "ၒ",
+        "00B7": "ၓ",
+        "00B8": "ၔ",
+        "00B9": "ၕ",
+        "00BA": "ၖ",
+        "00BB": "ၗ",
+        "00BC": "ၘ",
+        "00BD": "ၙ",
+        "00BE": "္က",
+        "00BF": "္ခ",
+        "00C0": "္ဂ",
+        "00C1": "္ဃ",
+        "00C2": "္င",
+        "00C3": "္စ",
+        "00C4": "္ဆ",
+        "00C5": "္ဇ",
+        "00C6": "္ဈ",
+        "00C7": "္ဉ",
+        "00C8": "္ည",
+        "00C9": "္ဋ",
+        "00CA": "္ဌ",
+        "00CB": "္ဍ",
+        "00CC": "္ဎ",
+        "00CD": "္ဏ",
+        "00CE": "္တ",
+        "00CF": "္ထ",
+        "00D0": "္ဒ",
+        "00D1": "္ဓ",
+        "00D2": "္န",
+        "00D3": "္ပ",
+        "00D4": "္ဖ",
+        "00D5": "္ဗ",
+        "00D6": "္ဘ",
+        "00D7": "္မ",
+        "00D8": "္ယ",
+        "00D9": "္ရ",
+        "00DA": "္လ",
+        "00DB": "္သ",
+        "00DC": "္ဟ",
+        "00DE": "ါ",
+        "00DF": "ာ",
+        "00E0": "ိ",
+        "00E1": "ီ",
+        "00E2": "ု",
+        "00E3": "ူ",
+        "00E4": "ေ",
+        "00E5": "ဲ",
+        "00E6": "ံ",
+        "00E7": "့",
+        "00E8": "း",
+        "00E9": "်",
+        "00EA": "ျ",
+        "00EB": "ွ",
+        "00EC": "ှ",
+        "00ED": "ါ်",
+        "00EE": "ြ",
+        "00F4": "ွှ",
+        "00F5": "ျွ",
+        "00F6": "ြွ",
+        "00F8": "ျှ",
+        "00F9": "ျွှ",
+        "0100": "ိံ",
+        "0101": "ှ",
+        "0102": "ှု",
+        "0103": "ု",
+        "0104": "ူ",
+        "0105": "ည",
+        "0106": "ဉ",
+        "0107": "ဉ",
+        "0108": "န",
+        "0109": "ရ",
+        "010A": "ဍ္ဎ",
+        "010B": "ဋ္ဌ",
+        "010C": "ဏ္ဍ",
+        "010D": "ဏ္ဏ",
+        "010E": "ဋ္ဋ",
+        "010F": "ဍ္ဍ",
+        "0110": "ှို",
+        "0113": "​",
+        "0114": "‌",
+        "0115": "‍",
+        "0116": "⁠",
+        "0117": "≠",
+        "0118": "◌",
+        "0119": "္က",
+        "011A": "္ခ",
+        "011B": "္ဂ",
+        "011C": "္ဃ",
+        "011D": "္င",
+        "011E": "္စ",
+        "011F": "္ဆ",
+        "0120": "္ဇ",
+        "0121": "္ဈ",
+        "0122": "္ဉ",
+        "0123": "္ည",
+        "0124": "္ဎ",
+        "0125": "္ဋ",
+        "0126": "္ဌ",
+        "0127": "္ဍ",
+        "0128": "္ဏ",
+        "0129": "္တ",
+        "012A": "္ထ",
+        "012B": "္ဒ",
+        "012C": "္ဓ",
+        "012D": "္န",
+        "012E": "္ပ",
+        "012F": "္ဖ",
+        "0130": "္ဗ",
+        "0131": "္ဘ",
+        "0132": "္မ",
+        "0133": "္ယ",
+        "0134": "္ရ",
+        "0135": "္လ",
+        "0136": "္သ",
+        "0137": "္ဟ",
+        "0139": "င်္",
+        "0146": "္ၐ",
+        "0147": "္ၑ",
+        "0148": "္ၐ",
+        "0149": "္ၑ",
+        "014A": "ၒ",
+        "014B": "ၓ",
+        "014C": "ၔ",
+        "014D": "ၕ",
+        "014E": "ဠှ",
+        "014F": "္"
+      },
+      "origins": {
+        "0003": [
+          "cmap"
+        ],
+        "0004": [
+          "cmap"
+        ],
+        "0005": [
+          "cmap"
+        ],
+        "0006": [
+          "cmap"
+        ],
+        "0007": [
+          "cmap"
+        ],
+        "0008": [
+          "cmap"
+        ],
+        "0009": [
+          "cmap"
+        ],
+        "000A": [
+          "cmap"
+        ],
+        "000B": [
+          "cmap"
+        ],
+        "000C": [
+          "cmap"
+        ],
+        "000D": [
+          "cmap"
+        ],
+        "000E": [
+          "cmap"
+        ],
+        "000F": [
+          "cmap"
+        ],
+        "0010": [
+          "cmap"
+        ],
+        "0011": [
+          "cmap"
+        ],
+        "0012": [
+          "cmap"
+        ],
+        "0013": [
+          "cmap"
+        ],
+        "0014": [
+          "cmap"
+        ],
+        "0015": [
+          "cmap"
+        ],
+        "0016": [
+          "cmap"
+        ],
+        "0017": [
+          "cmap"
+        ],
+        "0018": [
+          "cmap"
+        ],
+        "0019": [
+          "cmap"
+        ],
+        "001A": [
+          "cmap"
+        ],
+        "001B": [
+          "cmap"
+        ],
+        "001C": [
+          "cmap"
+        ],
+        "001D": [
+          "cmap"
+        ],
+        "001E": [
+          "cmap"
+        ],
+        "001F": [
+          "cmap"
+        ],
+        "0020": [
+          "cmap"
+        ],
+        "0021": [
+          "cmap"
+        ],
+        "0022": [
+          "cmap"
+        ],
+        "0023": [
+          "cmap"
+        ],
+        "0024": [
+          "cmap"
+        ],
+        "0025": [
+          "cmap"
+        ],
+        "0026": [
+          "cmap"
+        ],
+        "0027": [
+          "cmap"
+        ],
+        "0028": [
+          "cmap"
+        ],
+        "0029": [
+          "cmap"
+        ],
+        "002A": [
+          "cmap"
+        ],
+        "002B": [
+          "cmap"
+        ],
+        "002C": [
+          "cmap"
+        ],
+        "002D": [
+          "cmap"
+        ],
+        "002E": [
+          "cmap"
+        ],
+        "002F": [
+          "cmap"
+        ],
+        "0030": [
+          "cmap"
+        ],
+        "0031": [
+          "cmap"
+        ],
+        "0032": [
+          "cmap"
+        ],
+        "0033": [
+          "cmap"
+        ],
+        "0034": [
+          "cmap"
+        ],
+        "0035": [
+          "cmap"
+        ],
+        "0036": [
+          "cmap"
+        ],
+        "0037": [
+          "cmap"
+        ],
+        "0038": [
+          "cmap"
+        ],
+        "0039": [
+          "cmap"
+        ],
+        "003A": [
+          "cmap"
+        ],
+        "003B": [
+          "cmap"
+        ],
+        "003C": [
+          "cmap"
+        ],
+        "003D": [
+          "cmap"
+        ],
+        "003E": [
+          "cmap"
+        ],
+        "003F": [
+          "cmap"
+        ],
+        "0040": [
+          "cmap"
+        ],
+        "0041": [
+          "cmap"
+        ],
+        "0042": [
+          "cmap"
+        ],
+        "0043": [
+          "cmap"
+        ],
+        "0044": [
+          "cmap"
+        ],
+        "0045": [
+          "cmap"
+        ],
+        "0046": [
+          "cmap"
+        ],
+        "0047": [
+          "cmap"
+        ],
+        "0048": [
+          "cmap"
+        ],
+        "0049": [
+          "cmap"
+        ],
+        "004A": [
+          "cmap"
+        ],
+        "004B": [
+          "cmap"
+        ],
+        "004C": [
+          "cmap"
+        ],
+        "004D": [
+          "cmap"
+        ],
+        "004E": [
+          "cmap"
+        ],
+        "004F": [
+          "cmap"
+        ],
+        "0050": [
+          "cmap"
+        ],
+        "0051": [
+          "cmap"
+        ],
+        "0052": [
+          "cmap"
+        ],
+        "0053": [
+          "cmap"
+        ],
+        "0054": [
+          "cmap"
+        ],
+        "0055": [
+          "cmap"
+        ],
+        "0056": [
+          "cmap"
+        ],
+        "0057": [
+          "cmap"
+        ],
+        "0058": [
+          "cmap"
+        ],
+        "0059": [
+          "cmap"
+        ],
+        "005A": [
+          "cmap"
+        ],
+        "005B": [
+          "cmap"
+        ],
+        "005C": [
+          "cmap"
+        ],
+        "005D": [
+          "cmap"
+        ],
+        "005E": [
+          "cmap"
+        ],
+        "005F": [
+          "cmap"
+        ],
+        "0060": [
+          "cmap"
+        ],
+        "0061": [
+          "cmap"
+        ],
+        "0062": [
+          "cmap"
+        ],
+        "0063": [
+          "cmap"
+        ],
+        "0064": [
+          "cmap"
+        ],
+        "0065": [
+          "cmap"
+        ],
+        "0066": [
+          "cmap"
+        ],
+        "0067": [
+          "cmap"
+        ],
+        "0068": [
+          "cmap"
+        ],
+        "0069": [
+          "cmap"
+        ],
+        "006A": [
+          "cmap"
+        ],
+        "006B": [
+          "cmap"
+        ],
+        "006C": [
+          "cmap"
+        ],
+        "006D": [
+          "cmap"
+        ],
+        "006E": [
+          "cmap"
+        ],
+        "006F": [
+          "cmap"
+        ],
+        "0070": [
+          "cmap"
+        ],
+        "0071": [
+          "cmap"
+        ],
+        "0072": [
+          "cmap"
+        ],
+        "0073": [
+          "cmap"
+        ],
+        "0074": [
+          "cmap"
+        ],
+        "0075": [
+          "cmap"
+        ],
+        "0076": [
+          "cmap"
+        ],
+        "0077": [
+          "cmap"
+        ],
+        "0078": [
+          "cmap"
+        ],
+        "0079": [
+          "cmap"
+        ],
+        "007A": [
+          "cmap"
+        ],
+        "007B": [
+          "cmap"
+        ],
+        "007C": [
+          "cmap"
+        ],
+        "007D": [
+          "cmap"
+        ],
+        "007E": [
+          "cmap"
+        ],
+        "007F": [
+          "cmap"
+        ],
+        "0080": [
+          "cmap"
+        ],
+        "0081": [
+          "cmap"
+        ],
+        "0082": [
+          "cmap"
+        ],
+        "0083": [
+          "cmap"
+        ],
+        "0084": [
+          "cmap"
+        ],
+        "0085": [
+          "cmap"
+        ],
+        "0086": [
+          "cmap"
+        ],
+        "0087": [
+          "cmap"
+        ],
+        "0088": [
+          "cmap"
+        ],
+        "0089": [
+          "cmap"
+        ],
+        "008A": [
+          "cmap"
+        ],
+        "008B": [
+          "cmap"
+        ],
+        "008C": [
+          "cmap"
+        ],
+        "008D": [
+          "cmap"
+        ],
+        "008E": [
+          "cmap"
+        ],
+        "008F": [
+          "cmap"
+        ],
+        "0090": [
+          "cmap"
+        ],
+        "0091": [
+          "cmap"
+        ],
+        "0092": [
+          "cmap"
+        ],
+        "0093": [
+          "GSUB single substitution chain",
+          "cmap"
+        ],
+        "0094": [
+          "cmap"
+        ],
+        "0095": [
+          "cmap"
+        ],
+        "0096": [
+          "cmap"
+        ],
+        "0097": [
+          "cmap"
+        ],
+        "0098": [
+          "cmap"
+        ],
+        "0099": [
+          "cmap"
+        ],
+        "009A": [
+          "cmap"
+        ],
+        "009B": [
+          "cmap"
+        ],
+        "009C": [
+          "cmap"
+        ],
+        "009D": [
+          "cmap"
+        ],
+        "009E": [
+          "cmap"
+        ],
+        "009F": [
+          "cmap"
+        ],
+        "00A0": [
+          "cmap"
+        ],
+        "00A1": [
+          "cmap"
+        ],
+        "00A2": [
+          "cmap"
+        ],
+        "00A3": [
+          "cmap"
+        ],
+        "00A4": [
+          "cmap"
+        ],
+        "00A5": [
+          "cmap"
+        ],
+        "00A6": [
+          "cmap"
+        ],
+        "00A7": [
+          "cmap"
+        ],
+        "00A8": [
+          "cmap"
+        ],
+        "00A9": [
+          "cmap"
+        ],
+        "00AA": [
+          "cmap"
+        ],
+        "00AB": [
+          "cmap"
+        ],
+        "00AC": [
+          "cmap"
+        ],
+        "00AD": [
+          "cmap"
+        ],
+        "00AE": [
+          "cmap"
+        ],
+        "00AF": [
+          "cmap"
+        ],
+        "00B0": [
+          "cmap"
+        ],
+        "00B1": [
+          "cmap"
+        ],
+        "00B2": [
+          "cmap"
+        ],
+        "00B3": [
+          "cmap"
+        ],
+        "00B4": [
+          "cmap"
+        ],
+        "00B5": [
+          "cmap"
+        ],
+        "00B6": [
+          "cmap"
+        ],
+        "00B7": [
+          "cmap"
+        ],
+        "00B8": [
+          "cmap"
+        ],
+        "00B9": [
+          "cmap"
+        ],
+        "00BA": [
+          "cmap"
+        ],
+        "00BB": [
+          "cmap"
+        ],
+        "00BC": [
+          "cmap"
+        ],
+        "00BD": [
+          "cmap"
+        ],
+        "00BE": [
+          "GSUB single substitution chain"
+        ],
+        "00BF": [
+          "GSUB single substitution chain"
+        ],
+        "00C0": [
+          "GSUB single substitution chain"
+        ],
+        "00C1": [
+          "GSUB single substitution chain"
+        ],
+        "00C2": [
+          "GSUB single substitution chain"
+        ],
+        "00C3": [
+          "GSUB single substitution chain"
+        ],
+        "00C4": [
+          "GSUB single substitution chain"
+        ],
+        "00C5": [
+          "GSUB single substitution chain"
+        ],
+        "00C6": [
+          "GSUB single substitution chain"
+        ],
+        "00C7": [
+          "GSUB single substitution chain"
+        ],
+        "00C8": [
+          "GSUB single substitution chain"
+        ],
+        "00C9": [
+          "GSUB single substitution chain"
+        ],
+        "00CA": [
+          "GSUB single substitution chain"
+        ],
+        "00CB": [
+          "GSUB single substitution chain"
+        ],
+        "00CC": [
+          "GSUB single substitution chain"
+        ],
+        "00CD": [
+          "GSUB single substitution chain"
+        ],
+        "00CE": [
+          "GSUB single substitution chain"
+        ],
+        "00CF": [
+          "GSUB single substitution chain"
+        ],
+        "00D0": [
+          "GSUB single substitution chain"
+        ],
+        "00D1": [
+          "GSUB single substitution chain"
+        ],
+        "00D2": [
+          "GSUB single substitution chain"
+        ],
+        "00D3": [
+          "GSUB single substitution chain"
+        ],
+        "00D4": [
+          "GSUB single substitution chain"
+        ],
+        "00D5": [
+          "GSUB single substitution chain"
+        ],
+        "00D6": [
+          "GSUB single substitution chain"
+        ],
+        "00D7": [
+          "GSUB single substitution chain"
+        ],
+        "00D8": [
+          "GSUB single substitution chain"
+        ],
+        "00D9": [
+          "GSUB single substitution chain"
+        ],
+        "00DA": [
+          "GSUB single substitution chain"
+        ],
+        "00DB": [
+          "GSUB single substitution chain"
+        ],
+        "00DC": [
+          "GSUB single substitution chain"
+        ],
+        "00DE": [
+          "GSUB single substitution chain"
+        ],
+        "00DF": [
+          "GSUB single substitution chain"
+        ],
+        "00E0": [
+          "GSUB single substitution chain"
+        ],
+        "00E1": [
+          "GSUB single substitution chain"
+        ],
+        "00E2": [
+          "GSUB single substitution chain"
+        ],
+        "00E3": [
+          "GSUB single substitution chain"
+        ],
+        "00E4": [
+          "GSUB single substitution chain"
+        ],
+        "00E5": [
+          "GSUB single substitution chain"
+        ],
+        "00E6": [
+          "GSUB single substitution chain"
+        ],
+        "00E7": [
+          "GSUB single substitution chain"
+        ],
+        "00E8": [
+          "GSUB single substitution chain"
+        ],
+        "00E9": [
+          "GSUB single substitution chain"
+        ],
+        "00EA": [
+          "GSUB single substitution chain"
+        ],
+        "00EB": [
+          "GSUB single substitution chain"
+        ],
+        "00EC": [
+          "GSUB single substitution chain"
+        ],
+        "00ED": [
+          "GSUB ligature"
+        ],
+        "00EE": [
+          "GSUB single substitution chain"
+        ],
+        "00F4": [
+          "GSUB ligature"
+        ],
+        "00F5": [
+          "GSUB ligature"
+        ],
+        "00F6": [
+          "GSUB ligature"
+        ],
+        "00F8": [
+          "GSUB ligature"
+        ],
+        "00F9": [
+          "GSUB ligature"
+        ],
+        "0100": [
+          "GSUB ligature"
+        ],
+        "0101": [
+          "GSUB single substitution chain"
+        ],
+        "0102": [
+          "GSUB ligature"
+        ],
+        "0103": [
+          "GSUB single substitution chain"
+        ],
+        "0104": [
+          "GSUB single substitution chain"
+        ],
+        "0105": [
+          "GSUB single substitution chain"
+        ],
+        "0106": [
+          "GSUB single substitution chain"
+        ],
+        "0107": [
+          "GSUB single substitution chain"
+        ],
+        "0108": [
+          "GSUB single substitution chain"
+        ],
+        "0109": [
+          "GSUB single substitution chain"
+        ],
+        "010A": [
+          "GSUB ligature"
+        ],
+        "010B": [
+          "GSUB ligature"
+        ],
+        "010C": [
+          "GSUB ligature"
+        ],
+        "010D": [
+          "GSUB ligature"
+        ],
+        "010E": [
+          "GSUB ligature"
+        ],
+        "010F": [
+          "GSUB ligature"
+        ],
+        "0110": [
+          "GSUB ligature"
+        ],
+        "0113": [
+          "cmap"
+        ],
+        "0114": [
+          "cmap"
+        ],
+        "0115": [
+          "cmap"
+        ],
+        "0116": [
+          "cmap"
+        ],
+        "0117": [
+          "cmap"
+        ],
+        "0118": [
+          "cmap"
+        ],
+        "0119": [
+          "GSUB ligature"
+        ],
+        "011A": [
+          "GSUB ligature"
+        ],
+        "011B": [
+          "GSUB ligature"
+        ],
+        "011C": [
+          "GSUB ligature"
+        ],
+        "011D": [
+          "GSUB ligature"
+        ],
+        "011E": [
+          "GSUB ligature"
+        ],
+        "011F": [
+          "GSUB ligature"
+        ],
+        "0120": [
+          "GSUB ligature"
+        ],
+        "0121": [
+          "GSUB ligature"
+        ],
+        "0122": [
+          "GSUB ligature"
+        ],
+        "0123": [
+          "GSUB ligature"
+        ],
+        "0124": [
+          "GSUB ligature"
+        ],
+        "0125": [
+          "GSUB ligature"
+        ],
+        "0126": [
+          "GSUB ligature"
+        ],
+        "0127": [
+          "GSUB ligature"
+        ],
+        "0128": [
+          "GSUB ligature"
+        ],
+        "0129": [
+          "GSUB ligature"
+        ],
+        "012A": [
+          "GSUB ligature"
+        ],
+        "012B": [
+          "GSUB ligature"
+        ],
+        "012C": [
+          "GSUB ligature"
+        ],
+        "012D": [
+          "GSUB ligature"
+        ],
+        "012E": [
+          "GSUB ligature"
+        ],
+        "012F": [
+          "GSUB ligature"
+        ],
+        "0130": [
+          "GSUB ligature"
+        ],
+        "0131": [
+          "GSUB ligature"
+        ],
+        "0132": [
+          "GSUB ligature"
+        ],
+        "0133": [
+          "GSUB ligature"
+        ],
+        "0134": [
+          "GSUB ligature"
+        ],
+        "0135": [
+          "GSUB ligature"
+        ],
+        "0136": [
+          "GSUB ligature"
+        ],
+        "0137": [
+          "GSUB ligature"
+        ],
+        "0139": [
+          "GSUB ligature"
+        ],
+        "0146": [
+          "GSUB ligature"
+        ],
+        "0147": [
+          "GSUB ligature"
+        ],
+        "0148": [
+          "GSUB single substitution chain"
+        ],
+        "0149": [
+          "GSUB single substitution chain"
+        ],
+        "014A": [
+          "GSUB single substitution chain"
+        ],
+        "014B": [
+          "GSUB single substitution chain"
+        ],
+        "014C": [
+          "GSUB single substitution chain"
+        ],
+        "014D": [
+          "GSUB single substitution chain"
+        ],
+        "014E": [
+          "GSUB ligature"
+        ],
+        "014F": [
+          "GSUB single substitution chain"
+        ]
+      },
+      "alternatives": {},
+      "orderGlyphs": {
+        "00EF": {
+          "slot": "ြ",
+          "page": 3,
+          "raw": "00E4 00EF 0069 00DF 006D 00E9 00E8",
+          "reading": "ကြောင်း"
+        },
+        "00F0": {
+          "slot": "ြ",
+          "page": 1,
+          "raw": "00F0 007E 00E0 0103 006D 00E9",
+          "reading": "ပြိုင်"
+        },
+        "00F1": {
+          "slot": "ြ",
+          "page": 1,
+          "raw": "00F1 0069 00E1 00E8",
+          "reading": "ကြီး"
+        },
+        "00F7": {
+          "slot": "ြွ",
+          "page": 11,
+          "raw": "00F7 0069 006D 00E9 00E8",
+          "reading": "ကြွင်း"
+        }
+      }
+    }
+  },
+  "profiles": {
+    "5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9": {
+      "template": "5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9"
+    },
+    "2111ee5c81a1c3be24b8d333aea7c35dae240bc6c53bb2904846d4321e3ff712": {
+      "template": "5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9"
+    },
+    "cd6508102a69f8d6dcc3b4ab9c22ce8e07a195ce81bc4db7a457ea105940bd3e": {
+      "template": "5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9"
+    },
+    "032f2c11f864d4637f22ab1a51310d22e8ac8767ba1bff146976d6cb2e17dddb": {
+      "template": "5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9"
+    },
+    "94d4a2fd496c09697bece899d1aafe27c9910e1f54b77e9ff4f4e0dbb0c1cd2b": {
+      "template": "5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9"
+    },
+    "8b774c49ff7563318c1c1eb0c6f9123c3c6397dfbc55d6ad8ceef38f2d576324": {
+      "template": "5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9"
+    },
+    "9d53847bc7c805162c2ca2db536f61a9dce73fab1aec52633cdf881f18d38158": {
+      "template": "5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9"
+    },
+    "0e3cc455b4bb1a8acdaa2ab0465ce767ada27e6bab092a9b56e4bf6083295260": {
+      "template": "5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9"
+    },
+    "d7ced6cd11e7c67fadac15676ab46bf7b6f0093b77ae9f5934b54ae1b266a574": {
+      "template": "5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9"
+    },
+    "b48eac070edb06e41598b5fc1b5ac677809b1886f40cc5a7161ff3254c64ed3b": {
+      "template": "5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9"
+    },
+    "832340dee6841e2e4a14df4e7fd45dabcee57ca46c441b6ba39f153a0544a514": {
+      "template": "5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9"
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "Full Dev Stack (Node, Python, MuPDF, UV, SQLite, GH)",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "GitHub.vscode-pull-request-github",
+        "alexcvzz.vscode-sqlite"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "python.defaultInterpreterPath": "/usr/bin/python3"
+      }
+    }
+  },
+  "remoteUser": "vscode",
+  "postCreateCommand": "echo '✅ Container Ready!' && node -v && yarn -v && python3 -c 'import fitz; print(\"PyMuPDF Version:\", fitz.__version__)' && gh --version && uv --version"
+}

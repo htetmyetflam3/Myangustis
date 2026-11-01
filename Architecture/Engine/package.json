@@ -1,0 +1,19 @@
+{
+  "name": "@myangustis/engine",
+  "version": "3.2.0",
+  "private": true,
+  "description": "Myangustis syllable-segmentation engine, map builder and obfuscation toolchain.",
+  "type": "module",
+  "main": "index.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "api": "node Bridge/api-server.js"
+  },
+  "dependencies": {
+    "bytenode": "^1.7.0",
+    "express": "^5.2.1",
+    "pdfjs-dist": "6.4.299"
+  }
+}

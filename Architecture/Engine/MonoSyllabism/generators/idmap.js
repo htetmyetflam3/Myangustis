@@ -1,0 +1,76 @@
+
+
+
+
+
+
+
+
+
+import { TREE_DIR } from "../main/grapheme/cache-integrity.js";
+import { loadMappedRows } from "../main/grapheme/Tree.loaded.js";
+
+let _asciiToId = null;
+let _idToAscii = null;
+let _burmeseToId = null;
+let _idToBurmese = null;
+
+function loadMappings() {
+	if (_asciiToId) return;
+
+	_asciiToId = new Map();
+	_idToAscii = new Map();
+	_burmeseToId = new Map();
+	_idToBurmese = new Map();
+
+	const rows = loadMappedRows(TREE_DIR);
+	if (!rows) {
+		console.warn(`[syllableToID] Not found: ${TREE_DIR}/syllable.mapped.txt`);
+		return;
+	}
+
+	for (const { burmese, ascii, id } of rows) {
+		if (ascii && id) {
+			_asciiToId.set(ascii, id);
+			_idToAscii.set(id, ascii);
+		}
+		if (burmese && id) {
+			_burmeseToId.set(burmese, id);
+			_idToBurmese.set(id, burmese);
+		}
+	}
+
+	console.log(
+		`[syllableToID] Loaded ` +
+		`${_asciiToId.size} ascii→id, ` +
+		`${_idToBurmese.size} id→burmese`
+	);
+}
+
+
+export function burmeseToId(syllable) {
+	if (!syllable) return null;
+	loadMappings();
+	return _burmeseToId.get(syllable) ?? null;
+}
+
+
+export function asciiToId(ascii) {
+	if (!ascii) return null;
+	loadMappings();
+	return _asciiToId.get(ascii) ?? null;
+}
+
+
+export function idToBurmese(id) {
+	if (!id) return null;
+	loadMappings();
+	return _idToBurmese.get(id) ?? null;
+}
+
+
+export function idToAscii(id) {
+	if (!id) return null;
+	loadMappings();
+	return _idToAscii.get(id) ?? null;
+}
