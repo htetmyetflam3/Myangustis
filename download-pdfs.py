@@ -10,6 +10,24 @@ Usage
   uv run download-pdfs.py -- ./path/to/filenamelist
   uv run download-pdfs.py -- 1708528931770.pdf
   uv run download-pdfs.py -- -1708528931770.pdf 1680800753958.pdf 1681716042142.pdf
+  uv run download-pdfs.py --all
+
+Downloading everything (--all)
+------------------------------
+``--all`` takes no file names and no list.  It walks every root listed in
+SSH_DIR, of any file type, and downloads everything it finds into
+DOWNLOAD_DIR, keeping the remote layout:
+
+    SSH_DIR=/data/books          -> DOWNLOAD_DIR/chapter1/a.pdf, ...
+    SSH_DIR=/data/books,/data/x  -> DOWNLOAD_DIR/books/..., DOWNLOAD_DIR/x/...
+
+SSH_DIR may hold several roots separated by comma, semicolon or newline, and
+--remote-dir may be repeated to override them for one run.  Sizes are read in
+the same round trip (GNU find), so --all --dry-run prints each file, its size
+and its destination before anything is transferred.  --limit and --offset
+apply to the discovered list, --force replaces files that already exist, and a
+.pdf whose SHA-256 is known is still verified.  --all cannot be combined with
+file names.
 
 How arguments are read
 ----------------------
@@ -19,13 +37,17 @@ How arguments are read
     extension.  One name downloads one file, ten names download ten files.
   * Leading dashes are fine, so ``-1708528931770.pdf`` is a file name and not
     an option.  ``--`` may be used exactly as in the examples above.
-  * With no arguments the bundled mangled-pdf-names.txt is used.
+  * A quoted paste keeps its line breaks: every line is one file name.  A list
+    can also be piped in (``... --`` reading stdin, or ``... -- -``).
+  * With no arguments the bundled mangled-pdf-names.txt is used (unless a list
+    is piped in or --all is given).
 
 .env keys
 ---------
   SSH_HOST       VPS host name or address                     (required)
   SSH_USER       SSH user                                     (required)
-  SSH_DIR        directory on the VPS that holds the files     (required)
+  SSH_DIR        directory/directories on the VPS              (required)
+                 several roots: /data/a,/data/b  or  /data/a;/data/b
   SSH_PORT       SSH port                                     (default 22)
   SSH_KEY        private key file, ~ is expanded               (optional)
   DOWNLOAD_DIR   local directory to write into                 (default ./pdf-downloads)
@@ -50,12 +72,15 @@ Examples
   uv run download-pdfs.py -- names.txt --dest /data/pdfs
   uv run download-pdfs.py -- 1704101675047.pdf --env /srv/scraper/.env
   uv run download-pdfs.py -- ./mangled-pdf-names.txt --limit 5 --dry-run
+  uv run download-pdfs.py --all --dry-run
+  uv run download-pdfs.py --all --dest /data/mirror --limit 20
 """
 
 from __future__ import annotations
 
 import hashlib
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -63,7 +88,7 @@ import tempfile
 import time
 from collections import defaultdict
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 CHUNK_SIZE = 1024 * 1024
 DEFAULT_LIST = Path(__file__).resolve().parent / "mangled-pdf-names.txt"
@@ -252,19 +277,20 @@ class SSHConfig:
     user: str
     port: int
     key: Path | None
-    directory: str
+    directories: tuple[str, ...]      # one or more roots from SSH_DIR
 
 
 class Options:
     def __init__(self) -> None:
         self.env: Path | None = None
         self.dest: Path | None = None
-        self.remote_dir: str | None = None
+        self.remote_dirs: list[str] = []
         self.limit: int | None = None
         self.offset = 0
         self.force = False
         self.dry_run = False
         self.verify = True
+        self.everything = False           # --all
         self.items: list[str] = []
 
 
@@ -306,6 +332,18 @@ def read_env_file(path: Path) -> dict[str, str]:
     return values
 
 
+def split_directories(raw: str) -> tuple[str, ...]:
+    """SSH_DIR may list several roots, separated by comma, semicolon or newline."""
+    if not raw:
+        return ()
+    seen: list[str] = []
+    for part in re.split(r"[,;\n]+", raw):
+        entry = part.strip()
+        if entry and entry not in seen:
+            seen.append(entry)
+    return tuple(seen)
+
+
 def find_env_file(explicit: Path | None) -> Path | None:
     if explicit is not None:
         return explicit.expanduser()
@@ -335,16 +373,21 @@ class Settings:
 
         host = value("SSH_HOST")
         user = value("SSH_USER")
-        directory = value("SSH_DIR", options.remote_dir)
-        if not host or not user or not directory:
+        raw_directories = value("SSH_DIR", ",".join(options.remote_dirs) or None)
+        directories = split_directories(raw_directories)
+        if not host or not user or not directories:
             where = env_path if env_path is not None else ".env"
             raise DownloadError(
                 f"set SSH_HOST, SSH_USER and SSH_DIR in {where} (or in the environment)")
         if any(item.startswith("-") or any(ch.isspace() or ch == "\x00" for ch in item)
                for item in (host, user)):
             raise DownloadError("SSH_HOST and SSH_USER must be single valid SSH arguments")
-        if any(ch in directory for ch in "\x00\r\n"):
-            raise DownloadError("SSH_DIR contains characters that cannot be passed to ssh")
+        for directory in directories:
+            if directory.startswith("-") or any(ch.isspace() or ch in "\x00\r\n"
+                                                for ch in directory):
+                raise DownloadError(
+                    f"SSH_DIR entry {directory!r} cannot be passed to ssh; "
+                    "quote it in .env and avoid leading dashes")
         try:
             port = int(value("SSH_PORT") or 22)
             if not 1 <= port <= 65535:
@@ -353,7 +396,7 @@ class Settings:
             raise DownloadError("SSH_PORT must be a number from 1 to 65535") from None
         key = value("SSH_KEY")
         self.ssh = SSHConfig(host, user, port,
-                             Path(key).expanduser() if key else None, directory)
+                             Path(key).expanduser() if key else None, directories)
 
         destination = value("DOWNLOAD_DIR") or value("PDF_DEST") or value("DOWNLOAD_PATH")
         if options.dest is not None:
@@ -370,6 +413,8 @@ FLAGS = {
     "--force": "force",
     "--dry-run": "dry_run",
     "--no-verify": "no_verify",
+    "--all": "everything",
+    "-a": "everything",
 }
 VALUES = {
     "--env": "env",
@@ -414,7 +459,7 @@ def parse_arguments(argv: list[str]) -> Options:
             elif field == "dest":
                 options.dest = Path(raw)
             else:
-                options.remote_dir = raw
+                options.remote_dirs.append(raw)
             index += 1
             continue
         if argument.startswith("--"):
@@ -463,6 +508,18 @@ def read_name_list(path: Path) -> list[str]:
 
 
 def resolve_names(options: Options) -> list[str]:
+    # A quoted paste keeps its line breaks; every line is one name.  stdin works
+    # too: `... -- -` or piping a list in.
+    items: list[str] = []
+    for item in options.items:
+        if item == "-":
+            items.extend(sys.stdin.read().splitlines())
+            continue
+        items.extend(item.replace("\r\n", "\n").replace("\r", "\n").split("\n"))
+    if not items and not sys.stdin.isatty():
+        items = sys.stdin.read().splitlines()
+    options.items = [item.strip() for item in items if item.strip()]
+
     names: list[str] = []
     for item in options.items:
         path = Path(item).expanduser()
@@ -554,19 +611,21 @@ def absolute_remote_path(raw: str, home: str) -> str:
     return f"{home.rstrip('/')}/{path}" if path else home
 
 
-def find_remote_paths(config: SSHConfig, directory: str,
+def find_remote_paths(config: SSHConfig, directories: tuple[str, ...],
                       names: list[str]) -> dict[str, list[str]]:
-    """One read-only scan of the remote directory, mapped by file name."""
+    """One read-only scan of the remote roots, mapped by file name."""
     extensions = sorted({Path(name).suffix.lower() for name in names if Path(name).suffix})
     if not extensions:
         raise DownloadError("none of the requested names has a file extension")
     conditions = " -o ".join(f"-iname {shlex.quote('*' + extension)}"
                              for extension in extensions)
-    command = (f"find {shlex.quote(directory)} -type f \( {conditions} \) -print0")
+    roots = " ".join(shlex.quote(directory) for directory in directories)
+    command = f"find {roots} -type f \\( {conditions} \\) -print0"
     result = run_ssh(config, command)
     if result.returncode:
         raise DownloadError(
-            f"cannot search SSH_DIR ({directory}) on {config.host}: {ssh_error(result)}")
+            f"cannot search SSH_DIR ({', '.join(directories)}) on {config.host}: "
+            f"{ssh_error(result)}")
     wanted = {name.lower(): name for name in names}
     found: dict[str, list[str]] = defaultdict(list)
     scanned = 0
@@ -587,6 +646,100 @@ def find_remote_paths(config: SSHConfig, directory: str,
         print(f"not located on the server: {', '.join(missing[:10])}"
               + (" ..." if len(missing) > 10 else ""), file=sys.stderr)
     return {name: sorted(found[name]) for name in names}
+
+
+@dataclass(frozen=True)
+class RemoteFile:
+    root: str
+    path: str
+    size: int | None
+
+
+def scan_everything(config: SSHConfig, directories: tuple[str, ...],
+                    quiet: bool = False) -> list[RemoteFile]:
+    """Every regular file under the remote roots, any extension, with sizes.
+
+    GNU find prints "size<TAB>path<NUL>" in one round trip.  A find without
+    -printf support (BSD, busybox) is retried without sizes.
+    """
+    roots = " ".join(shlex.quote(directory) for directory in directories)
+    command = "find " + roots + r" -type f -printf '%s\t%p\0'"
+    result = run_ssh(config, command)
+    message = (result.stderr or b"").decode("utf-8", "replace").lower()
+    # A find without -printf support (BSD, busybox) rejects the format itself; a
+    # non-zero exit for a missing root still returns usable output, so the flag
+    # must follow the error message, not the exit status.
+    with_sizes = not ("unknown predicate" in message or "invalid predicate" in message
+                      or "-printf" in message)
+    if not with_sizes:
+        result = run_ssh(config, f"find {roots} -type f -print0")
+        message = (result.stderr or b"").decode("utf-8", "replace").lower()
+    if result.returncode and not result.stdout:
+        raise DownloadError(
+            f"cannot list SSH_DIR ({', '.join(directories)}) on {config.host}: "
+            f"{ssh_error(result)}")
+    for line in (result.stderr or b"").decode("utf-8", "replace").splitlines():
+        line = re.sub(r"^find:\s*", "", line.strip())
+        if line:
+            print(f"find: {line}", file=sys.stderr)
+
+    entries: list[RemoteFile] = []
+    for record in result.stdout.split(b"\x00"):
+        if not record:
+            continue
+        size: int | None = None
+        raw = record
+        if with_sizes:
+            head, separator, tail = record.partition(b"\t")
+            if separator and head.isdigit():
+                size = int(head)
+                raw = tail
+            # otherwise the record is a plain path; keep it whole
+        path = os.fsdecode(raw)
+        root = remote_root(path, directories)
+        if root is None:
+            continue
+        entries.append(RemoteFile(root, path, size))
+    if not quiet:
+        sizes = [entry.size for entry in entries]
+        summary = f"found {len(entries)} file(s) under {len(directories)} root(s)"
+        if entries and all(size is not None for size in sizes):
+            summary += f", {human_bytes(sum(size or 0 for size in sizes))} total"
+        print(summary, flush=True)
+    return entries
+
+
+def remote_root(path: str, directories: tuple[str, ...]) -> str | None:
+    """The longest configured root that contains ``path``."""
+    best: str | None = None
+    for directory in directories:
+        prefix = directory.rstrip("/") + "/"
+        if path == directory or path.startswith(prefix):
+            if best is None or len(directory) > len(best):
+                best = directory
+    return best
+
+
+def relative_parts(path: str, root: str) -> tuple[str, ...]:
+    """Path of ``path`` inside ``root``, split and validated."""
+    text = PurePosixPath(path).relative_to(PurePosixPath(root))
+    parts = tuple(part for part in text.parts if part not in ("", "."))
+    if not parts or any(part == ".." for part in parts):
+        raise DownloadError(f"unsafe remote path: {path!r}")
+    return parts
+
+
+def local_target(destination: Path, entry: RemoteFile,
+                 directories: tuple[str, ...]) -> Path:
+    """Mirror the remote layout; keep each root apart when there are several."""
+    parts = relative_parts(entry.path, entry.root)
+    if len(directories) > 1:
+        label = PurePosixPath(entry.root.rstrip("/")).name or "root"
+        parts = (label,) + parts
+    target = destination.joinpath(*parts)
+    if not target.resolve().is_relative_to(destination.resolve()):
+        raise DownloadError(f"remote path escapes the destination: {entry.path!r}")
+    return target
 
 
 # ---------------------------------------------------------------------------
@@ -614,12 +767,14 @@ def existing_state(target: Path, expected: str | None) -> str:
     return "ok" if digest.hexdigest() == expected else "differs"
 
 
-def download(config: SSHConfig, name: str, remote_paths: list[str], destination: Path,
-             expected: str | None, verify: bool) -> None:
-    """Stream one remote file to disk, then rename it into place."""
-    target = destination / name
-    partial = destination / f".{name}.part"
-    destination.mkdir(parents=True, exist_ok=True)
+def download(config: SSHConfig, name: str, remote_paths: list[str], target: Path,
+             expected: str | None, verify: bool) -> int:
+    """Stream one remote file to disk, then rename it into place.
+
+    Returns the number of bytes written.
+    """
+    partial = target.parent / f".{target.name}.part"
+    target.parent.mkdir(parents=True, exist_ok=True)
     partial.unlink(missing_ok=True)      # a leftover from an interrupted run
     for remote in remote_paths:
         digest = hashlib.sha256()
@@ -670,16 +825,124 @@ def download(config: SSHConfig, name: str, remote_paths: list[str], destination:
         elapsed = max(time.time() - started, 0.001)
         print(f"      saved {human_bytes(written)} in {elapsed:.1f}s "
               f"({human_bytes(written / elapsed)}/s) sha256={actual}", flush=True)
-        return
+        return written
     raise DownloadError(
         f"no usable copy of {name} on the server" if len(remote_paths) > 1
         else f"{name} could not be downloaded")
+
+
+def download_everything(options: Options, settings: Settings) -> int:
+    """--all: fetch every file under the SSH_DIR root(s), any extension."""
+    config = settings.ssh
+    try:
+        home = remote_home(config)
+        directories = tuple(absolute_remote_path(directory, home)
+                            for directory in config.directories)
+        if options.dry_run:
+            entries = scan_everything(config, directories)
+        else:
+            entries = scan_everything(config, directories)
+    except DownloadError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    if not entries:
+        print("no files found under SSH_DIR", file=sys.stderr)
+        return 1
+
+    if options.offset:
+        entries = entries[options.offset:]
+    if options.limit is not None:
+        entries = entries[:options.limit]
+    if not entries:
+        print("error: the selection is empty after applying --offset/--limit",
+              file=sys.stderr)
+        return 2
+
+    plan = []
+    for entry in entries:
+        try:
+            plan.append((entry, local_target(settings.destination, entry, directories)))
+        except DownloadError as error:
+            print(f"skip: {error}", file=sys.stderr)
+
+    total_size = sum(entry.size or 0 for entry, _ in plan)
+    print(f"{len(plan)} file(s) from {len(directories)} root(s) -> {settings.destination}"
+          + (f" ({human_bytes(total_size)})" if all(e.size is not None for e, _ in plan) else ""))
+
+    if options.dry_run:
+        for index, (entry, target) in enumerate(plan, 1):
+            size = human_bytes(entry.size) if entry.size is not None else "?"
+            print(f"  {index:3d}. {entry.path}  [{size}] -> {target}")
+        print("dry run: nothing was downloaded")
+        return 0
+
+    try:
+        settings.destination.mkdir(parents=True, exist_ok=True)
+    except OSError as error:
+        print(f"error: cannot create {settings.destination}: {error.strerror}", file=sys.stderr)
+        return 2
+
+    failures = 0
+    skipped = 0
+    written = 0
+    downloaded_bytes = 0
+    for index, (entry, target) in enumerate(plan, 1):
+        name = target.name
+        expected = (PDF_SHA256.get(Path(name).stem)
+                    if Path(name).suffix.lower() == ".pdf" else None)
+        try:
+            state = existing_state(target, expected)
+        except OSError as error:
+            print(f"[{index}/{len(plan)}] {entry.path}", flush=True)
+            print(f"      cannot read existing file: {error.strerror}", file=sys.stderr)
+            failures += 1
+            continue
+        print(f"[{index}/{len(plan)}] {entry.path} -> {target}", flush=True)
+        if state in ("ok", "unknown") and not options.force:
+            print("      already present; skipped (use --force to replace)", flush=True)
+            skipped += 1
+            continue
+        if state == "differs" and not options.force:
+            print("      a file with this name exists but its SHA-256 differs; "
+                  "not overwritten (use --force)", file=sys.stderr)
+            failures += 1
+            continue
+        try:
+            downloaded_bytes += download(
+                config, str(target.relative_to(settings.destination)), [entry.path],
+                target, expected, options.verify)
+        except (DownloadError, OSError) as error:
+            print(f"      {error}", file=sys.stderr)
+            failures += 1
+            continue
+        written += 1
+
+    print(f"done: {written} downloaded ({human_bytes(downloaded_bytes)}), "
+          f"{skipped} already present, {failures} failed")
+    return 1 if failures else 0
 
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     try:
         options = parse_arguments(argv)
+    except DownloadError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+
+    if options.everything:
+        if options.items:
+            print("error: --all downloads every file; do not also pass file names",
+                  file=sys.stderr)
+            return 2
+        try:
+            settings = Settings(options)
+        except DownloadError as error:
+            print(f"error: {error}", file=sys.stderr)
+            return 2
+        return download_everything(options, settings)
+
+    try:
         names = select(resolve_names(options), options)
     except DownloadError as error:
         print(f"error: {error}", file=sys.stderr)
@@ -707,8 +970,9 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         home = remote_home(settings.ssh)
-        directory = absolute_remote_path(settings.ssh.directory, home)
-        paths = find_remote_paths(settings.ssh, directory, names)
+        directories = tuple(absolute_remote_path(directory, home)
+                            for directory in settings.ssh.directories)
+        paths = find_remote_paths(settings.ssh, directories, names)
         settings.destination.mkdir(parents=True, exist_ok=True)
     except DownloadError as error:
         print(f"error: {error}", file=sys.stderr)
@@ -733,7 +997,7 @@ def main(argv: list[str] | None = None) -> int:
             failures += 1
             continue
         try:
-            download(settings.ssh, name, paths[name], settings.destination,
+            download(settings.ssh, name, paths[name], settings.destination / name,
                      expected, options.verify)
         except (DownloadError, OSError) as error:
             print(f"      {error}", file=sys.stderr)
