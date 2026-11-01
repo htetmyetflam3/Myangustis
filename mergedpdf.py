@@ -25,7 +25,7 @@ count may be written --30, -30 or 30.  The default output is ``merged.pdf`` /
 ``--output PATH``.  A file literally named ``merged.<ext>`` inside a scanned
 directory is treated as an earlier output and skipped.  Other options:
 ``--recursive``, ``--no-separator`` (no label pages, no bookmarks),
-``--quiet`` and ``--help``.
+``--label-font PATH`` (font used for non-ASCII names, embedded) and ``--help``.
 
 What a PDF merge looks like
 ---------------------------
@@ -33,9 +33,20 @@ What a PDF merge looks like
     [ label page: 1704101675047.pdf ] [ page 1..30 of that PDF ]
 
 Each label page is a real A-size PDF page (same MediaBox as the file it
-precedes) that contains nothing but the file name.  Names are drawn with
-Helvetica, so a non-Latin name shows "?" where the base-14 font has no glyph;
-the bookmark still stores the exact name as UTF-16.  Every source page is
+precedes) that contains nothing but the file name, and the file name is never
+rewritten: whatever is on disk is what gets drawn, stored in the bookmark and
+returned by text extraction, so a merged page can always be traced back to the
+file (and to a books.parquet row).
+
+Plain-ASCII names are drawn with the built-in Helvetica, so nothing is
+embedded.  A name with other characters (Burmese, for example) switches to an
+embedded TrueType font - fonts/NotoSansMyanmar-Regular.ttf by default, or
+--label-font PATH.  The glyphs are chosen straight from the font's cmap and a
+/ToUnicode map records them, so the text layer keeps the exact original
+characters.  One caveat: PDF has no complex-script shaping stage, so such a
+name is drawn glyph-by-glyph in logical order; the characters are exact, but
+medials and stacked consonants of Myanmar script are not re-ordered the way a
+text engine would draw them.  Latin names are unaffected.  Every source page is
 copied object-by-object: content streams, font programs, images and colour
 spaces are written byte-for-byte as they were in the original, never
 re-rendered or re-encoded, so fonts and glyph coverage stay identical.  The
@@ -1006,58 +1017,6 @@ HELVETICA_WIDTHS = [
 ]
 
 
-def text_width(text: str, size: float) -> float:
-    total = 0
-    for character in text:
-        code = ord(character)
-        total += HELVETICA_WIDTHS[code - 32] if 32 <= code <= 126 else 556
-    return total * size / 1000.0
-
-
-def ascii_label(name: str) -> str:
-    """Keep the file name readable in a base-14 font."""
-    return "".join(character if 32 <= ord(character) <= 126 else "?" for character in name)
-
-
-def wrap_label(name: str, size: float, maximum_width: float) -> list[str]:
-    words = name.split(" ")
-    lines: list[str] = []
-    current = ""
-    for word in words:
-        candidate = f"{current} {word}".strip()
-        if text_width(candidate, size) <= maximum_width or not current:
-            if text_width(word, size) > maximum_width and current is not None:
-                # Hard-break a single very long token.
-                if current:
-                    lines.append(current)
-                    current = ""
-                piece = ""
-                for character in word:
-                    if text_width(piece + character, size) > maximum_width and piece:
-                        lines.append(piece)
-                        piece = ""
-                    piece += character
-                current = piece
-                continue
-            current = candidate
-        else:
-            lines.append(current)
-            current = word
-    if current:
-        lines.append(current)
-    return lines or [""]
-
-
-def escape_pdf_text(text: str) -> bytes:
-    out = bytearray()
-    for character in text:
-        if character in "()\\":
-            out += b"\\" + character.encode("ascii")
-        else:
-            out += character.encode("ascii")
-    return bytes(out)
-
-
 def page_box(attributes: dict, resolve) -> tuple[float, float, float, float]:
     box = resolve(attributes.get("MediaBox"))
     if isinstance(box, list) and len(box) == 4:
@@ -1072,27 +1031,409 @@ def page_box(attributes: dict, resolve) -> tuple[float, float, float, float]:
     return (0.0, 0.0, 595.0, 842.0)
 
 
-def label_content(name: str, box: tuple[float, float, float, float]) -> bytes:
-    x0, y0, x1, y1 = box
-    width, height = x1 - x0, y1 - y0
-    label = ascii_label(name)
-    size = 24.0
-    lines = wrap_label(label, size, width * 0.8)
-    while size > 7 and (len(lines) * size * 1.4 > height * 0.7
-                        or any(text_width(line, size) > width * 0.8 for line in lines)):
-        size -= 1.0
-        lines = wrap_label(label, size, width * 0.8)
-    leading = size * 1.35
-    top = y0 + (height + leading * len(lines)) / 2.0 - size
-    content = bytearray(b"BT\n")
-    content += b"/Label %s Tf\n" % pdf_number(size)
-    for index, line in enumerate(lines):
-        baseline = top - index * leading
-        left = x0 + (width - text_width(line, size)) / 2.0
-        content += b"1 0 0 1 %s %s Tm\n" % (pdf_number(left), pdf_number(baseline))
-        content += b"(" + escape_pdf_text(line) + b") Tj\n"
-    content += b"ET\n"
-    return bytes(content)
+# ---------------------------------------------------------------------------
+# Label fonts
+# ---------------------------------------------------------------------------
+
+class LabelFont:
+    """Font used to draw file names on the separator pages.
+
+    ``BaseFont`` refers to the viewer's built-in Helvetica and handles ASCII.
+    ``TrueTypeFont`` embeds a real .ttf, so a file name keeps its exact
+    characters - Myanmar names included - with no transliteration: the glyphs
+    are looked up by their Unicode code point, never re-ordered or converted.
+    """
+
+    name = "Helvetica"
+
+    def glyphs(self, text: str) -> list[tuple[int, str]]:
+        """(glyph id, character) pairs, in the same order as ``text``."""
+        return [(ord(character), character) for character in text]
+
+    def width(self, text: str) -> float:
+        """Advance width of ``text`` in 1/1000 em."""
+        raise NotImplementedError
+
+    def encode(self, text: str) -> bytes:
+        raise NotImplementedError
+
+    def objects(self, writer: "Writer") -> tuple[int, list[int]]:
+        """Write the font objects; return (font number, extra object numbers)."""
+        raise NotImplementedError
+
+
+class BaseFont(LabelFont):
+    """Built-in Helvetica. ASCII only; other characters become '?'."""
+
+    def width(self, text: str) -> float:
+        total = 0
+        for character in text:
+            code = ord(character)
+            total += HELVETICA_WIDTHS[code - 32] if 32 <= code <= 126 else 556
+        return float(total)
+
+    def encode(self, text: str) -> bytes:
+        out = bytearray(b"(")
+        for character in text:
+            code = ord(character)
+            if code > 126 or code < 32:
+                character = "?"       # the base-14 font has no such glyph
+            if character in "()\\":
+                out += b"\\" + character.encode("ascii")
+            else:
+                out += character.encode("ascii")
+        return bytes(out + b")")
+
+    def glyphs(self, text: str) -> list[tuple[int, str]]:
+        return [(0, character if 32 <= ord(character) <= 126 else "?")
+                for character in text]
+
+    def objects(self, writer: "Writer") -> tuple[int, list[int]]:
+        number = writer.alloc()
+        writer.store(number, serialize_direct({
+            "Type": Name("Font"), "Subtype": Name("Type1"),
+            "BaseFont": Name("Helvetica"), "Encoding": Name("WinAnsiEncoding"),
+        }))
+        return number, []
+
+
+def _u16(data, offset: int) -> int:
+    return int.from_bytes(data[offset:offset + 2], "big")
+
+
+def _u32(data, offset: int) -> int:
+    return int.from_bytes(data[offset:offset + 4], "big")
+
+
+def _i16(data, offset: int) -> int:
+    return int.from_bytes(data[offset:offset + 2], "big", signed=True)
+
+
+class TrueTypeFont(LabelFont):
+    """A small TrueType reader: enough to embed a font and draw text with it.
+
+    The whole font file goes into the PDF as /FontFile2 and glyphs are chosen
+    straight from the font's cmap, so the characters are exactly the characters
+    in the file name.  Nothing is transliterated or re-ordered.
+    """
+
+    def __init__(self, path: Path) -> None:
+        self.path = Path(path)
+        try:
+            self.data = self.path.read_bytes()
+        except OSError as error:
+            raise PdfError(f"cannot read label font {self.path}: {error.strerror}") from None
+        if len(self.data) < 12 or self.data[:4] not in (b"\x00\x01\x00\x00", b"true", b"ttcf"):
+            raise PdfError(f"{self.path.name}: not a TrueType font")
+        if self.data[:4] == b"ttcf":
+            raise PdfError(f"{self.path.name}: .ttc collections are not supported; "
+                           "pass a single .ttf with --label-font")
+        self.tables: dict[str, tuple[int, int]] = {}
+        for index in range(_u16(self.data, 4)):
+            record = 12 + index * 16
+            tag = self.data[record:record + 4].decode("latin-1")
+            self.tables[tag] = (_u32(self.data, record + 8), _u32(self.data, record + 12))
+        for required in ("head", "hhea", "maxp", "hmtx", "cmap", "glyf", "loca"):
+            if required not in self.tables:
+                raise PdfError(f"{self.path.name}: no '{required}' table; "
+                               "only TrueType outline fonts can be embedded")
+        head = self.tables["head"][0]
+        self.units_per_em = _u16(self.data, head + 18)
+        if not 16 <= self.units_per_em <= 16384:
+            raise PdfError(f"{self.path.name}: implausible unitsPerEm")
+        self.bbox = [_i16(self.data, head + offset) for offset in (36, 38, 40, 42)]
+        hhea = self.tables["hhea"][0]
+        self.ascent = _i16(self.data, hhea + 4)
+        self.descent = _i16(self.data, hhea + 6)
+        self.metrics_count = _u16(self.data, hhea + 34)
+        self.glyph_count = _u16(self.data, self.tables["maxp"][0] + 4)
+        self.cap_height = int(self.ascent * 0.7)
+        if "OS/2" in self.tables:
+            os2 = self.tables["OS/2"][0]
+            if _u16(self.data, os2) >= 2 and _u16(self.data, os2 + 88):
+                self.cap_height = _i16(self.data, os2 + 88)
+        self.family_name = self._name(6) or self._name(1) or self.path.stem
+        self.family_name = re.sub(r"[^A-Za-z0-9_.+-]", "", self.family_name) or "LabelFont"
+        self.cmap = self._read_cmap()
+        self._advances: dict[int, int] = {}
+        self.used: dict[int, str] = {}
+
+    def _name(self, wanted: int) -> str | None:
+        offset = self.tables["name"][0]
+        strings = offset + _u16(self.data, offset + 4)
+        for index in range(_u16(self.data, offset + 2)):
+            record = offset + 6 + index * 12
+            platform = _u16(self.data, record)
+            name_id = _u16(self.data, record + 6)
+            length, start = _u16(self.data, record + 8), _u16(self.data, record + 10)
+            if name_id != wanted:
+                continue
+            raw = self.data[strings + start:strings + start + length]
+            return raw.decode("utf-16-be", "replace") if platform in (0, 3) \
+                else raw.decode("latin-1", "replace")
+        return None
+
+    def _read_cmap(self) -> dict[int, int]:
+        offset = self.tables["cmap"][0]
+        candidates = []
+        for index in range(_u16(self.data, offset + 2)):
+            record = offset + 4 + index * 8
+            table = offset + _u32(self.data, record + 4)
+            candidates.append((_u16(self.data, table), table))
+        mapping: dict[int, int] = {}
+        for fmt, table in sorted(candidates, key=lambda item: -item[0]):
+            if fmt == 12:
+                return self._cmap12(table)
+            if fmt == 4 and not mapping:
+                mapping = self._cmap4(table)
+        if not mapping:
+            raise PdfError(f"{self.path.name}: no usable Unicode cmap")
+        return mapping
+
+    def _cmap4(self, table: int) -> dict[int, int]:
+        segments = _u16(self.data, table + 6) // 2
+        ends_at = table + 14
+        starts_at = ends_at + segments * 2 + 2
+        deltas_at = starts_at + segments * 2
+        ranges_at = deltas_at + segments * 2
+        mapping: dict[int, int] = {}
+        for index in range(segments):
+            end = _u16(self.data, ends_at + index * 2)
+            start = _u16(self.data, starts_at + index * 2)
+            delta = _i16(self.data, deltas_at + index * 2)
+            range_offset = _u16(self.data, ranges_at + index * 2)
+            for code in range(start, min(end, 0xFFFE) + 1):
+                if range_offset == 0:
+                    glyph = (code + delta) & 0xFFFF
+                else:
+                    address = ranges_at + index * 2 + range_offset + (code - start) * 2
+                    glyph = _u16(self.data, address) if address + 2 <= len(self.data) else 0
+                    if glyph:
+                        glyph = (glyph + delta) & 0xFFFF
+                if glyph:
+                    mapping[code] = glyph
+        return mapping
+
+    def _cmap12(self, table: int) -> dict[int, int]:
+        mapping: dict[int, int] = {}
+        for index in range(_u32(self.data, table + 12)):
+            record = table + 16 + index * 12
+            start = _u32(self.data, record)
+            end = _u32(self.data, record + 4)
+            glyph = _u32(self.data, record + 8)
+            for offset in range(min(end - start, 0x10FFFF) + 1):
+                mapping[start + offset] = glyph + offset
+        return mapping
+
+    def advance(self, glyph: int) -> int:
+        cached = self._advances.get(glyph)
+        if cached is not None:
+            return cached
+        offset = self.tables["hmtx"][0]
+        width = _u16(self.data, offset + glyph * 4) if glyph < self.metrics_count \
+            else _u16(self.data, offset + (self.metrics_count - 1) * 4)
+        self._advances[glyph] = width
+        return width
+
+    def glyphs(self, text: str) -> list[tuple[int, str]]:
+        pairs: list[tuple[int, str]] = []
+        for character in text:
+            glyph = self.cmap.get(ord(character))
+            if glyph is None:
+                fallback = self.cmap.get(ord("?"))
+                if fallback is None:
+                    continue
+                glyph, character = fallback, "?"
+            pairs.append((glyph, character))
+            self.used.setdefault(glyph, character)
+        return pairs
+
+    def width(self, text: str) -> float:
+        total = sum(self.advance(glyph) for glyph, _character in self.glyphs(text))
+        return total * 1000.0 / self.units_per_em
+
+    def encode(self, text: str) -> bytes:
+        return b"<" + b"".join(b"%04X" % glyph for glyph, _c in self.glyphs(text)) + b">"
+
+    def objects(self, writer: "Writer") -> tuple[int, list[int]]:
+        tag = b"%06d" % (zlib.crc32(self.data) % 1000000)
+        base_name = f"{tag.decode()}+{self.family_name}"
+        descriptor = writer.alloc()
+        file_number = writer.alloc()
+        writer.store_stream(file_number, {"Filter": Name("FlateDecode"),
+                                          "Length1": len(self.data)},
+                            zlib.compress(self.data, 9))
+        scale = 1000.0 / self.units_per_em
+        writer.store(descriptor, serialize_direct({
+            "Type": Name("FontDescriptor"),
+            "FontName": Name(base_name),
+            "Flags": 4,
+            "FontBBox": [round(value * scale) for value in self.bbox],
+            "ItalicAngle": 0,
+            "Ascent": round(self.ascent * scale),
+            "Descent": round(self.descent * scale),
+            "CapHeight": round(self.cap_height * scale),
+            "StemV": 80,
+            "FontFile2": Ref(file_number),
+        }))
+        widths: list = []
+        for glyph in sorted(self.used):
+            widths.extend([glyph, [round(self.advance(glyph) * scale)]])
+        cid_font = writer.alloc()
+        writer.store(cid_font, serialize_direct({
+            "Type": Name("Font"),
+            "Subtype": Name("CIDFontType2"),
+            "BaseFont": Name(base_name),
+            "CIDSystemInfo": {"Registry": b"Adobe", "Ordering": b"Identity", "Supplement": 0},
+            "FontDescriptor": Ref(descriptor),
+            "DW": 1000,
+            "W": widths,
+            "CIDToGIDMap": Name("Identity"),
+        }))
+        to_unicode = writer.alloc()
+        writer.store_stream(to_unicode, {}, self._to_unicode())
+        number = writer.alloc()
+        writer.store(number, serialize_direct({
+            "Type": Name("Font"),
+            "Subtype": Name("Type0"),
+            "BaseFont": Name(base_name),
+            "Encoding": Name("Identity-H"),
+            "DescendantFonts": [Ref(cid_font)],
+            "ToUnicode": Ref(to_unicode),
+        }))
+        return number, [descriptor, file_number, cid_font, to_unicode]
+
+    def _to_unicode(self) -> bytes:
+        """Map every drawn glyph back to its character, so text stays exact."""
+        lines = [
+            b"/CIDInit /ProcSet findresource begin",
+            b"12 dict begin",
+            b"begincmap",
+            b"/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def",
+            b"/CMapName /Adobe-Identity-UCS def",
+            b"/CMapType 2 def",
+            b"1 begincodespacerange",
+            b"<0000> <FFFF>",
+            b"endcodespacerange",
+        ]
+        entries = sorted(self.used.items())
+        for start in range(0, len(entries), 100):
+            block = entries[start:start + 100]
+            lines.append(b"%d beginbfchar" % len(block))
+            for glyph, character in block:
+                utf16 = character.encode("utf-16-be").hex().upper().encode("ascii")
+                lines.append(b"<%04X> <%s>" % (glyph, utf16))
+            lines.append(b"endbfchar")
+        lines += [b"endcmap", b"CMapName currentdict /CMap defineresource pop", b"end", b"end"]
+        return b"\n".join(lines) + b"\n"
+
+
+DEFAULT_LABEL_FONTS = (
+    Path(__file__).resolve().parent / "fonts" / "NotoSansMyanmar-Regular.ttf",
+    Path(__file__).resolve().parent / "Junk" / "fonts" / "Unicode" / "NotoSansMyanmar-Regular.ttf",
+    Path(__file__).resolve().parent / "Junk" / "fonts" / "Unicode" / "MyanmarSagar.ttf",
+)
+
+
+def find_label_font(explicit: Path | None) -> Path | None:
+    """--label-font wins; otherwise a Myanmar-capable font shipped in the repo."""
+    if explicit is not None:
+        path = Path(explicit).expanduser()
+        if not path.is_file():
+            raise PdfError(f"label font not found: {path}")
+        return path
+    for candidate in DEFAULT_LABEL_FONTS:
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def wrap_label(name: str, size: float, maximum_width: float, measure) -> list[str]:
+    """Wrap a file name so it fits ``maximum_width`` at ``size`` points."""
+    def width(text: str) -> float:
+        return measure(text) * size / 1000.0
+
+    lines: list[str] = []
+    current = ""
+    for word in name.split(" "):
+        candidate = f"{current} {word}".strip()
+        if width(candidate) <= maximum_width or not current:
+            if width(word) > maximum_width:
+                if current:
+                    lines.append(current)
+                    current = ""
+                piece = ""
+                for character in word:
+                    if width(piece + character) > maximum_width and piece:
+                        lines.append(piece)
+                        piece = ""
+                    piece += character
+                current = piece
+                continue
+            current = candidate
+        else:
+            lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return lines or [""]
+
+
+class LabelRenderer:
+    """Draws separator pages with one font, and writes a real PDF page."""
+
+    def __init__(self, writer: "Writer", font: LabelFont, pages_number: int) -> None:
+        self.writer = writer
+        self.font = font
+        self.pages_number = pages_number
+        self.font_number: int | None = None
+
+    def prepare(self, names: list[str]) -> None:
+        """Record every glyph up front, then write the font object once."""
+        if self.font_number is not None:
+            return
+        for name in names:
+            self.font.glyphs(name)
+        self.font_number, _extra = self.font.objects(self.writer)
+
+    def content(self, name: str, box: tuple[float, float, float, float]) -> bytes:
+        """Draw the name on one line, shrinking to fit; wrap only as a last resort."""
+        x0, y0, x1, y1 = box
+        width, height = x1 - x0, y1 - y0
+        maximum = width * 0.8
+        natural = self.font.width(name)          # 1/1000 em
+        if natural <= 0:
+            return b""
+        size = min(24.0, maximum * 1000.0 / natural)
+        while size >= 8.0 and size * 1.4 > height * 0.8:
+            size -= 0.5
+        lines = [name] if size >= 8.0 else wrap_label(name, 8.0, maximum, self.font.width)
+        size = max(size, 8.0)
+        leading = size * 1.35
+        top = y0 + (height + leading * len(lines)) / 2.0 - size
+        content = bytearray(b"BT\n")
+        content += b"/Label %s Tf\n" % pdf_number(size)
+        for index, line in enumerate(lines):
+            baseline = top - index * leading
+            left = x0 + (width - self.font.width(line) * size / 1000.0) / 2.0
+            content += b"1 0 0 1 %s %s Tm\n" % (pdf_number(left), pdf_number(baseline))
+            content += self.font.encode(line) + b" Tj\n"
+        content += b"ET\n"
+        return bytes(content)
+
+    def page(self, name: str, box: tuple[float, float, float, float]) -> int:
+        writer = self.writer
+        content_number = writer.alloc()
+        writer.store_stream(content_number, {}, self.content(name, box))
+        number = writer.alloc()
+        writer.store(number, serialize_direct({
+            "Type": Name("Page"),
+            "Parent": Ref(self.pages_number),
+            "MediaBox": [round(value, 4) for value in box],
+            "Resources": {"Font": {"Label": Ref(self.font_number)}},
+            "Contents": Ref(content_number),
+        }))
+        return number
 
 
 class Copier:
@@ -1160,7 +1501,8 @@ class Copier:
 
 
 def merge_pdfs(files: list[Path], output: Path, page_limit: int | None,
-               separators: bool, quiet: bool = False) -> None:
+               separators: bool, quiet: bool = False,
+               label_font: Path | None = None) -> None:
     started = time.time()
     temporary = output.with_name(output.name + ".part")
     page_refs: list[int] = []
@@ -1171,14 +1513,32 @@ def merge_pdfs(files: list[Path], output: Path, page_limit: int | None,
         writer = Writer(handle)
         writer.raw(b"%PDF-1.7\n%\xe2\xe3\xcf\xd3\n")
         pages_number = writer.alloc()
-        label_font = writer.alloc()
-        writer.store(label_font, serialize_direct({
-            "Type": Name("Font"), "Subtype": Name("Type1"),
-            "BaseFont": Name("Helvetica"), "Encoding": Name("WinAnsiEncoding"),
-        }))
         info_number: int | None = None
         metadata_number: int | None = None
         identifier: bytes | None = None
+        plain_renderer: LabelRenderer | None = None
+        unicode_renderer: LabelRenderer | None = None
+        if separators:
+            # ASCII names use the built-in Helvetica; anything else needs an
+            # embedded font.  Either way the name itself is never changed.
+            names = [path.name for path in files]
+            plain_names = [name for name in names
+                           if all(32 <= ord(character) <= 126 for character in name)]
+            other_names = [name for name in names if name not in plain_names]
+            plain_renderer = LabelRenderer(writer, BaseFont(), pages_number)
+            if plain_names:
+                plain_renderer.prepare(plain_names)
+            if other_names:
+                font_path = find_label_font(label_font)
+                if font_path is None:
+                    if not quiet:
+                        print("note: some file names are not plain ASCII and no label "
+                              "font was found; they print as '?' on the separator "
+                              "pages (pass --label-font).", file=sys.stderr)
+                else:
+                    unicode_renderer = LabelRenderer(
+                        writer, TrueTypeFont(font_path), pages_number)
+                    unicode_renderer.prepare(other_names)   # records every glyph
 
         for position, path in enumerate(files, 1):
             document = Document(path)
@@ -1196,17 +1556,11 @@ def merge_pdfs(files: list[Path], output: Path, page_limit: int | None,
 
                 if separators:
                     box = page_box(chosen[0][2], document.resolve)
-                    content = label_content(path.name, box)
-                    content_number = writer.alloc()
-                    writer.store_stream(content_number, {}, content)
-                    label_number = writer.alloc()
-                    writer.store(label_number, serialize_direct({
-                        "Type": Name("Page"),
-                        "Parent": Ref(pages_number),
-                        "MediaBox": [round(value, 4) for value in box],
-                        "Resources": {"Font": {"Label": Ref(label_font)}},
-                        "Contents": Ref(content_number),
-                    }))
+                    painter = plain_renderer
+                    if unicode_renderer is not None and not all(
+                            32 <= ord(character) <= 126 for character in path.name):
+                        painter = unicode_renderer
+                    label_number = painter.page(path.name, box)
                     page_refs.append(label_number)
                     title = b"\xfe\xff" + path.name.encode("utf-16-be")
                     outline_titles.append((title, label_number))
@@ -1674,11 +2028,13 @@ class Options:
         self.recursive = False
         self.separators = True
         self.quiet = False
+        self.label_font: Path | None = None
 
 
 VALUE_OPTIONS = {"--pages": "page_limit", "--page-count": "page_limit",
                  "--pagecount": "page_limit", "-p": "page_limit",
-                 "--output": "output", "-o": "output"}
+                 "--output": "output", "-o": "output",
+                 "--label-font": "label_font"}
 FLAG_OPTIONS = {"--recursive": ("recursive", True),
                 "--no-separator": ("separators", False),
                 "--no-separators": ("separators", False),
@@ -1717,7 +2073,7 @@ def parse_arguments(argv: list[str]) -> Options:
                     raise SystemExit(f"error: {name} needs a page number, not {raw!r}")
                 options.page_limit = int(raw)
             else:
-                options.output = Path(raw).expanduser()
+                setattr(options, attribute, Path(raw).expanduser())
             continue
         if re.fullmatch(r"--?\d+", argument) and options.page_limit is None:
             options.page_limit = int(argument.lstrip("-"))
@@ -1790,7 +2146,8 @@ def main(argv: list[str] | None = None) -> int:
               + ("" if options.page_limit is None else f" (first {options.page_limit} pages each)"))
     try:
         if options.kind == "pdf":
-            merge_pdfs(files, output, options.page_limit, options.separators, options.quiet)
+            merge_pdfs(files, output, options.page_limit, options.separators,
+                       options.quiet, options.label_font)
         elif options.kind == "txt":
             if options.page_limit is not None and not options.quiet:
                 print("note: TXT files have no pages; merging them whole.")
