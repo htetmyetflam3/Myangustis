@@ -1,4 +1,5 @@
 import { loadMapJson } from "../core/json-map.js";
+import { createReplacementPipeline } from "./stream-replace.js";
 
 function pyReplToJs(to) {
   
@@ -53,6 +54,16 @@ export class Rabbit {
     }
     return external.fn(text, options);
   }
+}
+
+// Convert a whole page as a stream. All rules still see the original page in
+// order; only the intermediate representations are kept in bounded chunks.
+export function createRabbitStream(onChunk, { preserveZeroWidth = false } = {}) {
+  if (external?.external) throw new Error("An external Rabbit module does not expose streaming conversion");
+  if (compiled === null) compiled = compileLocal();
+  const rules = preserveZeroWidth
+    ? compiled.filter(([rx, to]) => !(rx.source === "\u200b" && to === "")) : compiled;
+  return createReplacementPipeline(rules, onChunk);
 }
 
 export async function initRabbit() {

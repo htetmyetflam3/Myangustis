@@ -59,7 +59,7 @@ test("scraper parser bridge resolves the current parser entry", async () => {
 });
 
 test("scraper OCR worker points to existing parser modules", () => {
-  const worker = path.join(repo, "E.Scraper/main/deploy/continuous-ocr/worker.js");
+  const worker = path.join(repo, "D.Scraper/main/deploy/continuous-ocr/worker.js");
   const code = fs.readFileSync(worker, "utf8");
   const imports = [...code.matchAll(/from '([^']*\.Parser\/[^']+)'/g)];
   assert.ok(imports.length > 0);

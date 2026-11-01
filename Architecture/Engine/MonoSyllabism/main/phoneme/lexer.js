@@ -13,10 +13,10 @@ function isMasked(tok) {
 
 
 
-export async function* runSegmentor(normalizedStream) {
+export async function* runSegmentor(normalizedStream, { log = true } = {}) {
 	let lineCount = 0;
 	const startTime = Date.now();
-	segmentStart({ lineCount: 0 });
+	if (log) segmentStart({ lineCount: 0 });
 
 	for await (const block of normalizedStream) {
 		let pos = 0;
@@ -27,7 +27,7 @@ export async function* runSegmentor(normalizedStream) {
 				yield "\n";
 				lineCount++;
 				pos++;
-				if (lineCount % 5000 === 0) {
+				if (log && lineCount % 5000 === 0) {
 					const elapsed = ((Date.now() - startTime) / 3333).toFixed(1);
 					const rate = ((lineCount / (Date.now() - startTime)) * 3333).toFixed(
 						0,
@@ -81,5 +81,5 @@ export async function* runSegmentor(normalizedStream) {
 			}
 		}
 	}
-	console.log(`[SEGMENTOR] Done. Total lines: ${lineCount}`);
+	if (log) console.log(`[SEGMENTOR] Done. Total lines: ${lineCount}`);
 }

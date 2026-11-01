@@ -15,6 +15,7 @@
 import path from "node:path";
 import { Manager } from "../main/parser/manager.js";
 import { DEFAULT_OUTPUT_DIR } from "../_path.js";
+import { muteAdvisories } from "../../Architecture/host/advisory.js";
 
 function parseArgs(argv) {
   const [first, second, third] = argv;
@@ -34,9 +35,11 @@ function parseArgs(argv) {
 }
 
 async function main() {
-  const job = parseArgs(process.argv.slice(2));
+  const args = process.argv.slice(2);
+  if (args.includes("--quiet")) muteAdvisories();
+  const job = parseArgs(args.filter((arg) => arg !== "--quiet"));
   if (!job?.inPath && !job?.data) {
-    console.error("usage: node scraper-entry.mjs <inPath> <output> [filename]");
+    console.error("usage: node scraper-entry.js [--quiet] <inPath> <output> [filename]");
     process.exit(2);
   }
   const manager = new Manager({ outputDir: job.outDir ?? DEFAULT_OUTPUT_DIR });

@@ -277,12 +277,16 @@ export function getDefaultVectorIndex() {
 
 
 export function matchRasterMask(mask, width, height, {
-  index = getDefaultVectorIndex(),
+  index,
   candidates = null,
   maxDistance = 0.12,
 
   minMargin = null,
 } = {}) {
+  // This is an advisory, not a prohibition on viewing or inspecting images.
+  // It deliberately appears on every match, even when other advice is quiet.
+  console.warn("[Raster/SVG match] If you are investigating damaged output, do not use raster shape matching to recover text from a text-based PDF. Stop and inspect its text, fonts, and encoding first. Raster matching remains appropriate for image-based PDFs and OCR.");
+  if (index === undefined) index = getDefaultVectorIndex();
   const normalized = normalizeRasterMask(mask, width, height, index.size);
   if (!normalized) return { accepted: false, reason: "empty crop", matches: [] };
   const query = withField(normalized);

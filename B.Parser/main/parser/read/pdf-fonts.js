@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { pyChr } from "../core/pylib.js";
 import { BASE_ENCODINGS, GLYPH_NAME_TO_UNICODE } from "./pdf-encodings.js";
 import { isLegacyFontName, isUnresolvedLegacyFont, normaliseFontName } from "../codepage/names.js";
+import { lookupLegacyCode, WININNWA_LEGACY_CODE_PAGE, WININNWA_UNRESOLVED_SLOTS } from "../codepage/registry.js";
 import { confirmedRunAt } from "../codepage/confirmed-pdf-runs.js";
 import { subsetFontBridge } from "../codepage/subset-font-bridges.js";
 import { parseTtfGsubReverse, parseTtfVariantSlots } from "../core/ttf-gsub.js";
@@ -12,14 +13,15 @@ import { parseTtfGsubReverse, parseTtfVariantSlots } from "../core/ttf-gsub.js";
 
 
 
-// Decode a selected single-byte font profile without consulting /ToUnicode.
-// Unreviewed bytes are errors, not ASCII fallbacks or silently dropped text.
-export function decodeRawByteSlots(data, profile) {
+// Decode an explicitly supplied single-byte profile without /ToUnicode.
+// Its direct entries can be table-seeded; review candidates require opt-in.
+// Unmapped bytes are errors, not ASCII fallbacks or silently dropped text.
+export function decodeRawByteSlots(data, profile, { includeReview = false } = {}) {
   if (!(data instanceof Uint8Array) && typeof data !== "string") {
     throw new TypeError("Expected raw bytes or a byte string");
   }
   const table = new Map();
-  for (const source of [profile?.bytes, profile?.resolvedForReview]) {
+  for (const source of [profile?.bytes, ...(includeReview ? [profile?.resolvedForReview] : [])]) {
     if (!source || typeof source !== "object") continue;
     for (const [hex, text] of Object.entries(source)) {
       if (!/^[0-9A-F]{2}$/u.test(hex) || typeof text !== "string" || !text.length) {
@@ -45,20 +47,20 @@ export function decodeRawByteSlots(data, profile) {
   return result;
 }
 
-export function decodeRawBytes(data, profile) {
-  return decodeRawByteSlots(data, profile).join("");
+export function decodeRawBytes(data, profile, options = {}) {
+  return decodeRawByteSlots(data, profile, options).join("");
 }
 
 // Input slots are already in glyph order and belong to one syllable/cluster.
 // A later stacked syllable cannot change this cluster's u shape. This does not
-// reorder Unicode text or guess between unverified alternatives.
-export function encodeRawByteSlots(slots, profile, { byteChoices = {} } = {}) {
+// reorder Unicode text or verify that profile values reflect the actual font.
+export function encodeRawByteSlots(slots, profile, { byteChoices = {}, includeReview = false } = {}) {
   if (!Array.isArray(slots) || slots.some((s) => typeof s !== "string" || !s.length)) {
     throw new TypeError("Expected non-empty Unicode slots");
   }
   const choices = new Map();
   const byteValues = new Map();
-  for (const source of [profile?.bytes, profile?.resolvedForReview]) {
+  for (const source of [profile?.bytes, ...(includeReview ? [profile?.resolvedForReview] : [])]) {
     for (const [hex, text] of Object.entries(source || {})) {
       if (!/^[0-9A-F]{2}$/u.test(hex) || typeof text !== "string" || !text.length) {
         throw new TypeError(`Invalid raw byte entry ${hex}`);
@@ -609,6 +611,25 @@ export function usableToUnicode(mapping) {
   return mapping.size ? mapping : null;
 }
 
+// Font and object resources are reused across pages, but keeping every
+// document resource forever defeats disk-backed PDF input on large books.
+class ResourceCache extends Map {
+  constructor(limit) { super(); this.limit = limit; }
+  get(key) {
+    if (!this.has(key)) return undefined;
+    const value = super.get(key);
+    super.delete(key);
+    super.set(key, value);
+    return value;
+  }
+  set(key, value) {
+    if (this.has(key)) super.delete(key);
+    super.set(key, value);
+    if (this.size > this.limit) super.delete(this.keys().next().value);
+    return this;
+  }
+}
+
 export class DocumentDecoding {
   constructor(kind, mapping = null, legacyCodePage = null, { legacyFontNames = null, vectorRepair = null } = {}) {
     this.kind = kind;
@@ -624,7 +645,7 @@ export class DocumentDecoding {
 
     this.vectorRepair = vectorRepair;
     this.loader = null;
-    this._decoders = new Map();
+    this._decoders = new ResourceCache(64);
     this._pageFonts = new Map();
   }
 
@@ -732,16 +753,19 @@ export class FontResourceLoader {
     this._getStream = getStream;
     this._parseTtfCmap = parseTtfCmap;
     this._parseToUnicode = parseToUnicodeStream;
-    this._objCache = new Map();
-    this._gidCache = new Map();
-    this._tuCache = new Map();
+    this._objCache = new ResourceCache(512);
+    this._gidCache = new ResourceCache(32);
+    this._tuCache = new ResourceCache(32);
+    this._cidCache = new ResourceCache(32);
   }
 
   objectValue(ref) {
     const key = ref.key();
     if (this._objCache.has(key)) return this._objCache.get(key);
-    let raw = this.objects.get(key);
-    if (raw === undefined && ref.gen !== 0) raw = this.objects.get(`${ref.num},0`);
+    const read = (objectKey) => this.objects.dictionary
+      ? this.objects.dictionary(objectKey) : this.objects.get(objectKey);
+    let raw = read(key);
+    if (raw === undefined && ref.gen !== 0) raw = read(`${ref.num},0`);
     const value = raw ? parseObject(raw.toString("latin1")) : null;
     this._objCache.set(key, value);
     return value;
@@ -822,12 +846,16 @@ export class FontResourceLoader {
   cidToGid(descendant) {
     const entry = descendant.get("CIDToGIDMap");
     if (entry instanceof PdfRef) {
+      const key = entry.key();
+      if (this._cidCache.has(key)) return this._cidCache.get(key);
       const data = this.streamOf(entry);
       if (data && data.length) {
         const count = Math.floor(data.length / 2);
-        const gids = new Array(count);
+        const gids = new Uint16Array(count);
         for (let i = 0; i < count; i += 1) gids[i] = data.readUInt16BE(i * 2);
-        return (cid) => (cid >= 0 && cid < gids.length ? gids[cid] : 0);
+        const lookup = (cid) => (cid >= 0 && cid < gids.length ? gids[cid] : 0);
+        this._cidCache.set(key, lookup);
+        return lookup;
       }
     }
     return null;
@@ -943,6 +971,27 @@ export function legacyFontFaces(objects, getStreamFn, parseToUnicodeFn) {
 }
 
 
+// Avoid a separate rope node or array entry for every decoded byte of a large
+// PDF string. The decoder's returned text is unchanged.
+class DecodedTextBuilder {
+  constructor() { this.batch = []; this.parts = []; }
+
+  add(text) {
+    if (!text) return;
+    this.batch.push(text);
+    if (this.batch.length >= 4096) {
+      this.parts.push(this.batch.join(""));
+      this.batch.length = 0;
+    }
+  }
+
+  finish() {
+    if (!this.parts.length) return this.batch.join("");
+    if (this.batch.length) this.parts.push(this.batch.join(""));
+    return this.parts.join("");
+  }
+}
+
 export class FontDecoder {
   constructor(name, {
     subtype = "", baseFont = "", isCid = false, cmap = null, toUnicode = null,
@@ -1037,14 +1086,24 @@ export class FontDecoder {
     if (!this._isSelectedLegacyFont) return null;
     if (!this.toUnicode) {
       if (!isLegacyFontName(this.baseFont)) return null;
-      const direct = page.get(code);
+      if (page === WININNWA_LEGACY_CODE_PAGE && WININNWA_UNRESOLVED_SLOTS.has(code)) {
+        return String.fromCodePoint(code);
+      }
+      const direct = lookupLegacyCode(code, page);
       return direct === undefined ? null : direct;
     }
     const src = this.toUnicode.get(code);
     if (!src) return null;
     let out = "";
     for (const ch of src) {
-      const hit = page.get(ch.codePointAt(0));
+      const slot = ch.codePointAt(0);
+      // Keep an ambiguous legacy slot visible rather than inventing a
+      // Burmese reading or confusing it with this PDF's raw byte.
+      if (page === WININNWA_LEGACY_CODE_PAGE && WININNWA_UNRESOLVED_SLOTS.has(slot)) {
+        out += ch;
+        continue;
+      }
+      const hit = lookupLegacyCode(slot, page);
       if (hit === undefined) return null;
       out += hit;
     }
@@ -1189,35 +1248,38 @@ export class FontDecoder {
       if (skipUnknown) return "";
       // Keep raw character codes visible rather than applying a different
       // font's map, /ToUnicode, or a document-wide glyph fallback.
-      const codes = this.isCid
-        ? [...this.cmap.iterCodes(data)].map(([code]) => code)
-        : Array.from(data, (ch) => ch.charCodeAt(0));
+      const out = new DecodedTextBuilder();
       const width = this.isCid ? 4 : 2;
-      return codes.map((code) => `[${code.toString(16).toUpperCase().padStart(width, "0")}]`).join("");
+      if (this.isCid) {
+        for (const [code] of this.cmap.iterCodes(data)) out.add(`[${code.toString(16).toUpperCase().padStart(width, "0")}]`);
+      } else {
+        for (const char of data) out.add(`[${char.charCodeAt(0).toString(16).toUpperCase().padStart(width, "0")}]`);
+      }
+      return out.finish();
     }
     if (this.zawcodeGlyphs !== null && this.doc.zawcodeStats) {
       this.doc.zawcodeStats.glyphs += Math.floor(data.length / 2);
     }
-    let out = "";
+    const out = new DecodedTextBuilder();
     if (this.isCid) {
       for (const [code, cid, width, invalid] of this.cmap.iterCodes(data)) {
         const text = invalid ? null : this.decodeCode(code, cid, width, useConfirmed);
-        if (text !== null) out += text;
-        else if (!skipUnknown) out += `[${code.toString(16).toUpperCase().padStart(width * 2, "0")}]`;
+        if (text !== null) out.add(text);
+        else if (!skipUnknown) out.add(`[${code.toString(16).toUpperCase().padStart(width * 2, "0")}]`);
       }
-      return out;
+      return out.finish();
     }
     for (let i = 0; i < data.length; i += 1) {
       const code = data.charCodeAt(i);
       if (useConfirmed && this.confirmedRawRuns) {
         const run = confirmedRunAt(this.confirmedRawRuns, data, i);
         if (run) {
-          out += run.text;
+          out.add(run.text);
           i += run.bytes.length - 1;
           continue;
         }
         if (this.confirmedRawRuns.unresolved.has(code)) {
-          if (!skipUnknown) out += `[${code.toString(16).toUpperCase().padStart(2, "0")}]`;
+          if (!skipUnknown) out.add(`[${code.toString(16).toUpperCase().padStart(2, "0")}]`);
           continue;
         }
       }
@@ -1226,9 +1288,9 @@ export class FontDecoder {
         text = ((code < 0x20 || (code >= 0x7f && code <= 0x9f)) && code !== 0x09 && code !== 0x0a && code !== 0x0d)
           ? "" : pyChr(code);
       }
-      out += text;
+      out.add(text);
     }
-    return out;
+    return out.finish();
   }
 }
 

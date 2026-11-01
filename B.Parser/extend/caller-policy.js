@@ -15,6 +15,7 @@
 export const CALLERS = Object.freeze({
   SITE: 'site',
   SCRAPER: 'scraper',
+  LOCAL: 'local',
 });
 
 
@@ -25,7 +26,7 @@ const KNOWN_NAMED_PATHS = Object.freeze(new Set(['unicode', 'zawcode', 'wininnwa
 
 export function normalizeCaller(caller) {
   const key = String(caller ?? CALLERS.SITE).trim().toLowerCase();
-  return key === CALLERS.SCRAPER ? CALLERS.SCRAPER : CALLERS.SITE;
+  return key === CALLERS.SCRAPER ? CALLERS.SCRAPER : key === CALLERS.LOCAL ? CALLERS.LOCAL : CALLERS.SITE;
 }
 
 
@@ -50,7 +51,7 @@ export function decideForCaller(caller, verdict = {}) {
   const who = normalizeCaller(caller);
   const { encodingPath = null, lane = 'extract' } = verdict;
 
-  if (who === CALLERS.SITE) {
+  if (who !== CALLERS.SCRAPER) {
     return { action: 'parse', caller: who };
   }
 

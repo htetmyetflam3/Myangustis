@@ -57,7 +57,7 @@ class EnginePosComparisonTests(unittest.TestCase):
             for name in ('index-path.js', 'Architecture/_index.js', 'Architecture/Engine/_path.js',
                          'Architecture/Engine/.data/secure.js', 'Architecture/Engine/init/bridge.js',
                          'Architecture/host/config.js', 'Architecture/host/job-store.js',
-                         'tools-box/js/engine-data.js'):
+                         'Architecture/host/advisory.js', 'tools-box/js/engine-data.js'):
                 target = root / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(REPO / name, target)

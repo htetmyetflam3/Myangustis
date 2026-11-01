@@ -16,7 +16,7 @@ function fixture(t) {
   for (const file of [
     'index-path.js', 'Architecture/_index.js', 'Architecture/Engine/_path.js',
     'Architecture/Engine/.data/secure.js', 'Architecture/Engine/init/bridge.js',
-    'Architecture/host/config.js', 'Architecture/host/job-store.js',
+    'Architecture/host/config.js', 'Architecture/host/job-store.js', 'Architecture/host/advisory.js',
     'Architecture/Engine/MonoSyllabism/main/grapheme/Tree.loaded.js',
     'Architecture/Engine/MonoSyllabism/main/grapheme/cache-integrity.js',
   ]) {
@@ -75,7 +75,7 @@ test('master access uses the engine cache, isolates callers and invalidates on s
   process.env.MASTER_JSON_KEY = 'cd'.repeat(32);
   assert.throws(() => data.readMasterJson());
   delete process.env.MASTER_JSON_KEY;
-  assert.throws(() => data.readMasterJson(), /Missing required secret/);
+  assert.throws(() => data.readMasterJson(), /MASTER_JSON_KEY or the tracked master\.key\.txt is required/);
 });
 
 test('a corrupt encrypted master cache is rebuilt in a fresh process', t => {

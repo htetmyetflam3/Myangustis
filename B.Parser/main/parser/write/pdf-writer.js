@@ -1,6 +1,30 @@
 import fs from "node:fs";
+import path from "node:path";
 import zlib from "node:zlib";
+import { pipeline } from "node:stream/promises";
 import { TtfFont } from "./ttf.js";
+
+function writeAll(fd, bytes) {
+  let offset = 0;
+  while (offset < bytes.length) {
+    const count = fs.writeSync(fd, bytes, offset, bytes.length - offset);
+    if (!count) throw new Error("Could not write the PDF output");
+    offset += count;
+  }
+}
+
+function copyFileTo(file, write) {
+  const source = fs.openSync(file, "r");
+  const buffer = Buffer.allocUnsafe(64 * 1024);
+  try {
+    let count;
+    while ((count = fs.readSync(source, buffer, 0, buffer.length, null)) > 0) {
+      write(buffer.subarray(0, count));
+    }
+  } finally {
+    fs.closeSync(source);
+  }
+}
 
 const PT_PER_MM = 72 / 25.4;
 
@@ -16,7 +40,11 @@ const C_MARGIN_MM = 0.9999999999999998;
 const B_MARGIN_20MM = 19.999999999999996;
 
 export class PdfWriter {
-  constructor() {
+  constructor(directory) {
+    this.directory = directory;
+    this.pageFile = path.join(directory, "pdf-page-commands");
+    this.pageFd = fs.openSync(this.pageFile, "wx", 0o600);
+    this.pageOffset = 0;
     this.k = PT_PER_MM;
     this.pageWpt = A4_W_PT;
     this.pageHpt = A4_H_PT;
@@ -72,7 +100,7 @@ export class PdfWriter {
   }
   _beginpage() {
     this.pageNo += 1;
-    this.page = { lines: [], fonts: new Set() };
+    this.page = { start: this.pageOffset, length: 0, fonts: new Set() };
     this.pages.push(this.page);
     this._out("2 J");
     this._out(`${(0.2 * this.k).toFixed(2)} w`);
@@ -89,12 +117,20 @@ export class PdfWriter {
       this._inFooter = true;
       try { this.footerFn(this); } finally { this._inFooter = false; }
     }
+    this.page.length = this.pageOffset - this.page.start;
     this.page = null;
   }
 
   _out(s) {
     if (!this.page) throw new Error("No page open — call addPage() first");
-    this.page.lines.push(s);
+    const bytes = Buffer.from(`${s}\n`, "latin1");
+    writeAll(this.pageFd, bytes);
+    this.pageOffset += bytes.length;
+  }
+
+  close() {
+    if (this.pageFd != null) fs.closeSync(this.pageFd);
+    this.pageFd = null;
   }
 
   
@@ -254,115 +290,120 @@ export class PdfWriter {
   }
 
   
-  output(outPath) {
-    fs.writeFileSync(outPath, this.toBuffer());
-    return outPath;
-  }
-
-  
-  toBuffer() {
+  async output(outPath) {
     if (this.page) this._endPage();
+    this.close();
     const used = new Set();
     for (const p of this.pages) for (const f of p.fonts) used.add(f);
     const fonts = this.fontOrder.filter((f) => used.has(f));
-
-    const chunks = [Buffer.from("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n", "latin1")];
-    let pos = chunks[0].length;
+    const out = fs.openSync(outPath, "wx", 0o600);
+    let pos = 0;
     const offsets = [];
-    const push = (buf) => { chunks.push(buf); pos += buf.length; };
-    const obj = (id, body, stream) => {
+    const push = (value) => {
+      const bytes = Buffer.isBuffer(value) ? value : Buffer.from(value, "latin1");
+      writeAll(out, bytes);
+      pos += bytes.length;
+    };
+    const obj = (id, body, stream = null) => {
       offsets[id] = pos;
-      let head = `${id} 0 obj\n${body}\n`;
-      if (stream) {
-        const s = Buffer.isBuffer(stream) ? stream : Buffer.from(stream, "latin1");
-        head += `stream\n`;
-        push(Buffer.from(head, "latin1"));
-        push(s);
-        push(Buffer.from("\nendstream\nendobj\n", "latin1"));
-      } else {
-        push(Buffer.from(`${head}endobj\n`, "latin1"));
+      push(`${id} 0 obj\n${body}\n`);
+      if (stream !== null) {
+        push("stream\n");
+        push(stream);
+        push("\nendstream\n");
       }
+      push("endobj\n");
+    };
+    const fileObj = (id, body, file) => {
+      offsets[id] = pos;
+      push(`${id} 0 obj\n${body}\nstream\n`);
+      copyFileTo(file, push);
+      push("\nendstream\nendobj\n");
     };
 
-    const nPages = this.pages.length || 1;
-    const catalogId = 1;
-    const pagesId = 2;
-    
-    const fontBase = 3;
-    const pageBase = fontBase + fonts.length * 5;
-    
-    const total = pageBase + nPages * 2 - 1;
+    try {
+      push(Buffer.from("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n", "latin1"));
+      const nPages = this.pages.length || 1;
+      const catalogId = 1;
+      const pagesId = 2;
+      const fontBase = 3;
+      const pageBase = fontBase + fonts.length * 5;
+      const total = pageBase + nPages * 2 - 1;
 
-    const kids = [];
-    for (let i = 0; i < nPages; i += 1) kids.push(`${pageBase + i * 2} 0 R`);
-    obj(catalogId, `<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
-    obj(pagesId, `<< /Type /Pages /Kids [${kids.join(" ")}] /Count ${nPages} >>`);
+      obj(catalogId, `<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
+      offsets[pagesId] = pos;
+      push(`${pagesId} 0 obj\n<< /Type /Pages /Kids [`);
+      for (let i = 0; i < nPages; i += 1) push(`${i ? " " : ""}${pageBase + i * 2} 0 R`);
+      push(`] /Count ${nPages} >>\nendobj\n`);
 
-    for (let i = 0; i < fonts.length; i += 1) {
-      const f = fonts[i];
-      const entry = f.font;
-      const type0Id = fontBase + i * 5;
-      const cidId = type0Id + 1;
-      const descId = type0Id + 2;
-      const fileId = type0Id + 3;
-      const touId = type0Id + 4;
-      const scale = 1000 / entry.unitsPerEm;
+      for (let i = 0; i < fonts.length; i += 1) {
+        const f = fonts[i];
+        const entry = f.font;
+        const type0Id = fontBase + i * 5;
+        const cidId = type0Id + 1;
+        const descId = type0Id + 2;
+        const fileId = type0Id + 3;
+        const touId = type0Id + 4;
+        const scale = 1000 / entry.unitsPerEm;
 
-      const wArr = [];
-      for (let g = 0; g < entry.numGlyphs; g += 1) {
-        wArr.push(Math.round((entry.advanceWidths[g] ?? 0) * scale));
+        const wArr = [];
+        for (let g = 0; g < entry.numGlyphs; g += 1) {
+          wArr.push(Math.round((entry.advanceWidths[g] ?? 0) * scale));
+        }
+        const cps = [...entry.usedCps].filter((cp) => entry.glyphId(cp) !== 0).sort((a, b) => a - b);
+        const blocks = [];
+        for (let k = 0; k < cps.length; k += 100) {
+          const slice = cps.slice(k, k + 100);
+          blocks.push(`${slice.length} beginbfchar\n`
+            + slice.map((cp) => `<${entry.glyphId(cp).toString(16).padStart(4, "0")}> <${cp.toString(16).padStart(4, "0")}>`).join("\n")
+            + "\nendbfchar");
+        }
+        const touText = [
+          "/CIDInit /ProcSet findresource begin",
+          "12 dict begin", "begincmap",
+          "/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def",
+          "/CMapName /Adobe-Identity-UCS def", "/CMapType 2 def",
+          "1 begincodespacerange", "<0000> <FFFF>", "endcodespacerange",
+          ...blocks,
+          "endcmap", "CMapName currentdict /CMap defineresource pop", "end", "end",
+        ].join("\n");
+        const tou = zlib.deflateSync(Buffer.from(touText, "latin1"));
+        const fontSize = fs.statSync(f.file).size;
+        const bb = entry.bbox.map((v) => Math.round(v * scale));
+
+        obj(type0Id, `<< /Type /Font /Subtype /Type0 /BaseFont /${entry.name} /Encoding /Identity-H /DescendantFonts [${cidId} 0 R] /ToUnicode ${touId} 0 R >>`);
+        obj(cidId, `<< /Type /Font /Subtype /CIDFontType2 /BaseFont /${entry.name} /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor ${descId} 0 R /CIDToGIDMap /Identity /DW 1000 /W [0 [${wArr.join(" ")}]] >>`);
+        obj(descId, `<< /Type /FontDescriptor /FontName /${entry.name} /Flags 4 /FontBBox [${bb.join(" ")}] /ItalicAngle 0 /Ascent ${Math.round(entry.ascent * scale)} /Descent ${Math.round(entry.descent * scale)} /CapHeight ${Math.round(entry.ascent * scale)} /StemV 80 /StemH 60 /FontFile2 ${fileId} 0 R >>`);
+        fileObj(fileId, `<< /Length ${fontSize} /Length1 ${fontSize} >>`, f.file);
+        obj(touId, `<< /Length ${tou.length} /Filter /FlateDecode >>`, tou);
       }
 
-      
-      
-      const cps = [...entry.usedCps].filter((cp) => entry.glyphId(cp) !== 0).sort((a, b) => a - b);
-      const blocks = [];
-      for (let k = 0; k < cps.length; k += 100) {
-        const slice = cps.slice(k, k + 100);
-        blocks.push(`${slice.length} beginbfchar\n`
-          + slice.map((cp) => `<${entry.glyphId(cp).toString(16).padStart(4, "0")}> <${cp.toString(16).padStart(4, "0")}>`).join("\n")
-          + "\nendbfchar");
-      }
-      const touText = [
-        "/CIDInit /ProcSet findresource begin",
-        "12 dict begin", "begincmap",
-        "/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def",
-        "/CMapName /Adobe-Identity-UCS def", "/CMapType 2 def",
-        "1 begincodespacerange", "<0000> <FFFF>", "endcodespacerange",
-        ...blocks,
-        "endcmap", "CMapName currentdict /CMap defineresource pop", "end", "end",
-      ].join("\n");
-      const tou = zlib.deflateSync(Buffer.from(touText, "latin1"));
-      const rawFont = fs.readFileSync(f.file);
-      const bb = entry.bbox.map((v) => Math.round(v * scale));
-
-      obj(type0Id, `<< /Type /Font /Subtype /Type0 /BaseFont /${entry.name} /Encoding /Identity-H /DescendantFonts [${cidId} 0 R] /ToUnicode ${touId} 0 R >>`);
-      obj(cidId, `<< /Type /Font /Subtype /CIDFontType2 /BaseFont /${entry.name} /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor ${descId} 0 R /CIDToGIDMap /Identity /DW 1000 /W [0 [${wArr.join(" ")}]] >>`);
-      obj(descId, `<< /Type /FontDescriptor /FontName /${entry.name} /Flags 4 /FontBBox [${bb.join(" ")}] /ItalicAngle 0 /Ascent ${Math.round(entry.ascent * scale)} /Descent ${Math.round(entry.descent * scale)} /CapHeight ${Math.round(entry.ascent * scale)} /StemV 80 /StemH 60 /FontFile2 ${fileId} 0 R >>`);
-      obj(fileId, `<< /Length ${rawFont.length} /Length1 ${rawFont.length} >>`, rawFont);
-      obj(touId, `<< /Length ${tou.length} /Filter /FlateDecode >>`, tou);
-    }
-
-    for (let i = 0; i < this.pages.length; i += 1) {
-      const p = this.pages[i];
-      const pageId = pageBase + i * 2;
-      const contId = pageId + 1;
       const fontRes = fonts.map((f) => `/F${f.index} ${fontBase + fonts.indexOf(f) * 5} 0 R`).join(" ");
-      obj(pageId, `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${this.pageWpt} ${this.pageHpt}] `
-        + `/Resources << /ProcSet [/PDF /Text] /Font << ${fontRes} >> >> /Contents ${contId} 0 R >>`);
-      const stream = Buffer.from(p.lines.join("\n") + "\n", "latin1");
-      const comp = zlib.deflateSync(stream);
-      obj(contId, `<< /Length ${comp.length} /Filter /FlateDecode >>`, comp);
-    }
+      const compressed = path.join(this.directory, "pdf-page-deflate");
+      for (let i = 0; i < this.pages.length; i += 1) {
+        const p = this.pages[i];
+        const pageId = pageBase + i * 2;
+        const contId = pageId + 1;
+        obj(pageId, `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${this.pageWpt} ${this.pageHpt}] `
+          + `/Resources << /ProcSet [/PDF /Text] /Font << ${fontRes} >> >> /Contents ${contId} 0 R >>`);
+        await pipeline(
+          fs.createReadStream(this.pageFile, { start: p.start, end: p.start + p.length - 1 }),
+          zlib.createDeflate(),
+          fs.createWriteStream(compressed, { flags: "w", mode: 0o600 }),
+        );
+        const size = fs.statSync(compressed).size;
+        fileObj(contId, `<< /Length ${size} /Filter /FlateDecode >>`, compressed);
+      }
 
-    const xrefPos = pos;
-    let xref = `xref\n0 ${total + 1}\n0000000000 65535 f \n`;
-    for (let id = 1; id <= total; id += 1) {
-      xref += `${String(offsets[id] ?? 0).padStart(10, "0")} 00000 n \n`;
+      const xrefPos = pos;
+      push(`xref\n0 ${total + 1}\n0000000000 65535 f \n`);
+      for (let id = 1; id <= total; id += 1) {
+        push(`${String(offsets[id] ?? 0).padStart(10, "0")} 00000 n \n`);
+      }
+      push(`trailer\n<< /Size ${total + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefPos}\n%%EOF\n`);
+    } finally {
+      fs.closeSync(out);
     }
-    xref += `trailer\n<< /Size ${total + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefPos}\n%%EOF\n`;
-    push(Buffer.from(xref, "latin1"));
-
-    return Buffer.concat(chunks);
+    return outPath;
   }
 }

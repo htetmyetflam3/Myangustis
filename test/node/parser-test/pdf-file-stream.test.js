@@ -1,0 +1,828 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { spawnSync } from "node:child_process";
+import * as fontkit from "fontkit";
+import { Document, ImageRun, Packer, Paragraph } from "docx";
+import {
+  PDFArray, PDFDocument, PDFName, PDFRawStream, decodePDFRawStream,
+} from "pdf-lib";
+
+import { streamPdfPages, processPageRecord, collectPdfResult, buildFinalPages, loadDetector } from "../../../B.Parser/extend/pipeline.js";
+import { runQpdfFile } from "../../../B.Parser/main/parser/core/qpdf.js";
+import { findPdfEnd, copyPdfPrefix } from "../../../B.Parser/main/parser/read/pdf-tail.js";
+import { PdfScannedObjects } from "../../../B.Parser/main/parser/read/pdf-object-file.js";
+import { classifyScraperSource } from "../../../B.Parser/main/parser/codepage/classify.js";
+import { runPdfStream } from "../../../B.Parser/main/parser/worker/pdf-stream.js";
+import { finishManualPdf } from "../../../B.Parser/main/parser/worker/manual-pdf.js";
+import { finishManualDocx } from "../../../B.Parser/main/parser/worker/manual-docx.js";
+import { PdfTextSink } from "../../../B.Parser/main/parser/write/pdf-text-sink.js";
+import { PageStoreWriter } from "../../../B.Parser/main/parser/read/page-store.js";
+import { writeOutput } from "../../../B.Parser/main/parser/write/emit.js";
+import { openZipBuffer, readEntry } from "../../../B.Parser/main/parser/core/zip.js";
+import { pageLayoutLines, textLines } from "../../../B.Parser/main/parser/text/page-file-decision.js";
+import { extractDocxParagraphs } from "../../../B.Parser/main/parser/read/docx-extract.js";
+import { Rabbit, createRabbitStream } from "../../../B.Parser/main/parser/text/rabbit.js";
+import { Manager } from "../../../B.Parser/main/parser/manager.js";
+import { createSourceRunner } from "../../../B.Parser/main/parser/worker/runtime.js";
+
+const png = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+  "base64",
+);
+const scratch = () => fs.mkdtempSync(path.join(os.tmpdir(), "parser-file-test-"));
+
+function docxDocument(file) {
+  const data = fs.readFileSync(file);
+  return readEntry(data, openZipBuffer(data).get("word/document.xml")).toString("utf8");
+}
+
+async function canonicalPdf(file, directory, name) {
+  const target = path.join(directory, `${name}.qdf.pdf`);
+  await runQpdfFile(file, target, ["--qdf", "--object-streams=disable", "--deterministic-id"]);
+  return fs.readFileSync(target, "latin1")
+    .replace(/\/ID\s*\[.*?\]/gsu, "/ID []")
+    .replace(/startxref\s+\d+/gu, "startxref N");
+}
+
+async function makePdf() {
+  let document = await PDFDocument.create();
+  const page1 = document.addPage([400, 500]);
+  page1.drawText("English text across streams", { x: 30, y: 440 });
+  const page2 = document.addPage([400, 500]);
+  page2.drawText("Late checkpoint text", { x: 30, y: 440 });
+  const image = await document.embedPng(png);
+  const page3 = document.addPage([400, 500]);
+  page3.drawImage(image, { x: 5, y: 5, width: 390, height: 490 });
+  page3.drawText("Footer", { x: 10, y: 2, size: 8 });
+  document.addPage([400, 500]);
+  document = await PDFDocument.load(await document.save({ useObjectStreams: false }));
+
+  for (const index of [0, 1]) {
+    const page = document.getPage(index);
+    const list = document.context.lookup(page.node.get(PDFName.of("Contents")));
+    assert.ok(list instanceof PDFArray);
+    const stream = document.context.lookup(list.asArray()[0]);
+    assert.ok(stream instanceof PDFRawStream);
+    let decoded = Buffer.from(decodePDFRawStream(stream).decode());
+    if (index === 1) decoded = Buffer.concat([Buffer.from(`%${"x".repeat(2050)}\n`), decoded]);
+    const split = index === 0 ? Math.floor(decoded.length / 2) : decoded.length;
+    const refs = [decoded.subarray(0, split), decoded.subarray(split)]
+      .filter((part) => part.length)
+      .map((part) => document.context.register(document.context.stream(part)));
+    page.node.set(PDFName.of("Contents"), document.context.obj(refs));
+  }
+  return Buffer.from(await document.save({ useObjectStreams: false }));
+}
+
+test("streamed PDF output writes actual POS unknown contexts with source page numbers", async () => {
+  const dir = scratch();
+  const previous = process.env.PRASER_REGISTER;
+  process.env.PRASER_REGISTER = path.join(dir, "register.log");
+  const manager = new Manager({ outputDir: dir });
+  try {
+    const document = await PDFDocument.create();
+    document.registerFontkit(fontkit);
+    const fontPath = new URL("../../../Junk/fonts/Unicode/PYIDAUNGSU-2.5.2_REGULAR.TTF", import.meta.url);
+    const font = await document.embedFont(fs.readFileSync(fontPath), { subset: false });
+    const lines = ["ကောင်းကင် စမ်းသပ် ကိ မြန်မာ စာ။", "ဤ စာ ကိ ဃု ကောင်းကင် မြန်မာ။"];
+    for (const line of lines) document.addPage([500, 500]).drawText(line, { font, x: 30, y: 440, size: 16 });
+    const input = path.join(dir, "source.pdf");
+    fs.writeFileSync(input, await document.save({ useObjectStreams: false }));
+    const result = await manager.dispatchStream(fs.createReadStream(input, { highWaterMark: 71 }), {
+      filename: "source.pdf", output: "pdf", outPath: path.join(dir, "converted.pdf"), sourceEncoding: "unicode",
+    });
+    assert.equal(result.pages, 2);
+    assert.equal(result.posScan.unknownCount, 3);
+    assert.equal(result.posScan.contextCount, 2);
+    assert.match(fs.readFileSync(result.file).subarray(0, 5).toString("ascii"), /%PDF-/u);
+    const report = fs.readFileSync(result.posScan.file, "utf8");
+    assert.match(report, /Page 1, line 1\nOriginal: ကောင်းကင် စမ်းသပ် ကိ မြန်မာ စာ။\nContext: ကောင်းကင်\{n\}  စမ်းသပ်\{v\}  ကိ\{\?\}  မြန်မာ\{n\}/u);
+    assert.match(report, /Page 2, line 1[\s\S]*ဤ\{pn\}  စာ\{n,p\}  ကိ\{\?\}  ဃု\{\?\}  ကောင်းကင်\{n\}  မြန်မာ\{n\}/u);
+  } finally {
+    await manager.close();
+    if (previous === undefined) delete process.env.PRASER_REGISTER;
+    else process.env.PRASER_REGISTER = previous;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("DOCX scanning uses explicit source markers rather than paragraph-chunk page numbers", async () => {
+  const dir = scratch();
+  const previous = process.env.PRASER_REGISTER;
+  process.env.PRASER_REGISTER = path.join(dir, "register.log");
+  const manager = new Manager({ outputDir: dir });
+  try {
+    const doc = new Document({ sections: [{ children: [
+      new Paragraph("Page-12"),
+      new Paragraph("ကောင်းကင် စမ်းသပ် ကိ မြန်မာ စာ။"),
+      new Paragraph("Page-13"),
+      new Paragraph("ဤ စာ ကိ ဃု ကောင်းကင် မြန်မာ။"),
+    ] }] });
+    const input = path.join(dir, "source.docx");
+    fs.writeFileSync(input, await Packer.toBuffer(doc));
+    const result = await manager.dispatchStream(fs.createReadStream(input, { highWaterMark: 73 }), {
+      filename: "source.docx", output: "txt", outPath: path.join(dir, "converted.txt"), sourceEncoding: "unicode",
+    });
+    assert.equal(result.posScan.unknownCount, 3);
+    const report = fs.readFileSync(result.posScan.file, "utf8");
+    assert.match(report, /Page 12, line 1\nOriginal: ကောင်းကင် စမ်းသပ် ကိ မြန်မာ စာ။/u);
+    assert.match(report, /Page 13, line 1\nOriginal: ဤ စာ ကိ ဃု ကောင်းကင် မြန်မာ။/u);
+  } finally {
+    await manager.close();
+    if (previous === undefined) delete process.env.PRASER_REGISTER;
+    else process.env.PRASER_REGISTER = previous;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+async function makeAsciiHexPdf() {
+  let document = await PDFDocument.create();
+  document.addPage([200, 200]).drawText("ASCII filter fallback", { x: 20, y: 150 });
+  document = await PDFDocument.load(await document.save({ useObjectStreams: false }));
+  const page = document.getPage(0);
+  const list = document.context.lookup(page.node.get(PDFName.of("Contents")));
+  const stream = document.context.lookup(list.asArray()[0]);
+  const decoded = Buffer.from(decodePDFRawStream(stream).decode());
+  const hex = Buffer.from(`${decoded.toString("hex")}>`, "ascii");
+  const ref = document.context.register(document.context.stream(hex, { Filter: PDFName.of("ASCIIHexDecode") }));
+  page.node.set(PDFName.of("Contents"), ref);
+  return Buffer.from(await document.save({ useObjectStreams: false }));
+}
+
+function textOf(filePage) { return [...filePage.text.chunks()].join(""); }
+
+function referenceReports(bytes, sourceEncoding = "auto") {
+  const detector = loadDetector();
+  const [, count, pages] = streamPdfPages(bytes, detector, () => {}, { sourceEncoding });
+  function* reports() {
+    for (const page of pages) yield processPageRecord(page, detector, false, () => {}, true, sourceEncoding);
+  }
+  return [count, reports()];
+}
+
+async function* indexRecords(file) {
+  for (const line of fs.readFileSync(file, "utf8").trimEnd().split("\n")) if (line) yield JSON.parse(line);
+}
+
+test("file pages preserve checkpoint, commands, image geometry and page decisions", async () => {
+  const dir = scratch();
+  try {
+    const original = await makePdf();
+    const input = path.join(dir, "original.pdf");
+    const prepared = path.join(dir, "prepared.pdf");
+    fs.writeFileSync(input, original);
+    await runQpdfFile(input, prepared, ["--object-streams=disable", "--stream-data=preserve"]);
+    const checkpoints = [[], []];
+    const [oldMeta, oldCount, oldPages] = streamPdfPages(original, null, () => {}, {
+      onPagePrefix: (...args) => checkpoints[0].push(args),
+    });
+    const [newMeta, newCount, newPages] = streamPdfPages(prepared, null, () => {}, {
+      diskPages: true, onPagePrefix: (...args) => checkpoints[1].push(args),
+    });
+    assert.deepEqual(newMeta, oldMeta);
+    assert.equal(newCount, oldCount);
+    let lateWarning = false;
+    let imageSeen = false;
+    try {
+      for (let index = 0; index < oldCount; index += 1) {
+        const oldPage = oldPages.next().value;
+        const newPage = newPages.next().value;
+        assert.equal(textOf(newPage), oldPage.text, `page ${index + 1} text`);
+        const { text: oldText, lines: oldLines, ...oldOther } = oldPage;
+        const { text: newText, lines: newLines, ...newOther } = newPage;
+        assert.deepEqual(newOther, oldOther, `page ${index + 1} metadata`);
+        lateWarning ||= oldPage.warnings?.some((warning) => warning.code === "text-after-checkpoint") ?? false;
+        imageSeen ||= oldPage.images.some((entry) => entry.pageSized);
+      }
+      assert.deepEqual(checkpoints[1], checkpoints[0]);
+      assert.ok(checkpoints[1].every((entry) => entry[1].length <= 2048));
+      assert.equal(lateWarning, true);
+      assert.equal(imageSeen, true);
+    } finally {
+      oldPages.return();
+      newPages.return();
+    }
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("file object scans preserve original boundaries across blocks and updates", () => {
+  const dir = scratch();
+  try {
+    const header = "%PDF-1.4\n2 0 obj\nold\nendobj\n1 0 obj\n<< /Length 3 /Note (";
+    const suffix = ") >>\n";
+    const padding = "x".repeat(65536 - Buffer.byteLength(header + suffix) - 3);
+    const beforeStream = header + padding + suffix;
+    const bytes = Buffer.from(`${beforeStream}stream\r\nXYZ\nendstream\nendobj\n2 0 obj\nnew\nendobj\n`, "latin1");
+    const file = path.join(dir, "objects.pdf");
+    fs.writeFileSync(file, bytes);
+    const objects = new PdfScannedObjects(file);
+    try {
+      assert.deepEqual([...objects.entries.keys()], ["2,0", "1,0"]);
+      assert.equal(objects.get("2,0").toString("latin1"), "new");
+      assert.equal(objects.get("1,0").toString("latin1"),
+        `<< /Length 3 /Note (${padding}) >>\nstream\r\nXYZ\nendstream`);
+      assert.equal(objects.dictionary("1,0").toString("latin1"), `<< /Length 3 /Note (${padding}) >>`);
+      const range = objects.streamRange("1,0", 3);
+      const content = Buffer.alloc(3);
+      assert.equal(fs.readSync(range.fd, content, 0, 3, range.start), 3);
+      assert.equal(content.toString("ascii"), "XYZ");
+    } finally { objects.close(); }
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("Scraper file classification preserves original legacy, object-stream and encrypted decisions", async (t) => {
+  const fixture = process.env.PARSER_TEST_PDF_DIR && path.join(process.env.PARSER_TEST_PDF_DIR, "bg-mlc-1-1.pdf");
+  if (!fixture || !fs.existsSync(fixture)) return t.skip("requires the external real-PDF fixture");
+  const dir = scratch();
+  try {
+    const cases = [
+      ["original", fixture, true],
+      ["linearized", path.join(dir, "linearized.pdf"), true, ["--linearize"]],
+      ["object-streams", path.join(dir, "objects.pdf"), false, ["--object-streams=generate"]],
+      ["empty-password", path.join(dir, "encrypted.pdf"), false, ["--encrypt", "", "test-owner-password", "256", "--"]],
+    ];
+    for (const [name, file, skipped, args] of cases) {
+      if (args) await runQpdfFile(fixture, file, args);
+      const buffered = await classifyScraperSource(fs.readFileSync(file), "pdf");
+      const fileBacked = await classifyScraperSource(file, "pdf");
+      assert.equal(buffered.skip, skipped, name);
+      assert.deepEqual(fileBacked, buffered, name);
+    }
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("file-backed layout keeps the same coordinates and split-line rules", () => {
+  const original = [[1, 2, 3, "first\ninside"], [4, 5, 6, "second"]];
+  const store = { *lines() { yield* original; } };
+  const fileText = (value) => ({ *chunks() { for (let i = 0; i < value.length; i += 3) yield value.slice(i, i + 3); } });
+  assert.deepEqual([...pageLayoutLines(store, fileText("first\ninside\nsecond"), 2)], original);
+  assert.deepEqual([...pageLayoutLines(store, fileText("changed\nsecond"), 2)], [
+    [1, 2, 3, "changed"], [4, 5, 6, "second"],
+  ]);
+  assert.deepEqual([...pageLayoutLines(store, fileText("changed\nmore\nlines"), 2)], []);
+  assert.deepEqual([...textLines(["a\n", "b", "\n"])], ["a", "b", ""]);
+  assert.deepEqual([...textLines([])], [""]);
+});
+
+test("TXT sink exactly matches the existing writer for empty pages, Unicode and extensionless output", async () => {
+  const dir = scratch();
+  try {
+    const pages = ["", "\n", "က😀\u200b", "  ", "one\ntwo"].map((text) => ({ text }));
+    const counts = { ZAWGYI: 1, UNICODE: 2, UNKNOWN: 2 };
+    const oldPath = path.join(dir, "old");
+    const newPath = path.join(dir, "new");
+    const old = await writeOutput(oldPath, pages, { counts, source: "", includeText: true });
+    const work = path.join(dir, "sink");
+    fs.mkdirSync(work);
+    const sink = new PdfTextSink(work, { includeText: true });
+    for (const page of pages) sink.addPage([page.text]);
+    const result = sink.finish(newPath, counts, "");
+    assert.equal(result.file, `${newPath}.txt`);
+    assert.deepEqual(fs.readFileSync(result.file), fs.readFileSync(old.file));
+    for (const key of ["lineCount", "textChars", "textBytes", "mimeType", "text"]) {
+      assert.equal(result[key], old[key], key);
+    }
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("Manager path-backed TXT matches direct page results", async () => {
+  const dir = scratch();
+  const manager = new Manager({ outputDir: dir });
+  try {
+    const bytes = await makePdf();
+    const input = path.join(dir, "input.pdf");
+    fs.writeFileSync(input, bytes);
+    for (const sourceEncoding of ["auto", "unicode", "zawgyi-one"]) {
+      const source = "input.pdf";
+      const [count, reports] = referenceReports(bytes, sourceEncoding);
+      const job = collectPdfResult(reports, count, source);
+      const old = await writeOutput(path.join(dir, `old-${sourceEncoding}.txt`), buildFinalPages(job, true), {
+        counts: job.counts, source, includeText: true,
+      });
+      const actual = await manager.dispatch({
+        job: "extracting", method: "default", output: "txt", inputKind: "pdf", filename: source,
+        inPath: input, outPath: path.join(dir, `new-${sourceEncoding}`), sourceEncoding, includeText: true,
+      });
+      assert.deepEqual(fs.readFileSync(actual.file), fs.readFileSync(old.file));
+      for (const key of ["lineCount", "textChars", "textBytes", "mimeType", "text"]) {
+        assert.equal(actual[key], old[key], `${sourceEncoding}: ${key}`);
+      }
+      assert.deepEqual(actual.counts, job.counts);
+      assert.equal(actual.encodingPath, job.encodingPath ?? null);
+      assert.deepEqual(actual.pageWarnings ?? [], job.pageWarnings ?? []);
+    }
+  } finally {
+    await manager.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("binary Manager input preserves PDF-to-DOCX layout and PDF drawing commands", async () => {
+  const dir = scratch();
+  const previous = process.env.PRASER_REGISTER;
+  process.env.PRASER_REGISTER = path.join(dir, "register.log");
+  const manager = new Manager({ outputDir: dir });
+  try {
+    const bytes = await makePdf();
+    const input = path.join(dir, "input.pdf");
+    fs.writeFileSync(input, bytes);
+    const [count, reports] = referenceReports(bytes);
+    const job = collectPdfResult(reports, count, "input.pdf");
+    for (const extension of ["docx", "pdf"]) {
+      const expected = await writeOutput(path.join(dir, `expected.${extension}`), buildFinalPages(job, true), {
+        counts: job.counts, source: "input.pdf", includeText: true,
+      });
+      const result = await manager.dispatchStream(fs.createReadStream(input, { highWaterMark: 23 }), {
+        filename: "input.pdf", output: extension, outPath: path.join(dir, `streamed.${extension}`), includeText: true,
+      });
+      for (const key of ["lineCount", "textChars", "textBytes", "mimeType", "text"]) {
+        assert.equal(result[key], expected[key], `${extension}: ${key}`);
+      }
+      assert.equal(result.pages, count);
+      assert.deepEqual(result.counts, job.counts);
+      assert.deepEqual(result.pageWarnings ?? [], job.pageWarnings ?? []);
+      if (extension === "docx") {
+        assert.equal(docxDocument(result.file), docxDocument(expected.file));
+      } else {
+        assert.equal(await canonicalPdf(result.file, dir, "actual"), await canonicalPdf(expected.file, dir, "reference"));
+      }
+    }
+    assert.match(fs.readFileSync(process.env.PRASER_REGISTER, "utf8"), /input\.pdf/u);
+  } finally {
+    await manager.close();
+    if (previous === undefined) delete process.env.PRASER_REGISTER;
+    else process.env.PRASER_REGISTER = previous;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("Manager PDF streams and Scraper classification do not use whole-file PDF reads", async () => {
+  const dir = scratch();
+  try {
+    const document = await PDFDocument.create();
+    document.addPage().drawText("First page");
+    document.addPage().drawText("Second page");
+    const input = path.join(dir, "source.pdf");
+    fs.writeFileSync(input, await document.save({ useObjectStreams: false }));
+    const preload = path.join(dir, "guard.cjs");
+    fs.writeFileSync(preload, `
+      const fs = require('node:fs');
+      function rejectPdf(p) {
+        const name = typeof p === 'string' ? p : p && typeof p.href === 'string' ? p.href : '';
+        if (/\\.pdf$/i.test(name)) {
+          fs.appendFileSync(${JSON.stringify(path.join(dir, "whole-pdf-reads.log"))}, name + '\\n');
+          throw new Error('whole-file PDF read attempted: ' + name);
+        }
+      }
+      const sync = fs.readFileSync;
+      const promise = fs.promises.readFile;
+      fs.readFileSync = function(p, ...args) { rejectPdf(p); return sync.call(this, p, ...args); };
+      fs.promises.readFile = function(p, ...args) { rejectPdf(p); return promise.call(this, p, ...args); };
+    `);
+    const driver = path.join(dir, "driver.cjs");
+    const managerUrl = new URL("../../../B.Parser/main/parser/manager.js", import.meta.url).href;
+    fs.writeFileSync(driver, `
+      const fs = require('node:fs');
+      const path = require('node:path');
+      (async () => {
+        const { Manager } = await import(${JSON.stringify(managerUrl)});
+        const dir = ${JSON.stringify(dir)};
+        const manager = new Manager({ outputDir: dir });
+        try {
+          for (const method of ['default', 'manual']) {
+            for (const output of ['docx', 'pdf']) {
+              const source = fs.createReadStream(path.join(dir, 'source.pdf'), { highWaterMark: 37 });
+              const result = await manager.dispatchStream(source, {
+                filename: 'source.pdf', method, output, outPath: path.join(dir, method + '.' + output),
+              });
+              if (result.pages !== 2 || !source.readableEnded) throw new Error('stream did not finish');
+            }
+          }
+          const scraped = await manager.dispatch({
+            inPath: path.join(dir, 'source.pdf'), inputKind: 'pdf', filename: 'source.pdf',
+            job: 'extracting', method: 'default', output: 'txt', outPath: path.join(dir, 'scraper.txt'),
+          }, 'scraper');
+          if (scraped.pages !== 2 || scraped.skipped) throw new Error('Scraper did not process the source');
+          console.log('four streamed jobs and Scraper classification passed');
+        } finally { await manager.close(); }
+      })().catch((error) => { console.error(error); process.exitCode = 1; });
+    `);
+    const run = spawnSync(process.execPath, [driver], {
+      encoding: "utf8", timeout: 90_000,
+      env: { ...process.env, TMPDIR: dir, PRASER_REGISTER: path.join(dir, "register"),
+        NODE_OPTIONS: `${process.env.NODE_OPTIONS || ""} --require=${preload}`.trim() },
+    });
+    assert.equal(run.status, 0, run.stderr || String(run.error));
+    assert.match(run.stdout, /four streamed jobs and Scraper classification passed/u);
+    assert.equal(fs.existsSync(path.join(dir, "whole-pdf-reads.log")), false);
+    assert.deepEqual(fs.readdirSync(dir).filter((name) => /^linga-(parser-input|pdf-job|pdf-output)-/u.test(name)), []);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("PDF image worker keeps image markers without loading the source PDF", async () => {
+  const dir = scratch();
+  let imageDir;
+  try {
+    const input = path.join(dir, "images.pdf");
+    fs.writeFileSync(input, await makePdf());
+    const worker = createSourceRunner({ kind: "pdf", method: "manual", pdfImages: true });
+    const result = await worker({ inPath: input, filename: "images.pdf", outPath: path.join(dir, "out.txt"), includeText: true });
+    imageDir = result.imageDir;
+    assert.equal(result.imageFiles.length, 1);
+    assert.match(result.text, /\[\[IMAGE_0001\]\]/u);
+    assert.ok(fs.statSync(result.imageFiles[0].path).size > 0);
+  } finally {
+    if (imageDir) fs.rmSync(imageDir, { recursive: true, force: true });
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("unsupported preserved content filters retry through qpdf without losing text", async () => {
+  const dir = scratch();
+  try {
+    const bytes = await makeAsciiHexPdf();
+    const input = path.join(dir, "ascii.pdf");
+    const prepared = path.join(dir, "preserved.pdf");
+    const work = path.join(dir, "work");
+    fs.writeFileSync(input, bytes);
+    fs.mkdirSync(work);
+    await runQpdfFile(input, prepared, ["--object-streams=disable", "--stream-data=preserve"]);
+    const [, , pages] = streamPdfPages(prepared, null, () => {}, { diskPages: true });
+    try { assert.throws(() => pages.next(), (error) => error.code === "PDF_CONTENT_DECODE_REQUIRED"); }
+    finally { pages.return(); }
+    const result = await runPdfStream({ inPath: input, outPath: path.join(dir, "out.txt"), workDir: work, includeText: true });
+    assert.match(result.text, /ASCII filter fallback/);
+    assert.deepEqual(fs.readdirSync(work), []);
+    const manager = new Manager({ outputDir: dir });
+    try {
+      for (const method of ["default", "manual"]) {
+        for (const output of ["docx", "pdf"]) {
+          const converted = await manager.dispatchStream(fs.createReadStream(input, { highWaterMark: 19 }), {
+            filename: "ascii.pdf", method, output,
+            outPath: path.join(dir, `${method}.${output}`), includeText: true,
+          });
+          assert.match(converted.text, /ASCII filter fallback/u);
+        }
+      }
+    } finally { await manager.close(); }
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("direct byte sources release their file-backed readers on early return and errors", async () => {
+  const dir = scratch();
+  const previous = process.env.TMPDIR;
+  process.env.TMPDIR = dir;
+  const remaining = () => fs.readdirSync(dir).filter((name) => /^(linga-pdf-source-|myangustis-pdf-pages-)/u.test(name));
+  try {
+    const [, , pages] = streamPdfPages(await makePdf());
+    assert.ok(pages.next().value);
+    pages.return();
+    assert.deepEqual(remaining(), []);
+    assert.throws(() => streamPdfPages(Buffer.from("not a PDF")), /No page tree/u);
+    assert.deepEqual(remaining(), []);
+    const single = await PDFDocument.create();
+    single.addPage().drawText("single page");
+    const [, , one] = streamPdfPages(Buffer.from(await single.save({ useObjectStreams: false })));
+    assert.ok(one.next().value);
+    assert.deepEqual(remaining(), []);
+  } finally {
+    if (previous === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = previous;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("page spool and work directory are removed on early return and malformed input", async () => {
+  const dir = scratch();
+  try {
+    const input = path.join(dir, "input.pdf");
+    const prepared = path.join(dir, "prepared.pdf");
+    const pagesDir = path.join(dir, "pages");
+    fs.mkdirSync(pagesDir);
+    fs.writeFileSync(input, await makePdf());
+    await runQpdfFile(input, prepared, ["--object-streams=disable", "--stream-data=preserve"]);
+    const [, , pages] = streamPdfPages(prepared, null, () => {}, { diskPages: true, scratchDir: pagesDir });
+    const first = pages.next().value;
+    assert.equal(fs.existsSync(first.text.path), true);
+    pages.return();
+    assert.equal(fs.existsSync(first.text.path), false);
+    assert.deepEqual(fs.readdirSync(pagesDir), []);
+    const bad = path.join(dir, "bad.pdf");
+    const work = path.join(dir, "work");
+    fs.writeFileSync(bad, "not a PDF");
+    fs.mkdirSync(work);
+    await assert.rejects(runPdfStream({ inPath: bad, outPath: path.join(dir, "bad.txt"), workDir: work }));
+    assert.deepEqual(fs.readdirSync(work), []);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("object streams, long trailing comments and encrypted PDFs preserve qpdf behavior", async () => {
+  const dir = scratch();
+  try {
+    const input = path.join(dir, "source.pdf");
+    const encrypted = path.join(dir, "empty-password.pdf");
+    const protectedFile = path.join(dir, "password.pdf");
+    const packed = path.join(dir, "object-streams.pdf");
+    const trimmed = path.join(dir, "trimmed.pdf");
+    fs.writeFileSync(input, await makePdf());
+    await runQpdfFile(input, packed, ["--object-streams=generate"]);
+    const manager = new Manager({ outputDir: dir });
+    try {
+      const unpacked = await manager.dispatchStream(fs.createReadStream(packed), {
+        filename: "object-streams.pdf", outPath: path.join(dir, "objects.txt"), includeText: true,
+      });
+      assert.equal(unpacked.pages, 4);
+      assert.match(unpacked.text, /English text across streams/);
+    } finally { await manager.close(); }
+    await runQpdfFile(input, encrypted, ["--encrypt", "", "test-owner-password", "256", "--"]);
+    await runQpdfFile(input, protectedFile, ["--encrypt", "test-password", "test-owner-password", "256", "--"]);
+    const before = fs.readFileSync(encrypted);
+    fs.appendFileSync(encrypted, `\n%${"x".repeat(300_000)}`);
+    fs.appendFileSync(protectedFile, `\n%${"x".repeat(300_000)}`);
+    const end = findPdfEnd(encrypted);
+    assert.equal(end, before.lastIndexOf(Buffer.from("%%EOF")) + 5);
+    copyPdfPrefix(encrypted, trimmed, end);
+    assert.deepEqual(fs.readFileSync(trimmed), before.subarray(0, end));
+    const result = await runPdfStream({ inPath: encrypted, outPath: path.join(dir, "ok.txt"), includeText: true });
+    assert.equal(result.pages, 4);
+    assert.match(result.text, /English text across streams/);
+    await assert.rejects(runPdfStream({ inPath: protectedFile, outPath: path.join(dir, "no.txt") }), /needs a password/iu);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("manual page spool preserves full-page and regional OCR merge semantics", async () => {
+  const dir = scratch();
+  try {
+    const pageTexts = ["footer text", "vector\n x \t y", " \n", "", `${"A".repeat(200_000)}\n x \t y`];
+    const pages = [
+      { images: [{ pageSized: true }] },
+      { images: [{ bbox: [1, 2, 3, 4] }, { bbox: [5, 6, 7, 8] }] },
+      { images: [] },
+      { images: [] },
+      { images: [{ bbox: [9, 10, 11, 12] }] },
+    ];
+    const indexPath = path.join(dir, "index.jsonl");
+    const textPath = path.join(dir, "text.bin");
+    let offset = 0;
+    const records = pageTexts.map((text, index) => {
+      const bytes = Buffer.from(text);
+      const record = { index, start: offset, length: bytes.length, hasText: Boolean(text.trim()), hasImg: false, ...pages[index] };
+      offset += bytes.length;
+      return record;
+    });
+    fs.writeFileSync(textPath, Buffer.concat(pageTexts.map((text) => Buffer.from(text))));
+    fs.writeFileSync(indexPath, records.map((record) => JSON.stringify(record)).join("\n") + "\n");
+    assert.equal((await Array.fromAsync(indexRecords(indexPath))).length, 5);
+    const calls = [];
+    const options = {
+      pageStore: { indexPath, textPath }, sourcePath: "ignored.pdf", directory: dir,
+      outPath: path.join(dir, "manual.txt"), source: "source.pdf", counts: { ZAWGYI: 0, UNICODE: 0, UNKNOWN: 5 },
+      includeText: true, owner: false, maxOcrPages: 10,
+      pageHasImage: async (_file, number) => number === 4,
+      ocrPage: async (_file, number) => { calls.push(["page", number]); return number === 1 ? "footer   text\nfull scan" : "blank scan"; },
+      ocrRegion: async (_file, number, box) => {
+        calls.push(["region", number, box]);
+        if (number === 5) return "x y\nlong extra";
+        return box[0] === 1 ? "x y\nregion one" : "region one\nregion two";
+      },
+    };
+    await assert.rejects(finishManualPdf({ ...options, maxOcrPages: 3 }), /4 image pages/u);
+    assert.deepEqual(calls, []);
+    fs.rmSync(path.join(dir, "ocr-plan.jsonl"));
+    const actual = await finishManualPdf(options);
+    const expectedPages = [
+      "full scan\nfooter text", "vector\n x \t y\nregion one\nregion two", " \n", "blank scan",
+      `${pageTexts[4]}\nlong extra`,
+    ].map((text) => ({ text }));
+    const old = await writeOutput(path.join(dir, "expected.txt"), expectedPages, {
+      counts: options.counts, source: options.source, includeText: true,
+    });
+    assert.deepEqual(actual.ocrPages, [1, 2, 4, 5]);
+    assert.deepEqual(fs.readFileSync(actual.file), fs.readFileSync(old.file));
+    assert.equal(actual.text, old.text);
+    assert.deepEqual(calls.map((entry) => entry.slice(0, 2)), [["page", 1], ["region", 2], ["region", 2], ["page", 4], ["region", 5]]);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("the POS sidecar reflects final merged OCR text, not just the PDF text layer", async () => {
+  const dir = scratch();
+  try {
+    const pages = new PageStoreWriter(dir);
+    pages.addPage({ text: ["footer"], images: [{ pageSized: true }], hasImg: true });
+    pages.close();
+    const result = await finishManualPdf({
+      pageStore: pages.store, sourcePath: "ignored.pdf", directory: dir,
+      outPath: path.join(dir, "manual.txt"), source: "scans.pdf",
+      counts: { ZAWGYI: 0, UNICODE: 0, UNKNOWN: 1 }, owner: false, maxOcrPages: 1,
+      pageHasImage: async () => true,
+      ocrPage: async () => "ကောင်းကင် စမ်းသပ် ကိ မြန်မာ",
+      ocrRegion: async () => "",
+    });
+    assert.equal(result.posScan.unknownCount, 1);
+    assert.match(fs.readFileSync(result.posScan.file, "utf8"), /Page 1, line 1\nOriginal: ကောင်းကင် စမ်းသပ် ကိ မြန်မာ\nContext: ကောင်းကင်\{n\}  စမ်းသပ်\{v\}  ကိ\{\?\}  မြန်မာ\{n\}/u);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("manual OCR spool preserves DOCX layout and PDF text when merging images", async () => {
+  const root = scratch();
+  const wh = [400, 500];
+  const firstLine = [10, 30, 11, "Footer"];
+  const secondLine = [25, 420, 14, "Vector"];
+  try {
+    for (const extension of ["docx", "pdf"]) {
+      const dir = path.join(root, extension);
+      fs.mkdirSync(dir);
+      const source = new PageStoreWriter(dir);
+      source.addPage({ text: ["Footer"], lines: [firstLine], wh, images: [{ pageSized: true }], hasImg: true });
+      source.addPage({ text: ["Vector"], lines: [secondLine], wh, images: [{ bbox: [1, 2, 3, 4] }], hasImg: true });
+      source.addPage({ text: [""], lines: [], wh, images: [], hasImg: false });
+      source.close();
+      const counts = { ZAWGYI: 0, UNICODE: 0, UNKNOWN: 3 };
+      const result = await finishManualPdf({
+        pageStore: source.store, sourcePath: "ignored.pdf", directory: dir,
+        outPath: path.join(dir, `actual.${extension}`), source: "scans.pdf", counts,
+        includeText: true, owner: false, maxOcrPages: 5,
+        pageHasImage: async () => false,
+        ocrPage: async () => "Full scan\nFooter",
+        ocrRegion: async () => "Vector",
+      });
+      const expected = await writeOutput(path.join(dir, `expected.${extension}`), [
+        { text: "Full scan\nFooter", lines: [], wh, hasImg: true },
+        { text: "Vector", lines: [secondLine], wh, hasImg: true },
+        { text: "", lines: [], wh, hasImg: false },
+      ], { counts, source: "scans.pdf", includeText: true });
+      assert.deepEqual(result.ocrPages, [1, 2]);
+      for (const key of ["lineCount", "textChars", "textBytes", "text"]) assert.equal(result[key], expected[key], key);
+      if (extension === "docx") assert.equal(docxDocument(result.file), docxDocument(expected.file));
+      else assert.equal(await canonicalPdf(result.file, dir, "actual"), await canonicalPdf(expected.file, dir, "expected"));
+    }
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test("streaming Rabbit retains long runs and zero-width characters across chunks", () => {
+  const input = `ကေ${"ျြွှ".repeat(200_000)}😀\u200b${"ိ".repeat(200_000)}\n`;
+  for (const preserveZeroWidth of [false, true]) {
+    let actual = "";
+    const converter = createRabbitStream((part) => { actual += part; }, { preserveZeroWidth });
+    for (let i = 0; i < input.length; i += 1023) converter.push(input.slice(i, i + 1023));
+    converter.push("", true);
+    assert.equal(actual, Rabbit.zg2uni(input, { preserveZeroWidth }));
+  }
+});
+
+test("actual OCR of an image-only PDF feeds recognized text into the POS sidecar", async (t) => {
+  let canvas;
+  try {
+    canvas = await import("@napi-rs/canvas");
+    await import("tesseract.js");
+  } catch {
+    t.skip("optional OCR and canvas dependencies are not installed");
+    return;
+  }
+  const font = path.resolve("Junk/fonts/Unicode/PYIDAUNGSU-2.5.2_REGULAR.TTF");
+  const model = path.resolve("B.Parser/main/parser/model/mya.traineddata");
+  if (!fs.existsSync(font) || !fs.existsSync(model)) {
+    t.skip("OCR model or layout font is not available");
+    return;
+  }
+  const dir = scratch();
+  const manager = new Manager({ outputDir: dir });
+  try {
+    assert.ok(canvas.GlobalFonts.registerFromPath(font, "PosOcrTestFont"));
+    const bitmap = canvas.createCanvas(1800, 420);
+    const ctx = bitmap.getContext("2d");
+    ctx.fillStyle = "white"; ctx.fillRect(0, 0, 1800, 420);
+    ctx.fillStyle = "black"; ctx.font = "60px PosOcrTestFont";
+    ctx.fillText("ကောင်းကင် စမ်းသပ် ကိ မြန်မာ", 70, 155);
+    ctx.fillText("ဤ စာ ကိ ဃု ကောင်းကင် မြန်မာ", 70, 295);
+    const pdf = await PDFDocument.create();
+    const image = await pdf.embedPng(bitmap.toBuffer("image/png"));
+    pdf.addPage([900, 210]).drawImage(image, { x: 0, y: 0, width: 900, height: 210 });
+    const input = path.join(dir, "image-only.pdf");
+    fs.writeFileSync(input, await pdf.save());
+    for (const [job, method] of [["ocr", "default"], ["extracting", "manual"]]) {
+      const result = await manager.dispatchStream(fs.createReadStream(input), {
+        filename: "image-only.pdf", job, method, output: "txt", outPath: path.join(dir, `${job}.txt`),
+      });
+      const text = fs.readFileSync(result.file, "utf8");
+      const report = fs.readFileSync(result.posScan.file, "utf8");
+      assert.equal(result.pages, 1);
+      if (method === "manual") assert.deepEqual(result.ocrPages, [1]);
+      assert.match(text, /[\u1000-\u109f]/u);
+      assert.ok(result.posScan.unknownCount > 0);
+      const originals = [...report.matchAll(/^Original: (.*)$/gmu)].map((match) => match[1]);
+      assert.equal(originals.length, result.posScan.contextCount);
+      assert.ok(originals.every((line) => text.includes(line)));
+      assert.equal((report.match(/^Page 1, line \d+$/gmu) ?? []).length, originals.length);
+    }
+  } finally {
+    await manager.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("DOCX image markers follow actual relationships and reused images", async (t) => {
+  let canvas;
+  try { canvas = await import("@napi-rs/canvas"); } catch { t.skip("optional canvas dependency is not installed"); return; }
+  const imageBytes = (color) => {
+    const image = canvas.createCanvas(8, 8);
+    const context = image.getContext("2d");
+    context.fillStyle = color; context.fillRect(0, 0, 8, 8);
+    return image.toBuffer("image/png");
+  };
+  const red = imageBytes("red");
+  const blue = imageBytes("blue");
+  const drawing = (bytes) => new ImageRun({ type: "png", data: bytes, transformation: { width: 10, height: 10 } });
+  const doc = new Document({ sections: [{ children: [
+    new Paragraph({ children: [drawing(blue)] }), new Paragraph({ children: [drawing(red)] }),
+    new Paragraph({ children: [drawing(blue)] }),
+  ] }] });
+  const dir = scratch();
+  try {
+    const files = [];
+    const paragraphs = extractDocxParagraphs(await Packer.toBuffer(doc), { imageDir: dir, imageFiles: files });
+    assert.equal(files.length, 2);
+    assert.deepEqual(paragraphs.slice(0, 3), [files[0].marker, files[1].marker, files[0].marker]);
+    assert.notEqual(files[0].marker, files[1].marker);
+    assert.deepEqual(fs.readFileSync(files[0].path), blue);
+    assert.deepEqual(fs.readFileSync(files[1].path), red);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("manual DOCX OCR merges source chunks before writing all output formats and POS", async () => {
+  const root = scratch();
+  try {
+    for (const extension of ["txt", "docx", "pdf"]) {
+      const dir = path.join(root, extension);
+      fs.mkdirSync(dir);
+      const marker = "\uE000OCR-12345678-1234-4234-8234-123456789abc-0001\uE001";
+      const source = new PageStoreWriter(dir, "source");
+      source.addPage({ text: [`Page-12\nကောင်းကင် စမ်းသပ် ကိ မြန်မာ\n${marker}`] });
+      source.addPage({ text: ["ကိ"] });
+      source.close();
+      const written = await finishManualDocx({
+        pageStore: source.store, directory: dir, outPath: path.join(dir, `output.${extension}`),
+        source: "source.docx", counts: {}, includeText: true, owner: false,
+        imageFiles: [{ id: "0001", marker }],
+        ocr: [{ id: "0001", text: "ဤ စာ ကိ ဃု ကောင်းကင် မြန်မာ" }],
+      });
+      const report = fs.readFileSync(written.posScan.file, "utf8");
+      assert.equal(written.posScan.unknownCount, 4);
+      assert.match(report, /Page 12, line 1\nOriginal: ကောင်းကင် စမ်းသပ် ကိ မြန်မာ/u);
+      assert.match(report, /Page 12, line 2\nOriginal: ဤ စာ ကိ ဃု ကောင်းကင် မြန်မာ/u);
+      assert.match(report, /Page 12, line 3\nOriginal: ကိ/u);
+      assert.doesNotMatch(report, /Page 2,/u);
+      assert.match(written.text, /ဤ စာ ကိ ဃု ကောင်းကင် မြန်မာ/u);
+      assert.doesNotMatch(written.text, /\uE000OCR-/u);
+      if (extension === "docx") assert.equal(fs.readFileSync(written.file).subarray(0, 2).toString(), "PK");
+      if (extension === "pdf") assert.equal(fs.readFileSync(written.file).subarray(0, 5).toString(), "%PDF-");
+    }
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test("Manager manual DOCX OCR scans final recognized text without inventing chunk pages", async (t) => {
+  let canvas;
+  try { canvas = await import("@napi-rs/canvas"); await import("tesseract.js"); }
+  catch { t.skip("optional OCR and canvas dependencies are not installed"); return; }
+  const font = path.resolve("Junk/fonts/Unicode/PYIDAUNGSU-2.5.2_REGULAR.TTF");
+  const model = path.resolve("B.Parser/main/parser/model/mya.traineddata");
+  if (!fs.existsSync(font) || !fs.existsSync(model)) { t.skip("OCR model or layout font is unavailable"); return; }
+  const dir = scratch();
+  const manager = new Manager({ outputDir: dir });
+  try {
+    canvas.GlobalFonts.registerFromPath(font, "DocxOcrTestFont");
+    const bitmap = canvas.createCanvas(1400, 260);
+    const ctx = bitmap.getContext("2d");
+    ctx.fillStyle = "white"; ctx.fillRect(0, 0, 1400, 260);
+    ctx.fillStyle = "black"; ctx.font = "60px DocxOcrTestFont";
+    ctx.fillText("ဤ စာ ကိ ဃု ကောင်းကင် မြန်မာ", 50, 150);
+    const doc = new Document({ sections: [{ children: [
+      new Paragraph("Page-12"), new Paragraph("ကောင်းကင် စမ်းသပ် ကိ မြန်မာ"),
+      new Paragraph({ children: [new ImageRun({ type: "png", data: bitmap.toBuffer("image/png"),
+        transformation: { width: 700, height: 130 } })] }),
+    ] }] });
+    const input = path.join(dir, "source.docx");
+    fs.writeFileSync(input, await Packer.toBuffer(doc));
+    for (const [job, method, extension] of [
+      ["extracting", "manual", "txt"], ["null", "default", "docx"], ["null", "default", "pdf"],
+    ]) {
+      const result = await manager.dispatchStream(fs.createReadStream(input), {
+        filename: "source.docx", job, method, output: extension, includeText: true,
+        outPath: path.join(dir, `out.${extension}`),
+      });
+      const text = result.text;
+      const report = fs.readFileSync(result.posScan.file, "utf8");
+      assert.match(report, /Page 12, line 1\nOriginal: ကောင်းကင် စမ်းသပ် ကိ မြန်မာ/u);
+      assert.doesNotMatch(text, /\uE000OCR-/u);
+      const originals = [...report.matchAll(/^Original: (.*)$/gmu)].map((match) => match[1]);
+      assert.ok(originals.every((line) => text.includes(line)));
+      assert.ok(originals.some((line) => line !== "ကောင်းကင် စမ်းသပ် ကိ မြန်မာ"), "recognized image text reached POS");
+      const prefix = fs.readFileSync(result.file).subarray(0, 5).toString();
+      if (extension === "docx") assert.ok(prefix.startsWith("PK"));
+      if (extension === "pdf") assert.equal(prefix, "%PDF-");
+    }
+  } finally { await manager.close(); fs.rmSync(dir, { recursive: true, force: true }); }
+});

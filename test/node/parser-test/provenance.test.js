@@ -18,22 +18,26 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { extractMetadata, parsePdfObjects } from "../../../B.Parser/main/parser/read/pdf-extract.js";
+import { extractMetadata } from "../../../B.Parser/main/parser/read/pdf-extract.js";
+import { PdfScannedObjects } from "../../../B.Parser/main/parser/read/pdf-object-file.js";
 import { startRecord, note, appendRecord, registerPath } from "../../../B.Parser/main/parser/core/provenance.js";
 
 const REPO = path.dirname(path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.url)))));
 
 
-const fixture = (name) => path.join(REPO, "Junk/Parser/upload/pdf", name);
+const fixture = (name) => path.join(process.env.PARSER_TEST_PDF_DIR || path.join(REPO, "Junk/Parser/upload/pdf"), name);
 const readInfo = (file) => {
-  const bytes = fs.readFileSync(file);
-  return extractMetadata(parsePdfObjects(bytes), bytes);
+  const objects = new PdfScannedObjects(file);
+  try { return extractMetadata(objects, fs.readFileSync(file)); }
+  finally { objects.close(); }
 };
 
 
 
-test("reads /Info from the trailer, not the catalog", () => {
-  const info = readInfo(fixture("bg-mlc-1-1.pdf"));
+test("reads /Info from the trailer, not the catalog", (t) => {
+  const file = fixture("bg-mlc-1-1.pdf");
+  if (!fs.existsSync(file)) return t.skip("real BG1 PDF is unavailable");
+  const info = readInfo(file);
 
   assert.equal(info.Author, "Tyler Davis");
   assert.equal(info.Creator, "Writer");
@@ -41,17 +45,8 @@ test("reads /Info from the trailer, not the catalog", () => {
   assert.match(info.CreationDate, /^D:2013/);
 });
 
-test("decodes a second real document with different producers", (t) => {
-  const file = fixture("\u1018\u101d\u1011\u102d\u102f\u1011\u102d\u102f-part_1.pdf");
-  if (!fs.existsSync(file)) return t.skip("fixture exists on no branch of this repo");
-  const info = readInfo(file);
-  assert.equal(info.Producer, "IntSig");
-  assert.equal(info.Author, "CamScanner");
-});
-
 test("a PDF with no /Info yields {} rather than throwing", () => {
-  const objects = parsePdfObjects(Buffer.from("%PDF-1.4\ntrailer<</Size 1>>\n%%EOF\n", "latin1"));
-  assert.deepEqual(extractMetadata(objects, Buffer.from("trailer<</Size 1>>")), {});
+  assert.deepEqual(extractMetadata(new Map(), Buffer.from("trailer<</Size 1>>")), {});
 });
 
 

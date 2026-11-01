@@ -26,16 +26,21 @@ fs.writeFileSync(process.env.FAKE_QPDF_LOG, JSON.stringify(args));
 fs.copyFileSync(args.at(-2), args.at(-1));
 `);
   fs.chmodSync(executable, 0o755);
+  const previousBin = process.env.PRASER_QPDF_BIN;
+  const previousLog = process.env.FAKE_QPDF_LOG;
   process.env.PRASER_QPDF_BIN = executable;
   process.env.FAKE_QPDF_LOG = log;
   try {
     await run({
+      dir,
       called: () => fs.existsSync(log),
       lastArgs: () => JSON.parse(fs.readFileSync(log, "utf8")),
     });
   } finally {
-    delete process.env.PRASER_QPDF_BIN;
-    delete process.env.FAKE_QPDF_LOG;
+    if (previousBin === undefined) delete process.env.PRASER_QPDF_BIN;
+    else process.env.PRASER_QPDF_BIN = previousBin;
+    if (previousLog === undefined) delete process.env.FAKE_QPDF_LOG;
+    else process.env.FAKE_QPDF_LOG = previousLog;
     fs.rmSync(dir, { recursive: true, force: true });
   }
 }
@@ -46,24 +51,20 @@ const OBJSTM_PDF = Buffer.from(
 );
 const PLAIN_PDF = Buffer.from("%PDF-1.4\ntrailer<</Size 1>>\n%%EOF\n", "latin1");
 
-test("object streams are detected by marker and expanded through qpdf", { skip }, async () => {
-  await withFakeQpdf(async ({ called, lastArgs }) => {
-    const { hasObjectStreams, expandObjectStreams } = await import("../../../B.Parser/main/parser/read/decrypt.js");
-
+test("object streams are detected on disk and prepared through file-backed qpdf", { skip }, async () => {
+  await withFakeQpdf(async ({ dir, called, lastArgs }) => {
+    const { hasObjectStreams, scanPdfFileMarkers } = await import("../../../B.Parser/main/parser/read/decrypt.js");
+    const { runQpdfFile } = await import("../../../B.Parser/main/parser/core/qpdf.js");
+    const input = path.join(dir, "objects.pdf");
+    const output = path.join(dir, "expanded.pdf");
+    fs.writeFileSync(input, OBJSTM_PDF);
     assert.equal(hasObjectStreams(OBJSTM_PDF), true);
     assert.equal(hasObjectStreams(PLAIN_PDF), false);
-
-
-    assert.deepEqual(await expandObjectStreams(PLAIN_PDF), PLAIN_PDF);
+    assert.equal(scanPdfFileMarkers(input).objectStreams, true);
     assert.equal(called(), false);
-
-    const messages = [];
-    assert.deepEqual(
-      await expandObjectStreams(OBJSTM_PDF, (line) => messages.push(line)),
-      OBJSTM_PDF,
-    );
+    await runQpdfFile(input, output, ["--object-streams=disable"]);
+    assert.deepEqual(fs.readFileSync(output), OBJSTM_PDF);
     assert.ok(lastArgs().includes("--object-streams=disable"));
-    assert.ok(messages.some((line) => line.includes("object streams; expanded with qpdf")));
   });
 });
 

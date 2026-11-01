@@ -2,26 +2,29 @@ import { renderPdfPagePng } from "../main/parser/read/pdf-render.js";
 import { note } from "../main/parser/core/provenance.js";
 import { getEngineNormalize } from "../_path.js";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 import { ZawgyiDetector, containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts, isZawgyiOneFont, isUnicodeFont } from "../main/parser/text/detector.js";
 import { preserveRegionalRuns } from "../main/parser/text/unicode-evidence.js";
-import { decryptPdf, isEncryptedPdf, hasObjectStreams, expandObjectStreams } from "../main/parser/read/decrypt.js";
+import { isEncryptedPdf, hasObjectStreams, scanPdfFileMarkers } from "../main/parser/read/decrypt.js";
 import { Rabbit } from "../main/parser/text/rabbit.js";
 import { cleanupText, orderText } from "../main/parser/text/cleanup.js";
-import { extractDocxParagraphs, extractDocxImages, validateDocxArchive } from "../main/parser/read/docx-extract.js";
+import { extractDocxParagraphs, validateDocxArchive } from "../main/parser/read/docx-extract.js";
 import { extractDocxParagraphsExternal } from "../main/parser/read/docx-external.js";
 import { scoreText } from "../main/parser/text/mm-score.js";
-import { choosePageParser, finishSharedPage, normalizePageLines } from "../main/parser/text/page-decision.js";
+import { choosePageParser } from "../main/parser/text/page-decision.js";
 import { countImpossiblePairs } from "../main/parser/text/scan.js";
 import { WININNWA_LEGACY_CODE_PAGE } from "../main/parser/codepage/registry.js";
 import { MAX_PAGES, MAX_TEXT_CHARS } from "../main/parser/core/limits.js";
 import {
-  parsePdfObjects, findRootPages, collectPages, extractPageLines, probePagePrefix, pageHasImages, extractMetadata,
+  MAX_PDF_OBJECTS, findRootPages, collectPages, extractPageLines, probePagePrefix, pageHasImages, extractMetadata,
 } from "../main/parser/read/pdf-extract.js";
+import { PdfFileObjects, openPdfScannedObjects } from "../main/parser/read/pdf-object-file.js";
+import { PdfPagePieces } from "../main/parser/read/pdf-page-pieces.js";
+import { finishPageToFile, pageLayoutLines } from "../main/parser/text/page-file-decision.js";
 import { DocumentDecoding, PDF_PARSING_PATHS, pageFontDecoders } from "../main/parser/read/pdf-fonts.js";
-import { PAGE_CONTENT_PREFIX_BYTES } from "../main/parser/read/pdf-content-stream.js";
-import { PageSourceWriter } from "../main/parser/write/page-source.js";
+import { PAGE_CONTENT_PREFIX_BYTES } from "../main/parser/read/pdf-content-file.js";
 import { pyRound, RuntimeError, baseName } from "../main/parser/core/pylib.js";
 
 const normalizeWithEngine = await getEngineNormalize();
@@ -47,27 +50,55 @@ export function loadDetector() {
 
 
 export function streamPdfPages(source, detector = null, log = () => {}, {
-  provenance = null, sourceEncoding = "auto", onPageContent = null, onPagePrefix = null,
+  provenance = null, sourceEncoding = "auto", onPageContent = null, onPagePrefix = null, scratchDir = null,
+  diskPages = false, layoutPages = false,
 } = {}) {
-  const input = Buffer.isBuffer(source) || source instanceof Uint8Array
-    ? (Buffer.isBuffer(source) ? source : Buffer.from(source)) : fs.readFileSync(source);
-  log(`[+] PDF size: ${input.length.toLocaleString("en-US")} bytes`);
-  if (isEncryptedPdf(input)) {
+  const fileBacked = typeof source === "string";
+  if (diskPages && !fileBacked) throw new TypeError("Disk-backed PDF pages require a prepared PDF file path");
+  const input = fileBacked ? null : (Buffer.isBuffer(source) ? source : Buffer.from(source));
+  const size = fileBacked ? fs.statSync(source).size : input.length;
+  log(`[+] PDF size: ${size.toLocaleString("en-US")} bytes`);
+  const markers = fileBacked ? scanPdfFileMarkers(source)
+    : { encrypted: isEncryptedPdf(input), objectStreams: hasObjectStreams(input) };
+  if (markers.encrypted) {
     throw new RuntimeError("This PDF is password-protected; decrypt it before extraction.");
   }
-  if (hasObjectStreams(input)) {
+  if (markers.objectStreams) {
     throw new RuntimeError(
       "This PDF stores objects in object streams (/ObjStm); expand them before extraction "
-        + "(processBytesForMethod does this automatically).",
+        + "(the PDF worker prepares the file automatically).",
     );
   }
-  const objects = parsePdfObjects(input);
-  const metadata = extractMetadata(objects, input);
-  const root = findRootPages(objects);
-  if (root === null || root === undefined) throw new RuntimeError("No page tree found in the PDF.");
-  const allPages = collectPages(objects, root);
+  const scanned = fileBacked ? null : openPdfScannedObjects(input, { maxObjects: MAX_PDF_OBJECTS });
+  const objects = fileBacked ? new PdfFileObjects(source, { maxObjects: MAX_PDF_OBJECTS }) : scanned.objects;
+  const closeObjects = () => { if (scanned) scanned.close(); else objects.close(); };
+  let metadata;
+  let allPages;
+  try {
+    metadata = extractMetadata(objects, fileBacked ? objects.trailer : input);
+    const root = findRootPages(objects);
+    if (root === null || root === undefined) throw new RuntimeError("No page tree found in the PDF.");
+    allPages = collectPages(objects, root);
+    if (allPages.length > MAX_PAGES) throw new RuntimeError(`PDF exceeds the ${MAX_PAGES} page cap`);
+  } catch (error) {
+    closeObjects();
+    throw error;
+  }
   const npages = allPages.length;
-  if (npages > MAX_PAGES) throw new RuntimeError(`PDF exceeds the ${MAX_PAGES} page cap`);
+  let workDir = scratchDir;
+  let ownsScratch = false;
+  let pieceStore = null;
+  try {
+    if (!workDir) {
+      workDir = fs.mkdtempSync(path.join(os.tmpdir(), "myangustis-pdf-pages-"));
+      ownsScratch = true;
+    }
+    pieceStore = new PdfPagePieces(workDir);
+  } catch (error) {
+    closeObjects();
+    if (ownsScratch) fs.rmSync(workDir, { recursive: true, force: true });
+    throw error;
+  }
   note(provenance, { metadata, pages: npages, decoding: { scope: "page/font resource" } });
   log(`[+] Total pages: ${npages}; decoding by font resource`);
 
@@ -89,7 +120,17 @@ export function streamPdfPages(source, detector = null, log = () => {}, {
   };
   legacy.fontKind = (font) => font.needsLegacyTextFix ? "UNICODE" : shared.fontKind(font);
 
+  let activeText = null;
+  const close = () => {
+    activeText?.close();
+    activeText = null;
+    pieceStore?.close();
+    closeObjects();
+    if (ownsScratch) fs.rmSync(workDir, { recursive: true, force: true });
+  };
+
   function* generate() {
+    try {
     for (let idx = 0; idx < npages; idx += 1) {
       const [pnum, pgen] = allPages[idx];
       const fontNames = new Set();
@@ -99,6 +140,8 @@ export function streamPdfPages(source, detector = null, log = () => {}, {
       let checkpoint = null;
       let confirmedRepair = null;
       const [extractedLines, w, h, images] = extractPageLines(objects, pnum, pgen, shared, {
+        scratchDir: workDir,
+        pieceStore,
         usedMyanmarFonts: fontNames,
         usedFontKinds: fontKinds,
         usedLegacyFonts,
@@ -144,32 +187,33 @@ export function streamPdfPages(source, detector = null, log = () => {}, {
           }
           return legacy;
         },
-        onPageContent: (streams, references, loader) => onPageContent?.(idx, streams, references, loader),
-        onConfirmedRepair: ({ before, after }) => {
-          confirmedRepair = {
+        onPageContent: (streams, references, loader, spool) => onPageContent?.(idx, streams, references, loader, spool),
+        onConfirmedRepair: ({ before, after, summary }) => {
+          confirmedRepair = summary ?? {
             changedLines: countDiffLines(before, after),
             impossibleBefore: countImpossiblePairs(before),
             impossibleAfter: countImpossiblePairs(after),
           };
         },
       });
-      const original = extractedLines.map((line) => line[3]).join("\n");
-      // Confirmed legacy repairs have already been applied by the extractor.
-      // Normalize the resulting Unicode once per line, as on the shared path.
-      const finished = parsingPath === PDF_PARSING_PATHS.LEGACY
-        ? { text: [...normalizePageLines(original, normalizeWithEngine)].join("\n"), decision: "legacy" }
-        : finishSharedPage(original, {
-          normalize: normalizeWithEngine,
-          sourceEncoding,
-          unicodeEvidence: fontKinds.has("UNICODE"),
-          zawgyiEvidence: fontKinds.size > 0 && [...fontKinds].every((kind) => kind === "ZAWGYI"),
-        });
-      const parts = finished.text.split("\n");
-      const lines = finished.text === original ? extractedLines
-        : parts.length === extractedLines.length
-          ? extractedLines.map((line, i) => [...line.slice(0, 3), parts[i]]) : [];
+      const finishedPage = finishPageToFile(extractedLines, {
+        directory: workDir, parsingPath, sourceEncoding, fontKinds, normalize: normalizeWithEngine,
+      });
+      const finished = { decision: finishedPage.decision };
+      const { category, originalHasText } = finishedPage;
+      let text;
+      let lines;
+      if (diskPages) {
+        text = activeText = finishedPage.text;
+        lines = layoutPages ? pageLayoutLines(extractedLines, text, finishedPage.lineCount) : undefined;
+      } else {
+        try {
+          text = [...finishedPage.text.chunks()].join("");
+          lines = [...pageLayoutLines(extractedLines, finishedPage.text, finishedPage.lineCount)];
+        } finally { finishedPage.text.close(); }
+      }
       const warnings = [];
-      if (checkpoint && !checkpoint.hasText && checkpoint.bytes === PAGE_CONTENT_PREFIX_BYTES && original.trim()) {
+      if (checkpoint && !checkpoint.hasText && checkpoint.bytes === PAGE_CONTENT_PREFIX_BYTES && originalHasText) {
         const code = checkpoint.hasShownText ? "checkpoint-text-undecodable" : "text-after-checkpoint";
         warnings.push({ code, page: idx + 1, checkpointBytes: PAGE_CONTENT_PREFIX_BYTES });
         log(`[!] Page ${idx + 1}: no decodable text in the ${PAGE_CONTENT_PREFIX_BYTES}-byte checkpoint; page text was retained`);
@@ -184,22 +228,32 @@ export function streamPdfPages(source, detector = null, log = () => {}, {
       } else if (finished.decision === "unaligned-zawgyi") {
         warnings.push({ code: "conversion-characters-need-review", page: idx + 1 });
       }
-      const category = !containsMyanmar(finished.text) || finished.decision === "unaligned-unknown" ? "UNKNOWN"
-        : finished.decision === "rabbit" || finished.decision === "unaligned-zawgyi" ? "ZAWGYI" : "UNICODE";
       shared._pageFonts.delete(`${pnum},${pgen}`);
       legacy._pageFonts.delete(`${pnum},${pgen}`);
-      yield {
-        idx, lines, wh: [w, h], text: finished.text,
+      const result = {
+        idx, lines, wh: [w, h], text,
         hasImg: images.length > 0 || pageHasImages(objects, pnum, pgen), images,
         decodeKind: parsingPath, perFont: true, pageFinalized: true, category,
         parsingPath, decision: finished.decision, fontNames, fontKinds, checkpoint,
         ...(confirmedRepair ? { confirmedRepair } : {}),
         ...(warnings.length ? { warnings } : {}),
       };
+      if (idx + 1 === npages && !diskPages) close();
+      yield result;
+      activeText?.close();
+      activeText = null;
       if ((idx + 1) % 500 === 0) log(`    ... extracted ${idx + 1}/${npages} pages`);
     }
+    } finally {
+      close();
+    }
   }
-  return [metadata, npages, generate()];
+  const pages = generate();
+  const stop = pages.return.bind(pages);
+  pages.return = (value) => {
+    try { return stop(value); } finally { close(); }
+  };
+  return [metadata, npages, pages];
 }
 
 
@@ -346,38 +400,6 @@ export function processPageRecord(pg, detector, applyCleanup, log = () => {}, wa
 }
 
 
-export function processPdfStream(pdfSource, detector, applyCleanup, log = () => {}, wantLayout = false, options = {}) {
-  const [metadata, npages, pages] = streamPdfPages(pdfSource, detector, log, options);
-
-  function* reports() {
-    for (const pg of pages) {
-      yield processPageRecord(pg, detector, applyCleanup, log, wantLayout, options.sourceEncoding);
-    }
-  }
-
-  return [metadata, npages, reports()];
-}
-
-
-export function collectStreamResults(pdfSource, detector, applyCleanup, log = () => {}, wantLayout = false, options = {}) {
-  const [metadata, npages, reports] = processPdfStream(pdfSource, detector, applyCleanup, log, wantLayout, options);
-  const counts = { ZAWGYI: 0, UNICODE: 0, UNKNOWN: 0 };
-  const pages = [];
-  let totalChanges = 0;
-  for (const rep of reports) {
-    counts[rep.category] = (counts[rep.category] ?? 0) + 1;
-    const out = {};
-    if ("text" in rep) out.text = rep.text;
-    if ("lines" in rep) out.lines = rep.lines;
-    if ("wh" in rep) out.wh = rep.wh;
-    if ("hasImg" in rep) out.hasImg = rep.hasImg;
-    pages.push(out);
-    totalChanges += rep.nChanges;
-  }
-  return [pages, counts, totalChanges, metadata, npages];
-}
-
-
 export function collectChanges(reports) {
   const changes = [];
   for (const rep of reports) {
@@ -402,27 +424,7 @@ export function collectChanges(reports) {
   return changes;
 }
 
-export function buildContent(job, applyCleanup = false, kind = null) {
-  const k = (kind || job.kind || "pdf").toLowerCase();
-  const sep = k === "docx" ? "\n" : "\n\n";
-  const parts = [];
-  const len = Math.min(job.pages.length, job.reports.length);
-  for (let i = 0; i < len; i += 1) {
-    const pg = job.pages[i];
-    const rep = job.reports[i];
-    parts.push(applyCleanup && rep.clean !== null && rep.clean !== undefined ? rep.clean : pg.text);
-  }
-  return parts.join(sep);
-}
-
-
-
-
-
-
-export function processPdfBytes(data, detector, filename = "upload.pdf", log = () => {}, options = {}) {
-  const source = Buffer.isBuffer(data) ? data : Buffer.from(data);
-  const [, npages, reportsIter] = processPdfStream(source, detector, false, log, true, options);
+export function collectPdfResult(reportsIter, npages, filename = "upload.pdf") {
   const reports = [];
   const pages = [];
   const counts = { ZAWGYI: 0, UNICODE: 0, UNKNOWN: 0 };
@@ -497,7 +499,10 @@ function buildDocxJob(paragraphs, filename, detector, log, sourceEncoding = "aut
     for (const names of fontNamesByParagraph?.slice(idx * DOCX_CHUNK_PARAGRAPHS, (idx + 1) * DOCX_CHUNK_PARAGRAPHS) ?? []) {
       for (const name of names) fontNames.add(name);
     }
-    const [category, prob] = detector.detect(chunk, { sourceEncoding, fontNames });
+    // OCR placeholders are internal and are not evidence about the DOCX's
+    // source encoding or its keyboard/font.
+    const detectionText = chunk.replace(/\uE000OCR-[0-9a-f-]{36}-\d+\uE001/gu, "");
+    const [category, prob] = detector.detect(detectionText, { sourceEncoding, fontNames });
     const cat = normCategory(category);
     // For actual DOCX text, a known Unicode face is enough to keep the stored
     // code points, but does not prove which keyboard produced them.
@@ -525,9 +530,10 @@ function buildDocxJob(paragraphs, filename, detector, log, sourceEncoding = "aut
 export function processDocxBytes(data, detector, filename = "upload.docx", log = () => {}, { imageDir = null, sourceEncoding = "auto" } = {}) {
   const bytes = Buffer.isBuffer(data) ? data : Buffer.from(data);
   const fontNamesByParagraph = [];
-  const paragraphs = extractDocxParagraphs(bytes, { includeImageMarkers: Boolean(imageDir), fontNamesByParagraph });
+  const imageFiles = imageDir ? [] : null;
+  const paragraphs = extractDocxParagraphs(bytes, { imageDir, imageFiles, fontNamesByParagraph });
   const job = buildDocxJob(paragraphs, filename, detector, log, sourceEncoding, fontNamesByParagraph);
-  if (imageDir) job.imageFiles = extractDocxImages(bytes, imageDir);
+  if (imageFiles) job.imageFiles = imageFiles;
   return job;
 }
 
@@ -546,12 +552,12 @@ function externalQualityOk(counts) {
 }
 
 
-export async function processBytesDefault(data, kind, detector, filename = null, log = () => {}, options = {}) {
-  const k = (kind || "").toLowerCase();
-  if (k === "pdf") return processPdfBytes(data, detector, filename || "upload.pdf", log, options);
-  if (k === "docx") {
-
-
+export async function processDocxForMethod(data, method, detector, filename = null, log = () => {}, options = {}) {
+  const mode = String(method || "default").toLowerCase();
+  if (!["default", "manual", "null"].includes(mode)) {
+    throw new Error(`Unsupported method: ${JSON.stringify(method)} (use "default"/"manual"/"null")`);
+  }
+  if (mode === "default") {
     const probe = await processDocxBytesExternal(data, detector, filename || "upload.docx", log);
     if ((probe.counts.ZAWGYI ?? 0) + (probe.counts.UNICODE ?? 0) === 0) {
       log("    mammoth probe has no source-encoding evidence; handing the original DOCX to PRASER");
@@ -560,64 +566,8 @@ export async function processBytesDefault(data, kind, detector, filename = null,
         ? "    mammoth probe passed; handing the original DOCX to PRASER"
         : "    mammoth probe failed the Unicode-readability check; handing the original DOCX to PRASER");
     }
-    return processDocxBytes(data, detector, filename || "upload.docx", log, options);
   }
-  throw new Error(`Unsupported kind: ${JSON.stringify(kind)} (use 'pdf' or 'docx')`);
-}
-
-
-export function processBytes(data, kind, detector, filename = null, log = () => {}, options = {}) {
-  const k = (kind || "").toLowerCase();
-  if (k === "pdf") return processPdfBytes(data, detector, filename || "upload.pdf", log, options);
-  if (k === "docx") return processDocxBytes(data, detector, filename || "upload.docx", log, options);
-  throw new Error(`Unsupported kind: ${JSON.stringify(kind)} (use 'pdf' or 'docx')`);
-}
-
-
-export async function processBytesForMethod(data, kind, method, detector, filename = null, log = () => {}, options = {}) {
-  const k = (kind || "").toLowerCase();
-  const m = String(method || "default").toLowerCase();
-  if (!["default", "manual", "null"].includes(m)) {
-    throw new Error(`Unsupported method: ${JSON.stringify(method)} (use "default"/"manual"/"null")`);
-  }
-  if (m === "null" && k !== "docx") {
-    throw new Error(`method:"null" is DOCX-only (no PDF path emits it); got kind=${JSON.stringify(kind)}`);
-  }
-  if (k !== "pdf") {
-    return m === "default" ? processBytesDefault(data, k, detector, filename, log, options)
-      : processBytes(data, k, detector, filename, log, options);
-  }
-  if (isEncryptedPdf(data)) data = await decryptPdf(data, log);
-  if (hasObjectStreams(data)) data = await expandObjectStreams(data, log);
-
-  const writer = new PageSourceWriter();
-  let retained = false;
-  try {
-    const runOptions = { ...options, onPageContent: (index, streams, refs, loader) => {
-      writer.addPage(index, streams);
-      options.onPageContent?.(index, streams, refs, loader);
-    } };
-    const job = m === "default" ? await processBytesDefault(data, k, detector, filename, log, runOptions)
-      : processBytes(data, k, detector, filename, log, runOptions);
-    try {
-      const source = await writer.finish(data);
-      note(options.provenance, { sourceLinearization: { linearized: true } });
-      if (source.warnings) log(`[i] qpdf linearization warning: ${source.warnings}`);
-      if (options.retainLinearizedSource) {
-        job.internalPdf = source;
-        retained = true;
-      }
-    } catch (error) {
-      // Keep the existing extraction available if a PDF cannot be rewritten.
-      // Never report the original as linearized when this pass failed.
-      job.linearizationError = error.message;
-      note(options.provenance, { sourceLinearization: { linearized: false, error: error.message } });
-      log(`[!] Source PDF linearization skipped: ${error.message}`);
-    }
-    return job;
-  } finally {
-    writer.close({ remove: !retained });
-  }
+  return processDocxBytes(data, detector, filename || "upload.docx", log, options);
 }
 
 
@@ -669,7 +619,7 @@ export async function markPdfImagePages(bytes, job, imageDir, log = () => {}) {
   const files = [];
   const reports = Array.isArray(job?.reports) ? job.reports : [];
   for (let i = 0; i < reports.length; i += 1) {
-    if (!reports[i]?.hasImg) continue;
+    if (!reports[i]?.hasImg && !job.pages?.[i]?.hasImg) continue;
     const id = String(files.length + 1).padStart(4, "0");
     const target = path.join(imageDir, `${id}-page${i + 1}.png`);
     try {

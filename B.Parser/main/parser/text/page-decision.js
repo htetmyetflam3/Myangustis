@@ -1,13 +1,15 @@
 import { englishLikeness } from "./mm-score.js";
 import { containsMyanmar } from "./detector.js";
-import { arrangeZawCodeOrder } from "./zawcode-order.js";
-import { normalizePageLines, sameProtectedCharacters } from "./preserved-transform.js";
-import { Rabbit } from "./rabbit.js";
-
 export { normalizePageLines } from "./preserved-transform.js";
 
 const LATIN_LIKE = /^[\x20-\xff\p{Script=Latin}\p{Number}\p{Punctuation}\p{Symbol}\s]+$/u;
 const SPACE_SEPARATOR = /^\p{Zs}$/u;
+
+// Repair the observed spelling of this word only when the page has Zawgyi
+// evidence. A PDF's bracketed glyph codes are not word identities.
+export function correctWorldWord(text, zawgyiEvidence = false) {
+  return zawgyiEvidence ? text.replace(/က(?:မၻာ|မ်ဘာ)/gu, "ကမ္ဘာ") : text;
+}
 
 // Unicode 16, table 16-4: the modern Burmese syllable order. Characters on
 // the same row have the same priority; this is not the Engine's own order.
@@ -81,34 +83,4 @@ export function markOrderAligned(text) {
     previous = -1;
   }
   return true;
-}
-
-// Make one whole-page choice. Rabbit always receives the original string,
-// never a partial ZawCode repair, and requires positive Zawgyi evidence.
-export function finishSharedPage(text, {
-  normalize, sourceEncoding = "auto", unicodeEvidence = false, zawgyiEvidence = false,
-  rabbit = Rabbit.zg2uni,
-} = {}) {
-  const original = String(text ?? "");
-  if (!containsMyanmar(original) || markOrderAligned(original)) {
-    return { text: [...normalizePageLines(original, normalize)].join("\n"), decision: "aligned" };
-  }
-  const candidate = arrangeZawCodeOrder(original);
-  if (candidate !== original && markOrderAligned(candidate)) {
-    return { text: [...normalizePageLines(candidate, normalize)].join("\n"), decision: "zawcode" };
-  }
-  if (unicodeEvidence || sourceEncoding === "unicode") {
-    return { text: original, decision: "unaligned-unicode" };
-  }
-  // A mark-order mismatch alone cannot distinguish unknown Unicode from
-  // Zawgyi. Keep the original when there is no positive Zawgyi evidence.
-  if (!zawgyiEvidence && sourceEncoding !== "zawgyi-one") {
-    return { text: original, decision: "unaligned-unknown" };
-  }
-  if (typeof rabbit !== "function") throw new TypeError("Expected Rabbit converter");
-  const converted = rabbit(original, { preserveZeroWidth: true });
-  if (!sameProtectedCharacters(original, converted)) {
-    return { text: original, decision: "unaligned-zawgyi" };
-  }
-  return { text: converted, decision: "rabbit" };
 }

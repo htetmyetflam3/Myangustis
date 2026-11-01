@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 
@@ -37,30 +39,66 @@ async function pdfjs() {
 
 function asBytes(source) {
   if (source instanceof Uint8Array) return new Uint8Array(source);
-  if (Buffer.isBuffer(source)) return new Uint8Array(source);
-  throw new TypeError("PDF source must be a Buffer or Uint8Array");
+  throw new TypeError("PDF source must be a file path, Buffer or Uint8Array");
 }
 
+function fileRangeTransport(api, input) {
+  const size = fs.statSync(input).size;
+  const fd = fs.openSync(input, "r");
+  return new class extends api.PDFDataRangeTransport {
+    #closed = false;
+
+    constructor() {
+      super(size, new Uint8Array(0), true, path.basename(input));
+    }
+
+    requestDataRange(begin, end) {
+      if (this.#closed) return;
+      const bytes = new Uint8Array(end - begin);
+      let offset = 0;
+      while (offset < bytes.length) {
+        const count = fs.readSync(fd, bytes, offset, bytes.length - offset, begin + offset);
+        if (!count) throw new Error("Unexpected end of PDF while reading a range");
+        offset += count;
+      }
+      this.onDataRange(begin, bytes);
+    }
+
+    abort() {
+      if (!this.#closed) {
+        this.#closed = true;
+        fs.closeSync(fd);
+      }
+    }
+  }();
+}
 
 export async function openPdf(source, options = {}) {
   const api = await pdfjs();
-  const task = api.getDocument({
-    data: asBytes(source),
-    isEvalSupported: false,
-    useSystemFonts: true,
-    stopEventLoop: true,
-    wasmUrl: `${pdfjsAssetRoot}wasm/`,
-    cMapUrl: `${pdfjsAssetRoot}cmaps/`,
-    cMapPacked: true,
-    standardFontDataUrl: `${pdfjsAssetRoot}standard_fonts/`,
-    ...options,
-  });
-  const doc = await task.promise;
-
-  if (typeof doc.destroy !== "function") {
-    Object.defineProperty(doc, "destroy", { value: () => task.destroy() });
+  const transport = typeof source === "string" ? fileRangeTransport(api, source) : null;
+  try {
+    const task = api.getDocument({
+      ...(transport
+        ? { range: transport, disableStream: true, disableAutoFetch: true }
+        : { data: asBytes(source) }),
+      isEvalSupported: false,
+      useSystemFonts: true,
+      stopEventLoop: true,
+      wasmUrl: `${pdfjsAssetRoot}wasm/`,
+      cMapUrl: `${pdfjsAssetRoot}cmaps/`,
+      cMapPacked: true,
+      standardFontDataUrl: `${pdfjsAssetRoot}standard_fonts/`,
+      ...options,
+    });
+    const doc = await task.promise;
+    if (typeof doc.destroy !== "function") {
+      Object.defineProperty(doc, "destroy", { value: () => task.destroy() });
+    }
+    return doc;
+  } catch (error) {
+    transport?.abort();
+    throw error;
   }
-  return doc;
 }
 
 export async function renderPageCanvas(page, scale = 3, { maxPixels = Number.MAX_SAFE_INTEGER } = {}) {

@@ -1,4 +1,4 @@
-import { runQpdf } from "../core/qpdf.js";
+import fs from "node:fs";
 
 const ENCRYPT_MARK = Buffer.from("/Encrypt");
 
@@ -7,26 +7,32 @@ export function isEncryptedPdf(bytes) {
   return buf.includes(ENCRYPT_MARK);
 }
 
-export async function decryptPdf(bytes, log = () => {}) {
-  const buf = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-  if (!isEncryptedPdf(buf)) return buf;
+const OBJSTM_MARK = Buffer.from("/ObjStm");
+
+// Match the byte-based checks without loading a path-backed PDF into memory.
+export function scanPdfFileMarkers(source) {
+  const fd = fs.openSync(source, "r");
+  const block = Buffer.allocUnsafe(64 * 1024);
+  let tail = Buffer.alloc(0);
+  let encrypted = false;
+  let objectStreams = false;
+  let position = 0;
   try {
-    const { data: out, warnings } = await runQpdf(buf, ["--password=", "--decrypt"]);
-    if (warnings) log(`[i] qpdf decrypt warning: ${warnings}`);
-    log(
-      `[+] PDF was encrypted; decrypted with qpdf `
-        + `(${buf.length.toLocaleString("en-US")} -> ${out.length.toLocaleString("en-US")} bytes)`,
-    );
-    return out;
-  } catch (cause) {
-    if (/invalid password|password.*incorrect|requires a password/iu.test(String(cause?.message))) {
-      throw new Error("This PDF needs a password to open; supply an unprotected copy.", { cause });
+    while (true) {
+      const count = fs.readSync(fd, block, 0, block.length, position);
+      if (!count) break;
+      position += count;
+      const bytes = tail.length ? Buffer.concat([tail, block.subarray(0, count)]) : block.subarray(0, count);
+      encrypted ||= bytes.includes(ENCRYPT_MARK);
+      objectStreams ||= bytes.includes(OBJSTM_MARK);
+      if (encrypted && objectStreams) break;
+      tail = Buffer.from(bytes.subarray(Math.max(0, bytes.length - Math.max(ENCRYPT_MARK.length, OBJSTM_MARK.length) + 1)));
     }
-    throw cause;
+    return { encrypted, objectStreams };
+  } finally {
+    fs.closeSync(fd);
   }
 }
-
-const OBJSTM_MARK = Buffer.from("/ObjStm");
 
 
 
@@ -41,16 +47,4 @@ const OBJSTM_MARK = Buffer.from("/ObjStm");
 export function hasObjectStreams(bytes) {
   const buf = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
   return buf.includes(OBJSTM_MARK);
-}
-
-export async function expandObjectStreams(bytes, log = () => {}) {
-  const buf = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-  if (!hasObjectStreams(buf)) return buf;
-  const { data: out, warnings } = await runQpdf(buf, ["--object-streams=disable"]);
-  if (warnings) log(`[i] qpdf object-stream warning: ${warnings}`);
-  log(
-    `[+] PDF uses object streams; expanded with qpdf `
-      + `(${buf.length.toLocaleString("en-US")} -> ${out.length.toLocaleString("en-US")} bytes)`,
-  );
-  return out;
 }

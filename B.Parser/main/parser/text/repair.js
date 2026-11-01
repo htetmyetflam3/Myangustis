@@ -25,7 +25,7 @@
 
 
 import { loadMapJson } from "../core/json-map.js";
-import { scanText, scanBrokenSpans } from "./scan.js";
+import { scanText, scanBrokenSpans, tagPosLine, parseTaggedLine } from "./scan.js";
 import {
   orderText, unmixZawCodeMarks, retraceZawCodeMarks, settleZawCodeAhE,
   medialFollows, reorderMarks,
@@ -71,8 +71,11 @@ export function homoglyphVariants(token) {
 
 
 export function repairToken(token, words) {
-  if (!words || !words.size || words.has(token)) return null;
-  const hits = homoglyphVariants(token).filter((v) => words.has(v));
+  // A number on its own is not evidence that ၀ or ၇ should become a letter.
+  if (/^[၀-၉]+$/u.test(token) || !words || !words.size) return null;
+  const variants = homoglyphVariants(token);
+  if (!variants.length || words.has(token)) return null;
+  const hits = variants.filter((v) => words.has(v));
   return hits.length === 1 ? hits[0] : null;
 }
 
@@ -114,9 +117,10 @@ export function repairHomoglyphs(text, words) {
 
 
 export function splitGluedNumber(token, words) {
-  if (!words || !words.size || words.has(token)) return null;
+  if (!words || !words.size) return null;
   const tail = /^(.*?)([\u1040-\u1049]+)$/u.exec(token);
   const head = /^([\u1040-\u1049]+)(.*)$/u.exec(token);
+  if ((!tail?.[1] && !head?.[2]) || words.has(token)) return null;
   const tailOk = Boolean(tail && tail[1] && words.has(tail[1]));
   const headOk = Boolean(head && head[2] && words.has(head[2]));
   if (tailOk && headOk) return null;
@@ -172,8 +176,9 @@ export function repairText(text, words) {
 const MEND_GATE_RULES = ["orphan", "impossible", "stray", "virama", "unknown"];
 
 function gateHits(token, words, standalone) {
-  const rep = scanText(token, { dictionary: words, standalone, perRule: 1 });
-  return MEND_GATE_RULES.reduce((n, k) => n + (rep[k]?.total ?? 0), 0);
+  const rep = scanText(token, { perRule: 1 });
+  const structural = MEND_GATE_RULES.reduce((n, k) => n + (rep[k]?.total ?? 0), 0);
+  return structural + (typeof words?.unknownCount === "function" ? words.unknownCount(token) : 0);
 }
 
 
@@ -341,7 +346,9 @@ export function zawCodeSpuriousIVariants(token) {
 
 function mendZawCodeToken(token, words, standalone) {
   const own = gateHits(token, words, standalone);
-  const wins = (cand) => (cand && cand !== token && gateHits(cand, words, standalone) < own ? cand : null);
+  const wins = (cand) => (cand && cand !== token
+    && (typeof words.unknownCount !== "function" || words.unknownCount(cand) === 0)
+    && gateHits(cand, words, standalone) < own ? cand : null);
   const arbitrate = (variants) => {
     const hits = variants.filter((v) => wins(v));
     return hits.length === 1 ? hits[0] : null;
@@ -402,7 +409,18 @@ export function mendZawCodeText(text, words, standalone = [], { skipTokens = nul
   if (!text || !words || !words.size) return { text, repairs: [] };
   const isProtected = (token) => skipTokens?.size
     && (token.match(MM_RUN) || []).some((part) => skipTokens.has(part));
-  const spans = scanBrokenSpans(String(text), { dictionary: words, standalone });
+  const spans = scanBrokenSpans(String(text));
+  if (typeof words.unknownCount === "function") {
+    for (const match of String(text).matchAll(MM_RUN)) {
+      if (!words.unknownCount(match[0])) continue;
+      const start = match.index;
+      const end = start + match[0].length;
+      if (!spans.some((span) => span.start < end && span.end > start)) {
+        spans.push({ start, end, token: match[0], rules: ["unknown"] });
+      }
+    }
+    spans.sort((a, b) => a.start - b.start);
+  }
   const tally = new Map();
   const tallyAdd = (from, to) => {
     const key = `${from}\u0000${to}`;
@@ -501,4 +519,78 @@ export function repairFromScanVerdict(pages, report, words, {
     }
     return { ...page, text: mended.text, ...(lines ? { lines } : {}) };
   });
+}
+
+export async function inspectPosCandidate(candidate, { bindEngine = null } = {}) {
+  if (typeof candidate !== "string") throw new TypeError("A POS candidate must be text");
+  const rawPos = await tagPosLine(candidate, bindEngine);
+  const tagged = parseTaggedLine(rawPos);
+  const unknown = tagged.filter((token) => token.kind === "unknown").length;
+  const exact = tagged.length > 0 && tagged.every((token) => token.kind === "known")
+    && tagged.map((token) => token.word).join("") === candidate.replace(/\s+/gu, "");
+  return { singleWord: exact && tagged.length === 1, unknownCount: unknown || (exact ? 0 : 1) };
+}
+
+export async function scanBrokenSpansWithPos(text, { bindEngine = null } = {}) {
+  const source = String(text ?? "");
+  const spans = scanBrokenSpans(source);
+  const cache = new Map();
+  for (const match of source.matchAll(MM_RUN)) {
+    if (!cache.has(match[0])) cache.set(match[0], await inspectPosCandidate(match[0], { bindEngine }));
+    if (!cache.get(match[0]).unknownCount) continue;
+    const start = match.index;
+    const end = start + match[0].length;
+    if (!spans.some((span) => span.start < end && span.end > start)) {
+      spans.push({ start, end, token: match[0], rules: ["unknown"] });
+    }
+  }
+  return spans.sort((a, b) => a.start - b.start);
+}
+
+// The synchronous repair rules above consume a small set-like view of known
+// candidates. Resolve that view lazily from Engine POS, never from the master
+// dictionary; replay a rule only when a newly encountered candidate needs a
+// verdict. Source text is changed only after all of its candidates are known.
+async function withPosVerdicts(run, bindEngine = null) {
+  const cache = new Map();
+  const pending = new Set();
+  const verdicts = {
+    size: 1,
+    has(value) {
+      if (!cache.has(value)) pending.add(value);
+      return cache.get(value)?.singleWord === true;
+    },
+    unknownCount(value) {
+      if (!cache.has(value)) pending.add(value);
+      return cache.get(value)?.unknownCount ?? 0;
+    },
+  };
+  for (;;) {
+    pending.clear();
+    const result = run(verdicts);
+    if (!pending.size) return result;
+    for (const candidate of pending) {
+      cache.set(candidate, await inspectPosCandidate(candidate, { bindEngine }));
+    }
+  }
+}
+
+export async function repairTextWithPos(text, { bindEngine = null } = {}) {
+  return withPosVerdicts((verdicts) => repairText(text, verdicts), bindEngine);
+}
+
+export async function repairFromPosVerdict(pages, {
+  path = null, preserveZawCodeOrder = false, bindEngine = null,
+} = {}) {
+  return withPosVerdicts((verdicts) => repairFromScanVerdict(pages, {}, verdicts, {
+    path, preserveZawCodeOrder,
+  }), bindEngine);
+}
+
+export async function mendZawCodeTextWithPos(text, { skipTokens = null, bindEngine = null } = {}) {
+  return withPosVerdicts((verdicts) => mendZawCodeText(text, verdicts, [], { skipTokens }), bindEngine);
+}
+
+export async function zawCodeGuardWithPos(sample, { bindEngine = null } = {}) {
+  return withPosVerdicts((verdicts) => zawCodeGuard(sample, verdicts), bindEngine);
 }

@@ -60,7 +60,7 @@ test('proofreading caller collects both views or only syllables without output f
 });
 
 test('scraper segment CLI keeps its U+001D stdin contract', () => {
-  const bin = path.join(REPO, 'E.Scraper', 'main', 'extend', 'scraper-segmented.js');
+  const bin = path.join(REPO, 'D.Scraper', 'main', 'extend', 'scraper-segmented.js');
   const source = fs.readFileSync(bin, 'utf8');
   assert.ok(!source.includes('MonoSyllabism/'));
   assert.ok(source.includes('../../_index.js'));

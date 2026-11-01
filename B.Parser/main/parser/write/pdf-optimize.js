@@ -6,67 +6,36 @@
 
 
 import fs from "node:fs";
-import { runQpdf } from "../core/qpdf.js";
+import { runQpdfFile } from "../core/qpdf.js";
 
 const OPTIMIZE_OFF = new Set(["0", "off", "false", "no"]);
 
 export const pdfOptimizeEnabled = () =>
   !OPTIMIZE_OFF.has(String(process.env.PRASER_PDF_OPTIMIZE ?? "").trim().toLowerCase());
 
-let linearizeSupported = null;
-export const linearizeAvailable = () => linearizeSupported;
-
-
-
-
-
-
-export async function optimizePdfBytes(input, { linearize = true } = {}) {
-  const before = Buffer.isBuffer(input) ? input : Buffer.from(input);
-  const args = [
-    "--stream-data=compress",
-    "--recompress-flate",
-    "--compression-level=9",
-    "--object-streams=generate",
-  ];
-  if (linearize) args.push("--linearize");
-  try {
-    const { data: bytes, warnings } = await runQpdf(before, args);
-    linearizeSupported = linearize;
-    return {
-      bytes,
-      linearized: linearize,
-      before: before.length,
-      after: bytes.length,
-      warnings,
-    };
-  } catch (cause) {
-    if (linearize) linearizeSupported = false;
-    throw cause;
-  }
-}
-
-
-export async function writeOptimizedPdf(outPath, bytes, log = () => {}) {
+export async function writeOptimizedPdf(outPath, inputPath, log = () => {}) {
   if (!pdfOptimizeEnabled()) {
-    fs.writeFileSync(outPath, bytes);
+    fs.copyFileSync(inputPath, outPath);
     log("[+] PDF second pass: SKIPPED (PRASER_PDF_OPTIMIZE=0)");
     return { path: outPath, optimized: false, linearized: false };
   }
   try {
-    const result = await optimizePdfBytes(bytes);
-    fs.writeFileSync(outPath, result.bytes);
-    const saved = result.before - result.after;
-    const pct = result.before ? ((saved / result.before) * 100).toFixed(1) : "0.0";
+    const before = fs.statSync(inputPath).size;
+    const { warnings } = await runQpdfFile(inputPath, outPath, [
+      "--stream-data=compress", "--recompress-flate", "--compression-level=9",
+      "--object-streams=generate", "--linearize",
+    ]);
+    const after = fs.statSync(outPath).size;
+    const saved = before - after;
+    const pct = before ? ((saved / before) * 100).toFixed(1) : "0.0";
     log(
-      `[+] PDF second pass (qpdf): ${result.before.toLocaleString("en-US")} -> `
-        + `${result.after.toLocaleString("en-US")} bytes (${saved >= 0 ? "-" : "+"}${Math.abs(Number(pct)).toFixed(1)}%), `
-        + `${result.linearized ? "linearized" : "not linearized"}`,
+      `[+] PDF second pass (qpdf): ${before.toLocaleString("en-US")} -> `
+        + `${after.toLocaleString("en-US")} bytes (${saved >= 0 ? "-" : "+"}${Math.abs(Number(pct)).toFixed(1)}%), linearized`,
     );
-    if (result.warnings) log(`[i] qpdf warning: ${result.warnings}`);
-    return { path: outPath, optimized: true, linearized: result.linearized };
+    if (warnings) log(`[i] qpdf warning: ${warnings}`);
+    return { path: outPath, optimized: true, linearized: true };
   } catch (error) {
-    fs.writeFileSync(outPath, bytes);
+    fs.copyFileSync(inputPath, outPath);
     log(`[!] PDF second pass failed, kept the first-pass file: ${error.message}`);
     return { path: outPath, optimized: false, linearized: false };
   }

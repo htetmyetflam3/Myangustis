@@ -99,6 +99,9 @@ export function createCurlRouter() {
 
     try {
       const text = await entry.parser().parse(uploaded, null, {
+        // This server-generated ID is attached only after the key gate. It is
+        // request metadata, not a replacement for the key or another secret.
+        authenticatedUser: { userId: crypto.createHash('sha256').update(crypto.randomBytes(32)).digest('hex') },
         // The smallest intent the praser accepts. Plain conversion to text:
         // no analysis, no engine, no queue.
         intent: {

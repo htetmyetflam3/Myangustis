@@ -11,15 +11,18 @@ const PROFILES = new Map([
     lastChar: 105,
     codePage: WININNWA_LEGACY_CODE_PAGE,
     // These are confirmed PDF codes for this subset, not universal keys.
+    // The resource's ToUnicode bridge separately identifies its lower slots.
     rawRuns: {
-      bytes: new Map([[0x0e, " "], [0x17, "က"], [0x25, "္က"]]),
+      bytes: new Map([[0x0e, " "], [0x17, "က"]]),
       runs: [
         { bytes: [0x17, 0x25], text: "က္က" },
         { bytes: [0x07, 0x08], text: "ဒ္ဒ" },
         { bytes: [0x0B, 0x5C], text: "တ္တ" },
         { bytes: [0x2B, 0x5F], text: "န္တ" },
       ],
-      unresolved: new Set([0x08, 0x5C, 0x5F]),
+      // The lower glyphs now have source-supported legacy-slot mappings;
+      // reading them is not restricted to the previously recorded heads.
+      unresolved: new Set(),
     },
   }],
   ["31e1447e813a2b15bee4bc4b1be515764554378cfd254ee45d9f9c0a7eda686b", {
@@ -29,14 +32,22 @@ const PROFILES = new Map([
     lastChar: 113,
     codePage: WININNWA_LEGACY_CODE_PAGE,
     rawRuns: {
-      bytes: new Map([[0x07, "ဒ"], [0x08, "္ဒ"]]),
+      // This resource's 12 is its PDF-local space. Raw 23 2F is the
+      // observed က္က pair, not a universal keyboard byte sequence.
+      bytes: new Map([[0x07, "ဒ"], [0x08, "္ဒ"], [0x12, " "]]),
       runs: [
         { bytes: [0x06, 0x07, 0x08, 0x09], text: "သဒ္ဒါ" },
         { bytes: [0x07, 0x08], text: "ဒ္ဒ" },
         { bytes: [0x0B, 0x64], text: "တ္တ" },
         { bytes: [0x1D, 0x6C], text: "န္တ" },
+        // The same 30 glyph occurs in ဥက္ကဋ္ဌ (p2) and ပါဠိ (pp6/10).
+        // Keep both interpretations tied to the observed full contexts.
+        { bytes: [0x2E, 0x23, 0x2F, 0x30], text: "ဥက္ကဋ္ဌ" },
+        { bytes: [0x16, 0x09, 0x30, 0x1E], text: "ပါဠိ" },
+        { bytes: [0x23, 0x2F], text: "က္က" },
       ],
-      unresolved: new Set([0x64, 0x66, 0x6C]),
+      // Raw 30 remains ambiguous, unlike the now-mapped lower consonants.
+      unresolved: new Set([0x30]),
     },
   }],
   // These resources were compared with their rendered pages. They use the
@@ -82,6 +93,33 @@ const PROFILES = new Map([
     codePage: AYAR_LEGACY_CODE_PAGE,
     rawRuns: null,
   }],
+  // Further source-local Amyanmar comparisons: /TT8 p9 and /TT51 p283
+  // have readable examples; /TT22's three used marks have the same outlines
+  // and ToUnicode values as /TT15; /TT43 p216 supplies punctuation/space.
+  ["f07054869cfd47522501716cd5a97fcede7d94ca168982dc30981058f440f4b4", {
+    baseFont: "amyanmar",
+    toUnicodeSha256: "39fe8ed4cffddedd1338a1538a6f2bde0b4103998e6a0bc696919a1984bc9fe8",
+    firstChar: 33, lastChar: 45,
+    codePage: AYAR_LEGACY_CODE_PAGE, rawRuns: null,
+  }],
+  ["8e1de260b78eda0c3e730fc00c66ee74d381517af765694bbf6b2de29bb6bf43", {
+    baseFont: "amyanmar",
+    toUnicodeSha256: "563a7c218778c50a904ef003f890da446bbf4be68e2c26899d6e5c41307f6df2",
+    firstChar: 33, lastChar: 35,
+    codePage: AYAR_LEGACY_CODE_PAGE, rawRuns: null,
+  }],
+  ["ecc7f1b3201510172ba28dfc97a17104fc71d1aa014b86d0b071fd6083df7ce7", {
+    baseFont: "amyanmar",
+    toUnicodeSha256: "e0946e0e279e40d027a2cbb1313235f04718d88c86534064205fdcedf88446f2",
+    firstChar: 33, lastChar: 36,
+    codePage: AYAR_LEGACY_CODE_PAGE, rawRuns: null,
+  }],
+  ["5820563de6a3ea2720f9c754563b47b302d63606b937ab64e37f189a4f3b8264", {
+    baseFont: "amyanmar",
+    toUnicodeSha256: "355abfd8e2b45b5e4bfeff0db1191c5f7e057bac775760f85c09ebcf6666d848",
+    firstChar: 33, lastChar: 90,
+    codePage: AYAR_LEGACY_CODE_PAGE, rawRuns: null,
+  }],
   ["4d6aa345dd1b88e650c0b700cd51b336bf0d0ba7016b559ca9f5f562b1ab46ea", {
     baseFont: "arlarwade",
     toUnicodeSha256: "f598de0e4a176739e8e3c447480bd322fd0b01a4c80fb1d97b7bffd1750b27c1",
@@ -114,6 +152,33 @@ const PROFILES = new Map([
     codePage: AYAR_LEGACY_CODE_PAGE,
     rawRuns: null,
   }],
+  // Further source-local comparisons against the rendered grammar pages:
+  // /TT6 p9, /TT20 p112, /TT59 p412 and /TT62 p417. The table outputs
+  // still need their usual contextual and Unicode-order handling.
+  ["164ab2dc98515900ba126fe7043f0fa455ed0472f32a68fbce5d41a6565584fb", {
+    baseFont: "arlarwade",
+    toUnicodeSha256: "e79d2648ec9c0f7d7c232c7688a001cf7d7a996a44073bf45368717eb03035be",
+    firstChar: 33, lastChar: 140,
+    codePage: AYAR_LEGACY_CODE_PAGE, rawRuns: null,
+  }],
+  ["4c50ba818d91e8762ea8217586e7a2440747c464b433964e49e3af5dee970db6", {
+    baseFont: "arlarwade",
+    toUnicodeSha256: "c85288ebecad12b06e1b601eb42891225eb9339359b9f89a978f94fc08d9484c",
+    firstChar: 33, lastChar: 101,
+    codePage: AYAR_LEGACY_CODE_PAGE, rawRuns: null,
+  }],
+  ["b353b9e2e602b1a65ec182154e49d8d71d9ec9d613718f0dbf01ba02918b4a55", {
+    baseFont: "arlarwade",
+    toUnicodeSha256: "d2924887b20e94564271618032bd9772d2e941618ac12897a1d9133547b191f3",
+    firstChar: 33, lastChar: 96,
+    codePage: AYAR_LEGACY_CODE_PAGE, rawRuns: null,
+  }],
+  ["286c99574ea17ff9806328746e5d56fa4f3399863d44978413ba5ffc458eed59", {
+    baseFont: "arlarwade",
+    toUnicodeSha256: "fca550553495f3d7c95b4add9618b72475b2929242680fddb9fd72ec9ac961e7",
+    firstChar: 33, lastChar: 130,
+    codePage: AYAR_LEGACY_CODE_PAGE, rawRuns: null,
+  }],
   ["b89b5fe3daba90ad860720610d39142ea965ac5a83ce889084c6c75afa9858e3", {
     baseFont: "arlarwade",
     toUnicodeSha256: "28f39c1845d59dbe3cab976efbcbf32a790916ba2a3f3200686d521397177f2a",
@@ -144,5 +209,12 @@ export function subsetFontBridge({ fontSha256, toUnicodeSha256, baseFont, firstC
   const profile = PROFILES.get(fontSha256);
   if (!profile || hasEncoding || profile.toUnicodeSha256 !== toUnicodeSha256
       || profile.baseFont !== baseFont || profile.firstChar !== firstChar || profile.lastChar !== lastChar) return null;
-  return profile;
+  const names = { wininnwa: "WinInnwa", arlarwade: "Arlarwade", amyanmar: "Amyanmar" };
+  return {
+    ...profile,
+    fontFamily: names[profile.baseFont] || profile.baseFont,
+    // This is the table used for this matched resource, not a statement that
+    // all fonts sharing its family name use the same encoding.
+    layoutTable: profile.codePage === AYAR_LEGACY_CODE_PAGE ? "ayar" : "wininnwa",
+  };
 }

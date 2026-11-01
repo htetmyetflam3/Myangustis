@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { advisoryOnce } from '../../host/advisory.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const MASTER_ENC = path.join(HERE, 'master.json.enc');
@@ -84,6 +85,9 @@ export function masterFingerprint() {
 }
 
 export function readMasterText() {
+  // Secure master access is for Engine internals, not a word-validation API.
+  // Use the hash-free POS bridge rather than matching directly against it.
+  advisoryOnce('engine-data', '[Engine data] For word validation, use the hash-free POS bridge (BindEngine with flag: pos) instead of reading or matching the master directly. --quiet mutes advisories for 24 hours.');
   const key = loadKey();
   const sealed = fs.readFileSync(MASTER_ENC);
   const sourceHash = digest(sealed);

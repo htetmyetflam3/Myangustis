@@ -81,7 +81,7 @@ TAIL=tail
         self.assertEqual(py, node)
 
     def test_existing_python_consumers_use_shared_workspace_environment(self):
-        for name in ('tools-box/python/hfinit.py', 'E.Scraper/main/modules/guard/helper/site_login.py',
+        for name in ('tools-box/python/hfinit.py', 'D.Scraper/main/modules/guard/helper/site_login.py',
                      'C.Proofreading/main/tools/api/rapidapi_translator.py'):
             target = self.root / name
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -99,7 +99,7 @@ if importlib.util.find_spec('bs4') is None:
     bs4 = types.ModuleType('bs4')
     bs4.BeautifulSoup = bs4.Tag = object
     sys.modules['bs4'] = bs4
-for name, filename in [('hf', 'tools-box/python/hfinit.py'), ('login', 'E.Scraper/main/modules/guard/helper/site_login.py'), ('api', 'C.Proofreading/main/tools/api/rapidapi_translator.py')]:
+for name, filename in [('hf', 'tools-box/python/hfinit.py'), ('login', 'D.Scraper/main/modules/guard/helper/site_login.py'), ('api', 'C.Proofreading/main/tools/api/rapidapi_translator.py')]:
     spec = importlib.util.spec_from_file_location(name, filename)
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
