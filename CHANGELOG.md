@@ -179,3 +179,12 @@
 ### Verification
 - Checked every copied page against its merged source for extracted text, dimensions and rendered pixels at 35% scale. Verified 78 sequential TXT page headers and byte-for-byte identical TXT output on a second Parser run.
 - Full Node suite: 394 passed, 0 failed, 1 skipped because the OCR PNG fixture is unavailable. Full Python suite: 356 passed, 0 failed.
+
+## [Unreleased] - 2026-11-02 — Local and HTTP Engine/Parser CLI
+### Added
+- Add one standalone CLI for local streamed PDF/DOCX Manager calls, hash-free text Bridge calls, the Engine's public positional API, and the Site's keyed conversion-only API. HTTP mode connects to already-running services and does not start or wrap either server.
+- Preserve the public Engine API's session handshake and 16 KiB JSON limit, stream Site uploads from disk, and keep the normal SPA upload lane unchanged. The CLI does not overwrite existing output files.
+### Verification
+- Full Node suite: 406 passed, 0 failed, 1 skipped because the OCR PNG fixture is unavailable. Full Python suite: 356 passed, 0 failed.
+- Built both Site frontends and started the real Site and Engine entry points independently with isolated test configuration. Verified local and HTTP API calls, including PDF and DOCX conversion and positional output. Deployed production services were not tested.
+- The local CLI parsed the 78-page representative PDF to the same TXT bytes as the committed Parser output; the Engine CLI also processed selected real-source text. Changed JavaScript files pass ESLint.
