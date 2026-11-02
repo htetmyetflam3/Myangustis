@@ -20,11 +20,15 @@ for (const scenario of ['shared', 'missing-root', 'missing-entry', 'broken-entry
     fs.writeFileSync(path.join(site, '.env'), 'SITE_CHAIN=local\nSITE_SHELL=local\n');
     for (const file of ['F.Site/_path.js', 'F.Site/Backend/file/paths.js',
       'F.Site/Backend/file/saveOriginfile.js', 'F.Site/Backend/gateway/generator/rawSaver.js',
-      'F.Site/Backend/gateway/generator/responses.js']) {
+      'F.Site/Backend/gateway/generator/responses.js', 'Architecture/Engine/.data/secure.js',
+      'Architecture/host/advisory.js']) {
       fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
       fs.copyFileSync(path.join(repo, file), path.join(root, file));
     }
-    fs.writeFileSync(path.join(root, 'B.Parser/_path.js'), 'export const OUTPUT_FONT_DIR = "/fonts/used";');
+    fs.writeFileSync(path.join(root, 'B.Parser/_path.js'), `
+      export const OUTPUT_FONT_DIR = "/fonts/used";
+      export async function getEngineData() { return import('../Architecture/Engine/.data/secure.js'); }
+    `);
     if (scenario !== 'missing-root') fs.copyFileSync(path.join(repo, 'index-path.js'), path.join(root, 'index-path.js'));
     if (scenario !== 'missing-entry') {
       const entry = scenario === 'broken-entry' ? 'throw new Error("broken entry")' :
@@ -39,9 +43,11 @@ for (const scenario of ['shared', 'missing-root', 'missing-entry', 'broken-entry
     const entryUrl = pathToFileURL(path.join(site, '_path.js')).href;
     const pathsUrl = pathToFileURL(path.join(site, 'Backend/file/paths.js')).href;
     const saverUrl = pathToFileURL(path.join(site, 'Backend/gateway/generator/rawSaver.js')).href;
+    const parserUrl = pathToFileURL(path.join(root, 'B.Parser/_path.js')).href;
     const result = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', `
       const p = await import(${JSON.stringify(entryUrl)});
       const paths = await import(${JSON.stringify(pathsUrl)});
+      const secure = await (await import(${JSON.stringify(parserUrl)})).getEngineData();
       const fs = await import('node:fs');
       const before = fs.readdirSync(p.SITE_RUNTIME_DIR).sort();
       const upload = await paths.ensureUploadDir('sample.pdf');
@@ -49,7 +55,7 @@ for (const scenario of ['shared', 'missing-root', 'missing-entry', 'broken-entry
       const saved = await createRawSaver()({ formId:'form', textContent:'hello', metadata:{visitorHash:'hash'} });
       console.log(JSON.stringify({base:p.BASE_DIR, runtime:p.SITE_RUNTIME_DIR, output:p.SITE_OUTPUT_DIR,
         input:upload, raw:saved.rawPath, text:fs.readFileSync(saved.rawPath, 'utf8'),
-        db:paths.abs(paths.DB_FILE), sources:p.ENV_RESULT.sources,
+        db:paths.abs(paths.DB_FILE), master:secure.MASTER_ENC, sources:p.ENV_RESULT.sources,
         value:process.env.SITE_CHAIN, shell:process.env.SITE_SHELL, before}));
     `], { cwd: os.tmpdir(), env, encoding: 'utf8' }));
     const shared = scenario === 'shared';
@@ -61,6 +67,7 @@ for (const scenario of ['shared', 'missing-root', 'missing-entry', 'broken-entry
     assert.equal(path.dirname(result.raw), path.join(runtime, '.output/txt'));
     assert.equal(result.text, 'hello');
     assert.equal(result.db, path.join(site, '.data/site.db'));
+    assert.equal(result.master, path.join(root, 'Architecture/Engine/.data/master.json.enc'));
     assert.equal(result.value, shared ? 'root' : 'local');
     assert.equal(result.shell, 'shell');
     assert.deepEqual(result.sources, [path.join(shared ? root : site, '.env')]);

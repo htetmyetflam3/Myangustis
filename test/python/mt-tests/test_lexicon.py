@@ -13,10 +13,17 @@ from lexicon import lookup, suggest, coverage
 
 class LexiconLoaderPaths(unittest.TestCase):
     def test_loader_failure_is_explained(self):
-        result = mock.Mock(returncode=1, stderr='Missing required secret "MASTER_JSON_KEY"')
-        with mock.patch.object(lexicon.subprocess, "run", return_value=result):
-            with self.assertRaisesRegex(RuntimeError, "MASTER_JSON_KEY"):
+        result = mock.Mock(returncode=1, stderr="sealed-data fixture failed")
+        with mock.patch.object(lexicon.subprocess, "run", return_value=result) as run:
+            with self.assertRaisesRegex(RuntimeError, "sealed-data fixture failed"):
                 lexicon._load_master()
+        self.assertEqual(run.call_args.args[0], ["node", str(lexicon.DATA_BRIDGE), "master"])
+
+    def test_loader_reads_the_sealed_master_through_the_engine_bridge(self):
+        with mock.patch.object(lexicon.subprocess, "run", wraps=lexicon.subprocess.run) as run:
+            data = lexicon._load_master()
+        self.assertEqual(run.call_args.args[0], ["node", str(lexicon.DATA_BRIDGE), "master"])
+        self.assertIsInstance(data.get("dictionary"), dict)
 
     def test_loaded_dictionary_uses_current_mapped_inventory(self):
         self.assertTrue(lexicon.MAPPED.is_file())

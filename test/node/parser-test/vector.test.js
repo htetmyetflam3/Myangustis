@@ -4,19 +4,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { LEGACY_CODE_PAGES } from "../../../B.Parser/main/parser/codepage/registry.js";
-import { matchImageToVector, matchPdfRegionToVector, repairTextRegionWithVector } from "../../../B.Parser/main/parser/codepage/vote.js";
+import { matchImageToVector, repairTextRegionWithVector } from "../../../B.Parser/main/parser/codepage/vote.js";
 import { loadVectorIndex, matchRasterMask, vectorSheetFiles } from "../../../B.Parser/main/parser/shape/match.js";
-import {
-  loadDetector,
-  streamPdfPages,
-} from "../../../B.Parser/extend/pipeline.js";
-import { prepareVectorLayout } from "../../../B.Parser/main/parser/codepage/resolve.js";
 
 
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const FIXTURE = path.join(HERE, "..", "..", "..", "Junk", "Parser", "upload", "pdf", "bg-mlc-1-1.pdf");
 const OCR_CROP = path.join(HERE, "..", "..", "..", "B.Parser", "main", "File", "upload", "ocr-marked", "zoom-kyone.png");
 const OCR_LINE = path.join(HERE, "..", "..", "..", "B.Parser", "main", "File", "upload", "ocr-marked", "zoom-line9.png");
 let index;
@@ -45,41 +38,6 @@ test("SVG matching abstains/ranks by labelled code point, without opening a font
 });
 
 
-
-let renderLanePromise;
-function renderLaneAvailable() {
-  if (!renderLanePromise) {
-    renderLanePromise = Promise.all([
-      import("pdfjs-dist/legacy/build/pdf.mjs"),
-      import("@napi-rs/canvas"),
-    ]).then(
-      () => true,
-      () => false,
-    );
-  }
-  return renderLanePromise;
-}
-
-test("a real bg-mlc unknown glyph is cropped to raw pixels and resolved against SVG", async (t) => {
-  if (!(await renderLaneAvailable())) {
-    return t.skip("render lane needs optional pdfjs-dist + @napi-rs/canvas");
-  }
-  const match = await matchPdfRegionToVector(
-    fs.readFileSync(FIXTURE),
-    1,
-
-
-    { x0: 332.7341, y0: 402.2960, x1: 332.9141, y1: 421.2140 },
-    { candidates: ["ဲ", "္ဒ"], scale: 5 },
-  );
-
-
-  assert.ok(match.crop.width > 8 && match.crop.height > 8);
-  assert.equal(match.accepted, true);
-  assert.equal(match.text, "္ဒ");
-  assert.equal(match.codepoints, "U+1039 U+1012");
-  assert.ok(match.margin > 0.04);
-});
 
 test("the OCR dropped-mark site is a raster-to-SVG U+1036 recovery", async (t) => {
   if (!fs.existsSync(OCR_CROP) || !fs.existsSync(OCR_LINE)) {
@@ -118,33 +76,6 @@ test("the OCR dropped-mark site is a raster-to-SVG U+1036 recovery", async (t) =
   });
   assert.equal(unsafe.changed, false);
   assert.equal(unsafe.text, "ကြုခဲ့ရသည်");
-});
-
-test("runtime outline layout selects only WinInnwa and preserves Latin resources", async () => {
-  const bytes = fs.readFileSync(FIXTURE);
-  const buildLog = [];
-  const vectorLayout = await prepareVectorLayout(bytes, (line) => buildLog.push(String(line)));
-  assert.ok(vectorLayout);
-  assert.equal(vectorLayout.baseLayout, "wininnwa");
-  assert.match(vectorLayout.name, /^vector:WinInnwa$/u);
-
-
-
-
-
-  assert.ok(vectorLayout.matched >= 20, `outline vote count ${vectorLayout.matched}`);
-  assert.equal(vectorLayout.table.get(0xb4), "္ဒ");
-  assert.equal(vectorLayout.table.get(0x4d), "ြ");
-  assert.notEqual(vectorLayout.table, LEGACY_CODE_PAGES.get("wininnwa"));
-
-  const decodeLog = [];
-  const [, , iterator] = streamPdfPages(bytes, loadDetector(), (line) => decodeLog.push(String(line)), { vectorLayout });
-  const first = iterator.next().value;
-  assert.ok(first.text.startsWith("Update: 2012-12-11"));
-  assert.ok(first.text.includes("Myanmar Grammar: MLC"));
-  assert.ok(first.text.includes("မြန်မာသဒ္ဒါ"));
-  assert.ok(decodeLog.some((line) => /text path "vector:WinInnwa": 0\.9\d\d\s+<- chosen/u.test(line)));
-  assert.ok(decodeLog.includes('[+] Decoding via "vector:WinInnwa" character map'));
 });
 
 

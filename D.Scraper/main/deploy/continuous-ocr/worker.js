@@ -6,7 +6,9 @@ import { Manager } from '../../../../B.Parser/main/parser/manager.js';
 import { getDefaultVectorIndex } from '../../../../B.Parser/main/parser/shape/match.js';
 import { matchPixelsToVector } from '../../../../B.Parser/main/parser/codepage/vote.js';
 import { inspectPosCandidate, scanBrokenSpansWithPos, repairTextWithPos, HOMOGLYPH_PAIRS } from '../../../../B.Parser/main/parser/text/repair.js';
-import { normalizeText } from '../../../../B.Parser/main/parser/text/normalize.js';
+import { normalizeText as preparePosCandidate } from '../../../../B.Parser/main/parser/text/normalize.js';
+import { normalizeOutputText } from '../../../../B.Parser/main/parser/text/preserved-transform.js';
+import { getEngineNormalize } from '../../../../B.Parser/_path.js';
 import { MAX_OCR_PIXELS } from '../../../../B.Parser/main/parser/core/limits.js';
 
 const reply = (v) => process.stdout.write('OCR_RESULT ' + JSON.stringify(v) + '\n');
@@ -51,15 +53,18 @@ async function run(request) {
           const crop = cropCanvasRgba(rendered.canvas, region.bbox, { scale: 1, pad: 2 });
           const match = matchPixelsToVector(crop, { index });
           if (!match.accepted || !match.text || isHomoglyphOnly(region.text, match.text)) continue;
-          const candidate = normalizeText(match.text);
-          const candidatePos = await inspectPosCandidate(candidate);
-          const originalPos = await inspectPosCandidate(normalizeText(region.text));
+          const candidate = match.text;
+          // Keep the existing POS comparison preparation, but do not write it
+          // as output; the raw candidate is normalized with the final OCR text.
+          const candidatePos = await inspectPosCandidate(preparePosCandidate(candidate));
+          const originalPos = await inspectPosCandidate(preparePosCandidate(region.text));
           if (!candidatePos.singleWord || originalPos.singleWord) continue;
           edits.push({ start: at, end: cursor, text: candidate });
         }
         for (const edit of edits.reverse()) text = text.slice(0, edit.start) + edit.text + text.slice(edit.end);
         vectorRepairs += edits.length;
-        text = (await repairTextWithPos(normalizeText(text))).text;
+        text = (await repairTextWithPos(text)).text;
+        text = normalizeOutputText(text, await getEngineNormalize());
         chars += text.trim().length;
         fs.writeSync(fd, JSON.stringify({ page: n, text }) + '\n');
         process.stderr.write(`[ocr-page] ${n}/${doc.numPages}\n`);

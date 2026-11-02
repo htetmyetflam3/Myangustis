@@ -9,6 +9,10 @@ function needsProtection(ch) {
   return preservedGlue.has(ch) || FORMAT_CHARACTER.test(ch);
 }
 
+function isFormatCharacter(ch) {
+  return ch === "\u034f" || FORMAT_CHARACTER.test(ch);
+}
+
 // Conversion must not silently lose spaces, joiners or other protected PDF
 // characters. These sequences deliberately exclude ordinary converted text.
 export function protectedCharacters(value) {
@@ -19,15 +23,14 @@ export function protectedCharacters(value) {
   return out;
 }
 
-// Engine normalize removes Glue characters (including zero-width characters,
-// NBSP and some visible characters). Protect those characters around the real
-// transformation, rather than removing them from the page.
+// Preserve zero-width format characters and the combining grapheme joiner,
+// while letting Engine normalize handle spaces and other characters itself.
 export function preserveCharacters(text, transform) {
   const input = String(text ?? "");
   if (typeof transform !== "function") throw new TypeError("Expected a text transformation");
   let hasProtected = false;
   for (const ch of input) {
-    if (needsProtection(ch)) { hasProtected = true; break; }
+    if (isFormatCharacter(ch)) { hasProtected = true; break; }
   }
   if (!hasProtected) return transform(input);
 
@@ -37,7 +40,7 @@ export function preserveCharacters(text, transform) {
   const preserved = [];
   let masked = "";
   for (const ch of input) {
-    if (needsProtection(ch)) {
+    if (isFormatCharacter(ch)) {
       masked += `${prefix}${preserved.length}${suffix}`;
       preserved.push(ch);
     } else masked += ch;
@@ -52,7 +55,7 @@ export function preserveCharacters(text, transform) {
     restored += 1;
     return value;
   });
-  if (restored !== preserved.length) throw new Error("Text transformation could not preserve PDF characters");
+  if (restored !== preserved.length) throw new Error("Text transformation could not preserve zero-width characters");
   return result;
 }
 
@@ -70,4 +73,8 @@ export function* normalizePageLines(text, normalize) {
     yield preserveCharacters(input.slice(start, end), normalize);
     start = end + 1;
   }
+}
+
+export function normalizeOutputText(text, normalize) {
+  return [...normalizePageLines(text, normalize)].join("\n");
 }

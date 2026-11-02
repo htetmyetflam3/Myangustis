@@ -11,7 +11,8 @@ Two regressions are guarded here.
    (`ဥုံ` <- `ဉုံ`, `ဥမ်` <- `ဉမ်`). `ဥ်` was the one missing its partner, so
    `ဥ်` never became `ဉ်`.
 
-The tests read the engine mapper loader’s IMPOSTER table from the WASM payload.
+The tests read IMPOSTER through the Engine's secure loader and verify it
+matches the active mapper payload.
 """
 import json
 import subprocess
@@ -19,12 +20,21 @@ import unittest
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
+SECURE = REPO / "Architecture/Engine/.data/secure.js"
 LOADER = REPO / "Architecture/Engine/MonoSyllabism/map/loader.js"
 
 
 def _load_imposter():
-    # Check the actual mapper payload used by the engine, not the sealed source.
-    script = f"import {{ IMPOSTER }} from {json.dumps(LOADER.as_uri())}; console.log(JSON.stringify(IMPOSTER))"
+    # Read the sealed source through secure.js, and keep coverage of the
+    # mapper payload that the Engine actually runs.
+    script = f"""
+        import {{ isDeepStrictEqual }} from 'node:util';
+        import {{ readMasterJson }} from {json.dumps(SECURE.as_uri())};
+        import {{ IMPOSTER }} from {json.dumps(LOADER.as_uri())};
+        const source = readMasterJson().mapData.IMPOSTER;
+        if (!isDeepStrictEqual(source, IMPOSTER)) throw new Error('Sealed and active imposter tables differ');
+        process.stdout.write(JSON.stringify(source));
+    """
     out = subprocess.run(["node", "--input-type=module", "-e", script],
                          capture_output=True, check=True, text=True).stdout
     return json.loads(out)

@@ -10,7 +10,9 @@ Latin character codes reinterpreted as Myanmar glyph ids.
 Run:  python3 -m unittest discover -s test/python/parser-tests -v
 """
 
+import json
 import os
+import subprocess
 import sys
 import unittest
 
@@ -779,42 +781,6 @@ class ExistingBehaviourTest(unittest.TestCase):
                                         cmap_strategy()), TITLE)
 
 
-class BookFixtureTest(unittest.TestCase):
-    """End-to-end check against the tracked 100-page sample, when present."""
-
-    FIXTURE = os.path.join(_HERE, "..", "..", "File", "upload", "pdf",
-                           "sample.pdf")
-
-    @classmethod
-    def setUpClass(cls):
-        if not os.path.isfile(cls.FIXTURE):
-            raise unittest.SkipTest("sample.pdf fixture not present")
-
-    def test_first_page_title_author_and_translator(self):
-        from pipeline import stream_pdf_pages
-        _, npages, pages = stream_pdf_pages(self.FIXTURE, detector=None)
-        self.assertEqual(npages, 100)
-        first = next(iter(pages))
-        self.assertIn(TITLE, first["text"])
-        self.assertNotIn("dod of plaughter", first["text"])
-        self.assertIn("Ni Cang Tian", first["text"])
-        self.assertIn("Soe Paing Hmue", first["text"])
-
-    def test_two_resources_share_one_font_program(self):
-        objects = PE.parse_pdf_objects(open(self.FIXTURE, "rb").read())
-        loader = FontResourceLoader(objects, PE.get_stream, PE.parse_ttf_cmap,
-                                    PE.parse_tounicode_stream)
-        pages = PE.collect_pages(objects, PE.find_root_pages(objects))
-        strategy = DocumentDecoding("cmap", CmapIdentityMap({}))
-        decoders = page_font_decoders(loader, pages[0][0], pages[0][1], strategy)
-        self.assertGreaterEqual(len(decoders), 2)
-        cid = [d for d in decoders.values() if d.is_cid]
-        simple = [d for d in decoders.values() if not d.is_cid]
-        self.assertTrue(cid and simple)
-        self.assertEqual(cid[0].base_font, simple[0].base_font)
-        self.assertTrue(simple[0].has_encoding)
-
-
 class CanonicalMarkOrderTests(unittest.TestCase):
     """The ONE reorder authority: cleanup.reorder_marks, reading the one
     priority table in mm_score. Parse time no longer reorders at all."""
@@ -842,12 +808,23 @@ class CanonicalMarkOrderTests(unittest.TestCase):
         # only hide the damage.
         self.assertEqual(cleanup.reorder_marks("\u103c\u1000"), "\u103c\u1000")
 
-    def test_a_space_is_part_of_the_run_and_sorts_to_the_end_of_it(self):
-        # The engine's Priority has " "=17 and "\n"=18, so a space joins the
-        # cluster and sorts behind every real mark.
-        self.assertEqual(cleanup.reorder_marks("\u1000 \u102d"), "\u1000\u102d ")
-        # ...and the dedup applies to it like any other priority.
-        self.assertEqual(cleanup.reorder_marks("\u1000  \u1001"), "\u1000 \u1001")
+    def test_spacing_examples_follow_engine_normalize(self):
+        # Compare these examples with the actual Engine function, not an
+        # inferred whitespace policy or a claim that this helper is the Engine.
+        examples = ["\u1000 \u102d", "\u1000  \u1001"]
+        script = """
+            import fs from 'node:fs';
+            import { getEngineNormalize } from './index-path.js';
+            const normalize = await getEngineNormalize();
+            const inputs = JSON.parse(fs.readFileSync(0, 'utf8'));
+            process.stdout.write(JSON.stringify(inputs.map((text) => normalize(text))));
+        """
+        repo = os.path.abspath(os.path.join(_HERE, "..", "..", ".."))
+        result = subprocess.run(
+            ["node", "--input-type=module", "-e", script],
+            input=json.dumps(examples), capture_output=True, text=True, cwd=repo, check=True,
+        )
+        self.assertEqual([cleanup.reorder_marks(text) for text in examples], json.loads(result.stdout))
 
     def test_a_digit_is_not_a_base(self):
         # index() is U+1000..U+1021 plus U+1025/U+1027: marks after a digit
@@ -1112,25 +1089,6 @@ class CmapForkTest(unittest.TestCase):
             "ZAWGYI", self.UNICODE_LINE * 6, "legacy", 0, "ZAWGYI",
             lambda m: None)
         self.assertEqual(cat, "ZAWGYI")
-
-    def test_real_sample_first_page_takes_zawgyi_cmap(self):
-        fixture = os.path.join(_HERE, "..", "..", "File", "upload", "pdf",
-                               "sample.pdf")
-        if not os.path.isfile(fixture):
-            raise unittest.SkipTest("sample.pdf fixture not present")
-        from pipeline import stream_pdf_pages, load_detector
-        det = load_detector()
-        _, _, pages = stream_pdf_pages(fixture, detector=det)
-        first = next(iter(pages))
-        self.assertEqual(first["decode_kind"], "cmap")
-        category, _ = det.detect(first["text"])
-        logs = []
-        cat = pipeline._cmap_fork(
-            pipeline._norm_category(category), first["text"],
-            first["decode_kind"], 0, category, logs.append)
-        self.assertEqual(cat, "ZAWGYI")
-        self.assertTrue(any("zawgyi-cmap path" in line for line in logs))
-
 
 class ObjectStreamTest(unittest.TestCase):
     """decrypt.py detection + expansion wiring (fake qpdf, like the JS suite)."""

@@ -46,7 +46,10 @@ const STRAY_MARKS = new Set(DATA.strayMarks);
 
 const IMPOSSIBLE = DATA.impossible.map(([pattern, title, why]) => [new RegExp(pattern, "gu"), title, why]);
 
-// A flag is review evidence, not proof that a confirmed character is wrong.
+// Stray or lone marks can be technically misspelled yet used intentionally to
+// capture specific pronunciations across languages and names. Dictionary-based
+// matching alone cannot distinguish loanwords or names from parsing errors;
+// consider the density and sequence of error tags instead.
 export function countImpossiblePairs(text) {
   const input = String(text ?? "");
   let total = 0;

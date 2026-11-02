@@ -19,21 +19,31 @@ const detector = { detect: () => ["ZAWGYI", 1] };
 const ZAWGYI_LINE = "သူ႔တစ္ကိုယ္လုံးနာက်င္နေသည္ကို ရွီယန္သတိထားမိလိုက္သည္။ ";
 const UNICODE_LINE = "သူ့တစ်ကိုယ်လုံးနာကျင်နေသည်ကို ရှီယန်သတိထားမိလိုက်သည်။ ";
 
-test("zawgyi-cmap: a Zawgyi font's own cmap still goes to Rabbit", () => {
-
-
+test("the shipped Zawgyi-One PDF routes its first page through Rabbit", () => {
   const here = path.dirname(fileURLToPath(import.meta.url));
-  const bytes = fs.readFileSync(path.join(here, "..", "..", "..", "Junk", "Parser", "upload", "pdf", "sample.pdf"));
+  const sample = path.join(here, "..", "..", "..", "F.Site", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
   const det = loadDetector();
-  const [, , pages] = streamPdfPages(bytes, det, () => {});
-  const pg = pages.next().value;
-  assert.equal(pg.decodeKind, "cmap");
+  const [, , pages] = streamPdfPages(fs.readFileSync(sample), det, () => {});
+  try {
+    const pg = pages.next().value;
+    assert.equal(pg.parsingPath, "zawgyi-one");
+    assert.equal(pg.decision, "rabbit");
+    assert.deepEqual([...pg.fontKinds], ["ZAWGYI"]);
+    const rep = processPageRecord(pg, det, false);
+    assert.equal(rep.category, "ZAWGYI");
+    assert.equal(rep.pageFinalized, true);
+    assert.ok(rep.text.includes("သတ်ဖြတ်သူ သွေးနတ်ဘုရား"), "text must come out as real Unicode");
+  } finally { pages.return?.(); }
+});
 
+test("zawgyi-cmap: a Zawgyi-One font's own cmap still goes to Rabbit", () => {
   const logs = [];
-  const rep = processPageRecord(pg, det, false, (l) => logs.push(String(l)));
+  const rep = processPageRecord({
+    idx: 0, text: ZAWGYI_LINE.repeat(6), decodeKind: "cmap", fontNames: new Set(["Zawgyi-One"]),
+  }, detector, false, (line) => logs.push(String(line)));
   assert.equal(rep.category, "ZAWGYI");
-  assert.ok(logs.some((l) => l.includes("zawgyi-cmap path")), logs.join("\n"));
-  assert.ok(rep.text.includes("သတ်ဖြတ်သူ သွေးနတ်ဘုရား"), "text must come out as real Unicode");
+  assert.ok(logs.some((line) => line.includes("zawgyi-cmap path")), logs.join("\n"));
+  assert.ok(rep.text.includes("ရှီယန်သတိထားမိလိုက်သည်"));
 });
 
 test("unicode: a page that reads as itself is never rewritten", () => {

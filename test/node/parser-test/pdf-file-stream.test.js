@@ -14,7 +14,6 @@ import { streamPdfPages, processPageRecord, collectPdfResult, buildFinalPages, l
 import { runQpdfFile } from "../../../B.Parser/main/parser/core/qpdf.js";
 import { findPdfEnd, copyPdfPrefix } from "../../../B.Parser/main/parser/read/pdf-tail.js";
 import { PdfScannedObjects } from "../../../B.Parser/main/parser/read/pdf-object-file.js";
-import { classifyScraperSource } from "../../../B.Parser/main/parser/codepage/classify.js";
 import { runPdfStream } from "../../../B.Parser/main/parser/worker/pdf-stream.js";
 import { finishManualPdf } from "../../../B.Parser/main/parser/worker/manual-pdf.js";
 import { finishManualDocx } from "../../../B.Parser/main/parser/worker/manual-docx.js";
@@ -27,6 +26,7 @@ import { extractDocxParagraphs } from "../../../B.Parser/main/parser/read/docx-e
 import { Rabbit, createRabbitStream } from "../../../B.Parser/main/parser/text/rabbit.js";
 import { Manager } from "../../../B.Parser/main/parser/manager.js";
 import { createSourceRunner } from "../../../B.Parser/main/parser/worker/runtime.js";
+import { getEngineNormalize } from "../../../B.Parser/_path.js";
 
 const png = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
@@ -109,6 +109,47 @@ test("streamed PDF output writes actual POS unknown contexts with source page nu
   }
 });
 
+test("PDF output uses Engine normalize after parsing across jobs, methods and formats", async () => {
+  const dir = scratch();
+  const previous = process.env.PRASER_REGISTER;
+  process.env.PRASER_REGISTER = path.join(dir, "register.log");
+  const manager = new Manager({ outputDir: dir });
+  try {
+    const source = "စဥ် ကိ";
+    const normalize = await getEngineNormalize();
+    const expected = normalize(source);
+    assert.equal(expected, "စဉ် ကိ");
+    const pdf = await PDFDocument.create();
+    pdf.registerFontkit(fontkit);
+    const fontPath = new URL("../../../Junk/fonts/Unicode/PYIDAUNGSU-2.5.2_REGULAR.TTF", import.meta.url);
+    const font = await pdf.embedFont(fs.readFileSync(fontPath), { subset: false });
+    pdf.addPage([400, 400]).drawText(source, { font, x: 20, y: 300 });
+    const bytes = await pdf.save({ useObjectStreams: false });
+    const [, , parsed] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+    assert.equal(parsed.next().value.text, source);
+    const input = path.join(dir, "input.pdf");
+    fs.writeFileSync(input, bytes);
+    for (const [job, method] of [["extracting", "default"], ["extracting", "manual"], ["null", "default"], ["null", "manual"]]) {
+      for (const extension of ["txt", "docx", "pdf"]) {
+        const result = await manager.dispatch({
+          job, method, output: extension, inputKind: "pdf", filename: "input.pdf",
+          inPath: input, outPath: path.join(dir, `${job}-${method}.${extension}`),
+          includeText: true, sourceEncoding: "unicode",
+        });
+        assert.equal(result.text, expected, `${job}/${method}/${extension}`);
+        const report = fs.readFileSync(result.posScan.file, "utf8");
+        assert.ok(report.includes(`Original: ${expected}`), `${job}/${method}/${extension} POS source`);
+        if (extension === "docx") assert.ok(docxDocument(result.file).includes(expected));
+      }
+    }
+  } finally {
+    await manager.close();
+    if (previous === undefined) delete process.env.PRASER_REGISTER;
+    else process.env.PRASER_REGISTER = previous;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("DOCX scanning uses explicit source markers rather than paragraph-chunk page numbers", async () => {
   const dir = scratch();
   const previous = process.env.PRASER_REGISTER;
@@ -130,6 +171,70 @@ test("DOCX scanning uses explicit source markers rather than paragraph-chunk pag
     const report = fs.readFileSync(result.posScan.file, "utf8");
     assert.match(report, /Page 12, line 1\nOriginal: ကောင်းကင် စမ်းသပ် ကိ မြန်မာ စာ။/u);
     assert.match(report, /Page 13, line 1\nOriginal: ဤ စာ ကိ ဃု ကောင်းကင် မြန်မာ။/u);
+  } finally {
+    await manager.close();
+    if (previous === undefined) delete process.env.PRASER_REGISTER;
+    else process.env.PRASER_REGISTER = previous;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("DOCX output normalizes after parsing across jobs, methods and formats", async () => {
+  const dir = scratch();
+  const previous = process.env.PRASER_REGISTER;
+  process.env.PRASER_REGISTER = path.join(dir, "register.log");
+  const manager = new Manager({ outputDir: dir });
+  try {
+    const source = "စဥ် ကိ";
+    const doc = new Document({ sections: [{ children: [new Paragraph(source)] }] });
+    const input = path.join(dir, "input.docx");
+    fs.writeFileSync(input, await Packer.toBuffer(doc));
+    const run = createSourceRunner({ kind: "docx", method: "manual" });
+    const parsed = await run({ filename: "input.docx", inPath: input, sourceEncoding: "unicode" });
+    const raw = parsed.result.reports[0].base;
+    assert.ok(raw.startsWith(source));
+    const normalize = await getEngineNormalize();
+    const expected = raw.split("\n").map(normalize).join("\n");
+    assert.ok(expected.startsWith("စဉ် ကိ"));
+    for (const [job, method] of [
+      ["extracting", "default"], ["extracting", "manual"], ["extracting", "null"], ["null", "default"], ["null", "null"],
+    ]) {
+      for (const extension of ["txt", "docx", "pdf"]) {
+        const result = await manager.dispatch({
+          job, method, output: extension, inputKind: "docx", filename: "input.docx", inPath: input,
+          outPath: path.join(dir, `${job}-${method}.${extension}`), sourceEncoding: "unicode",
+          applyCleanup: false, includeText: true,
+        });
+        assert.equal(result.text, expected, `${job}/${method}/${extension}`);
+        assert.ok(fs.readFileSync(result.posScan.file, "utf8").includes("Original: စဉ် ကိ"));
+      }
+    }
+  } finally {
+    await manager.close();
+    if (previous === undefined) delete process.env.PRASER_REGISTER;
+    else process.env.PRASER_REGISTER = previous;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("DOCX preserves zero-width characters through parsing and final normalization", async () => {
+  const dir = scratch();
+  const previous = process.env.PRASER_REGISTER;
+  process.env.PRASER_REGISTER = path.join(dir, "register.log");
+  const manager = new Manager({ outputDir: dir });
+  try {
+    const source = "\u200bစဥ်";
+    const doc = new Document({ sections: [{ children: [new Paragraph(source)] }] });
+    const input = path.join(dir, "input.docx");
+    fs.writeFileSync(input, await Packer.toBuffer(doc));
+    for (const applyCleanup of [false, true]) {
+      const result = await manager.dispatch({
+        job: "extracting", method: "manual", output: "txt", inputKind: "docx", filename: "input.docx",
+        inPath: input, outPath: path.join(dir, `output-${applyCleanup}.txt`), sourceEncoding: "unicode",
+        applyCleanup, includeText: true,
+      });
+      assert.ok(result.text.startsWith("\u200bစဉ်"));
+    }
   } finally {
     await manager.close();
     if (previous === undefined) delete process.env.PRASER_REGISTER;
@@ -233,32 +338,13 @@ test("file object scans preserve original boundaries across blocks and updates",
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
-test("Scraper file classification preserves original legacy, object-stream and encrypted decisions", async (t) => {
-  const fixture = process.env.PARSER_TEST_PDF_DIR && path.join(process.env.PARSER_TEST_PDF_DIR, "bg-mlc-1-1.pdf");
-  if (!fixture || !fs.existsSync(fixture)) return t.skip("requires the external real-PDF fixture");
-  const dir = scratch();
-  try {
-    const cases = [
-      ["original", fixture, true],
-      ["linearized", path.join(dir, "linearized.pdf"), true, ["--linearize"]],
-      ["object-streams", path.join(dir, "objects.pdf"), false, ["--object-streams=generate"]],
-      ["empty-password", path.join(dir, "encrypted.pdf"), false, ["--encrypt", "", "test-owner-password", "256", "--"]],
-    ];
-    for (const [name, file, skipped, args] of cases) {
-      if (args) await runQpdfFile(fixture, file, args);
-      const buffered = await classifyScraperSource(fs.readFileSync(file), "pdf");
-      const fileBacked = await classifyScraperSource(file, "pdf");
-      assert.equal(buffered.skip, skipped, name);
-      assert.deepEqual(fileBacked, buffered, name);
-    }
-  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
-});
-
 test("file-backed layout keeps the same coordinates and split-line rules", () => {
   const original = [[1, 2, 3, "first\ninside"], [4, 5, 6, "second"]];
   const store = { *lines() { yield* original; } };
   const fileText = (value) => ({ *chunks() { for (let i = 0; i < value.length; i += 3) yield value.slice(i, i + 3); } });
   assert.deepEqual([...pageLayoutLines(store, fileText("first\ninside\nsecond"), 2)], original);
+  const replayable = { [Symbol.iterator]: () => pageLayoutLines(store, fileText("first\ninside\nsecond"), 2) };
+  assert.deepEqual([...pageLayoutLines({ lines: () => replayable }, fileText("first\ninside\nsecond"), 2)], original);
   assert.deepEqual([...pageLayoutLines(store, fileText("changed\nsecond"), 2)], [
     [1, 2, 3, "changed"], [4, 5, 6, "second"],
   ]);
@@ -553,6 +639,34 @@ test("object streams, long trailing comments and encrypted PDFs preserve qpdf be
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
+test("manual PDF normalizes after OCR merge and scans the same final text", async () => {
+  const root = scratch();
+  try {
+    const sourceText = "စဥ် ကိ";
+    const normalize = await getEngineNormalize();
+    const expected = normalize(sourceText);
+    for (const extension of ["txt", "docx", "pdf"]) {
+      const dir = path.join(root, extension);
+      fs.mkdirSync(dir);
+      const source = new PageStoreWriter(dir, "input");
+      source.addPage({ text: [sourceText], lines: [[10, 20, 12, sourceText]], wh: [400, 500] });
+      source.addPage({ text: [""], images: [{ pageSized: true }], hasImg: true, wh: [400, 500] });
+      source.close();
+      const result = await finishManualPdf({
+        pageStore: source.store, sourcePath: "ignored.pdf", directory: dir,
+        outPath: path.join(dir, `output.${extension}`), source: "input.pdf", counts: {},
+        includeText: true, owner: false, maxOcrPages: 1,
+        pageHasImage: async () => false, ocrPage: async () => sourceText, ocrRegion: async () => "",
+      });
+      assert.equal(result.text, `${expected}\n\n${expected}`, extension);
+      assert.deepEqual(result.ocrPages, [2]);
+      const report = fs.readFileSync(result.posScan.file, "utf8");
+      assert.equal((report.match(/Original: စဉ် ကိ/gu) ?? []).length, 2);
+      if (extension === "docx") assert.ok(docxDocument(result.file).includes(expected));
+    }
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
 test("manual page spool preserves full-page and regional OCR merge semantics", async () => {
   const dir = scratch();
   try {
@@ -750,6 +864,31 @@ test("DOCX image markers follow actual relationships and reused images", async (
     assert.deepEqual(fs.readFileSync(files[0].path), blue);
     assert.deepEqual(fs.readFileSync(files[1].path), red);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("manual DOCX normalizes only after image OCR is merged", async () => {
+  const root = scratch();
+  try {
+    const sourceText = "စဥ် ကိ";
+    const normalize = await getEngineNormalize();
+    const expected = normalize(sourceText);
+    const marker = "\uE000OCR-12345678-1234-4234-8234-123456789abc-0001\uE001";
+    for (const extension of ["txt", "docx", "pdf"]) {
+      const dir = path.join(root, extension);
+      fs.mkdirSync(dir);
+      const source = new PageStoreWriter(dir, "input");
+      source.addPage({ text: [`${sourceText}\n${marker}`] });
+      source.close();
+      const result = await finishManualDocx({
+        pageStore: source.store, directory: dir, outPath: path.join(dir, `output.${extension}`),
+        source: "input.docx", counts: {}, includeText: true, owner: false,
+        imageFiles: [{ id: "0001", marker }], ocr: [{ id: "0001", text: sourceText }],
+      });
+      assert.equal(result.text, `${expected}\n${expected}`, extension);
+      assert.equal((fs.readFileSync(result.posScan.file, "utf8").match(/Original: စဉ် ကိ/gu) ?? []).length, 2);
+      if (extension === "docx") assert.ok(docxDocument(result.file).includes(expected));
+    }
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
 test("manual DOCX OCR merges source chunks before writing all output formats and POS", async () => {

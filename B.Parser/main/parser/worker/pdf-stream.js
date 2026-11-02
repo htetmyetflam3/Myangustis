@@ -11,7 +11,8 @@ import { PageStoreWriter } from "../read/page-store.js";
 import { PosScanner } from "../text/scan.js";
 import { PDF_PARSING_PATHS } from "../read/pdf-fonts.js";
 import { startRecord, note, appendRecord, registerPath } from "../core/provenance.js";
-import { REGISTER_LOG } from "../../../_path.js";
+import { REGISTER_LOG, getEngineNormalize } from "../../../_path.js";
+import { normalizePageToFile, pageLayoutLines } from "../text/page-file-decision.js";
 import {
   MAX_INPUT_BYTES, MAX_INPUT_MB, MAX_PAGES, MAX_TEXT_CHARS, OWNER_PARSER_WORKER,
 } from "../core/limits.js";
@@ -89,6 +90,7 @@ async function runPdfStreamAttempt(msg, { detector, manual = false, pdfImages = 
     const counts = { ZAWGYI: 0, UNICODE: 0, UNKNOWN: 0 };
     let pageNumber = 0;
     let textChars = 0;
+    let normalize = null;
     const reports = noOutput ? [] : null;
     // Manual OCR modifies page text later; scan that final text instead.
     if (!manual && !noOutput) scanner = new PosScanner({ directory });
@@ -103,7 +105,6 @@ async function runPdfStreamAttempt(msg, { detector, manual = false, pdfImages = 
         const text = page.text;
         textChars += text.chars;
         if (textChars > MAX_TEXT_CHARS) throw new Error(`PDF extracted text exceeds the ${MAX_TEXT_CHARS} character cap`);
-        if (scanner) await scanner.writePage(pageNumber, text.chunks());
         counts[page.category in counts ? page.category : "UNKNOWN"] += 1;
         if (page.parsingPath === PDF_PARSING_PATHS.LEGACY) pagePaths.add("wininnwa");
         else if (page.decision === "zawcode") pagePaths.add("zawcode");
@@ -130,18 +131,30 @@ async function runPdfStreamAttempt(msg, { detector, manual = false, pdfImages = 
             // Keep the page text if its image cannot be rendered, as before.
           }
         }
-        function* chunks() {
-          yield* text.chunks();
-          if (marker) yield marker;
-        }
-        if (storeWriter) {
-          storeWriter.addPage({
-            text: chunks(), lines: page.lines ?? [],
-            wh: page.wh, images: page.images ?? [], hasImg: page.hasImg === true,
-          });
-        } else {
-          sink.addPage(chunks());
-        }
+        let normalizedPage = null;
+        try {
+          if (!manual) {
+            normalize ??= await getEngineNormalize();
+            normalizedPage = normalizePageToFile(text.chunks(), { directory, normalize });
+          }
+          const output = normalizedPage ?? text;
+          if (scanner) await scanner.writePage(pageNumber, output.chunks());
+          function* chunks() {
+            yield* output.chunks();
+            if (marker) yield marker;
+          }
+          if (storeWriter) {
+            const layout = { lines: () => page.lines ?? [] };
+            storeWriter.addPage({
+              text: chunks(),
+              lines: normalizedPage && page.lines
+                ? pageLayoutLines(layout, output, page.lineCount) : (page.lines ?? []),
+              wh: page.wh, images: page.images ?? [], hasImg: page.hasImg === true,
+            });
+          } else {
+            sink.addPage(chunks());
+          }
+        } finally { normalizedPage?.close(); }
       }
     } finally {
       pages.return?.();

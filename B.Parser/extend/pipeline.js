@@ -1,6 +1,5 @@
 import { renderPdfPagePng } from "../main/parser/read/pdf-render.js";
 import { note } from "../main/parser/core/provenance.js";
-import { getEngineNormalize } from "../_path.js";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -10,6 +9,7 @@ import { preserveRegionalRuns } from "../main/parser/text/unicode-evidence.js";
 import { isEncryptedPdf, hasObjectStreams, scanPdfFileMarkers } from "../main/parser/read/decrypt.js";
 import { Rabbit } from "../main/parser/text/rabbit.js";
 import { cleanupText, orderText } from "../main/parser/text/cleanup.js";
+import { preserveCharacters } from "../main/parser/text/preserved-transform.js";
 import { extractDocxParagraphs, validateDocxArchive } from "../main/parser/read/docx-extract.js";
 import { extractDocxParagraphsExternal } from "../main/parser/read/docx-external.js";
 import { scoreText } from "../main/parser/text/mm-score.js";
@@ -26,8 +26,6 @@ import { finishPageToFile, pageLayoutLines } from "../main/parser/text/page-file
 import { DocumentDecoding, PDF_PARSING_PATHS, pageFontDecoders } from "../main/parser/read/pdf-fonts.js";
 import { PAGE_CONTENT_PREFIX_BYTES } from "../main/parser/read/pdf-content-file.js";
 import { pyRound, RuntimeError, baseName } from "../main/parser/core/pylib.js";
-
-const normalizeWithEngine = await getEngineNormalize();
 
 export function normCategory(category) {
   const cat = String(category).toUpperCase();
@@ -197,7 +195,7 @@ export function streamPdfPages(source, detector = null, log = () => {}, {
         },
       });
       const finishedPage = finishPageToFile(extractedLines, {
-        directory: workDir, parsingPath, sourceEncoding, fontKinds, normalize: normalizeWithEngine,
+        directory: workDir, parsingPath, sourceEncoding, fontKinds,
       });
       const finished = { decision: finishedPage.decision };
       const { category, originalHasText } = finishedPage;
@@ -205,7 +203,9 @@ export function streamPdfPages(source, detector = null, log = () => {}, {
       let lines;
       if (diskPages) {
         text = activeText = finishedPage.text;
-        lines = layoutPages ? pageLayoutLines(extractedLines, text, finishedPage.lineCount) : undefined;
+        lines = layoutPages ? {
+          [Symbol.iterator]: () => pageLayoutLines(extractedLines, text, finishedPage.lineCount),
+        } : undefined;
       } else {
         try {
           text = [...finishedPage.text.chunks()].join("");
@@ -231,7 +231,7 @@ export function streamPdfPages(source, detector = null, log = () => {}, {
       shared._pageFonts.delete(`${pnum},${pgen}`);
       legacy._pageFonts.delete(`${pnum},${pgen}`);
       const result = {
-        idx, lines, wh: [w, h], text,
+        idx, lines, wh: [w, h], text, lineCount: finishedPage.lineCount,
         hasImg: images.length > 0 || pageHasImages(objects, pnum, pgen), images,
         decodeKind: parsingPath, perFont: true, pageFinalized: true, category,
         parsingPath, decision: finished.decision, fontNames, fontKinds, checkpoint,
@@ -257,8 +257,9 @@ export function streamPdfPages(source, detector = null, log = () => {}, {
 }
 
 
-const orderUnicode = (text) => preserveRegionalRuns(text, orderText);
-const cleanupUnicode = (text) => preserveRegionalRuns(text, cleanupText);
+const orderUnicode = (text) => preserveRegionalRuns(text, (part) => preserveCharacters(part, orderText));
+const cleanupUnicode = (text) => preserveRegionalRuns(text, (part) => preserveCharacters(part, cleanupText));
+const orderZawgyi = (text) => preserveCharacters(text, (part) => orderText(Rabbit.zg2uni(part, { preserveZeroWidth: true })));
 
 export function cleanupFor(cat, text) {
   return cat === "UNICODE" ? cleanupUnicode(text) : null;
@@ -266,7 +267,7 @@ export function cleanupFor(cat, text) {
 
 
 function convertLine(t, cat, applyCleanup) {
-  if (cat === "ZAWGYI") return orderText(Rabbit.zg2uni(t));
+  if (cat === "ZAWGYI") return orderZawgyi(t);
   if (cat === "UNICODE") return applyCleanup ? cleanupUnicode(t) : orderUnicode(t);
   return orderText(t);
 }
@@ -374,7 +375,7 @@ export function processPageRecord(pg, detector, applyCleanup, log = () => {}, wa
 
   let base;
   if (cat === "ZAWGYI") {
-    base = orderText(Rabbit.zg2uni(raw));
+    base = orderZawgyi(raw);
     if (hasOnlyZawgyiFonts(pg.fontNames) && (pg.decodeKind === "cmap" || pg.decodeKind === "tounicode")) {
       log(`    Page ${idx + 1}: zawgyi-cmap path -- Zawgyi-One font evidence -> converted`);
     } else {
@@ -507,7 +508,7 @@ function buildDocxJob(paragraphs, filename, detector, log, sourceEncoding = "aut
     // For actual DOCX text, a known Unicode face is enough to keep the stored
     // code points, but does not prove which keyboard produced them.
     const fontUnicode = sourceEncoding === "auto" && hasOnlyUnicodeFonts(fontNames);
-    const base = cat === "ZAWGYI" ? orderText(Rabbit.zg2uni(chunk))
+    const base = cat === "ZAWGYI" ? orderZawgyi(chunk)
       : cat === "UNICODE" ? (fontUnicode ? chunk : orderUnicode(chunk)) : chunk;
     const clean = cleanupFor(cat, base);
     reports.push({ page: idx + 1, category: cat, prob: safeProb(prob), base, clean });

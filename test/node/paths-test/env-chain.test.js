@@ -107,6 +107,21 @@ test('standalone engine reads its local data with its local environment', async 
   assert.deepEqual(result.sources, [path.join(engine, '.env')]);
 });
 
+test('secure.js opens the sealed master with the tracked key when the environment key is unset', t => {
+  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'secure-fallback-test-'));
+  t.after(() => fs.rmSync(state, { recursive: true, force: true }));
+  const env = { ...process.env, MYANGUSTIS_STATE_DIR: state };
+  delete env.MASTER_JSON_KEY;
+  const secure = pathToFileURL(path.join(repo, 'Architecture/Engine/.data/secure.js')).href;
+  const result = execFileSync(process.execPath, ['--input-type=module', '-e', `
+    const { readMasterJson } = await import(${JSON.stringify(secure)});
+    const data = readMasterJson();
+    if (!data?.mapData || !data?.dictionary) throw new Error('Incomplete sealed master');
+    process.stdout.write('loaded');
+  `], { cwd: os.tmpdir(), env, encoding: 'utf8' });
+  assert.equal(result, 'loaded');
+});
+
 test('shared entry reaches the single engine-owned master', async () => {
   const root = await import('../../../index-path.js');
   const entry = await import('../../../Architecture/_index.js');
