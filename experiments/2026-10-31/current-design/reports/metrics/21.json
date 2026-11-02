@@ -1,0 +1,91 @@
+{
+  "case": "21",
+  "path": "pdfs/selected-pdfs/1706303571424.pdf",
+  "blob": "67828cfd3587a68862ea9b272597b3abf516776d",
+  "source_bytes": 8545714,
+  "source_pages": 51,
+  "selected_pages": 10,
+  "mode": "vector-text-default",
+  "sample_render_match": true,
+  "full_source": {
+    "original_pages": 51,
+    "read_ms": 5.27,
+    "decrypt_or_expand_ms": 0.91,
+    "setup_ms": 93.73,
+    "first_page_ms": 4.86,
+    "all_page_ms": 95.72,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {
+      "pageFontResources": {
+        "calls": 20,
+        "ms": 1.97
+      },
+      "reversedFontCmap": {
+        "calls": 24,
+        "ms": 3.5
+      },
+      "tounicodeOf": {
+        "calls": 24,
+        "ms": 8.11
+      }
+    },
+    "decisions": {
+      "aligned": 1,
+      "rabbit": 9
+    },
+    "paths": {
+      "zawgyi-one": 10
+    },
+    "warnings": {},
+    "chars": 13129,
+    "myanmar": 11065,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 1,
+    "image_placements": 33,
+    "prefix_warnings": 0
+  },
+  "full_source_over_default_input_limit": false,
+  "sample": {
+    "original_pages": 10,
+    "read_ms": 0.8,
+    "decrypt_or_expand_ms": 0.44,
+    "setup_ms": 35.71,
+    "first_page_ms": 1.1,
+    "all_page_ms": 35.33,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {},
+    "decisions": {
+      "aligned": 1,
+      "rabbit": 9
+    },
+    "paths": {
+      "zawgyi-one": 10
+    },
+    "warnings": {},
+    "chars": 13129,
+    "myanmar": 11065,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 1,
+    "image_placements": 33,
+    "prefix_warnings": 0
+  },
+  "sample_vs_original_differences": [],
+  "manager_ms": 1052.21,
+  "manager_pages": 10,
+  "manager_counts": {
+    "ZAWGYI": 9,
+    "UNICODE": 0,
+    "UNKNOWN": 1
+  },
+  "output_path": "/home/user/.cache/parser-eye/trash-broad/results/21.pdf",
+  "output_bytes": 222314,
+  "encoding_path": "zawgyi-one",
+  "page_warnings": [],
+  "linearization_warning": null,
+  "manager_text_matches_sample": true,
+  "status": "ok"
+}

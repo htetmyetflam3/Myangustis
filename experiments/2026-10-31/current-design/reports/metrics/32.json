@@ -1,0 +1,128 @@
+{
+  "case": "32",
+  "path": "pdfs/selected-pdfs/chinese-stories-part-3-4-1705386897174.pdf",
+  "blob": "4be2e645930867133793d816f2c0b52662086f83",
+  "source_bytes": 2973908,
+  "source_pages": 135,
+  "selected_pages": 10,
+  "mode": "vector-text-default",
+  "sample_render_match": true,
+  "full_source": {
+    "original_pages": 135,
+    "read_ms": 1.16,
+    "decrypt_or_expand_ms": 0.26,
+    "setup_ms": 46.66,
+    "first_page_ms": 22.82,
+    "all_page_ms": 100.64,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {
+      "pageFontResources": {
+        "calls": 20,
+        "ms": 10.89
+      },
+      "reversedFontCmap": {
+        "calls": 12,
+        "ms": 2.04
+      },
+      "tounicodeOf": {
+        "calls": 12,
+        "ms": 1.05
+      }
+    },
+    "decisions": {
+      "unaligned-unknown": 8,
+      "aligned": 2
+    },
+    "paths": {
+      "zawgyi-one": 10
+    },
+    "warnings": {
+      "encoding-order-needs-review": 8
+    },
+    "chars": 10434,
+    "myanmar": 8384,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 0,
+    "image_placements": 3,
+    "prefix_warnings": 0
+  },
+  "full_source_over_default_input_limit": false,
+  "sample": {
+    "original_pages": 10,
+    "read_ms": 0.23,
+    "decrypt_or_expand_ms": 0.08,
+    "setup_ms": 13.71,
+    "first_page_ms": 3.45,
+    "all_page_ms": 39.37,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {},
+    "decisions": {
+      "unaligned-unknown": 8,
+      "aligned": 2
+    },
+    "paths": {
+      "zawgyi-one": 10
+    },
+    "warnings": {
+      "encoding-order-needs-review": 8
+    },
+    "chars": 10434,
+    "myanmar": 8384,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 0,
+    "image_placements": 3,
+    "prefix_warnings": 0
+  },
+  "sample_vs_original_differences": [],
+  "manager_ms": 953.34,
+  "manager_pages": 10,
+  "manager_counts": {
+    "ZAWGYI": 0,
+    "UNICODE": 0,
+    "UNKNOWN": 10
+  },
+  "output_path": "/home/user/.cache/parser-eye/trash-broad/results/32.pdf",
+  "output_bytes": 221124,
+  "encoding_path": null,
+  "page_warnings": [
+    {
+      "code": "encoding-order-needs-review",
+      "page": 1
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 3
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 4
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 6
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 7
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 8
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 9
+    },
+    {
+      "code": "encoding-order-needs-review",
+      "page": 10
+    }
+  ],
+  "linearization_warning": null,
+  "manager_text_matches_sample": true,
+  "status": "ok"
+}

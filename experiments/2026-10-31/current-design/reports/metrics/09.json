@@ -1,0 +1,93 @@
+{
+  "case": "09",
+  "path": "pdfs/selected-pdfs/1693245630110.pdf",
+  "blob": "dfb15ac4f73723b5778f339c4bc0636268eed247",
+  "source_bytes": 2043618,
+  "source_pages": 234,
+  "selected_pages": 10,
+  "mode": "vector-text-default",
+  "sample_render_match": true,
+  "full_source": {
+    "original_pages": 234,
+    "read_ms": 2.34,
+    "decrypt_or_expand_ms": 0.19,
+    "setup_ms": 54.36,
+    "first_page_ms": 66.1,
+    "all_page_ms": 303.02,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {
+      "pageFontResources": {
+        "calls": 20,
+        "ms": 1.82
+      },
+      "tounicodeOf": {
+        "calls": 8,
+        "ms": 3.28
+      },
+      "reversedFontCmap": {
+        "calls": 8,
+        "ms": 1.19
+      },
+      "cidToGid": {
+        "calls": 8,
+        "ms": 0.04
+      }
+    },
+    "decisions": {
+      "rabbit": 10
+    },
+    "paths": {
+      "zawgyi-one": 10
+    },
+    "warnings": {},
+    "chars": 35616,
+    "myanmar": 35088,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 0,
+    "image_placements": 20,
+    "prefix_warnings": 0
+  },
+  "full_source_over_default_input_limit": false,
+  "sample": {
+    "original_pages": 10,
+    "read_ms": 0.11,
+    "decrypt_or_expand_ms": 0.02,
+    "setup_ms": 2.16,
+    "first_page_ms": 24.61,
+    "all_page_ms": 208.97,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {},
+    "decisions": {
+      "rabbit": 10
+    },
+    "paths": {
+      "zawgyi-one": 10
+    },
+    "warnings": {},
+    "chars": 35616,
+    "myanmar": 35088,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 0,
+    "image_placements": 20,
+    "prefix_warnings": 0
+  },
+  "sample_vs_original_differences": [],
+  "manager_ms": 1177.35,
+  "manager_pages": 10,
+  "manager_counts": {
+    "ZAWGYI": 10,
+    "UNICODE": 0,
+    "UNKNOWN": 0
+  },
+  "output_path": "/home/user/.cache/parser-eye/trash-broad/results/09.pdf",
+  "output_bytes": 238657,
+  "encoding_path": "zawgyi-one",
+  "page_warnings": [],
+  "linearization_warning": null,
+  "manager_text_matches_sample": true,
+  "status": "ok"
+}

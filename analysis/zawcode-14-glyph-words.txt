@@ -1,0 +1,95 @@
+ZawCode: example words for the 14 inspected PDF glyph IDs
+
+Source: ယဲ့နင် စာစဉ် a ၁.merged.merged.pdf
+Reference embedded-font SHA-256: 5bc0cd2994aa0178e01efb00f9217e9adb975ba86e77a12e6e8f81268c450de9
+Page numbers are physical PDF pages (1-based), not printed book pages.
+
+These 14 numbers are two-byte font glyph IDs, not Unicode code points or
+keyboard bytes. A glyph may correspond to several Unicode code points;
+different glyph shapes may also correspond to the same Unicode character.
+The readings below are provisional draft values. 00EF, 00F0, 00F1 and
+00F7 are source-context order slots; the other readings use the font GSUB
+candidates. The draft reorders leading visual slots before the word reading.
+
+Counts refer only to matching reference-font runs in the first 200 PDF
+pages, before ToUnicode. The words below are examples, not a complete list.
+Raw sequences are the actual font GIDs in visual stream order. Wider windows
+and candidate origins are in zawcode-order-evidence.json.
+
+00D6  ္ဘ  (U+1039 U+1018)  — 36 occurrences in the sample
+  page 1: ကမ္ဘာ
+    raw: 0069 0082 00D6 00DF
+
+00D7  ္မ  (U+1039 U+1019)  — 15 occurrences in the sample
+  page 12: ကံကြမ္မာ
+    raw: 0069 00E6 00EF 0069 0082 00D7 00DF
+
+00E2  ု  (U+102F)  — 3840 occurrences in the sample
+  page 1: ဖို့
+    raw: 007F 00E0 00E2 00E7
+  page 1: သို့
+    raw: 0087 00E0 00E2 00E7
+
+00E3  ူ  (U+1030)  — 1181 occurrences in the sample
+  page 1: မူရင်း
+    raw: 0082 00E3 0084 006D 00E9 00E8
+  page 1: လူသား
+    raw: 0085 00E3 0087 00DF 00E8
+
+00EB  ွ  (U+103D)  — 1625 occurrences in the sample
+  page 1: ကာကွယ်
+    raw: 0069 00DF 0069 00EB 0083 00E9
+  page 1: အစွမ်း
+    raw: 008A 006E 00EB 0082 00E9 00E8
+
+00ED  ါ်  (U+102B U+103A)  — 100 occurrences in the sample
+  page 16: ပေါ်
+    raw: 00E4 007E 00ED
+  page 16: ခေါ်
+    raw: 00E4 006A 00ED
+
+00EF  ြ  (U+103C)  — 616 occurrences in the sample
+  page 3: အကြောင်း
+    raw: 008A 00E4 00EF 0069 00DF 006D 00E9 00E8
+
+00F0  ြ  (U+103C)  — 312 occurrences in the sample
+  page 1: ပြိုင်
+    raw: 00F0 007E 00E0 0103 006D 00E9
+  page 1: ပြီး
+    raw: 00F0 007E 00E1 00E8
+
+00F1  ြ  (U+103C)  — 238 occurrences in the sample
+  page 1: အကြီးအကဲ
+    raw: 008A 00F1 0069 00E1 00E8 008A 0069 00E5
+
+00F4  ွှ  (U+103D U+103E)  — 60 occurrences in the sample
+  page 4: လွှမ်း
+    raw: 0085 00F4 0082 00E9 00E8
+  page 8: လွှတ်
+    raw: 0085 00F4 0079 00E9
+
+00F6  ြွ  (U+103C U+103D)  — 2 occurrences in the sample
+  page 2: ခြွင်းချက်
+    raw: 00F6 006A 006D 00E9 00E8 006A 00EA 0069 00E9
+
+00F7  ြွ  (U+103C U+103D)  — 13 occurrences in the sample
+  page 11: အကြွင်းမဲ့
+    raw: 008A 00F7 0069 006D 00E9 00E8 0082 00E5 00E7
+  page 84: ကြွေး
+    raw: 00E4 00F7 0069 00E8
+
+00F8  ျှ  (U+103B U+103E)  — 154 occurrences in the sample
+  page 1: သမျှ
+    raw: 0087 0082 00F8
+  page 3: မျှော်
+    raw: 00E4 0082 00F8 00DF 00E9
+
+0102  ှု  (U+103E U+102F)  — 206 occurrences in the sample
+  page 9: လှုပ်
+    raw: 0085 0102 007E 00E9
+  page 10: နှုတ်
+    raw: 0108 0102 0079 00E9
+
+These 14 inspected IDs are separate from the four still-unresolved IDs
+00FC, 00FE, 00FD and 00F2 in zawcode-draft-coverage.json. Other-font
+pages and Form XObjects are outside this sample.

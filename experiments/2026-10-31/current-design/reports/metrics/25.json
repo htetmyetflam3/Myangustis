@@ -1,0 +1,89 @@
+{
+  "case": "25",
+  "path": "pdfs/selected-pdfs/1785661897658.pdf",
+  "blob": "2626f089e3e08a87c9e10616d6e586ff11631efc",
+  "source_bytes": 6171402,
+  "source_pages": 209,
+  "selected_pages": 10,
+  "mode": "vector-text-default",
+  "sample_render_match": true,
+  "full_source": {
+    "original_pages": 209,
+    "read_ms": 2.77,
+    "decrypt_or_expand_ms": 0.6,
+    "setup_ms": 68.4,
+    "first_page_ms": 52.95,
+    "all_page_ms": 193.67,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {
+      "pageFontResources": {
+        "calls": 20,
+        "ms": 1.59
+      },
+      "reversedFontCmap": {
+        "calls": 18,
+        "ms": 15.07
+      },
+      "tounicodeOf": {
+        "calls": 18,
+        "ms": 3.23
+      }
+    },
+    "decisions": {
+      "legacy": 10
+    },
+    "paths": {
+      "legacy": 10
+    },
+    "warnings": {},
+    "chars": 13365,
+    "myanmar": 11804,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 0,
+    "image_placements": 1041,
+    "prefix_warnings": 0
+  },
+  "full_source_over_default_input_limit": false,
+  "sample": {
+    "original_pages": 10,
+    "read_ms": 0.15,
+    "decrypt_or_expand_ms": 0.03,
+    "setup_ms": 11.73,
+    "first_page_ms": 6.99,
+    "all_page_ms": 104.5,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {},
+    "decisions": {
+      "legacy": 10
+    },
+    "paths": {
+      "legacy": 10
+    },
+    "warnings": {},
+    "chars": 13365,
+    "myanmar": 11804,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 0,
+    "image_placements": 1041,
+    "prefix_warnings": 0
+  },
+  "sample_vs_original_differences": [],
+  "manager_ms": 1003.78,
+  "manager_pages": 10,
+  "manager_counts": {
+    "ZAWGYI": 0,
+    "UNICODE": 10,
+    "UNKNOWN": 0
+  },
+  "output_path": "/home/user/.cache/parser-eye/trash-broad/results/25.pdf",
+  "output_bytes": 222568,
+  "encoding_path": "wininnwa",
+  "page_warnings": [],
+  "linearization_warning": null,
+  "manager_text_matches_sample": true,
+  "status": "ok"
+}

@@ -1,0 +1,138 @@
+{
+  "case": "19",
+  "path": "pdfs/selected-pdfs/1706300888234.pdf",
+  "blob": "62383b1627b2979c17743aa2c725b00f47c57d99",
+  "source_bytes": 201102,
+  "source_pages": 30,
+  "selected_pages": 10,
+  "mode": "vector-text-default",
+  "sample_render_match": true,
+  "full_source": {
+    "original_pages": 30,
+    "read_ms": 0.11,
+    "decrypt_or_expand_ms": 0.02,
+    "setup_ms": 23.56,
+    "first_page_ms": 55.28,
+    "all_page_ms": 146.77,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {
+      "pageFontResources": {
+        "calls": 20,
+        "ms": 1.52
+      },
+      "tounicodeOf": {
+        "calls": 10,
+        "ms": 5.27
+      },
+      "reversedFontCmap": {
+        "calls": 10,
+        "ms": 1.7
+      },
+      "cidToGid": {
+        "calls": 4,
+        "ms": 0.03
+      }
+    },
+    "decisions": {
+      "unaligned-unicode": 10
+    },
+    "paths": {
+      "zawgyi-one": 10
+    },
+    "warnings": {
+      "unicode-order-needs-review": 10
+    },
+    "chars": 19717,
+    "myanmar": 17212,
+    "bracket_hex_patterns": 35,
+    "max_prefix": 2048,
+    "blank_pages": 0,
+    "image_placements": 0,
+    "prefix_warnings": 0
+  },
+  "full_source_over_default_input_limit": false,
+  "sample": {
+    "original_pages": 10,
+    "read_ms": 0.06,
+    "decrypt_or_expand_ms": 0.01,
+    "setup_ms": 3.35,
+    "first_page_ms": 5.48,
+    "all_page_ms": 51.81,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {},
+    "decisions": {
+      "unaligned-unicode": 10
+    },
+    "paths": {
+      "zawgyi-one": 10
+    },
+    "warnings": {
+      "unicode-order-needs-review": 10
+    },
+    "chars": 19717,
+    "myanmar": 17212,
+    "bracket_hex_patterns": 35,
+    "max_prefix": 2048,
+    "blank_pages": 0,
+    "image_placements": 0,
+    "prefix_warnings": 0
+  },
+  "sample_vs_original_differences": [],
+  "manager_ms": 964.81,
+  "manager_pages": 10,
+  "manager_counts": {
+    "ZAWGYI": 0,
+    "UNICODE": 10,
+    "UNKNOWN": 0
+  },
+  "output_path": "/home/user/.cache/parser-eye/trash-broad/results/19.pdf",
+  "output_bytes": 225556,
+  "encoding_path": "unicode",
+  "page_warnings": [
+    {
+      "code": "unicode-order-needs-review",
+      "page": 1
+    },
+    {
+      "code": "unicode-order-needs-review",
+      "page": 2
+    },
+    {
+      "code": "unicode-order-needs-review",
+      "page": 3
+    },
+    {
+      "code": "unicode-order-needs-review",
+      "page": 4
+    },
+    {
+      "code": "unicode-order-needs-review",
+      "page": 5
+    },
+    {
+      "code": "unicode-order-needs-review",
+      "page": 6
+    },
+    {
+      "code": "unicode-order-needs-review",
+      "page": 7
+    },
+    {
+      "code": "unicode-order-needs-review",
+      "page": 8
+    },
+    {
+      "code": "unicode-order-needs-review",
+      "page": 9
+    },
+    {
+      "code": "unicode-order-needs-review",
+      "page": 10
+    }
+  ],
+  "linearization_warning": null,
+  "manager_text_matches_sample": true,
+  "status": "ok"
+}

@@ -1,0 +1,97 @@
+{
+  "case": "27",
+  "path": "pdfs/selected-pdfs/36-short-stories-of-jue-1708877870919.pdf",
+  "blob": "f489ddd625b06c5a0596593e447b9e2a0fd3f589",
+  "source_bytes": 6135067,
+  "source_pages": 344,
+  "selected_pages": 10,
+  "mode": "vector-text-default",
+  "sample_render_match": true,
+  "full_source": {
+    "original_pages": 344,
+    "read_ms": 2.95,
+    "decrypt_or_expand_ms": 0.62,
+    "setup_ms": 79.99,
+    "first_page_ms": 54.23,
+    "all_page_ms": 187.73,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {
+      "pageFontResources": {
+        "calls": 20,
+        "ms": 1.47
+      },
+      "reversedFontCmap": {
+        "calls": 12,
+        "ms": 1.86
+      },
+      "tounicodeOf": {
+        "calls": 12,
+        "ms": 1.15
+      },
+      "cidToGid": {
+        "calls": 2,
+        "ms": 0.04
+      }
+    },
+    "decisions": {
+      "rabbit": 1,
+      "legacy": 9
+    },
+    "paths": {
+      "zawgyi-one": 1,
+      "legacy": 9
+    },
+    "warnings": {},
+    "chars": 41389,
+    "myanmar": 37903,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 0,
+    "image_placements": 0,
+    "prefix_warnings": 0
+  },
+  "full_source_over_default_input_limit": false,
+  "sample": {
+    "original_pages": 10,
+    "read_ms": 0.06,
+    "decrypt_or_expand_ms": 0.01,
+    "setup_ms": 4.74,
+    "first_page_ms": 18.24,
+    "all_page_ms": 147.76,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {},
+    "decisions": {
+      "rabbit": 1,
+      "legacy": 9
+    },
+    "paths": {
+      "zawgyi-one": 1,
+      "legacy": 9
+    },
+    "warnings": {},
+    "chars": 41389,
+    "myanmar": 37903,
+    "bracket_hex_patterns": 0,
+    "max_prefix": 2048,
+    "blank_pages": 0,
+    "image_placements": 0,
+    "prefix_warnings": 0
+  },
+  "sample_vs_original_differences": [],
+  "manager_ms": 1164.44,
+  "manager_pages": 10,
+  "manager_counts": {
+    "ZAWGYI": 1,
+    "UNICODE": 9,
+    "UNKNOWN": 0
+  },
+  "output_path": "/home/user/.cache/parser-eye/trash-broad/results/27.pdf",
+  "output_bytes": 242525,
+  "encoding_path": null,
+  "page_warnings": [],
+  "linearization_warning": null,
+  "manager_text_matches_sample": true,
+  "status": "ok"
+}

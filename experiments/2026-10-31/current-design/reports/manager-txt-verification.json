@@ -1,0 +1,308 @@
+[
+  {
+    "case": "01",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.75,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/01.txt"
+  },
+  {
+    "case": "02",
+    "status": "ok",
+    "manager_pages": 8,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.24,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/02.txt"
+  },
+  {
+    "case": "03",
+    "status": "ok",
+    "manager_pages": 5,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.22,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/03.txt"
+  },
+  {
+    "case": "04",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.18,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/04.txt"
+  },
+  {
+    "case": "05",
+    "status": "ok",
+    "manager_pages": 8,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.2,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/05.txt"
+  },
+  {
+    "case": "06",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.23,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/06.txt"
+  },
+  {
+    "case": "07",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.13,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/07.txt"
+  },
+  {
+    "case": "08",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.29,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/08.txt"
+  },
+  {
+    "case": "09",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.31,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/09.txt"
+  },
+  {
+    "case": "10",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.44,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/10.txt"
+  },
+  {
+    "case": "11",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.17,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/11.txt"
+  },
+  {
+    "case": "12",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.21,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/12.txt"
+  },
+  {
+    "case": "13",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.17,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/13.txt"
+  },
+  {
+    "case": "14",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.31,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/14.txt"
+  },
+  {
+    "case": "15",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.26,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/15.txt"
+  },
+  {
+    "case": "16",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.25,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/16.txt"
+  },
+  {
+    "case": "17",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.29,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/17.txt"
+  },
+  {
+    "case": "18",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.34,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/18.txt"
+  },
+  {
+    "case": "19",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.18,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/19.txt"
+  },
+  {
+    "case": "20",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.21,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/20.txt"
+  },
+  {
+    "case": "21",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.27,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/21.txt"
+  },
+  {
+    "case": "22",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.35,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/22.txt"
+  },
+  {
+    "case": "23",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.21,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/23.txt"
+  },
+  {
+    "case": "24",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.18,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/24.txt"
+  },
+  {
+    "case": "25",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.26,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/25.txt"
+  },
+  {
+    "case": "26",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.2,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/26.txt"
+  },
+  {
+    "case": "27",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.23,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/27.txt"
+  },
+  {
+    "case": "28",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.22,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/28.txt"
+  },
+  {
+    "case": "29",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.19,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/29.txt"
+  },
+  {
+    "case": "30",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.2,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/30.txt"
+  },
+  {
+    "case": "31",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.22,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/31.txt"
+  },
+  {
+    "case": "32",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.2,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/32.txt"
+  },
+  {
+    "case": "33",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.66,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/33.txt"
+  },
+  {
+    "case": "34",
+    "status": "ok",
+    "manager_pages": 10,
+    "matches_parser_pages": true,
+    "matches_pdf_reply": true,
+    "seconds": 0.3,
+    "output": "/home/user/.cache/parser-eye/trash-broad/default-text/34.txt"
+  }
+]

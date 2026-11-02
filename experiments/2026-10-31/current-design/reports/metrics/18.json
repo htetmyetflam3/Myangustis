@@ -1,0 +1,93 @@
+{
+  "case": "18",
+  "path": "pdfs/selected-pdfs/1706119141337.pdf",
+  "blob": "30548d8da66327ec855d70ae1757c2301131dad5",
+  "source_bytes": 6188466,
+  "source_pages": 478,
+  "selected_pages": 10,
+  "mode": "vector-text-default",
+  "sample_render_match": true,
+  "full_source": {
+    "original_pages": 478,
+    "read_ms": 12.08,
+    "decrypt_or_expand_ms": 1.1,
+    "setup_ms": 109.57,
+    "first_page_ms": 45.85,
+    "all_page_ms": 223.24,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {
+      "pageFontResources": {
+        "calls": 20,
+        "ms": 2.78
+      },
+      "reversedFontCmap": {
+        "calls": 16,
+        "ms": 7.87
+      },
+      "tounicodeOf": {
+        "calls": 16,
+        "ms": 2.3
+      },
+      "cidToGid": {
+        "calls": 6,
+        "ms": 0.06
+      }
+    },
+    "decisions": {
+      "rabbit": 10
+    },
+    "paths": {
+      "zawgyi-one": 10
+    },
+    "warnings": {},
+    "chars": 26631,
+    "myanmar": 20356,
+    "bracket_hex_patterns": 10,
+    "max_prefix": 2048,
+    "blank_pages": 0,
+    "image_placements": 147,
+    "prefix_warnings": 0
+  },
+  "full_source_over_default_input_limit": false,
+  "sample": {
+    "original_pages": 10,
+    "read_ms": 0.3,
+    "decrypt_or_expand_ms": 0.08,
+    "setup_ms": 12.42,
+    "first_page_ms": 8.55,
+    "all_page_ms": 100.63,
+    "encrypted_marker": false,
+    "object_stream_marker": false,
+    "font_methods": {},
+    "decisions": {
+      "rabbit": 10
+    },
+    "paths": {
+      "zawgyi-one": 10
+    },
+    "warnings": {},
+    "chars": 26631,
+    "myanmar": 20356,
+    "bracket_hex_patterns": 10,
+    "max_prefix": 2048,
+    "blank_pages": 0,
+    "image_placements": 147,
+    "prefix_warnings": 0
+  },
+  "sample_vs_original_differences": [],
+  "manager_ms": 1239.65,
+  "manager_pages": 10,
+  "manager_counts": {
+    "ZAWGYI": 10,
+    "UNICODE": 0,
+    "UNKNOWN": 0
+  },
+  "output_path": "/home/user/.cache/parser-eye/trash-broad/results/18.pdf",
+  "output_bytes": 233071,
+  "encoding_path": "zawgyi-one",
+  "page_warnings": [],
+  "linearization_warning": null,
+  "manager_text_matches_sample": true,
+  "status": "ok"
+}
