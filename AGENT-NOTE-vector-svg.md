@@ -274,3 +274,67 @@ shelling out to the other. They agree because number formatting is pinned
 
 `svgout/canvas.py` and `svgout/lines_from_svg.py` are **superseded** and marked
 as such in their headers. `canvas.py` still carries the old `pitch/3` frame.
+
+---
+
+## Fixed: size was a constant, boundaries were a guess
+
+Two defects in the runner that made the frame wrong on anything but page 14.
+
+**Size was hardcoded.** `SIZE = 12.96` in both runners, with the comment "page 14,
+one size throughout". The page export writes `<use transform="matrix(sx,0,0,-sy,x,y)">`
+and the glyph paths in `<defs>` are in em units, so `sx` *is* the font size in
+points. Reading it per glyph makes the frame hold on any page. Page 14 also is
+not uniform: 1480 glyphs at 12.96, one at 9.96, one at 8.04.
+
+**Line boundaries were a tolerance.** Glyphs were bucketed by a ±0.9 em window.
+On a page whose sub-headings interleave with the body that window chains three
+real lines into one frame: `pdf-parts/part-6.pdf` p2 has baselines at 443.28,
+453.79, 460.27, 469.79, 477.27, 485.80, and a 9.9 pt window fused them into one
+row spanning 3 text lines. `pdf2svg.py` now writes `<page>.lines.json` from the
+PDF text layer, several text-layer lines merged when they share a baseline, and
+the runner uses that instead. The tolerance path survives only as a warned
+fallback for exports that predate the line file.
+
+Both languages carry both fixes. The parity test now runs every page through
+both paths — with the line file, and with it moved aside — so a bug in one path
+cannot hide behind the other.
+
+| page | lines before | fit before | lines after | fit after |
+|---|---|---|---|---|
+| `representative` p14 | 22 | 22/22 | 22 | 22/22 |
+| `part-1` p3 | 53 | 52/53 | 53 | 53/53 |
+| `part-1` p40 | 49 | 49/49 | 49 | 49/49 |
+| `part-3` p10 | 29 | 28/29 | 29 | 29/29 |
+| `part-4` p2 | 21 | 21/21 | 21 | 21/21 |
+| `part-5` p1 | 24 | 23/24 | 28 | 28/28 |
+| `part-7` p5 | 5 | 4/5 | 13 | 13/13 |
+| `part-8` p9 | 28 | 27/28 | 29 | **2/29** |
+| `part-9` p7 | 19 | 1/19 | 18 | 18/18 |
+| `part-2` p341 | 31 | 31/31 | 31 | 31/31 |
+| `part-6` p2 | 47 | 14/47 | 82 | 82/82 |
+
+`docs/known-lines.svg` is unchanged: the text layer groups p14 exactly as the
+tolerance did, 22 baselines, byte-identical output.
+
+### The one page that got worse, and why
+
+`part-8` p9 went 27/28 to 2/29. Nothing about its geometry changed — the frame
+is now right and the old rules were accidentally too generous. That page is set
+in **Zawgyi-One** at 11.04 pt, and a glyph in it reaches **1.0127 em above the
+baseline** (`font_3_500`, the `ိ`). `E = size/2` gives 0.5 em of headroom, so the
+rule is 0.0064 em too tight — 0.07 pt at that size.
+
+Measured over 329 lines from 11 pages of the corpus, required `E/size`:
+
+| | p50 | p90 | p99 | max |
+|---|---|---|---|---|
+| all lines | 0.424 | 0.742 | 1.142 | 1.276 |
+
+`BAND = 0.5` fails 58 of 329 lines. Most of that tail is the bucketing defect
+above, now fixed; after the fix the remaining failures are the Zawgyi pages.
+`BAND` is left at the calibrated 0.5 — raising it changes `docs/known-lines.svg`
+and is the owner's call, not a bug fix.
+
+Pre-fix runs looked better on those pages only because `E` was pinned at 6.48 pt
+regardless of size, which is 0.587 em on an 11 pt page.

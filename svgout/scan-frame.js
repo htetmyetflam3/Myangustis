@@ -62,9 +62,15 @@ export function fixed(v, digits = 2) {
   return `${sign}${i}.${String(f).padStart(digits, "0")}`;
 }
 
-/** Integral floats print without a decimal part. */
+/**
+ * Integral floats print without a decimal part.
+ *
+ * JS already prints 12.0 as "12", so this is String() with a name. It exists
+ * because Python does not: str(12.0) is "12.0". scan_frame.py implements the
+ * same contract by hand.
+ */
 export function num(v) {
-  return Number.isInteger(v) ? String(v) : String(v);
+  return String(v);
 }
 
 /** Band width as a fraction of font size. Calibrated on Myanmar3, see above. */
@@ -251,6 +257,7 @@ export function lineSvg({ width, frame, uses, defs, pitch, label, paint = {} }) 
  * @param {number} o.pitch      page line spacing
  */
 export function sheetSvg({ width, rows, defs, pitch, mode = "page", paint = {} }) {
+  if (!rows.length) throw new Error("sheetSvg: no rows — the line selector matched nothing");
   const c = { slot: "#D6EAF8", rule: "#FF6EAE", base: "#FFC300", ink: "#000000", ...paint };
 
   const used = new Set();

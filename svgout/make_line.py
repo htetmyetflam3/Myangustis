@@ -9,15 +9,18 @@ check.
 """
 from __future__ import annotations
 
+import json
 import math
 import re
 import sys
 
-from scan_frame import (frameOf, framesOf, pitchOf, blankOf, overflow,  # noqa: F401
+from scan_frame import (framesOf, pitchOf, blankOf, overflow,  # noqa: F401
                         lineSvg, sheetSvg, fixed, num)
 
-SIZE = 12.96          # page 14, one size throughout
-TOL = SIZE * 0.9      # baseline grouping, < one line
+# Size is NOT a constant. Every glyph carries its own: the page export writes
+# <use transform="matrix(sx,0,0,-sy,x,y)"> and sx IS the font size in points,
+# because the glyph paths in <defs> are in em units.
+UNITS = 0.9           # baseline grouping tolerance, as a fraction of the size
 
 NUM = re.compile(r"[A-Za-z]|-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?")
 ARITY = {"M": 2, "L": 2, "T": 2, "H": 1, "V": 1,
@@ -134,8 +137,17 @@ def collect_uses(svg: str, defs: dict):
         ink = [min(xs), min(ys), max(xs), max(ys)]
         if ink[2] - ink[0] < 0.01 and ink[3] - ink[1] < 0.01:
             continue                                   # space ghost
-        uses.append({"href": gid, "x": e, "y": f, "ink": ink, "raw": tag})
+        uses.append({"href": gid, "x": e, "y": f, "ink": ink,
+                     "size": float(fixed(abs(a))), "raw": tag})
     return uses
+
+
+def modal(values):
+    """Most common value; ties break towards the smaller one, as in JS."""
+    tally: dict = {}
+    for k in values:
+        tally[k] = tally.get(k, 0) + 1
+    return sorted(tally.items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
 
 
 def parse_lines(spec: str, n: int):
@@ -171,6 +183,7 @@ def main():
     seed = int(sys.argv[2]) if len(sys.argv) > 2 else 14
     suffix = sys.argv[3] if len(sys.argv) > 3 else ""
     only = sys.argv[4] if len(sys.argv) > 4 else ""
+    page = src.replace("\\", "/").split("/")[-1].rsplit(".", 1)[0]
 
     svg = open(src, encoding="utf-8").read()
     W = float(re.search(r'width="([\d.]+)"', svg).group(1))
@@ -179,41 +192,82 @@ def main():
             for m in re.finditer(r'<path id="([^"]+)" d="([^"]*)"', svg)}
 
     uses = collect_uses(svg, defs)
+    if not uses:
+        print(f"no glyphs in {src} — is it a text page exported with text_as_path?",
+              file=sys.stderr)
+        return 1
 
-    # rows, from the PDF's own baselines
-    buckets: dict[float, list] = {}
-    for u in uses:
-        key = None
-        for k in buckets:
-            if abs(k - u["y"]) <= TOL:
-                key = k
-                break
-        if key is None:
-            key = u["y"]
-            buckets[key] = []
-        buckets[key].append(u)
+    # the page's dominant size sets the grouping tolerance; each line then takes
+    # its own size, so a page that mixes 11 pt and 12 pt still frames correctly
+    tol = modal(u["size"] for u in uses) * UNITS
 
-    lines = []
-    for y, g in sorted(buckets.items(), key=lambda kv: kv[0]):
-        tally: dict[float, int] = {}
-        for u in g:
-            k = float(fixed(u["y"]))
-            tally[k] = tally.get(k, 0) + 1
-        base = sorted(tally.items(), key=lambda kv: -kv[1])[0][0]
-        lines.append((min(u["ink"][0] for u in g), base, SIZE, ""))
+    # ---- line boundaries -------------------------------------------------
+    # pdf2svg.py writes <page>.lines.json beside the SVG: the PDF's own
+    # text-layer lines. That file is the authority. Guessing a baseline
+    # tolerance merges real lines on a page whose sub-headings interleave with
+    # the body, so the guess is only a fallback and it says so out loud.
+    lines_path = re.sub(r"\.svg$", ".lines.json", src)
+    page_lines = None
+    try:
+        with open(lines_path, encoding="utf-8") as fh:
+            page_lines = json.load(fh)["lines"]
+    except OSError:
+        print(f"no {lines_path} — falling back to a baseline tolerance; "
+              "run pdf2svg.py to get exact line boundaries", file=sys.stderr)
+
+    if page_lines:
+        rows = [{**{"x": x, "y": y, "size": size, "text": text}, "glyphs": []}
+                for x, y, size, text in page_lines]
+        # each glyph joins the nearest declared baseline; anything further than
+        # tol away belongs to no line and is dropped rather than smeared onto a
+        # neighbour. The fallback below already grouped its own glyphs.
+        for u in uses:
+            best, dist = None, math.inf
+            for r in rows:
+                d = abs(r["y"] - u["y"])
+                if d < dist:
+                    best, dist = r, d
+            if best is not None and dist <= tol:
+                best["glyphs"].append(u)
+    else:
+        buckets: dict[float, list] = {}
+        for u in uses:
+            key = None
+            for k in buckets:
+                if abs(k - u["y"]) <= tol:
+                    key = k
+                    break
+            if key is None:
+                key = u["y"]
+                buckets[key] = []
+            buckets[key].append(u)
+        rows = [{"x": min(u["ink"][0] for u in g),
+                 "y": modal(float(fixed(u["y"])) for u in g),
+                 "size": modal(u["size"] for u in g),
+                 "text": "", "glyphs": g}
+                for _, g in sorted(buckets.items(), key=lambda kv: kv[0])]
+
+    lines = [(r["x"], r["y"], r["size"], r["text"]) for r in rows]
 
     frames = framesOf(lines)
     pitch = pitchOf(frames)
 
+    def row_of(y):
+        for r in rows:
+            if abs(r["y"] - y) < 1e-9:
+                return r
+        raise KeyError(f"no row at baseline {y}")
+
     def rows_uses(y):
-        return [u for u in uses if abs(u["y"] - y) <= TOL]
+        return row_of(y)["glyphs"]
 
     rnd = mulberry32(seed)
     pick = 1 + int(rnd() * len(frames))
     frame = frames[pick - 1]
     line_uses = rows_uses(frame["baseline"])
 
-    print(f"page width {num(W)}   {len(uses)} glyphs   {len(frames)} lines")
+    print(f"{page}   width {num(W)}   {len(uses)} glyphs   {len(frames)} lines")
+    print("sizes " + ", ".join(num(v) for v in sorted({f["size"] for f in frames})))
     print(f"pitch {num(pitch)}   slot {fixed(frame['slot'])}   "
           f"blank {fixed(blankOf(frame, pitch))}")
     print(f"E {fixed(frame['E'])}  rules "
@@ -227,13 +281,13 @@ def main():
         o = overflow(f, rows_uses(f["baseline"]))
         if not o["ok"]:
             bad += 1
-            print(f"  ! line {f['index']} ink {fixed(o['above'])} above / "
-                  f"{fixed(o['below'])} below")
+            print(f"  ! line {f['index']} (size {num(f['size'])}) "
+                  f"ink {fixed(o['above'])} above / {fixed(o['below'])} below")
     print(f"fit: {len(frames) - bad}/{len(frames)} lines inside the rules")
 
     open(f"svgout/known/line-sample{suffix}.svg", "w", encoding="utf-8").write(
         lineSvg(width=W, frame=frame, uses=line_uses, defs=defs, pitch=pitch,
-                label=f"page 14 line {pick}"))
+                label=f"{page} line {pick}"))
 
     keep = parse_lines(only, len(frames))
     selected = [f for f in frames if f["index"] in keep] if keep else frames
@@ -246,4 +300,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main() or 0)

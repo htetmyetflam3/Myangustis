@@ -216,6 +216,8 @@ def lineSvg(width, frame, uses, defs, pitch=None, label=None, paint=None) -> str
 
 def sheetSvg(width, rows, defs, pitch, mode="page", paint=None) -> str:
     """Many lines as one sheet: page-width canvas, page-space coordinates."""
+    if not rows:
+        raise ValueError("sheetSvg: no rows — the line selector matched nothing")
     c = {**DEFAULT_PAINT, **(paint or {})}
 
     used: set[str] = set()
