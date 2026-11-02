@@ -2,6 +2,7 @@
 
 For each page:
   1. write <stem>-p<N>.svg   (text converted to outlines, images embedded)
+     and  <stem>-p<N>.lines.json  (the page's own line boundaries)
   2. rasterise the PDF and the SVG at the same DPI
   3. diff them (raw, and 1.2 px blurred to remove anti-aliasing noise)
   4. write proof/<compare|zoom>-<stem>-p<N>.jpg
@@ -143,6 +144,44 @@ def make_proofs(pdf_png, svg_png, band, dpi_scale, out_compare, out_zoom, label)
     zc.save(out_zoom, "JPEG", quality=85, optimize=True)
 
 
+def page_lines(page):
+    """The page's own line boundaries, from the PDF text layer.
+
+    One record per non-empty line: [x, baseline, size, text]. This is the
+    authority the runners use instead of guessing a baseline tolerance — on a
+    page with interleaved sub-headings a fixed tolerance merges three real
+    lines into one frame.
+    """
+    out = []
+    for blk in page.get_text("dict")["blocks"]:
+        if blk["type"] != 0:
+            continue
+        for ln in blk["lines"]:
+            spans = [sp for sp in ln["spans"] if sp["text"].strip()]
+            if not spans:
+                continue
+            text = "".join(sp["text"] for sp in ln["spans"])
+            size = max(sp["size"] for sp in spans)
+            out.append([round(ln["bbox"][0], 2),
+                        round(spans[0]["origin"][1], 2),
+                        round(size, 2),
+                        text])
+    # Several text-layer lines can share one baseline (a heading and the body
+    # beside it, two columns, a line split by a gap). One baseline is one row:
+    # the frame is page-wide, so every glyph sitting on that baseline belongs to
+    # the same frame. Merging is what keeps rows from colliding.
+    merged: dict[float, list] = {}
+    for x, y, size, text in out:
+        m = merged.get(y)
+        if m is None:
+            merged[y] = [x, y, size, text]
+        else:
+            m[0] = min(m[0], x)
+            m[2] = max(m[2], size)
+            m[3] = (m[3] + " " + text).strip() if text.strip() else m[3]
+    return sorted(merged.values(), key=lambda r: (r[1], r[0]))
+
+
 def process(path, page_no, dpi):
     doc = pymupdf.open(path)
     if not 1 <= page_no <= doc.page_count:
@@ -158,6 +197,12 @@ def process(path, page_no, dpi):
     svg_path = os.path.join(OUT, base + ".svg")
     with open(svg_path, "w", encoding="utf-8") as fh:
         fh.write(page.get_svg_image(matrix=pymupdf.Matrix(1, 1), text_as_path=True))
+
+    lines_path = os.path.join(OUT, base + ".lines.json")
+    with open(lines_path, "w", encoding="utf-8") as fh:
+        json.dump({"width": round(page.rect.width, 2),
+                   "height": round(page.rect.height, 2),
+                   "lines": page_lines(page)}, fh, ensure_ascii=False)
 
     scale = dpi / 72.0
     pdf_png = os.path.join(WORK, base + "-pdf.png")
@@ -187,6 +232,8 @@ def process(path, page_no, dpi):
         "source": path,
         "page": page_no,
         "svg": os.path.basename(svg_path),
+        "lines_json": os.path.basename(lines_path),
+        "lines": len(page_lines(page)),
         "svg_kib": os.path.getsize(svg_path) / 1024,
         "page_pt": page_pt,
         "chars": chars,
@@ -209,7 +256,8 @@ def main():
         results.append(r)
         print(f"\n{r['source']}  page {r['page']}  ({r['page_pt']} pt, {r['chars']} chars, "
               f"{r['images']} images)")
-        print(f"   {r['svg']}  {r['svg_kib']:.0f} KiB")
+        print(f"   {r['svg']}  {r['svg_kib']:.0f} KiB"
+              f"  + {r['lines_json']} ({r['lines']} lines)")
         print(f"   ink coverage : pdf {r['ink_pdf_pct']:.3f}%  svg {r['ink_svg_pct']:.3f}%"
               f"  ratio {r['ink_ratio']:.4f}")
         print(f"   raw diff     : identical {r['identical_pct']:.2f}%  "

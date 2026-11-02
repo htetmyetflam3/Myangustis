@@ -7,14 +7,19 @@
 //
 //   node svgout/make-line.js svgout/representative-p14.svg
 import fs from "node:fs";
-import { frameOf, framesOf, pitchOf, blankOf, overflow, lineSvg, sheetSvg } from "./scan-frame.js";
+import { framesOf, pitchOf, blankOf, overflow, bandFor, lineSvg, sheetSvg, fixed, num } from "./scan-frame.js";
 
 const SRC = process.argv[2] ?? "svgout/representative-p14.svg";
-const SIZE = 12.96;                     // page 14, one size throughout
-const TOL = SIZE * 0.9;                 // baseline grouping, < one line
 const SEED = Number(process.argv[3] ?? 14);
 const SUFFIX = process.argv[4] ?? "";
 const ONLY = process.argv[5] ?? "";   // e.g. "1-8" or "1,3,5"; empty = every line
+const PAGE = String(SRC).split("/").pop().replace(/\.[^.]*$/, "");
+
+// Size is NOT a constant. Every glyph carries its own: the page export writes
+// <use transform="matrix(sx,0,0,-sy,x,y)"> and sx IS the font size in points,
+// because the glyph paths in <defs> are in em units. Reading it per line is
+// what makes the frame hold on a page set at 11 pt as well as one at 12.96.
+const UNITS = 0.9;    // baseline grouping tolerance, as a fraction of the size
 
 function parseLines(spec, n) {
   if (!spec) return null;
@@ -103,7 +108,8 @@ for (const m of svg.matchAll(/<use\b[^>]*\/>/g)) {
   if (!href || !mat) continue;
   const [a, b, c, d, e, f] = mat[1].split(",").map(Number);
   // the page draws each glyph twice: once filled, once stroked. Keep one.
-  const key = `${href[1]}:${e.toFixed(2)}:${f.toFixed(2)}`;
+  // fixed(), not toFixed(): only fixed() is the cross-language contract.
+  const key = `${href[1]}:${fixed(e)}:${fixed(f)}`;
   if (seen.has(key)) continue;
   seen.add(key);
   const id = href[1];
@@ -115,25 +121,87 @@ for (const m of svg.matchAll(/<use\b[^>]*\/>/g)) {
   const ys = [b * bx0 + d * by0 + f, b * bx1 + d * by0 + f, b * bx0 + d * by1 + f, b * bx1 + d * by1 + f];
   const ink = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
   if (ink[2] - ink[0] < 0.01 && ink[3] - ink[1] < 0.01) continue;   // space ghost
-  uses.push({ href: id, x: e, y: f, ink, raw: tag });
+  uses.push({ href: id, x: e, y: f, ink, size: Number(fixed(Math.abs(a))), raw: tag });
 }
 
-// ---- rows, from the PDF's own baselines ---------------------------------
-const buckets = new Map();
-for (const u of uses) {
-  let key = null;
-  for (const k of buckets.keys()) if (Math.abs(k - u.y) <= TOL) { key = k; break; }
-  if (key === null) { key = u.y; buckets.set(key, []); }
-  buckets.get(key).push(u);
+if (!uses.length) {
+  console.error(`no glyphs in ${SRC} — is it a text page exported with text_as_path?`);
+  process.exit(1);
 }
-const lines = [...buckets.entries()]
-  .sort((p, q) => p[0] - q[0])
-  .map(([y, g]) => {
-    const tally = new Map();
-    for (const u of g) { const k = +u.y.toFixed(2); tally.set(k, (tally.get(k) ?? 0) + 1); }
-    const base = [...tally.entries()].sort((p, q) => q[1] - p[1])[0][0];
-    return [Math.min(...g.map((u) => u.ink[0])), base, SIZE, ""];
-  });
+
+// modal value, ties broken towards the smaller number so both languages agree
+function modal(pairs) {
+  const tally = new Map();
+  for (const k of pairs) tally.set(k, (tally.get(k) ?? 0) + 1);
+  return [...tally.entries()].sort((p, q) => q[1] - p[1] || p[0] - q[0])[0][0];
+}
+
+// the page's dominant size sets the grouping tolerance; each line then takes
+// its own size, so a page that mixes 11 pt and 12 pt still frames correctly
+const TOL = modal(uses.map((u) => u.size)) * UNITS;
+
+// ---- line boundaries ----------------------------------------------------
+// pdf2svg.py writes <page>.lines.json beside the SVG: the PDF's own text-layer
+// lines. That file is the authority. Guessing a baseline tolerance merges real
+// lines on a page whose sub-headings interleave with the body, so the guess is
+// only a fallback and it says so out loud.
+const LINES_PATH = SRC.replace(/\.svg$/, ".lines.json");
+let pageLines = null;
+try {
+  pageLines = JSON.parse(fs.readFileSync(LINES_PATH, "utf8")).lines;
+} catch {
+  console.warn(`no ${LINES_PATH} — falling back to a baseline tolerance; `
+    + "run pdf2svg.py to get exact line boundaries");
+}
+
+// each glyph joins the nearest declared baseline; anything further than TOL
+// away belongs to no line and is dropped rather than smeared onto a neighbour
+function assign(glyphs, rows) {
+  const out = rows.map((r) => ({ ...r, glyphs: [] }));
+  for (const u of glyphs) {
+    let best = null;
+    let d = Infinity;
+    for (const r of out) {
+      const dd = Math.abs(r.y - u.y);
+      if (dd < d) { d = dd; best = r; }
+    }
+    if (best && d <= TOL) best.glyphs.push(u);
+  }
+  return out;
+}
+
+let rows;
+if (pageLines) {
+  rows = assign(uses, pageLines.map(([x, y, size, text]) => ({ x, y, size, text })));
+} else {
+  const buckets = new Map();
+  for (const u of uses) {
+    let key = null;
+    for (const k of buckets.keys()) if (Math.abs(k - u.y) <= TOL) { key = k; break; }
+    if (key === null) { key = u.y; buckets.set(key, []); }
+    buckets.get(key).push(u);
+  }
+  rows = [...buckets.entries()]
+    .sort((p, q) => p[0] - q[0])
+    .map(([, g]) => ({
+      x: Math.min(...g.map((u) => u.ink[0])),
+      y: modal(g.map((u) => Number(fixed(u.y)))),
+      size: modal(g.map((u) => u.size)),
+      text: "",
+      glyphs: g,
+    }));
+}
+
+// Each line takes the calibrated band, raised only if its own ink needs more.
+// The four rules stay equally spaced; only the spacing scales, so the design
+// holds on a page the calibration did not cover.
+for (const r of rows) r.band = bandFor(r.y, r.size, r.glyphs);
+const lines = rows.map((r) => [r.x, r.y, r.size, r.text, r.band]);
+const rowOf = (y) => {
+  const r = rows.find((v) => Math.abs(v.y - y) < 1e-9);
+  if (!r) throw new Error(`no row at baseline ${y}`);
+  return r;
+};
 
 const frames = framesOf(lines);
 const pitch = pitchOf(frames);
@@ -143,25 +211,29 @@ function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Ma
 const rnd = mulberry(SEED);
 const pick = 1 + Math.floor(rnd() * frames.length);
 const frame = frames[pick - 1];
-const rowsUses = (y) => uses.filter((u) => Math.abs(u.y - y) <= TOL);
+const rowsUses = (y) => rowOf(y).glyphs;
 const lineUses = rowsUses(frame.baseline);
 
-console.log(`page width ${W}   ${uses.length} glyphs   ${frames.length} lines`);
-console.log(`pitch ${pitch}   slot ${frame.slot.toFixed(2)}   blank ${blankOf(frame, pitch).toFixed(2)}`);
-console.log(`E ${frame.E.toFixed(2)}  rules ${[frame.r1, frame.r2, frame.r3, frame.r4].map((v) => v.toFixed(2)).join(" / ")}`);
-console.log(`random line ${pick} of ${frames.length}   baseline ${frame.baseline.toFixed(2)}   ${lineUses.length} glyphs`);
+console.log(`${PAGE}   width ${W}   ${uses.length} glyphs   ${frames.length} lines`);
+console.log(`sizes ${[...new Set(frames.map((f) => f.size))].sort((p, q) => p - q).join(", ")}`);
+const blank = blankOf(frame, pitch);
+console.log(`pitch ${pitch ? num(pitch) : "— (not uniform)"}   slot ${fixed(frame.slot)}   `
+  + `blank ${blank === null ? "—" : fixed(blank)}`);
+console.log(`band ${fixed(frame.band, 3)}  E ${fixed(frame.E)}  `
+  + `rules ${[frame.r1, frame.r2, frame.r3, frame.r4].map((v) => fixed(v)).join(" / ")}`);
+console.log(`random line ${pick} of ${frames.length}   baseline ${fixed(frame.baseline)}   ${lineUses.length} glyphs`);
 
 // fit check from the page's own ink, no font file
 let bad = 0;
 for (const f of frames) {
   const o = overflow(f, rowsUses(f.baseline));
-  if (!o.ok) { bad += 1; console.log(`  ! line ${f.index} ink ${o.above.toFixed(2)} above / ${o.below.toFixed(2)} below`); }
+  if (!o.ok) { bad += 1; console.log(`  ! line ${f.index} (size ${num(f.size)}, band ${fixed(f.band, 3)}) ink ${fixed(o.above)} above / ${fixed(o.below)} below`); }
 }
 console.log(`fit: ${frames.length - bad}/${frames.length} lines inside the rules`);
 
 // ---- emit --------------------------------------------------------------
 fs.writeFileSync(`svgout/known/line-sample${SUFFIX}.svg`,
-  lineSvg({ width: W, frame, uses: lineUses, defs, pitch, label: `page 14 line ${pick}` }));
+  lineSvg({ width: W, frame, uses: lineUses, defs, pitch, label: `${PAGE} line ${pick}` }));
 
 const keep = parseLines(ONLY, frames.length);
 const selected = keep ? frames.filter((f) => keep.has(f.index)) : frames;

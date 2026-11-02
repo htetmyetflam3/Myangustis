@@ -48,13 +48,22 @@ The runner reads a page exported from the original content stream, not the
 parser's text, so every outline is the page's own.
 
 ```bash
-# whole page -> SVG (needs pymupdf + pillow)
+# whole page -> SVG + the page's line boundaries (needs pymupdf + pillow)
 python3 svgout/pdf2svg.py --file book.pdf --pages 14
+#   writes page-14.svg  and  page-14.lines.json
 
 # same input, either language, same bytes out
 node    svgout/make-line.js page-14.svg 14 "" 1-8
 python3 svgout/make_line.py page-14.svg 14 "" 1-8
 ```
+
+`pdf2svg.py` writes a companion `*.lines.json`: one row per baseline, taken from
+the PDF's own text layer — `[x, baseline, size, text]`, with several text-layer
+lines merged when they share a baseline. The runner uses it as the authority for
+where lines start and end, so no baseline tolerance is guessed. Without it the
+runner still works but warns and falls back to grouping glyphs by a baseline
+tolerance, which merges real lines on pages whose sub-headings interleave with
+the body.
 
 Arguments: `<page-svg> <seed> <suffix> <lines>`.
 
@@ -65,6 +74,26 @@ Arguments: `<page-svg> <seed> <suffix> <lines>`.
 
 Outputs `line-sample*.svg` (one random line, page-width canvas) and
 `frame-sheet*.svg` (the selected lines, one sheet, page-space coordinates).
+
+The four rules come from the line's own size: `E = size/2`, rules at
+`b-2E, b-E, b, b+E`. Size is read per glyph from the page export — the glyph
+matrices are in em units, so their scale factor is the font size in points, and
+a page that mixes 11 pt and 12.96 pt is framed correctly line by line.
+
+`BAND = 0.5` is a **floor**, not the whole answer. Each line's own outlines are
+measured and the band is raised only where the ink needs it, so a page the
+calibration did not cover still frames correctly instead of reporting a fit
+failure. `E` for that line is then `size * band`. The four rules stay equally
+spaced — only the spacing scales.
+
+`pitch` is the page's modal baseline gap, and it is reported as `— (not
+uniform)` when the page has none: a signature block stacks names 0.4 to 1.9 pt
+apart, and a number there would be invented. `data-pitch` is omitted in that
+case rather than written as `0`.
+
+Rules are drawn inset by half their stroke, so the round cap sits inside the
+canvas instead of being cut off by its edge. The canvas stays exactly page
+width, so sheets still overlay.
 
 Every output carries the frame in its own attributes, so a consumer never has
 to recompute it:
