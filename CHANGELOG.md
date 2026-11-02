@@ -170,3 +170,12 @@
 - All nine merged source PDFs were parsed (5,098 pages). A 78-page subset spanning 65 merged-file sections was checked for extraction/render fidelity; selected output was compared with rendered sources, not treated as a complete accuracy proof.
 - Changed-file ESLint reports the same 9 errors and 15 warnings as PR head; the two new JavaScript files pass. `git diff --check` passed.
 - Part 2 retains 65 pages with unresolved glyph-mapping warnings; for example, page 1315 still misreads the isolated `(က)` label. Part 1 page 3 still duplicates its overprinted title. Part 8 page 3 has raster text; manual OCR identified the page but produced errors and repeated text. Column ordering and OCR accuracy remain unverified.
+
+## [Unreleased] - 2026-11-02 — Representative Parser output for review
+### Added
+- Include a 78-page representative source PDF, its actual JS Parser TXT output, and a page-to-source mapping under `C.Proofreading/main/content/review/pdf-parser-representative/`. The pages cover 65 merged filename sections.
+- Record the Parser's 54 warnings on 42 sample pages in the mapping. The sample contains known unresolved extraction issues; it is not a claim of perfect parsing.
+- Add scoped Git attributes to keep the PDF binary and preserve the verbatim TXT, including its trailing spaces.
+### Verification
+- Checked every copied page against its merged source for extracted text, dimensions and rendered pixels at 35% scale. Verified 78 sequential TXT page headers and byte-for-byte identical TXT output on a second Parser run.
+- Full Node suite: 394 passed, 0 failed, 1 skipped because the OCR PNG fixture is unavailable. Full Python suite: 356 passed, 0 failed.
