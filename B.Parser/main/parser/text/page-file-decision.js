@@ -5,7 +5,7 @@ import { StringDecoder } from "node:string_decoder";
 import { containsMyanmar } from "./detector.js";
 import { arrangeZawCodeOrder } from "./zawcode-order.js";
 import { correctWorldWord, markOrderAligned } from "./page-decision.js";
-import { preserveCharacters, protectedCharacters } from "./preserved-transform.js";
+import { protectedCharacters } from "./preserved-transform.js";
 import { createRabbitStream } from "./rabbit.js";
 import { StreamingReplace } from "./stream-replace.js";
 
@@ -157,7 +157,7 @@ export function normalizePageToFile(chunks, { directory, normalize } = {}) {
     for (const line of textLines(chunks)) {
       if (!first) write("\n");
       first = false;
-      write(preserveCharacters(line, normalize));
+      write(normalize(line));
     }
     fs.closeSync(fd);
     fd = null;
@@ -236,7 +236,7 @@ export function finishPageToFile(store, {
           const transformed = world ? world.push(text) : text;
           write(transformed);
         };
-        const rabbit = createRabbitStream(output, { preserveZeroWidth: true, preserveSpaces: true });
+        const rabbit = createRabbitStream(output, { preserveSpaces: true });
         let first = true;
         for (const [, , , text] of store.lines()) {
           const chunk = first ? text : `\n${text}`;

@@ -20,10 +20,8 @@ function compileLocal() {
 let compiled = null;
 let external = null;
 
-function keepRule(rx, to, { preserveZeroWidth = false, preserveSpaces = false } = {}) {
-  // The original table drops U+200B and a space before dot below. PDF
-  // extraction retains these characters; Engine owns final spacing.
-  if (preserveZeroWidth && rx.source === "\u200b" && to === "") return false;
+function keepRule(rx, to, { preserveSpaces = false } = {}) {
+  // Engine owns final spacing in the PDF pipeline.
   if (preserveSpaces && rx.source === " ့" && to === "့") return false;
   return true;
 }

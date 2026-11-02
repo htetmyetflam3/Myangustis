@@ -28,3 +28,7 @@ Slots below are converter inputs, not necessarily PDF bytes or physical keys.
 | 95 / 0x5F | `_` | Empty output | Original keyboard behavior |
 | 48 / 0x30 | `0` | `၀` | `ဝ/၀` in context; no global replacement |
 | 119 / 0x77 | `w` | `၀` | `ဝ/၀` in context; no global replacement |
+
+## Shared-page Unicode order
+
+- Determine the order-check and known-Unicode guard before changing the unknown-font Rabbit fallback. On source part 3, page 434, the `Myanmar2`-named resource was classified as unknown; visual-order text and unresolved glyph codes left the page unaligned after the earlier six swaps. For example, `ေပြာင်း` became `ပေြာင်း`, while Rabbit changed the already-correct `ရင်း` to `ရငျး`. Verify the needed behavior against full-font evidence.

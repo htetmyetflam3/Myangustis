@@ -198,9 +198,11 @@ vite.config.ts.timestamp-*
 
 
 # --- svg frame work -------------------------------------------------------
-# The 9 source PDFs in pdf-part/ and pdf-parts/ are tracked inputs; pages.json
-# refers to those exact paths. Everything else the prototype produced is a
-# working file, regenerated on demand.
+# The original source PDFs are local inputs; pages.json names these paths.
+/pdf-part/part-[1-4].pdf
+/pdf-part/part-9.pdf
+/pdf-parts/part-[5-8].pdf
+# Prototype outputs are regenerated on demand.
 experiments/
 keyboards/
 data/

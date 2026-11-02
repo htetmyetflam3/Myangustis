@@ -46,6 +46,16 @@ test("zawgyi-cmap: a Zawgyi-One font's own cmap still goes to Rabbit", () => {
   assert.ok(rep.text.includes("ရှီယန်သတိထားမိလိုက်သည်"));
 });
 
+test("buffered Zawgyi conversion uses Rabbit's normal U+200B handling", () => {
+  const source = "ျဖစ္သ\u200bြားတယ္";
+  const rep = processPageRecord({
+    idx: 0, text: source, decodeKind: "cmap", fontNames: new Set(["Zawgyi-One"]),
+  }, detector, false, () => {}, false, "zawgyi-one");
+  assert.equal(rep.category, "ZAWGYI");
+  assert.equal(rep.text.includes("\u200b"), false);
+  assert.ok(rep.text.includes("ဖြစ်သွားတယ်"), rep.text);
+});
+
 test("unicode: a page that reads as itself is never rewritten", () => {
   const logs = [];
   const rep = processPageRecord(

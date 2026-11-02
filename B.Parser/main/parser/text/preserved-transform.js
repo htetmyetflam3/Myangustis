@@ -3,18 +3,20 @@ import { getMasterMapData } from "./cleanup.js";
 let preservedGlue = null;
 const FORMAT_CHARACTER = /^\p{Cf}$/u;
 const WHITESPACE = /^\s$/u;
+const ZERO_WIDTH_SPACE = "\u200b";
 
 function needsProtection(ch) {
+  if (ch === ZERO_WIDTH_SPACE) return false;
   if (preservedGlue === null) preservedGlue = new Set(getMasterMapData().Glue);
   return preservedGlue.has(ch) || FORMAT_CHARACTER.test(ch);
 }
 
 function isFormatCharacter(ch) {
-  return ch === "\u034f" || FORMAT_CHARACTER.test(ch);
+  return ch !== ZERO_WIDTH_SPACE && (ch === "\u034f" || FORMAT_CHARACTER.test(ch));
 }
 
 // Conversion must not silently lose spaces, joiners or other protected PDF
-// characters. These sequences deliberately exclude ordinary converted text.
+// characters. U+200B follows the converter's own rules.
 export function protectedCharacters(value) {
   let out = "";
   for (const ch of String(value ?? "")) {
@@ -23,8 +25,8 @@ export function protectedCharacters(value) {
   return out;
 }
 
-// Preserve zero-width format characters and the combining grapheme joiner,
-// while letting Engine normalize handle spaces and other characters itself.
+// Preserve other format characters and the combining grapheme joiner during
+// these text transformations; U+200B is left to the transformation.
 export function preserveCharacters(text, transform) {
   const input = String(text ?? "");
   if (typeof transform !== "function") throw new TypeError("Expected a text transformation");
@@ -67,10 +69,10 @@ export function* normalizePageLines(text, normalize) {
   while (true) {
     const end = input.indexOf("\n", start);
     if (end < 0) {
-      yield preserveCharacters(input.slice(start), normalize);
+      yield normalize(input.slice(start));
       return;
     }
-    yield preserveCharacters(input.slice(start, end), normalize);
+    yield normalize(input.slice(start, end));
     start = end + 1;
   }
 }

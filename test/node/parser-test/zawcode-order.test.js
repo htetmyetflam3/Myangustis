@@ -8,8 +8,9 @@ import { arrangeZawCodeOrder, orderZawCodePages } from "../../../B.Parser/main/p
 import { repairFromScanVerdict } from "../../../B.Parser/main/parser/text/repair.js";
 import { scanText } from "../../../B.Parser/main/parser/text/scan.js";
 import { markOrderAligned, normalizePageLines } from "../../../B.Parser/main/parser/text/page-decision.js";
-import { normalizeOutputText } from "../../../B.Parser/main/parser/text/preserved-transform.js";
+import { normalizeOutputText, protectedCharacters } from "../../../B.Parser/main/parser/text/preserved-transform.js";
 import { finishPageToFile, normalizePageToFile } from "../../../B.Parser/main/parser/text/page-file-decision.js";
+import { Rabbit } from "../../../B.Parser/main/parser/text/rabbit.js";
 
 const E = "\u1031";
 const RA = "\u103C";
@@ -36,6 +37,39 @@ test("the four patterns can start at the beginning of a line", () => {
   assert.equal(arrangeZawCodeOrder("ေြက"), "ကြေ");
   assert.equal(arrangeZawCodeOrder("ြက"), "ကြ");
   assert.equal(arrangeZawCodeOrder("ေက"), "ကေ");
+});
+
+test("the eight supplied indexed swaps produce the stated sequences", () => {
+  const prefix = "X";
+  const aa = "\u102c";
+  for (const [base, secondBase] of [["\u1000", "\u1001"], ["\u1000", "\u1000"]]) {
+    const patterns = [
+      [E + base + aa, base + aa + E],
+      [E + RA + base, base + RA + E],
+      [RA + base, base + RA],
+      [E + base, base + E],
+      [E + RA + base + E + secondBase, base + RA + E + secondBase + E],
+      [E + base + secondBase + aa, base + E + secondBase + aa],
+      [base + aa + RA + secondBase, base + aa + secondBase + RA],
+      [RA + base + E + RA + secondBase, base + RA + secondBase + RA + E],
+    ];
+    for (const [input, expected] of patterns) {
+      const result = arrangeZawCodeOrder(prefix + input);
+      assert.equal(result, prefix + expected);
+      assert.deepEqual(codePoints(result), codePoints(prefix + input));
+    }
+  }
+});
+
+test("asat and the original tone stay together before 31", () => {
+  const asat = "\u103a";
+  for (const tone of ["\u1038", "\u1037"]) {
+    const input = "X" + E + "\u1000" + asat + tone;
+    const expected = "X" + "\u1000" + asat + tone + E;
+    const result = arrangeZawCodeOrder(input);
+    assert.equal(result, expected);
+    assert.deepEqual(codePoints(result), codePoints(input));
+  }
 });
 
 test("safety pattern 01234 becomes 02134", () => {
@@ -103,7 +137,11 @@ test("base matching uses the Engine MMap.Base inventory", async () => {
     assert.equal(arrangeZawCodeOrder(E + base), base + E, base);
     assert.equal(arrangeZawCodeOrder(RA + base), base + RA, base);
     assert.equal(arrangeZawCodeOrder(E + RA + base), base + RA + E, base);
+    assert.equal(arrangeZawCodeOrder(E + base + "\u102c"), base + "\u102c" + E, base);
     assert.equal(arrangeZawCodeOrder(E + base + YA), base + YA + E, base);
+    for (const tone of ["\u1037", "\u1038"]) {
+      assert.equal(arrangeZawCodeOrder(E + base + "\u103a" + tone), base + "\u103a" + tone + E, base);
+    }
   }
   for (const cp of [0x1022, 0x1024, 0x1028]) {
     const ch = String.fromCodePoint(cp);
@@ -151,10 +189,11 @@ test("Engine normalize, not mapperNormalize, follows repair ordering", async () 
   const result = orderZawCodePages(pages, scanText(source), { path: "zawcode" });
   assert.equal(normalizeOutputText(result[0].text, normalize), "သေမှ\nကြေိ\nကျေိ");
   assert.deepEqual(result[0].lines.map((line) => line[3]), result[0].text.split("\n"));
-  // The Engine normally removes zero-width characters; the output must retain them.
+  // The ZawCode swap does not alter U+200B; final Engine normalization is separate.
   assert.equal(arrangeZawCodeOrder("\u200bေက"), "\u200bကေ");
   const ordered = orderZawCodePages([{ text: "\u200bေက" }], {}, { path: "zawcode" });
-  assert.equal(normalizeOutputText(ordered[0].text, normalize), "\u200bကေ");
+  assert.equal(ordered[0].text, "\u200bကေ");
+  assert.equal(normalizeOutputText(ordered[0].text, normalize), normalize(ordered[0].text));
 });
 
 test("existing scan repair still fixes tokens without an ordering pattern", async () => {
@@ -180,7 +219,7 @@ test("Unicode mark order ignores spaces and accepts canonical asat order", () =>
   assert.equal(markOrderAligned("ေ က"), false);
 });
 
-test("final normalization preserves zero-width characters, not other Engine glue", async () => {
+test("the swap leaves U+200B alone; final normalization follows the Engine", async () => {
   const normalize = await getEngineNormalize();
   const zeroWidth = "\u200b";
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "zawcode-page-test-"));
@@ -197,15 +236,74 @@ test("final normalization preserves zero-width characters, not other Engine glue
   try {
     const unchanged = finish(zeroWidth + "ြ");
     assert.equal(unchanged.decision, "aligned");
-    assert.equal(unchanged.text, zeroWidth + "ြ");
+    assert.equal(unchanged.parsed, zeroWidth + "ြ");
+    assert.equal(unchanged.text, normalize(unchanged.parsed));
     const ordered = finish(zeroWidth + "ြက");
     assert.equal(ordered.decision, "zawcode");
-    assert.equal(ordered.text, zeroWidth + "ကြ");
+    assert.equal(ordered.parsed, zeroWidth + "ကြ");
+    assert.equal(ordered.text, normalize(ordered.parsed));
+    const otherFormats = "\u200c\u200d\u034f";
+    const mixed = finish(zeroWidth + otherFormats + "ြက");
+    assert.equal(mixed.decision, "zawcode");
+    assert.equal(mixed.parsed, zeroWidth + otherFormats + "ကြ");
+    assert.equal(mixed.text, normalize(mixed.parsed));
     const glue = finish("#\u00a0\u200d");
     assert.equal(glue.parsed, "#\u00a0\u200d");
-    assert.equal(glue.text, "\u200d");
-    assert.equal(finish("\u034fစဥ်").text, "\u034fစဉ်");
+    assert.equal(glue.text, normalize(glue.parsed));
+    const combiningJoiner = finish("\u034fစဥ်");
+    assert.equal(combiningJoiner.text, normalize(combiningJoiner.parsed));
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("the PDF Rabbit lane uses Rabbit's own U+200B handling", async () => {
+  const normalize = await getEngineNormalize();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "rabbit-zero-width-test-"));
+  try {
+    assert.equal(protectedCharacters(" \u200b\u200c\u200d\u034f"), " \u200c\u200d\u034f");
+    for (const source of [
+      "\u200bျဖစ္သြားတယ္",
+      "ျဖစ္သ\u200bြားတယ္ တူပါရဲ ႔၊",
+      "\u200b\u200c\u200d\u034fျဖစ္သြားတယ္",
+    ]) {
+      const store = { *lines() { yield [0, 0, 10, source]; } };
+      const result = finishPageToFile(store, {
+        directory: dir, parsingPath: "zawgyi-one", sourceEncoding: "zawgyi-one", fontKinds: new Set(["ZAWGYI"]),
+      });
+      let output;
+      try {
+        const parsed = [...result.text.chunks()].join("");
+        assert.equal(result.decision, "rabbit");
+        assert.equal(parsed, Rabbit.zg2uni(source, { preserveSpaces: true }));
+        assert.equal(parsed.includes("\u200b"), false);
+        assert.equal((parsed.match(/ /gu) || []).length, (source.match(/ /gu) || []).length);
+        output = normalizePageToFile(result.text.chunks(), { directory: dir, normalize });
+        const finalText = [...output.chunks()].join("");
+        assert.equal(finalText, normalize(parsed));
+      } finally { output?.close(); result.text.close(); }
+    }
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("final normalization passes each line to the normalizer and keeps its result", () => {
+  const lines = ["\u200b\u200cက", "\u200d\u034fခ"];
+  const source = lines.join("\n");
+  const expected = "က\nခ\u200b";
+  const calls = [];
+  const normalize = (line) => {
+    calls.push(line);
+    return line === lines[0] ? "က" : "ခ\u200b";
+  };
+  assert.equal(normalizeOutputText(source, normalize), expected);
+  assert.deepEqual(calls, lines);
+
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "normalize-result-test-"));
+  let output;
+  try {
+    calls.length = 0;
+    output = normalizePageToFile([source.slice(0, 2), source.slice(2)], { directory, normalize });
+    assert.equal([...output.chunks()].join(""), expected);
+    assert.deepEqual(calls, lines);
+  } finally { output?.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
 test("final Engine normalization keeps evidenced Pali and distinct glyph forms", async () => {

@@ -328,7 +328,7 @@ export function streamPdfPages(source, detector = null, log = () => {}, {
 
 const orderUnicode = (text) => preserveRegionalRuns(text, (part) => preserveCharacters(part, orderText));
 const cleanupUnicode = (text) => preserveRegionalRuns(text, (part) => preserveCharacters(part, cleanupText));
-const orderZawgyi = (text) => preserveCharacters(text, (part) => orderText(Rabbit.zg2uni(part, { preserveZeroWidth: true })));
+const orderZawgyi = (text) => preserveCharacters(text, (part) => orderText(Rabbit.zg2uni(part)));
 
 export function cleanupFor(cat, text) {
   return cat === "UNICODE" ? cleanupUnicode(text) : null;
