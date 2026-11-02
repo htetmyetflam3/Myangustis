@@ -159,3 +159,14 @@
 - Full Python suite: 356 passed, 0 failed, 0 skipped, and 35 subtests passed; the preceding run had 356 passed, 3 skipped, and 35 subtests passed.
 - Targeted ESLint on all 21 changed JavaScript files reports five errors and six warnings in three files; the same findings occur on the unchanged baseline. `git diff --check` passed.
 - Ran the JS Parser on all nine uploaded PDF parts (5,098 pages). This is not a quality pass: the visible title on part 1 page 3 is duplicated in Parser output, and the newly reported PDF/Parquet extraction problems are not fixed by this PR.
+
+## [Unreleased] - 2026-11-02 — PDF source-page decoding follow-up
+### Changed / Fixed / Removed
+- Preserve PDF text/graphics state across graphics saves, page geometry and resource boundaries; distinguish facing-page spreads from ruled tables and retain text past an inconclusive prefix.
+- Restore evidence-based legacy-resource decoding, respect simple-font Differences and padded ToUnicode maps, and preserve spaces in PDF-only Rabbit conversion.
+- Recover specific conflicted Unicode glyph clusters only when independently witnessed by full-font outlines, shaping and source pages. Preserve unresolved multi-character mappings and emit review warnings; do not change the existing vector format.
+### Verification / Remaining work
+- Full Node suite: 394 passed, 0 failed, 1 skipped because the OCR PNG fixture is unavailable. Full Python suite: 356 passed, 0 failed.
+- All nine merged source PDFs were parsed (5,098 pages). A 78-page subset spanning 65 merged-file sections was checked for extraction/render fidelity; selected output was compared with rendered sources, not treated as a complete accuracy proof.
+- Changed-file ESLint reports the same 9 errors and 15 warnings as PR head; the two new JavaScript files pass. `git diff --check` passed.
+- Part 2 retains 65 pages with unresolved glyph-mapping warnings; for example, page 1315 still misreads the isolated `(က)` label. Part 1 page 3 still duplicates its overprinted title. Part 8 page 3 has raster text; manual OCR identified the page but produced errors and repeated text. Column ordering and OCR accuracy remain unverified.

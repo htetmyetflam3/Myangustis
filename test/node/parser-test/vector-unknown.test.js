@@ -5,8 +5,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { englishLikeness } from "../../../B.Parser/main/parser/text/mm-score.js";
+import { choosePageParser } from "../../../B.Parser/main/parser/text/page-decision.js";
 import { loadDetector, streamPdfPages } from "../../../B.Parser/extend/pipeline.js";
 import { prepareVectorLayout } from "../../../B.Parser/main/parser/codepage/resolve.js";
+import { probePagePrefix } from "../../../B.Parser/main/parser/read/pdf-extract.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SAMPLE = path.join(HERE, "..", "..", "..", "F.Site", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
@@ -46,9 +48,47 @@ test("the one-sided English check separates Latin faces from layout junk", () =>
   assert.equal(englishLikeness("pneumonoultramicroscopicsilicovolcanoconiosis").verdict, "not-english");
 
 
+  assert.equal(englishLikeness("A\nReference Books\n(1) ASHEAE Books\n(2)").verdict, "english");
   assert.equal(englishLikeness("hello!").verdict, null);
   assert.equal(englishLikeness("MLC").verdict, null);
   assert.equal(englishLikeness("•").verdict, null);
+});
+
+test("checkpoint text returns to the font saved before q", () => {
+  const fonts = new Map([
+    ["A", { decode: (text) => `A${text}` }],
+    ["B", { decode: (text) => `B${text}` }],
+  ]);
+  const prefix = Buffer.from("BT /A 12 Tf (x) Tj ET q BT /B 18 Tf (y) Tj ET Q BT (z) Tj ET", "latin1");
+  const probe = probePagePrefix(prefix, fonts, fonts);
+  assert.equal(probe.sharedByFont.get("A"), "AxAz");
+  assert.equal(probe.sharedByFont.get("B"), "By");
+});
+
+test("page numbers do not turn an inconclusive checkpoint into a legacy page", () => {
+  for (const sample of ["1", "2024", "Page-1", "Page | 12", "Page 19Page 18", "  5 \n 6  "]) {
+    assert.deepEqual(choosePageParser({ shared: sample }), {
+      parser: "zawgyi-one", reason: "page-number-only",
+    }, sample);
+  }
+  assert.equal(choosePageParser({ shared: "12345" }).parser, "legacy");
+  assert.equal(choosePageParser({ shared: "4/\n5/\n6/\n7/" }).parser, "legacy");
+  assert.equal(choosePageParser({ shared: "jrefrmo'gtwGJ (1)? tcef; (1)trSmpmjrefrmo'gukd" }).parser, "legacy");
+  assert.equal(choosePageParser({ shared: "2" }, { sourceEncoding: "unicode" }).reason, "source-encoding");
+});
+
+test("isolated page headers are not treated as legacy body text", () => {
+  for (const sample of [
+    "example.com 3 | Page 129", "Page | 15 https://example.com Life Keyboard",
+    "example.com t t y y p p i i n n g g", "June 9,\n2011", "Typing\n-\nlucky82\n22“",
+  ]) {
+    assert.deepEqual(choosePageParser({ shared: sample }), {
+      parser: "zawgyi-one", reason: "non-body-header",
+    }, sample);
+  }
+  assert.equal(choosePageParser({ shared: "example.com 4/5" }).parser, "legacy");
+  assert.equal(choosePageParser({ shared: "example.com tcsdefudk tusKd;&Sd&Sd pDrHtkyfcsKyfenf;" }).parser, "legacy");
+  assert.equal(choosePageParser({ shared: "example.com 12345" }).parser, "legacy");
 });
 
 test("a clean Zawgyi-Type0 document is never vector-mapped", async () => {

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { parseTtfCmap } from "../../../B.Parser/main/parser/core/ttf-cmap.js";
 import { parseToUnicodeStream } from "../../../B.Parser/main/parser/read/pdf-extract.js";
+import { DocumentDecoding, FontDecoder } from "../../../B.Parser/main/parser/read/pdf-fonts.js";
 
 
 
@@ -167,4 +168,24 @@ test("a source code is read at the width it was written at", () => {
   const twoByte = parseToUnicodeStream(Buffer.from(
     "1 beginbfchar\n<0020> <1000>\nendbfchar\n", "latin1"));
   assert.equal(twoByte.get(0x20), "\u1000");
+});
+
+test("zero-padded ToUnicode sources can recover simple-font bytes, not CID or mixed-width codes", () => {
+  const parse = (entries) => parseToUnicodeStream(Buffer.from(`beginbfchar\n${entries}\nendbfchar`, "latin1"));
+  const doc = new DocumentDecoding("font");
+  const padded = parse("<0001> <1000>\n<0002> <1001>");
+  const simple = new FontDecoder("Simple", { toUnicode: padded, doc });
+  assert.equal(simple.decode("\x01\x02"), "ကခ");
+  const cid = new FontDecoder("CID", { isCid: true, toUnicode: padded, doc });
+  assert.equal(cid.decode("\x00\x01\x00\x02"), "ကခ");
+
+  const mixed = parse("<01> <1002>\n<0001> <1000>");
+  const mixedSimple = new FontDecoder("Mixed", { toUnicode: mixed, doc });
+  assert.equal(mixedSimple.decode("\x01"), "ဂ");
+  const mixedCid = new FontDecoder("MixedCID", { isCid: true, toUnicode: mixed, doc });
+  assert.equal(mixedCid.decode("\x00\x01"), "က");
+
+  const tooWide = parse("<0001> <1000>\n<0100> <1001>");
+  const notPadded = new FontDecoder("TooWide", { toUnicode: tooWide, doc });
+  assert.equal(notPadded.decodeCode(1), null);
 });

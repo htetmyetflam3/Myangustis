@@ -236,7 +236,7 @@ export function finishPageToFile(store, {
           const transformed = world ? world.push(text) : text;
           write(transformed);
         };
-        const rabbit = createRabbitStream(output, { preserveZeroWidth: true });
+        const rabbit = createRabbitStream(output, { preserveZeroWidth: true, preserveSpaces: true });
         let first = true;
         for (const [, , , text] of store.lines()) {
           const chunk = first ? text : `\n${text}`;
@@ -263,7 +263,8 @@ export function finishPageToFile(store, {
     }
     fs.closeSync(fd);
     fd = null;
-    const category = !outputHasMyanmar || decision === "unaligned-unknown" ? "UNKNOWN"
+    const unconvertedZawgyi = parsingPath === "legacy" && fontKinds.has("ZAWGYI");
+    const category = !outputHasMyanmar || decision === "unaligned-unknown" || unconvertedZawgyi ? "UNKNOWN"
       : decision === "rabbit" || decision === "unaligned-zawgyi" ? "ZAWGYI" : "UNICODE";
     return { text: new PageTextFile(file, chars, bytes), decision, category, originalHasText, lineCount: count };
   } catch (error) {

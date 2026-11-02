@@ -219,6 +219,20 @@ test("final Engine normalization keeps evidenced Pali and distinct glyph forms",
   } finally { output?.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
+test("Rabbit conversion retains source spaces before a dot-below mark", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "zawgyi-space-test-"));
+  const source = "နားရြက္ေတြ တူပါရဲ ႔၊";
+  const store = { *lines() { yield [0, 0, 10, source]; } };
+  let result;
+  try {
+    result = finishPageToFile(store, { directory, parsingPath: "zawgyi-one", fontKinds: new Set(["ZAWGYI"]) });
+    const text = [...result.text.chunks()].join("");
+    assert.equal(result.decision, "rabbit");
+    assert.equal(text, "နားရွက်တွေ တူပါရဲ ့၊");
+    assert.equal((text.match(/ /gu) || []).length, (source.match(/ /gu) || []).length);
+  } finally { result?.text.close(); fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("all PDF page decisions normalize only after the parsing decision", async () => {
   const normalize = await getEngineNormalize();
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "final-page-normalize-"));

@@ -164,7 +164,7 @@ const COMMON_ENGLISH = new Set(("the of and a to in is you that it he was for on
   + "their if will up other about out many then them these so some her would make like him into time has look two "
   + "more write go see number no way could people my than first water been call who its now find long down day did "
   + "get come made may part update volume volumes three commission ministry education government language union "
-  + "myanmar grammar mlc jan feb mar apr jun jul aug sep oct nov dec am pm").split(" "));
+  + "myanmar grammar mlc reference book books jan feb mar apr jun jul aug sep oct nov dec am pm").split(" "));
 
 const VOWELLESS_OK = new Set(["shh", "hmm", "grr", "brr", "psst", "tsk", "cwm", "nth"]);
 const IMPOSSIBLE_PAIRS = new Set([

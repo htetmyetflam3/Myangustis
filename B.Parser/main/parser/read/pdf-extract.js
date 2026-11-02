@@ -2,11 +2,12 @@ import { parseTtfCmap } from "../core/ttf-cmap.js";
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
-import { ValueError, pyTruthy, pyInt, pyFloat, fromHexStrict } from "../core/pylib.js";
+import { ValueError, pyTruthy, pyInt, fromHexStrict } from "../core/pylib.js";
 import { loadMapJson, mapNameForPath } from "../core/json-map.js";
 import { MAX_PAGES, OWNER_PARSER_WORKER, resourceLimit } from "../core/limits.js";
 import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../codepage/registry.js";
 import { containsMyanmar } from "../text/detector.js";
+import { decodeVisualUnicodeRun } from "../codepage/visual-unicode-glyphs.js";
 import {
   Lexer, PdfName, PdfHexBytes, isNumeric, toNumber,
   asDocumentDecoding, DocumentDecoding, FontResourceLoader, LegacyAyarMap, UnsetFontDecoder,
@@ -482,8 +483,10 @@ export function getPageMediabox(objects, pageNum, pageGen) {
     const m = MEDIABOX_RE.exec(text);
     if (m) {
 
-      const [x0, y0, x1, y1] = [m[1], m[2], m[3], m[4]].map(pyFloat);
-      return [Math.abs(x1 - x0), Math.abs(y1 - y0)];
+      const [x0, y0, x1, y1] = [m[1], m[2], m[3], m[4]].map(Number);
+      if ([x0, y0, x1, y1].every(Number.isFinite) && x0 !== x1 && y0 !== y1) {
+        return [Math.abs(x1 - x0), Math.abs(y1 - y0)];
+      }
     }
     const pm = PARENT_RE.exec(text);
     if (!pm) break;
@@ -816,26 +819,48 @@ function shownStrings(op, operands) {
 
 // Decode only text strings that begin and end inside the checkpoint. Both
 // decoders see the same page-font resource and the same raw PDF strings.
-export function probePagePrefix(prefix, sharedFonts, legacyFonts) {
+export function probePagePrefix(prefix, sharedFonts, legacyFonts, { mediaBox = null } = {}) {
   const chunks = { shared: [], legacy: [] };
   const usedFonts = new Set();
+  const sharedByFont = new Map();
+  const savedStates = [];
+  const visible = [];
   let active = null;
   let inText = false;
   let hasShownText = false;
+  let undecodable = false;
+  let position = null;
+  let untransformed = true;
   const record = (shown) => {
     const arg = shown instanceof PdfHexBytes ? shown.s : shown;
     if (typeof arg !== "string" || !arg.length) return;
     hasShownText = true;
-    if (!active) return;
+    if (!active) { undecodable = true; return; }
     const shared = sharedFonts.get(active);
     const legacy = legacyFonts.get(active);
-    if (!shared || !legacy) return;
+    if (!shared || !legacy) { undecodable = true; return; }
     usedFonts.add(active);
-    chunks.shared.push(shared.decode(arg, { useConfirmed: false, skipUnknown: true }));
+    const text = shared.decode(arg, { useConfirmed: false, skipUnknown: true });
+    chunks.shared.push(text);
+    sharedByFont.set(active, (sharedByFont.get(active) || "") + text);
     chunks.legacy.push(legacy.decode(arg, { useConfirmed: false, skipUnknown: true }));
+    if (text.trim()) visible.push({ text, raw: arg, font: shared, position: untransformed ? position : null });
+    else if (/[^\s\0]/u.test(arg)) undecodable = true;
   };
   for (const [op, operands] of iterContentOperations(prefix.toString("latin1"), { prefix: true })) {
-    if (op === "BT") { inText = true; continue; }
+    if (op === "q") { savedStates.push({ active, untransformed }); continue; }
+    if (op === "Q") {
+      const state = savedStates.pop();
+      if (state) ({ active, untransformed } = state);
+      continue;
+    }
+    if (op === "cm") {
+      const matrix = operands.slice(-6);
+      if (matrix.length !== 6 || !matrix.every(isNumeric)
+          || matrix.some((value, index) => toNumber(value) !== [1, 0, 0, 1, 0, 0][index])) untransformed = false;
+      continue;
+    }
+    if (op === "BT") { inText = true; position = null; continue; }
     if (op === "ET") {
       inText = false;
       chunks.shared.push("\n");
@@ -848,9 +873,32 @@ export function probePagePrefix(prefix, sharedFonts, legacyFonts) {
       continue;
     }
     if (!inText) continue;
+    if (op === "Tm") {
+      const matrix = operands.slice(-6);
+      position = matrix.length === 6 && matrix.every(isNumeric)
+        ? [toNumber(matrix[4]), toNumber(matrix[5])] : null;
+      continue;
+    }
+    if (["Td", "TD", "T*", "'", '"'].includes(op)) position = null;
     for (const shown of shownStrings(op, operands)) record(shown);
   }
-  return { shared: chunks.shared.join(""), legacy: chunks.legacy.join(""), usedFonts, hasShownText };
+  // A lone, centered letter near the bottom can be a preliminary-page label.
+  // Require its raw and decoded value to agree in a simple encoded font;
+  // transformed or unpositioned text stays inconclusive.
+  const entry = visible.length === 1 ? visible[0] : null;
+  let alphaFooterOnly = false;
+  if (!undecodable && entry?.position && Array.isArray(mediaBox) && mediaBox.length === 4
+      && /^[A-Z]$/u.test(entry.text.trim()) && entry.raw.trim() === entry.text.trim()
+      && !entry.font.isCid && entry.font.hasEncoding && !entry.font.encodingHasDifferences) {
+    const [left, bottom, right, top] = mediaBox;
+    const [x, y] = entry.position;
+    const width = right - left;
+    const height = top - bottom;
+    alphaFooterOnly = width > 0 && height > 0 && x >= left + width * 0.3 && x <= left + width * 0.7
+      && y >= bottom && y <= bottom + height * 0.08;
+  }
+  return { shared: chunks.shared.join(""), legacy: chunks.legacy.join(""), usedFonts, sharedByFont,
+    hasShownText, alphaFooterOnly };
 }
 
 
@@ -886,19 +934,33 @@ function joinDraftRuns(pieces, order) {
   return out;
 }
 
-function joinOrderedLine(ordered, doc) {
+function joinOrderedLine(ordered, doc, onVisualGlyphRecovery = null) {
   if (doc.kind === "font") {
     let decoder = null;
     let pending = "";
+    let rawParts = [];
+    let hasRaw = true;
     const transformed = [];
     const flushRun = () => {
-      if (decoder) transformed.push(doc.transformRun ? doc.transformRun(decoder, pending) : pending);
+      let text = pending;
+      if (decoder?.visualUnicodeGlyphs && hasRaw && rawParts.length) {
+        let unresolved = false;
+        text = decodeVisualUnicodeRun(decoder, rawParts, {
+          onUnresolved: () => { unresolved = true; }, startsAtBoundary: transformed.length === 0,
+        });
+        if (text !== pending || unresolved) onVisualGlyphRecovery?.({ changed: text !== pending, unresolved });
+      } else if (decoder && doc.transformRun) text = doc.transformRun(decoder, pending);
+      if (decoder) transformed.push(text);
       pending = "";
+      rawParts = [];
+      hasRaw = true;
     };
     for (const [, , text, runs] of ordered) {
-      for (const [font, part] of runs || [[null, text]]) {
+      for (const [font, part, , raw] of runs || [[null, text]]) {
         if (font !== decoder) { flushRun(); decoder = font; }
         pending += part;
+        if (typeof raw === "string") rawParts.push(raw);
+        else hasRaw = false;
       }
     }
     if (decoder) flushRun();
@@ -915,18 +977,67 @@ function joinOrderedLine(ordered, doc) {
   return ordered.map(([, , text]) => text).join("");
 }
 
+// Long, painted vertical rules are evidence of a table rather than facing
+// pages. Keep only a bounded set of distinct lines; clipping paths do not
+// count. Text inside a table retains the ordinary top-to-bottom order.
+function pageGridEvidence(width, height, left = 0) {
+  let current = null;
+  let pending = [];
+  const rules = [];
+  let grid = false;
+  const add = (target, a, b) => {
+    const low = Math.min(a[1], b[1]);
+    const high = Math.max(a[1], b[1]);
+    const x = (a[0] + b[0]) / 2;
+    if (Math.abs(a[0] - b[0]) > 3 || high - low < height * 0.2 || x < left || x > left + width) return;
+    if (target.length < 32 && !target.some((rule) => Math.abs(rule.x - x) < 3)) target.push({ x, low, high });
+  };
+  return {
+    consume(op, operands, matrix) {
+      if (grid || width < height * 1.25 || height <= 0) return;
+      const point = (x, y) => [matrix[0] * x + matrix[2] * y + matrix[4], matrix[1] * x + matrix[3] * y + matrix[5]];
+      if (op === "re" && operands.length >= 4 && operands.slice(-4).every(isNumeric)) {
+        const [x, y, w, h] = operands.slice(-4).map(toNumber);
+        const corners = [point(x, y), point(x + w, y), point(x, y + h), point(x + w, y + h)];
+        const xs = corners.map((p) => p[0]);
+        const ys = corners.map((p) => p[1]);
+        if (Math.max(...xs) - Math.min(...xs) <= 3) {
+          add(pending, [Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]);
+        }
+      } else if (["m", "l"].includes(op) && operands.length >= 2 && operands.slice(-2).every(isNumeric)) {
+        const next = point(...operands.slice(-2).map(toNumber));
+        if (op === "l" && current) add(pending, current, next);
+        current = next;
+      } else if (["c", "v", "y"].includes(op)) {
+        current = null;
+      } else if (["n", "S", "s", "f", "F", "f*", "B", "B*", "b", "b*"].includes(op)) {
+        if (op !== "n") {
+          for (const line of pending) add(rules, [line.x, line.low], [line.x, line.high]);
+          grid = rules.some((line) => rules.filter((other) =>
+            Math.min(line.high, other.high) - Math.max(line.low, other.low) >= height * 0.15).length >= 4);
+        }
+        pending = [];
+        current = null;
+      }
+    },
+    get detected() { return grid; },
+  };
+}
+
 export function extractPageLines(objects, pageNum, pageGen, decoding, {
   usedMyanmarFonts = null, usedFontKinds = null, usedLegacyFonts = null,
-  inspectPrefix = null, onPageContent = null, onConfirmedRepair = null, scratchDir = null, pieceStore = null,
+  inspectPrefix = null, onPageContent = null, onConfirmedRepair = null, onVisualGlyphRecovery = null,
+  scratchDir = null, pieceStore = null,
 } = {}) {
   let doc = asDocumentDecoding(decoding);
   const loader = documentLoader(doc, objects);
   let decoders = pageFontDecoders(loader, pageNum, pageGen, doc);
   let unsetFont = new UnsetFontDecoder("", { doc });
+  const imageCollector = new PageImageCollector(loader, pageNum, pageGen, iterContentOperations);
   const contentOptions = {
     maxBytes: MAX_STREAM_MB * 1024 * 1024,
     inspect: (prefix) => {
-      const selected = inspectPrefix?.(prefix, decoders, loader);
+      const selected = inspectPrefix?.(prefix, decoders, loader, imageCollector.media);
       if (!(selected instanceof DocumentDecoding) || selected === doc) return;
       doc = selected;
       if (doc.loader !== loader) {
@@ -942,9 +1053,11 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, {
   try {
   pieceStore ??= new PdfPagePieces(path.dirname(spooled.file));
   const { streams, references } = spooled;
+  const [pageW, pageH] = getPageMediabox(objects, pageNum, pageGen);
   pieceStore.begin(doc);
   onPageContent?.(streams, references, loader, spooled);
-  const imageCollector = new PageImageCollector(loader, pageNum, pageGen, iterContentOperations);
+  const pageLeft = imageCollector.media[0];
+  const gridEvidence = pageGridEvidence(pageW, pageH, pageLeft);
 
 
 
@@ -963,18 +1076,62 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, {
     let blockRuns = [];
     let blockXy = null;
     let blockSize = null;
-    let textXy = [0.0, 0.0];
-    let leading = 0.0;
+    let lineMatrix = [1, 0, 0, 1, 0, 0];
+    let leading = 0;
+    let fontSize = 12;
+    const savedTextStates = [];
     let pendingDecoder = null;
     let pendingBytes = "";
-    const recordText = (decoder, text, confirmedText = text) => {
+    const position = (matrix = lineMatrix) => {
+      const [a, b, c, d, e, f] = imageCollector.state.matrix;
+      return [a * matrix[4] + c * matrix[5] + e, b * matrix[4] + d * matrix[5] + f];
+    };
+    const effectiveSize = () => {
+      const [a, b, c, d] = imageCollector.state.matrix;
+      return Math.abs(fontSize) * Math.hypot(a * lineMatrix[2] + c * lineMatrix[3],
+        b * lineMatrix[2] + d * lineMatrix[3]);
+    };
+    const flushPiece = () => {
+      if (blockTexts.length && blockXy !== null) {
+        const text = blockTexts.join("");
+        // Repeated glyphs in one text run may be intentional (including
+        // U+102F U+102F); do not collapse them without separate evidence.
+        pieceStore.add([blockXy[1], blockXy[0], blockSize ?? 12, text,
+          doc.kind === "font" || doc.zawcodeOrder || doc.legacyTextFix ? blockRuns : null]);
+      }
+      blockTexts = [];
+      blockRuns = [];
+      blockXy = null;
+      blockSize = null;
+    };
+    const moveLine = (next) => {
+      // A single BT/ET can contain an entire page. Flush when a text matrix
+      // moves to a different baseline, not merely at ET. Small offsets are
+      // kept together because they can position Burmese combining glyphs.
+      if (blockXy !== null) {
+        const nextXy = position(next);
+        const changesBaseline = Math.abs(nextXy[1] - blockXy[1]) > 3;
+        const middle = pageLeft + pageW / 2;
+        const crossesSpread = pageW >= pageH * 1.25 && pageH > 0
+          && (blockXy[0] < middle) !== (nextXy[0] < middle);
+        if (changesBaseline || crossesSpread) flushPiece();
+      }
+      lineMatrix = next;
+    };
+    const translateLine = (dx, dy) => {
+      const [a, b, c, d, e, f] = lineMatrix;
+      moveLine([a, b, c, d, e + dx * a + dy * c, f + dx * b + dy * d]);
+    };
+    const recordText = (decoder, text, confirmedText = text, raw = null) => {
+      if (blockXy === null) blockXy = position();
+      blockSize = Math.max(blockSize ?? 0, effectiveSize());
       if (text && decoder.parsingPath === PDF_PARSING_PATHS.LEGACY) usedLegacyFonts?.add(decoder.baseFont || "");
       if (containsMyanmar(confirmedText) || decoder.fontLegacyCodePage || decoder.confirmedRawRuns) {
         if (usedMyanmarFonts) usedMyanmarFonts.add(decoder.baseFont || "");
         if (usedFontKinds && doc.fontKind) usedFontKinds.add(doc.fontKind(decoder));
       }
       blockTexts.push(text);
-      if (doc.kind === "font") blockRuns.push([decoder, text, confirmedText]);
+      if (doc.kind === "font") blockRuns.push([decoder, text, confirmedText, decoder.visualUnicodeGlyphs ? raw : null]);
       else if (doc.zawcodeOrder) blockRuns.push([decoder.zawcodeGlyphs != null, text, confirmedText]);
       else if (doc.legacyTextFix) blockRuns.push([decoder.needsLegacyTextFix, text, confirmedText]);
     };
@@ -989,16 +1146,26 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, {
     };
 
     for (const [op, operands] of iterContentOperations(content)) {
+      // Preserve the old graphics matrix until pending text is recorded.
+      // Match only adjacent text-show bytes in the same font and positioning run.
+      if (["BT", "ET", "Tf", "Tm", "Td", "TD", "T*", "'", '"', "q", "Q", "cm"].includes(op)) flushConfirmedRun();
+      if (inBlock && (op === "Q" || op === "cm")) flushPiece();
+      gridEvidence.consume(op, operands, imageCollector.state.matrix);
       imageCollector.consume(op, operands);
-      // Match only adjacent text-show bytes in the same font and positioning
-      // run, the boundary used by the recorded PDF evidence.
-      if (["BT", "ET", "Tf", "Tm", "Td", "TD", "T*", "'", '"'].includes(op)) flushConfirmedRun();
+      // Text state is part of the graphics state. BT/ET reset the text
+      // matrices, but do not themselves reset the font, size or leading.
+      if (op === "q") { savedTextStates.push({ active, fontSize, leading }); continue; }
+      if (op === "Q") {
+        const saved = savedTextStates.pop();
+        if (saved) ({ active, fontSize, leading } = saved);
+        continue;
+      }
       if (op === "Tf") {
         if (operands.length >= 2 && operands[operands.length - 2] instanceof PdfName) {
           active = decoders.get(String(operands[operands.length - 2])) ?? null;
         }
-        if (inBlock && operands.length && isNumeric(operands[operands.length - 1])) {
-          blockSize = toNumber(operands[operands.length - 1]);
+        if (operands.length && isNumeric(operands[operands.length - 1])) {
+          fontSize = toNumber(operands[operands.length - 1]);
         }
         continue;
       }
@@ -1010,9 +1177,7 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, {
           blockRuns = [];
           blockXy = null;
           blockSize = null;
-
-          textXy = [0.0, 0.0];
-          leading = 0.0;
+          lineMatrix = [1, 0, 0, 1, 0, 0];
         }
         continue;
       }
@@ -1021,23 +1186,17 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, {
 
       if (op === "Tm") {
         if (operands.length >= 6 && operands.slice(-6).every(isNumeric)) {
-          textXy = [toNumber(operands[operands.length - 2]), toNumber(operands[operands.length - 1])];
-          if (blockXy === null) blockXy = textXy;
+          moveLine(operands.slice(-6).map(toNumber));
         }
         continue;
       }
-
-
 
       if (op === "Td" || op === "TD") {
         if (operands.length >= 2 && operands.slice(-2).every(isNumeric)) {
           const dx = toNumber(operands[operands.length - 2]);
           const dy = toNumber(operands[operands.length - 1]);
-
-
-          textXy = [textXy[0] + dx, textXy[1] + dy];
           if (op === "TD") leading = -dy;
-          if (blockXy === null) blockXy = textXy;
+          translateLine(dx, dy);
         }
         continue;
       }
@@ -1050,31 +1209,19 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, {
       }
 
       if (op === "T*") {
-        textXy = [textXy[0], textXy[1] - leading];
-        if (blockXy === null) blockXy = textXy;
+        translateLine(0, -leading);
         continue;
       }
 
       if (op === "ET") {
         inBlock = false;
-        if (blockTexts.length && blockXy !== null) {
-
-
-
-          const text = blockTexts.join("");
-          // Repeated characters in a text-show operation can be deliberate,
-          // including U+102F U+102F. Only the later position-based duplicate
-          // piece check has evidence that two separate draws are overprints.
-          const piece = [blockXy[1], blockXy[0], blockSize === null ? 12.0 : blockSize, text,
-            doc.kind === "font" || doc.zawcodeOrder || doc.legacyTextFix ? blockRuns : null];
-          pieceStore.add(piece);
-        }
-        blockTexts = [];
-        blockRuns = [];
+        flushPiece();
         continue;
       }
 
       if (op === "Tj" || op === "TJ" || op === "'" || op === '"') {
+        // The two quote operators include the same line move as T*.
+        if (op === "'" || op === '"') translateLine(0, -leading);
         const decoder = active !== null ? active : unsetFont;
         for (const shown of shownStrings(op, operands)) {
 
@@ -1089,7 +1236,7 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, {
             pendingBytes += arg;
           } else {
             flushConfirmedRun();
-            recordText(decoder, decoder.decode(arg));
+            recordText(decoder, decoder.decode(arg), undefined, typeof arg === "string" ? arg : null);
           }
         }
       }
@@ -1105,8 +1252,9 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, {
 
 
 
-  const [pageW, pageH] = getPageMediabox(objects, pageNum, pageGen);
-  pieceStore.finish({ onConfirmedRepair, joinRuns: joinOrderedLine });
+  pieceStore.finish({ onConfirmedRepair,
+    joinRuns: (ordered, selectedDoc) => joinOrderedLine(ordered, selectedDoc, onVisualGlyphRecovery),
+    pageLeft, pageWidth: pageW, pageHeight: pageH, hasTableRules: gridEvidence.detected });
   const lines = suppliedStore ? pieceStore : [...pieceStore.lines()];
   return [lines, pageW, pageH, imageCollector.images];
   } finally {

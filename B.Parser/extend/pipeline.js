@@ -12,13 +12,15 @@ import { cleanupText, orderText } from "../main/parser/text/cleanup.js";
 import { preserveCharacters } from "../main/parser/text/preserved-transform.js";
 import { extractDocxParagraphs, validateDocxArchive } from "../main/parser/read/docx-extract.js";
 import { extractDocxParagraphsExternal } from "../main/parser/read/docx-external.js";
-import { scoreText } from "../main/parser/text/mm-score.js";
+import { scoreText, englishLikeness } from "../main/parser/text/mm-score.js";
 import { choosePageParser } from "../main/parser/text/page-decision.js";
 import { countImpossiblePairs } from "../main/parser/text/scan.js";
 import { WININNWA_LEGACY_CODE_PAGE } from "../main/parser/codepage/registry.js";
+import { isLegacyFontName } from "../main/parser/codepage/names.js";
 import { MAX_PAGES, MAX_TEXT_CHARS } from "../main/parser/core/limits.js";
 import {
   MAX_PDF_OBJECTS, findRootPages, collectPages, extractPageLines, probePagePrefix, pageHasImages, extractMetadata,
+  legacyAyarToUnicode,
 } from "../main/parser/read/pdf-extract.js";
 import { PdfFileObjects, openPdfScannedObjects } from "../main/parser/read/pdf-object-file.js";
 import { PdfPagePieces } from "../main/parser/read/pdf-page-pieces.js";
@@ -46,6 +48,51 @@ export function loadDetector() {
   return new ZawgyiDetector();
 }
 
+// Evidence for applying the existing WinInnwa keyboard layout to a selected
+// simple resource, irrespective of its display font. Do not promote a URL,
+// short label, ordinary English, or an isolated long word into the layout.
+function hasWinLayoutEvidence(text) {
+  const sample = String(text || "");
+  if (containsMyanmar(sample)) return false;
+  const english = englishLikeness(sample);
+  if (english.verdict !== "not-english" || !english.hasSpaces
+      || english.letters < 24 || english.runs < 4) return false;
+  const mixedCaseWords = (sample.match(/[A-Za-z]{3,}/gu) || [])
+    .filter((word) => /[a-z][A-Z][a-z]/u.test(word)).length;
+  if (english.violationRate <= 0.02 && mixedCaseWords < 2) return false;
+  let mapped = 0;
+  let visible = 0;
+  let slots = "";
+  for (const ch of sample) {
+    if (!/\s/u.test(ch)) visible += 1;
+    const value = WININNWA_LEGACY_CODE_PAGE.get(ch.codePointAt(0));
+    if (value !== undefined) {
+      if (!/\s/u.test(ch)) mapped += 1;
+      slots += value;
+    } else slots += ch;
+  }
+  const reading = scoreText(legacyAyarToUnicode(slots));
+  return visible > 0 && mapped / visible >= 0.9 && reading.marks >= 12
+    && reading.score >= 0.85 && reading.duplicate <= 0.05;
+}
+
+// A previously supported legacy face may begin with a short or deliberately
+// overprinted title, before the body provides enough text for the full score.
+// Its name is only supporting evidence on an already selected legacy page:
+// require non-English byte patterns as well, and leave addresses untouched.
+function hasNamedWinLayoutEvidence(text) {
+  const sample = String(text || "");
+  if (containsMyanmar(sample) || /(?:https?:\/\/|www\.|\b[a-z0-9.-]+\.[a-z]{2,}\b)/iu.test(sample)) return false;
+  const english = englishLikeness(sample);
+  if (english.verdict === "english" || english.letters < 8) return false;
+  const repeated = (sample.match(/([a-z])\1+/giu) || []).reduce((sum, run) => sum + run.length, 0);
+  const mixed = (sample.match(/[A-Za-z]{3,}/gu) || [])
+    .filter((word) => /[a-z][A-Z][a-z]/u.test(word)).length;
+  const unusual = (sample.match(/[&@;'*]/gu) || []).length;
+  const overprint = repeated >= 8 && repeated / english.letters >= 0.75;
+  return overprint || (english.letters >= 16
+    && (english.violationRate > 0.02 || mixed >= 2 || unusual >= 4));
+}
 
 export function streamPdfPages(source, detector = null, log = () => {}, {
   provenance = null, sourceEncoding = "auto", onPageContent = null, onPagePrefix = null, scratchDir = null,
@@ -101,6 +148,8 @@ export function streamPdfPages(source, detector = null, log = () => {}, {
   log(`[+] Total pages: ${npages}; decoding by font resource`);
 
   const shared = new DocumentDecoding("font");
+  // An explicit Zawgyi request must not be reinterpreted as Unicode glyphs.
+  shared.visualUnicodeEnabled = sourceEncoding !== "zawgyi-one";
   const legacy = new DocumentDecoding("legacy", new Map(), WININNWA_LEGACY_CODE_PAGE);
   const sharedFontKinds = new WeakMap();
   shared.fontKind = (font) => {
@@ -137,13 +186,15 @@ export function streamPdfPages(source, detector = null, log = () => {}, {
       let parsingPath = PDF_PARSING_PATHS.ZAWGYI_ONE;
       let checkpoint = null;
       let confirmedRepair = null;
+      let visualGlyphRecovery = false;
+      let unresolvedVisualGlyph = false;
       const [extractedLines, w, h, images] = extractPageLines(objects, pnum, pgen, shared, {
         scratchDir: workDir,
         pieceStore,
         usedMyanmarFonts: fontNames,
         usedFontKinds: fontKinds,
         usedLegacyFonts,
-        inspectPrefix: (prefix, sharedFonts, loader) => {
+        inspectPrefix: (prefix, sharedFonts, loader, mediaBox) => {
           if (legacy.loader !== loader) {
             legacy.loader = loader;
             legacy.resetFontCache();
@@ -151,8 +202,9 @@ export function streamPdfPages(source, detector = null, log = () => {}, {
           // Probe both existing parsers on the same bounded page prefix. No
           // confirmed byte pair is used as a route-selection shortcut.
           legacy.legacyFontNames = null;
+          legacy.legacyResources = null;
           const legacyFonts = pageFontDecoders(loader, pnum, pgen, legacy);
-          const probe = probePagePrefix(prefix, sharedFonts, legacyFonts);
+          const probe = probePagePrefix(prefix, sharedFonts, legacyFonts, { mediaBox });
           const choice = choosePageParser(probe, { sourceEncoding });
           parsingPath = choice.parser;
           checkpoint = {
@@ -167,25 +219,33 @@ export function streamPdfPages(source, detector = null, log = () => {}, {
 
           // Do not turn an English or Unicode face into WinInnwa merely
           // because a different face on the same page is legacy.
-          const selected = new Set([...sharedFonts.values()]
-            .filter((font) => font.parsingPath === PDF_PARSING_PATHS.LEGACY)
-            .map((font) => font.baseFont).filter(Boolean));
-          if (!selected.size) {
-            for (const name of probe.usedFonts) {
-              const font = sharedFonts.get(name);
-              if (font && !font.isCid && !isUnicodeFont(font.baseFont) && font.baseFont) selected.add(font.baseFont);
-            }
+          const selected = new Set([...sharedFonts]
+            .filter(([, font]) => font.parsingPath === PDF_PARSING_PATHS.LEGACY)
+            .map(([name]) => name));
+          for (const name of probe.usedFonts) {
+            const font = sharedFonts.get(name);
+            if (!font || font.isCid || isUnicodeFont(font.baseFont)) continue;
+            const sample = probe.sharedByFont.get(name) || "";
+            if (hasWinLayoutEvidence(sample)
+                || (isLegacyFontName(font.baseFont) && hasNamedWinLayoutEvidence(sample))) selected.add(name);
           }
-          legacy.legacyFontNames = selected;
-          // The selected page parser may still encounter a Unicode font later
-          // in the page. Preserve that font's own shared decoder rather than
-          // interpreting its character codes as WinInnwa.
+          // Selection is per PDF resource, not a family-wide byte map. Two
+          // resources with the same display name can have different encodings.
+          legacy.legacyResources = new Set([...selected].map((name) => legacyFonts.get(name)).filter(Boolean));
+          // The selected page parser may still encounter a Unicode or
+          // Zawgyi resource later. Read that resource's own encoding rather
+          // than interpreting its PDF codes as WinInnwa; conversion remains
+          // a single page-level decision and mixed pages are reported below.
           for (const [name, font] of sharedFonts) {
-            if (shared.fontKind(font) === "UNICODE") legacyFonts.set(name, font);
+            if (["UNICODE", "ZAWGYI"].includes(shared.fontKind(font))) legacyFonts.set(name, font);
           }
           return legacy;
         },
         onPageContent: (streams, references, loader, spool) => onPageContent?.(idx, streams, references, loader, spool),
+        onVisualGlyphRecovery: ({ changed, unresolved }) => {
+          visualGlyphRecovery ||= changed;
+          unresolvedVisualGlyph ||= unresolved;
+        },
         onConfirmedRepair: ({ before, after, summary }) => {
           confirmedRepair = summary ?? {
             changedLines: countDiffLines(before, after),
@@ -218,8 +278,17 @@ export function streamPdfPages(source, detector = null, log = () => {}, {
         warnings.push({ code, page: idx + 1, checkpointBytes: PAGE_CONTENT_PREFIX_BYTES });
         log(`[!] Page ${idx + 1}: no decodable text in the ${PAGE_CONTENT_PREFIX_BYTES}-byte checkpoint; page text was retained`);
       }
+      if (visualGlyphRecovery) {
+        warnings.push({ code: "unicode-glyph-recovery-needs-review", page: idx + 1 });
+      }
+      if (unresolvedVisualGlyph) {
+        warnings.push({ code: "unicode-glyph-mapping-needs-review", page: idx + 1 });
+      }
       if (parsingPath === PDF_PARSING_PATHS.ZAWGYI_ONE && usedLegacyFonts.size) {
         warnings.push({ code: "legacy-font-on-shared-page", page: idx + 1, fonts: [...usedLegacyFonts] });
+      }
+      if (parsingPath === PDF_PARSING_PATHS.LEGACY && fontKinds.has("ZAWGYI")) {
+        warnings.push({ code: "zawgyi-font-on-legacy-page", page: idx + 1 });
       }
       if (finished.decision === "unaligned-unicode") {
         warnings.push({ code: "unicode-order-needs-review", page: idx + 1 });
