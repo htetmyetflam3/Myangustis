@@ -8,7 +8,8 @@ import { arrangeZawCodeOrder, orderZawCodePages } from "../../../B.Parser/main/p
 import { repairFromScanVerdict } from "../../../B.Parser/main/parser/text/repair.js";
 import { scanText } from "../../../B.Parser/main/parser/text/scan.js";
 import { markOrderAligned, normalizePageLines } from "../../../B.Parser/main/parser/text/page-decision.js";
-import { finishPageToFile } from "../../../B.Parser/main/parser/text/page-file-decision.js";
+import { normalizeOutputText } from "../../../B.Parser/main/parser/text/preserved-transform.js";
+import { finishPageToFile, normalizePageToFile } from "../../../B.Parser/main/parser/text/page-file-decision.js";
 
 const E = "\u1031";
 const RA = "\u103C";
@@ -62,11 +63,11 @@ test("safety patterns are arranged before per-line normalize", () => {
   const expected = ["က" + E + "မ" + YA, "က" + RA + "ခ" + RA + E];
   const calls = [];
   const pages = [{ text: inputs.join("\n") }];
-  const result = orderZawCodePages(pages, {}, {
-    path: "zawcode", normalize: (line) => { calls.push(line); return line; },
-  });
-  assert.deepEqual(calls, expected);
+  const result = orderZawCodePages(pages, {}, { path: "zawcode" });
   assert.equal(result[0].text, expected.join("\n"));
+  const output = normalizeOutputText(result[0].text, (line) => { calls.push(line); return line; });
+  assert.deepEqual(calls, expected);
+  assert.equal(output, expected.join("\n"));
 });
 
 test("a previous e cannot be position zero for a new pattern", () => {
@@ -119,12 +120,11 @@ test("patterns do not cross line breaks or invisible characters", () => {
 
 test("scan ordering is ZawCode-only and requires a scan verdict", () => {
   const pages = [{ text: "ေသမှ" }];
-  const unexpected = () => { throw new Error("normalizer should not be called"); };
   for (const path of [null, "unicode", "zawgyi-one", "wininnwa", "ayar"]) {
-    assert.equal(orderZawCodePages(pages, {}, { path, normalize: unexpected }), pages);
+    assert.equal(orderZawCodePages(pages, {}, { path }), pages);
   }
-  assert.equal(orderZawCodePages(pages, null, { path: "zawcode", normalize: unexpected }), pages);
-  assert.throws(() => orderZawCodePages(pages, {}, { path: "zawcode" }), TypeError);
+  assert.equal(orderZawCodePages(pages, null, { path: "zawcode" }), pages);
+  assert.throws(() => normalizeOutputText(pages[0].text, null), TypeError);
 });
 
 test("repair ordering precedes normalize once per line", () => {
@@ -132,10 +132,12 @@ test("repair ordering precedes normalize once per line", () => {
   const pages = [{ text: source, lines: [[1, 2, 10, "ေသမှ"], [3, 4, 10, "ေကျိ"]] }];
   const calls = [];
   const normalize = (line) => { calls.push(line); return `<${line}>`; };
-  const result = orderZawCodePages(pages, {}, { path: "zawcode", normalize });
+  const result = orderZawCodePages(pages, {}, { path: "zawcode" });
+  assert.deepEqual(calls, []);
+  assert.equal(result[0].text, "သေမှ\nကျေိ");
+  assert.deepEqual(result[0].lines, [[1, 2, 10, "သေမှ"], [3, 4, 10, "ကျေိ"]]);
+  assert.equal(normalizeOutputText(result[0].text, normalize), "<သေမှ>\n<ကျေိ>");
   assert.deepEqual(calls, ["သေမှ", "ကျေိ"]);
-  assert.equal(result[0].text, "<သေမှ>\n<ကျေိ>");
-  assert.deepEqual(result[0].lines, [[1, 2, 10, "<သေမှ>"], [3, 4, 10, "<ကျေိ>"]]);
   assert.equal(pages[0].text, source);
 });
 
@@ -146,12 +148,13 @@ test("Engine normalize, not mapperNormalize, follows repair ordering", async () 
   assert.notEqual(normalize, engine.mapperNormalize);
   const source = "ေသမှ\nေြကိ\nေကျိ";
   const pages = [{ text: source, lines: source.split("\n").map((line) => [0, 0, 10, line]) }];
-  const result = orderZawCodePages(pages, scanText(source), { path: "zawcode", normalize });
-  assert.equal(result[0].text, "သေမှ\nကြေိ\nကျေိ");
+  const result = orderZawCodePages(pages, scanText(source), { path: "zawcode" });
+  assert.equal(normalizeOutputText(result[0].text, normalize), "သေမှ\nကြေိ\nကျေိ");
   assert.deepEqual(result[0].lines.map((line) => line[3]), result[0].text.split("\n"));
-  // The Engine normally removes glue; the page path must preserve it.
+  // The Engine normally removes zero-width characters; the output must retain them.
   assert.equal(arrangeZawCodeOrder("\u200bေက"), "\u200bကေ");
-  assert.equal(orderZawCodePages([{ text: "\u200bေက" }], {}, { path: "zawcode", normalize })[0].text, "\u200bကေ");
+  const ordered = orderZawCodePages([{ text: "\u200bေက" }], {}, { path: "zawcode" });
+  assert.equal(normalizeOutputText(ordered[0].text, normalize), "\u200bကေ");
 });
 
 test("existing scan repair still fixes tokens without an ordering pattern", async () => {
@@ -164,8 +167,8 @@ test("existing scan repair still fixes tokens without an ordering pattern", asyn
     path: "zawcode", preserveZawCodeOrder: true,
   });
   assert.equal(existing[0].text, "ေကှ သူ့အား");
-  const result = orderZawCodePages(existing, report, { path: "zawcode", normalize });
-  assert.equal(result[0].text, "ကေှ သူ့အား");
+  const result = orderZawCodePages(existing, report, { path: "zawcode" });
+  assert.equal(normalizeOutputText(result[0].text, normalize), "ကေှ သူ့အား");
   assert.equal(result[0].lines[0][3], result[0].text);
 });
 
@@ -177,15 +180,19 @@ test("Unicode mark order ignores spaces and accepts canonical asat order", () =>
   assert.equal(markOrderAligned("ေ က"), false);
 });
 
-test("pass-through and ZawCode normalizers preserve zero-width characters", async () => {
+test("final normalization preserves zero-width characters, not other Engine glue", async () => {
   const normalize = await getEngineNormalize();
   const zeroWidth = "\u200b";
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "zawcode-page-test-"));
   const finish = (input) => {
     const store = { *lines() { yield [0, 0, 10, input]; } };
-    const result = finishPageToFile(store, { directory: dir, parsingPath: "zawgyi-one", normalize });
-    try { return { decision: result.decision, text: [...result.text.chunks()].join("") }; }
-    finally { result.text.close(); }
+    const result = finishPageToFile(store, { directory: dir, parsingPath: "zawgyi-one" });
+    let output;
+    try {
+      const parsed = [...result.text.chunks()].join("");
+      output = normalizePageToFile(result.text.chunks(), { directory: dir, normalize });
+      return { decision: result.decision, parsed, text: [...output.chunks()].join("") };
+    } finally { output?.close(); result.text.close(); }
   };
   try {
     const unchanged = finish(zeroWidth + "ြ");
@@ -194,8 +201,75 @@ test("pass-through and ZawCode normalizers preserve zero-width characters", asyn
     const ordered = finish(zeroWidth + "ြက");
     assert.equal(ordered.decision, "zawcode");
     assert.equal(ordered.text, zeroWidth + "ကြ");
-    assert.equal(finish("#\u00a0\u200d").text, "#\u00a0\u200d");
+    const glue = finish("#\u00a0\u200d");
+    assert.equal(glue.parsed, "#\u00a0\u200d");
+    assert.equal(glue.text, "\u200d");
+    assert.equal(finish("\u034fစဥ်").text, "\u034fစဉ်");
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("final Engine normalization keeps evidenced Pali and distinct glyph forms", async () => {
+  const normalize = await getEngineNormalize();
+  const source = ["ဥက္ကဋ္ဌ", "ပါဠိ", "သဒ္ဒါ", "တိံ", "သိင်္ဂီ", "ဝါစင်္ဂ", "ဦး", "ဉာဏ်ရည်", "၀", "၈", "၇"].join("\n");
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "pali-final-normalize-"));
+  let output;
+  try {
+    output = normalizePageToFile([source], { directory, normalize });
+    assert.equal([...output.chunks()].join(""), source);
+  } finally { output?.close(); fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("Rabbit conversion retains source spaces before a dot-below mark", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "zawgyi-space-test-"));
+  const source = "နားရြက္ေတြ တူပါရဲ ႔၊";
+  const store = { *lines() { yield [0, 0, 10, source]; } };
+  let result;
+  try {
+    result = finishPageToFile(store, { directory, parsingPath: "zawgyi-one", fontKinds: new Set(["ZAWGYI"]) });
+    const text = [...result.text.chunks()].join("");
+    assert.equal(result.decision, "rabbit");
+    assert.equal(text, "နားရွက်တွေ တူပါရဲ ့၊");
+    assert.equal((text.match(/ /gu) || []).length, (source.match(/ /gu) || []).length);
+  } finally { result?.text.close(); fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("all PDF page decisions normalize only after the parsing decision", async () => {
+  const normalize = await getEngineNormalize();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "final-page-normalize-"));
+  const cases = [
+    ["စဥ်", { parsingPath: "legacy" }, "legacy"],
+    ["စဥ်", { parsingPath: "zawgyi-one" }, "aligned"],
+    ["ေက", { parsingPath: "zawgyi-one" }, "zawcode"],
+    ["ကိ ျ", { parsingPath: "zawgyi-one", fontKinds: new Set(["UNICODE"]) }, "unaligned-unicode"],
+    ["ကိ ျ", { parsingPath: "zawgyi-one" }, "unaligned-unknown"],
+    ["ကိ ျ", { parsingPath: "zawgyi-one", sourceEncoding: "zawgyi-one", fontKinds: new Set(["ZAWGYI"]) }, "rabbit"],
+  ];
+  try {
+    for (const [source, options, decision] of cases) {
+      const store = { *lines() { yield [0, 0, 10, source]; } };
+      const page = finishPageToFile(store, { directory: dir, ...options });
+      let output;
+      try {
+        assert.equal(page.decision, decision);
+        const parsed = [...page.text.chunks()].join("");
+        if (source === "စဥ်") assert.equal(parsed, source);
+        const calls = [];
+        output = normalizePageToFile(page.text.chunks(), {
+          directory: dir, normalize: (line) => { calls.push(line); return normalize(line); },
+        });
+        assert.deepEqual(calls, [parsed]);
+        assert.equal([...output.chunks()].join(""), normalize(parsed));
+        if (source === "စဥ်") assert.equal([...output.chunks()].join(""), "စဉ်");
+      } finally { output?.close(); page.text.close(); }
+    }
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("final spacing follows the Engine normalize result", async () => {
+  const normalize = await getEngineNormalize();
+  for (const input of ["က ိ", "က  ခ"]) {
+    assert.equal(normalizeOutputText(input, normalize), normalize(input));
+  }
 });
 
 test("normalization is a lazy generator with one Engine call per line", () => {

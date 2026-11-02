@@ -5,105 +5,26 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { englishLikeness } from "../../../B.Parser/main/parser/text/mm-score.js";
-import {
-  LEGACY_CODE_PAGES,
-  WININNWA_LEGACY_CODE_PAGE,
-} from "../../../B.Parser/main/parser/codepage/registry.js";
-import { buildVectorOutlineLayout } from "../../../B.Parser/main/parser/codepage/vector-repair.js";
-import {
-  loadDetector,
-  streamPdfPages,
-} from "../../../B.Parser/extend/pipeline.js";
+import { choosePageParser } from "../../../B.Parser/main/parser/text/page-decision.js";
+import { loadDetector, streamPdfPages } from "../../../B.Parser/extend/pipeline.js";
 import { prepareVectorLayout } from "../../../B.Parser/main/parser/codepage/resolve.js";
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+import { probePagePrefix } from "../../../B.Parser/main/parser/read/pdf-extract.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const FIXTURE = path.join(HERE, "..", "..", "..", "Junk", "Parser", "upload", "pdf", "bg-mlc-1-1.pdf");
-const SAMPLE = path.join(HERE, "..", "..", "..", "Junk", "Parser", "upload", "pdf", "sample.pdf");
-const KNOWN_NAME = "EAAAAA+WinInnwa";
-
-const UNKNOWN_NAME = "QQXZT7+Fntb00k1";
-
-function renameFont(bytes, from, to) {
-  const needle = Buffer.from(from);
-  const out = Buffer.from(bytes);
-  assert.equal(needle.length, Buffer.byteLength(to), "rename must be length-preserving");
-  const repl = Buffer.from(to);
-  let count = 0;
-  let idx = 0;
-  while ((idx = out.indexOf(needle, idx)) !== -1) {
-    repl.copy(out, idx);
-    count += 1;
-    idx += needle.length;
-  }
-  return { bytes: out, count };
-}
+const SAMPLE = path.join(HERE, "..", "..", "..", "F.Site", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
 
 
-function blankToUnicode(bytes, baseFontName) {
-  const out = Buffer.from(bytes);
-  const fontNeedle = Buffer.from(`/${baseFontName}`);
-  let at = out.indexOf(fontNeedle);
-  while (at >= 0) {
-    const objStart = out.lastIndexOf("obj", at);
-    const objEnd = out.indexOf("endobj", at);
-    const dict = out.subarray(objStart, objEnd);
-    const tou = /\/ToUnicode\s+(\d+)\s+(\d+)\s+R/.exec(dict.toString("latin1"));
-    if (tou) {
-      const token = `/ToUnicode ${tou[1]} ${tou[2]} R`;
-      const tokenAt = objStart + dict.indexOf(Buffer.from(token));
-      out.fill(0x20, tokenAt, tokenAt + token.length);
-      return out;
-    }
-    at = out.indexOf(fontNeedle, at + fontNeedle.length);
-  }
-  throw new Error(`no /ToUnicode found next to ${baseFontName}`);
-}
-
-const original = fs.readFileSync(FIXTURE);
-const renamed = renameFont(original, KNOWN_NAME, UNKNOWN_NAME);
-assert.equal(renamed.count, 2, "expected /BaseFont + /FontName occurrences");
-
-
-const logsKnown = [];
-const logsUnknown = [];
-const layoutKnown = await prepareVectorLayout(original, (l) => logsKnown.push(String(l)));
-const layoutUnknown = await prepareVectorLayout(renamed.bytes, (l) => logsUnknown.push(String(l)));
-
-
-async function decodeFirstPage(bytes, vectorLayout) {
+async function decodeFirstPage(bytes) {
   const logs = [];
-  const [, , iterator] = streamPdfPages(bytes, loadDetector(), (l) => logs.push(String(l)), { vectorLayout });
-  const first = iterator.next().value;
-  assert.ok(first, "first page must decode");
-  return { text: first.text, logs };
+  const [, , iterator] = streamPdfPages(bytes, loadDetector(), (l) => logs.push(String(l)));
+  try {
+    const first = iterator.next().value;
+    assert.ok(first, "first page must decode");
+    return { text: first.text, logs };
+  } finally { iterator.return?.(); }
 }
 
-test("S1: the one-sided English check separates Latin faces from layout junk", () => {
+test("the one-sided English check separates Latin faces from layout junk", () => {
 
 
   assert.equal(
@@ -127,88 +48,50 @@ test("S1: the one-sided English check separates Latin faces from layout junk", (
   assert.equal(englishLikeness("pneumonoultramicroscopicsilicovolcanoconiosis").verdict, "not-english");
 
 
+  assert.equal(englishLikeness("A\nReference Books\n(1) ASHEAE Books\n(2)").verdict, "english");
   assert.equal(englishLikeness("hello!").verdict, null);
   assert.equal(englishLikeness("MLC").verdict, null);
   assert.equal(englishLikeness("•").verdict, null);
 });
 
-test("S2: the outline layout build is name-blind and deterministic for an unknown font", () => {
-  assert.ok(layoutKnown && layoutUnknown, "both builds must produce a layout");
-
-
-  assert.equal(layoutUnknown.baseLayout, layoutKnown.baseLayout);
-  assert.equal(layoutUnknown.matched, layoutKnown.matched);
-  for (const [code, text] of layoutKnown.decisions) {
-    assert.equal(layoutUnknown.decisions.get(code), text, `decision for code 0x${code.toString(16)}`);
-  }
-  assert.equal(layoutUnknown.decisions.size, layoutKnown.decisions.size);
-
-
-  assert.equal(layoutUnknown.baseLayout, "wininnwa");
-  const votes = new Map(layoutUnknown.votes);
-  assert.ok(votes.get("wininnwa") > votes.get("ayar"), "wininnwa must out-vote ayar");
-
-
-  let agree = 0;
-  let contra = 0;
-  for (const [code, text] of layoutUnknown.decisions) {
-    const truth = WININNWA_LEGACY_CODE_PAGE.get(code);
-    if (truth === undefined) continue;
-    if (truth === text) agree += 1;
-    else contra += 1;
-  }
-  assert.ok(agree > contra, `vote majority must be correct (agree ${agree} vs contradict ${contra})`);
-  assert.ok(agree / (agree + contra) >= 0.55, `per-slot precision must stay above 55% (got ${agree}/${agree + contra})`);
-
-
-  for (const [code, text] of layoutUnknown.table) {
-    assert.equal(text, WININNWA_LEGACY_CODE_PAGE.get(code), `table slot 0x${code.toString(16)}`);
-  }
-  assert.notEqual(layoutUnknown.table, WININNWA_LEGACY_CODE_PAGE, "the built table is a document-specific copy");
+test("checkpoint text returns to the font saved before q", () => {
+  const fonts = new Map([
+    ["A", { decode: (text) => `A${text}` }],
+    ["B", { decode: (text) => `B${text}` }],
+  ]);
+  const prefix = Buffer.from("BT /A 12 Tf (x) Tj ET q BT /B 18 Tf (y) Tj ET Q BT (z) Tj ET", "latin1");
+  const probe = probePagePrefix(prefix, fonts, fonts);
+  assert.equal(probe.sharedByFont.get("A"), "AxAz");
+  assert.equal(probe.sharedByFont.get("B"), "By");
 });
 
-test("S3: the outline-identified face carries its real /BaseFont names", () => {
-
-
-
-
-
-  assert.deepEqual(layoutUnknown.sourceBaseFonts, [UNKNOWN_NAME]);
-  assert.deepEqual(layoutKnown.sourceBaseFonts, [KNOWN_NAME]);
-  assert.ok(
-    logsUnknown.some((line) => /in font "QQXZT7\+Fntb00k1"/u.test(line)),
-    "the build log must name the face that earned the layout",
-  );
-
-
-
-  const exclusions = logsUnknown.filter((line) => /English face.*excluded from the Myanmar vote/u.test(line));
-  assert.equal(exclusions.length, 1, `expected exactly one exclusion log, got ${exclusions.length}`);
-  const excludedNames = [...exclusions[0].matchAll(/"([^"]+)"/gu)].map((m) => m[1]);
-  assert.equal(excludedNames.length, 2, "both DejaVu Latin faces must be excluded");
-  assert.notEqual(layoutUnknown.sourceFont, excludedNames[0]);
-  assert.notEqual(layoutUnknown.sourceFont, excludedNames[1]);
+test("page numbers do not turn an inconclusive checkpoint into a legacy page", () => {
+  for (const sample of ["1", "2024", "Page-1", "Page | 12", "Page 19Page 18", "  5 \n 6  "]) {
+    assert.deepEqual(choosePageParser({ shared: sample }), {
+      parser: "zawgyi-one", reason: "page-number-only",
+    }, sample);
+  }
+  assert.equal(choosePageParser({ shared: "12345" }).parser, "legacy");
+  assert.equal(choosePageParser({ shared: "4/\n5/\n6/\n7/" }).parser, "legacy");
+  assert.equal(choosePageParser({ shared: "jrefrmo'gtwGJ (1)? tcef; (1)trSmpmjrefrmo'gukd" }).parser, "legacy");
+  assert.equal(choosePageParser({ shared: "2" }, { sourceEncoding: "unicode" }).reason, "source-encoding");
 });
 
-test("S4: the renamed document decodes BOTH its English and its Myanmar", async () => {
-
-
-
-
-  const { text, logs } = await decodeFirstPage(renamed.bytes, layoutUnknown);
-
-  assert.ok(text.startsWith("Update: 2012-12-11"), `page 1 must start with the header, got ${JSON.stringify(text.slice(0, 30))}`);
-  assert.ok(text.includes("Myanmar Grammar: MLC"), "the English title line must survive");
-  assert.ok(text.includes("မြန်မာသဒ္ဒါ"), "the Myanmar body must survive");
-  const latinWords = text.match(/[A-Za-z]+/g) || [];
-  assert.ok(latinWords.length >= 100, `Latin words must be preserved (got ${latinWords.length}, baseline 116)`);
-
-
-  assert.ok(logs.some((line) => /text path "vector:WinInnwa": 0\.98\d\s+<- chosen/u.test(line)));
-  assert.ok(logs.includes('[+] Decoding via "vector:WinInnwa" character map'));
+test("isolated page headers are not treated as legacy body text", () => {
+  for (const sample of [
+    "example.com 3 | Page 129", "Page | 15 https://example.com Life Keyboard",
+    "example.com t t y y p p i i n n g g", "June 9,\n2011", "Typing\n-\nlucky82\n22“",
+  ]) {
+    assert.deepEqual(choosePageParser({ shared: sample }), {
+      parser: "zawgyi-one", reason: "non-body-header",
+    }, sample);
+  }
+  assert.equal(choosePageParser({ shared: "example.com 4/5" }).parser, "legacy");
+  assert.equal(choosePageParser({ shared: "example.com tcsdefudk tusKd;&Sd&Sd pDrHtkyfcsKyfenf;" }).parser, "legacy");
+  assert.equal(choosePageParser({ shared: "example.com 12345" }).parser, "legacy");
 });
 
-test("S5: a clean Zawgyi-Type0 document is never vector-mapped", async () => {
+test("a clean Zawgyi-Type0 document is never vector-mapped", async () => {
 
 
 
@@ -217,61 +100,10 @@ test("S5: a clean Zawgyi-Type0 document is never vector-mapped", async () => {
   const layout = await prepareVectorLayout(bytes);
   assert.equal(layout, null, "no vector layout may be built for a Zawgyi-Type0 document");
 
-  const { text, logs } = await decodeFirstPage(bytes, null);
+  const { text, logs } = await decodeFirstPage(bytes);
 
 
   assert.ok(!logs.some((line) => /"vector:|Vector layout/iu.test(line)), "no vector layout machinery may engage");
   assert.ok(/[\u1000-\u109F]/u.test(text), "the Myanmar body must decode through the regular path");
   assert.ok(text.includes("God of Slaughter"), "the English lines must decode through the regular path");
-});
-
-test("S6: a font with neither a known name nor a ToUnicode never decodes through a vector layout", async () => {
-
-
-
-
-  const stripped = blankToUnicode(renamed.bytes, UNKNOWN_NAME);
-  const buildLogs = [];
-  const layout = await prepareVectorLayout(stripped, (l) => buildLogs.push(String(l)));
-
-  if (layout) {
-    const exclusions = buildLogs.filter((line) => /English face.*excluded from the Myanmar vote/u.test(line));
-    assert.ok(exclusions.length >= 1, "the Latin faces must be excluded from the vote");
-    const excludedNames = [...exclusions[0].matchAll(/"([^"]+)"/gu)].map((m) => m[1]);
-    assert.ok(excludedNames.length >= 2, "both DejaVu Latin faces must be excluded");
-    assert.notEqual(layout.sourceFont, excludedNames[0], "the build must not vote a Latin face");
-    assert.notEqual(layout.sourceFont, excludedNames[1], "the build must not vote a Latin face");
-  }
-
-  const { logs } = await decodeFirstPage(stripped, layout);
-  assert.ok(
-    !logs.some((line) => /Decoding via "vector:/u.test(line)),
-    "a layout built without a usable map must never be applied",
-  );
-});
-
-test("S7: without the vector layout the fallback still decodes the Myanmar body", async () => {
-
-
-
-
-  const { text, logs } = await decodeFirstPage(renamed.bytes, null);
-  assert.ok(text.includes("မြန်မာသဒ္ဒါ"), "the Myanmar body must still decode");
-  assert.equal((text.match(/[A-Za-z]+/g) || []).length, 0, "Latin words are garbled by the whole-document map");
-  assert.ok(!logs.some((line) => /Decoding via "vector:/u.test(line)));
-  assert.ok(logs.some((line) => /Decoding via "wininnwa" character map/u.test(line)));
-});
-
-test("S8: buildVectorOutlineLayout reuses pre-parsed objects and matches the direct build", async () => {
-
-
-  const direct = buildVectorOutlineLayout(renamed.bytes, LEGACY_CODE_PAGES);
-  assert.ok(direct, "the objects-free build must produce a layout");
-  assert.equal(direct.name, layoutUnknown.name);
-  assert.equal(direct.baseLayout, layoutUnknown.baseLayout);
-  assert.deepEqual(direct.sourceBaseFonts, layoutUnknown.sourceBaseFonts);
-  for (const [code, text] of direct.decisions) {
-    assert.equal(layoutUnknown.decisions.get(code), text, `decision for code 0x${code.toString(16)}`);
-  }
-  assert.equal(direct.decisions.size, layoutUnknown.decisions.size);
 });

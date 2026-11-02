@@ -6,6 +6,7 @@ import { lookupLegacyCode, WININNWA_LEGACY_CODE_PAGE, WININNWA_UNRESOLVED_SLOTS 
 import { confirmedRunAt } from "../codepage/confirmed-pdf-runs.js";
 import { subsetFontBridge } from "../codepage/subset-font-bridges.js";
 import { parseTtfGsubReverse, parseTtfVariantSlots } from "../core/ttf-gsub.js";
+import { hasVisualUnicodeConflicts, matchVisualUnicodeGlyphs } from "../codepage/visual-unicode-glyphs.js";
 
 
 
@@ -639,6 +640,7 @@ export class DocumentDecoding {
     this.legacyTextFix = kind === "legacy";
     this.legacyCodePage = legacyCodePage;
     this.legacyFontNames = legacyFontNames ? new Set(legacyFontNames) : null;
+    this.legacyResources = null;
 
 
 
@@ -995,7 +997,8 @@ class DecodedTextBuilder {
 export class FontDecoder {
   constructor(name, {
     subtype = "", baseFont = "", isCid = false, cmap = null, toUnicode = null,
-    encoding = null, hasEncoding = false, hasPdfEncoding = hasEncoding, ownGids = null, doc = null, cidToGid = null,
+    encoding = null, hasEncoding = false, hasPdfEncoding = hasEncoding, encodingHasDifferences = false,
+    ownGids = null, doc = null, cidToGid = null,
     zawcodeGlyphs = null, confirmedRawRuns = null, fontLegacyCodePage = null,
   } = {}) {
     this.name = name;
@@ -1007,12 +1010,23 @@ export class FontDecoder {
     this.encoding = encoding || new Map();
     this.hasEncoding = hasEncoding;
     this.hasPdfEncoding = hasPdfEncoding;
+    this.encodingHasDifferences = encodingHasDifferences;
     this.ownGids = ownGids || new Map();
     this.zawcodeGlyphs = zawcodeGlyphs;
     this.confirmedRawRuns = confirmedRawRuns;
     this.fontLegacyCodePage = fontLegacyCodePage;
     this.doc = doc !== null ? doc : new DocumentDecoding("none");
     this._cidToGid = cidToGid;
+    const widths = this.toUnicode?.byWidth;
+    // Some simple-font PDFs encode their one-byte character codes as
+    // zero-padded two-byte ToUnicode entries. Recover only when the entire
+    // map is two-byte and every source code fits a simple-font byte.
+    this._paddedSimpleToUnicode = !this.isCid && widths?.size === 1 && widths.has(2);
+    if (this._paddedSimpleToUnicode) {
+      for (const code of widths.get(2).keys()) {
+        if (code < 0 || code > 0xff) { this._paddedSimpleToUnicode = false; break; }
+      }
+    }
     this._conflictingSpaceMap = false;
     if (this.doc.kind === "font" && this.isCid && this.toUnicode && this.ownGids.direct?.size) {
       let contradictions = 0;
@@ -1059,6 +1073,7 @@ export class FontDecoder {
   get _isSelectedLegacyFont() {
     if (isUnresolvedLegacyFont(this.baseFont)) return false;
     if (this.fontLegacyCodePage) return true;
+    if (this.doc.legacyResources !== null) return this.doc.legacyResources.has(this);
     const selected = this.doc.legacyFontNames;
     if (!selected) return true;
     const normalize = (name) => String(name || "")
@@ -1080,19 +1095,35 @@ export class FontDecoder {
     return this.doc.legacyTextFix && !this._unicodeCidInLegacyDocument && this._isSelectedLegacyFont;
   }
 
+  _toUnicodeForCode(map, code, width) {
+    if (!map) return undefined;
+    if (!map.byWidth) return map.get(code);
+    const exact = map.byWidth.get(width)?.get(code);
+    return exact !== undefined ? exact
+      : width === 1 && this._paddedSimpleToUnicode ? map.byWidth.get(2).get(code) : undefined;
+  }
+
   _legacyLookup(code) {
     const page = this.fontLegacyCodePage || this.doc.legacyCodePage;
     if (!page) return null;
     if (!this._isSelectedLegacyFont) return null;
-    if (!this.toUnicode) {
-      if (!isLegacyFontName(this.baseFont)) return null;
+    // The selected layout belongs to the character slots, not the visual
+    // font family. A page-selected simple resource can use the same layout
+    // under another face; unselected resources do not inherit it.
+    const pageSelected = this.doc.kind === "legacy"
+      && (this.doc.legacyResources !== null || this.doc.legacyFontNames !== null);
+    if (!this.toUnicode && !isLegacyFontName(this.baseFont) && !pageSelected) return null;
+    if (!this.toUnicode && !this.encodingHasDifferences) {
       if (page === WININNWA_LEGACY_CODE_PAGE && WININNWA_UNRESOLVED_SLOTS.has(code)) {
         return String.fromCodePoint(code);
       }
       const direct = lookupLegacyCode(code, page);
       return direct === undefined ? null : direct;
     }
-    const src = this.toUnicode.get(code);
+    // Differences and /ToUnicode describe PDF codes -> character slots. They
+    // must be followed before applying the selected keyboard layout: a PDF
+    // code such as 01 is not itself necessarily a keyboard slot.
+    const src = this.toUnicode ? this._toUnicodeForCode(this.toUnicode, code, 1) : this.encoding.get(code);
     if (!src) return null;
     let out = "";
     for (const ch of src) {
@@ -1214,7 +1245,7 @@ export class FontDecoder {
       if (bridged !== null) return bridged;
     }
     const tu = this._trustedToUnicode;
-    const hit = tu?.byWidth ? tu.byWidth.get(width)?.get(code) : tu?.get(code);
+    const hit = this._toUnicodeForCode(tu, code, width);
     if (this.isCid && this.doc.kind === "font" && this._conflictingSpaceMap) {
       // Reuse the existing font-cmap parser for this resource when its
       // ToUnicode map is dominated by contradictory space mappings. Do not
@@ -1408,13 +1439,22 @@ export function buildFontDecoder(loader, name, entry, doc) {
     const toUnicode = zawcodeGlyphs === null
       ? loader.tounicodeOf(font, { preserveSpaces: doc.kind === "font" }) : null;
     const ownGids = zawcodeGlyphs === null ? loader.reversedFontCmap(descriptor) : new Map();
-    return new FontDecoder(name, {
+    const decoder = new FontDecoder(name, {
       subtype, baseFont, isCid: true, cmap, toUnicode, ownGids, doc, zawcodeGlyphs,
       hasPdfEncoding: font.has("Encoding"), cidToGid: loader.cidToGid(descendant),
     });
+    if (doc.kind === "font" && doc.visualUnicodeEnabled && hasVisualUnicodeConflicts(decoder)) {
+      const resolved = loader.resolve(descriptor);
+      const program = resolved instanceof Map ? loader.streamOf(resolved.get("FontFile2")) : null;
+      decoder.visualUnicodeGlyphs = matchVisualUnicodeGlyphs(decoder, program);
+    }
+    return decoder;
   }
 
   const [encoding, declared] = buildSimpleEncoding(font.get("Encoding"), (v) => loader.resolve(v));
+  const encodingDictionary = loader.resolve(font.get("Encoding"));
+  const encodingHasDifferences = encodingDictionary instanceof Map
+    && Array.isArray(loader.resolve(encodingDictionary.get("Differences")));
   const descriptor = loader.resolve(font.get("FontDescriptor"));
   const normalizedFont = normaliseFontName(baseFont);
   let bridge = null;
@@ -1436,7 +1476,7 @@ export function buildFontDecoder(loader, name, entry, doc) {
   const ownGids = loader.reversedFontCmap(font.get("FontDescriptor"));
   const toUnicode = loader.tounicodeOf(font, { preserveSpaces: doc.kind === "font" });
   return new FontDecoder(name, {
-    subtype, baseFont, isCid: false, toUnicode, encoding, hasEncoding: declared,
+    subtype, baseFont, isCid: false, toUnicode, encoding, hasEncoding: declared, encodingHasDifferences,
     hasPdfEncoding: font.has("Encoding"), ownGids, doc,
     confirmedRawRuns, fontLegacyCodePage: bridge?.codePage || null,
   });

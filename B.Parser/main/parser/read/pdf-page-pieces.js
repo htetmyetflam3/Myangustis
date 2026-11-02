@@ -51,6 +51,9 @@ export class PdfPagePieces {
       this.insertUnique = this.db.prepare("INSERT INTO unique_pieces(y,x,size,text,runs) VALUES(?,?,?,?,?)");
       this.updateUnique = this.db.prepare("UPDATE unique_pieces SET y=?,x=?,size=?,text=?,runs=? WHERE slot=?");
       this.sorted = this.db.prepare("SELECT slot,y,x FROM unique_pieces ORDER BY y DESC,x ASC,slot ASC");
+      this.sortedLeft = this.db.prepare("SELECT slot,y,x FROM unique_pieces WHERE x < ? ORDER BY y DESC,x ASC,slot ASC");
+      this.sortedRight = this.db.prepare("SELECT slot,y,x FROM unique_pieces WHERE x >= ? ORDER BY y DESC,x ASC,slot ASC");
+      this.columnEvidence = this.db.prepare("SELECT x,y,length(trim(text)) AS chars FROM unique_pieces WHERE length(trim(text)) > 0 ORDER BY y DESC,x ASC");
       this.insertAnchor = this.db.prepare("INSERT INTO line_anchors(id,y) VALUES(?,?)");
       this.assignLine = this.db.prepare("UPDATE unique_pieces SET line=?,ord=? WHERE slot=?");
       this.ordered = this.db.prepare("SELECT p.line,a.y AS baseline,p.x,p.size,p.text,p.runs FROM unique_pieces p JOIN line_anchors a ON a.id=p.line ORDER BY p.line,p.x,p.ord");
@@ -78,11 +81,11 @@ export class PdfPagePieces {
 
   encodeRuns(runs) {
     if (!Array.isArray(runs)) return null;
-    return JSON.stringify(runs.map(([marker, text, confirmed]) => {
-      if (this.doc.kind !== "font" || !marker || typeof marker !== "object") return [marker, text, confirmed];
+    return JSON.stringify(runs.map(([marker, text, confirmed, raw]) => {
+      if (this.doc.kind !== "font" || !marker || typeof marker !== "object") return [marker, text, confirmed, raw];
       let id = this.fontIds.get(marker);
       if (!id) { id = this.nextFont++; this.fontIds.set(marker, id); this.fonts.set(id, marker); }
-      return [id, text, confirmed];
+      return [id, text, confirmed, raw];
     }));
   }
 
@@ -90,14 +93,14 @@ export class PdfPagePieces {
     if (raw == null) return null;
     const runs = JSON.parse(raw);
     if (this.doc.kind !== "font") return runs;
-    return runs.map(([id, text, confirmed]) => [typeof id === "number" ? this.fonts.get(id) : id, text, confirmed]);
+    return runs.map(([id, text, confirmed, raw]) => [typeof id === "number" ? this.fonts.get(id) : id, text, confirmed, raw]);
   }
 
   add([y, x, size, text, runs]) {
     this.insertPiece.run(y, x, size, text, this.encodeRuns(runs));
   }
 
-  finish({ onConfirmedRepair = null, joinRuns }) {
+  finish({ onConfirmedRepair = null, joinRuns, pageLeft = 0, pageWidth = 0, pageHeight = 0, hasTableRules = false }) {
     if (!this.active) throw new Error("No PDF page is being collected");
     let changedLines = 0;
     let impossibleBefore = 0;
@@ -117,29 +120,68 @@ export class PdfPagePieces {
       }
       const encoded = this.encodeRuns(runs);
       let inserted = false;
-      for (const old of this.nearby.iterate(piece.x - 1, piece.x + 1, piece.y - 1, piece.y + 1)) {
-        if (Math.abs(piece.x - old.x) > 1 || Math.abs(piece.y - old.y) > 1) continue;
-        if (text === old.text || old.text.includes(text)) { inserted = true; break; }
-        if (text.includes(old.text)) {
-          this.updateUnique.run(piece.y, piece.x, piece.size, text, encoded, old.slot);
-          inserted = true;
-          break;
+      // A witnessed visual glyph may have decoded to an empty string in a
+      // rejected ToUnicode map. It is not a duplicate of nearby visible text.
+      const emptyVisualRun = !text && this.doc.kind === "font"
+        && runs?.some(([font, , , raw]) => font?.visualUnicodeGlyphs && typeof raw === "string" && raw.length);
+      if (!emptyVisualRun) {
+        for (const old of this.nearby.iterate(piece.x - 1, piece.x + 1, piece.y - 1, piece.y + 1)) {
+          if (Math.abs(piece.x - old.x) > 1 || Math.abs(piece.y - old.y) > 1) continue;
+          if (text === old.text || old.text.includes(text)) { inserted = true; break; }
+          if (old.text && text.includes(old.text)) {
+            this.updateUnique.run(piece.y, piece.x, piece.size, text, encoded, old.slot);
+            inserted = true;
+            break;
+          }
         }
       }
       if (!inserted) this.insertUnique.run(piece.y, piece.x, piece.size, text, encoded);
     }
     if (hasRepair) onConfirmedRepair?.({ summary: { changedLines, impossibleBefore, impossibleAfter } });
 
-    let currentY = null;
+    // A landscape sheet may contain two book pages side by side. When both
+    // halves have substantial text over overlapping vertical ranges, keep
+    // their lines separate and read the left half before the right. Without
+    // that evidence retain the usual top-to-bottom page order.
+    let spread = false;
+    const middle = pageLeft + pageWidth / 2;
+    if (!hasTableRules && pageWidth >= pageHeight * 1.25 && pageHeight > 0) {
+      const halves = [0, 1].map(() => ({ count: 0, low: Infinity, high: -Infinity, y: null, chars: 0 }));
+      const finishBaseline = (half) => {
+        if (half.y === null || half.chars < 20) return;
+        half.count += 1;
+        half.low = Math.min(half.low, half.y);
+        half.high = Math.max(half.high, half.y);
+      };
+      for (const piece of this.columnEvidence.iterate()) {
+        if (piece.x < pageLeft || piece.x > pageLeft + pageWidth) continue;
+        const half = halves[piece.x < middle ? 0 : 1];
+        if (half.y === null || Math.abs(piece.y - half.y) > 3) {
+          finishBaseline(half);
+          half.y = piece.y;
+          half.chars = 0;
+        }
+        half.chars += piece.chars;
+      }
+      halves.forEach(finishBaseline);
+      const overlap = Math.min(halves[0].high, halves[1].high) - Math.max(halves[0].low, halves[1].low);
+      spread = halves.every((half) => half.count >= 5 && half.high - half.low >= pageHeight * 0.2)
+        && overlap >= pageHeight * 0.15;
+    }
+    const groups = spread
+      ? [this.sortedLeft.iterate(middle), this.sortedRight.iterate(middle)] : [this.sorted.iterate()];
     let line = 0;
     let ordinal = 0;
-    for (const piece of this.sorted.iterate()) {
-      if (currentY === null || Math.abs(piece.y - currentY) > 3) {
-        currentY = piece.y;
-        line += 1;
-        this.insertAnchor.run(line, currentY);
+    for (const group of groups) {
+      let currentY = null;
+      for (const piece of group) {
+        if (currentY === null || Math.abs(piece.y - currentY) > 3) {
+          currentY = piece.y;
+          line += 1;
+          this.insertAnchor.run(line, currentY);
+        }
+        this.assignLine.run(line, ordinal++, piece.slot);
       }
-      this.assignLine.run(line, ordinal++, piece.slot);
     }
 
     let current = null;

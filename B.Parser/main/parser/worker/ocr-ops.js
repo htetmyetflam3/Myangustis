@@ -16,6 +16,8 @@ import { writePageStore } from "../write/emit.js";
 import { PdfTextSink } from "../write/pdf-text-sink.js";
 import { PageStoreWriter } from "../read/page-store.js";
 import { PosScanner } from "../text/scan.js";
+import { normalizeOutputText } from "../text/preserved-transform.js";
+import { getEngineNormalize } from "../../../_path.js";
 import {
   MAX_INPUT_BYTES,
   MAX_INPUT_MB,
@@ -60,10 +62,13 @@ export async function ocrToFile(msg) {
     if (textOutput) sink = new PdfTextSink(directory, { includeText: msg.includeText === true, owner: OWNER_PARSER_WORKER });
     else store = new PageStoreWriter(directory, "ocr");
     let textChars = 0;
+    let normalize = null;
     for (let p = 1; p <= n; p += 1) {
-      const text = await ocrPdfPage(bytes, p);
-      textChars += text.length;
+      const recognized = await ocrPdfPage(bytes, p);
+      textChars += recognized.length;
       if (textChars > MAX_TEXT_CHARS) throw new Error(`OCR text exceeds the ${MAX_TEXT_CHARS} character cap`);
+      normalize ??= await getEngineNormalize();
+      const text = normalizeOutputText(recognized, normalize);
       await scanner.writePage(p, [text]);
       if (sink) sink.addPage([text]);
       else store.addPage({ text: [text] });

@@ -9,6 +9,7 @@ import { PosScanner } from "../text/scan.js";
 import { PageStoreWriter } from "../read/page-store.js";
 import { repairTextWithPos, repairFromPosVerdict } from "../text/repair.js";
 import { orderZawCodePages } from "../text/zawcode-order.js";
+import { normalizeOutputText } from "../text/preserved-transform.js";
 import { runPdfStream } from "./pdf-stream.js";
 
 import { MAX_INPUT_BYTES, MAX_INPUT_MB } from "../core/limits.js";
@@ -138,9 +139,7 @@ export function createSourceRunner({ kind, method, docxImages = false, pdfImages
         }
       }
       const orderedPages = !isDraft && !pageLocal && applyCleanup && chosenPath === "zawcode"
-        ? orderZawCodePages(scanRepairedPages, {}, {
-          path: chosenPath, normalize: await getEngineNormalize(),
-        })
+        ? orderZawCodePages(scanRepairedPages, {}, { path: chosenPath })
         : scanRepairedPages;
       const pages = orderedPages.map((page, index) => eligible(index) ? page : finalPages[index]);
       const scanRepairPages = pages.reduce(
@@ -186,11 +185,15 @@ export function createSourceRunner({ kind, method, docxImages = false, pdfImages
           throw error;
         }
       }
+      const normalize = await getEngineNormalize();
+      const outputPages = pages.map((page) => ({
+        ...page, text: normalizeOutputText(page.text || "", normalize),
+      }));
       const scanner = new PosScanner();
       try {
         // DOCX chunks contain 80 paragraphs each; they are not physical pages.
-        for (const page of pages) await scanner.writePage(null, [page.text || ""]);
-        const written = await writeOutput(outPath, pages, {
+        for (const page of outputPages) await scanner.writePage(null, [page.text]);
+        const written = await writeOutput(outPath, outputPages, {
           counts: job.counts, source: name ?? "", includeText: msg.includeText === true,
         });
         const posScan = await scanner.finish(written.file);

@@ -135,3 +135,20 @@ test("a source without ToUnicode can still use a supplied legacy table", () => {
   const f = new FontDecoder("F", { baseFont: "WinInnwa", doc });
   assert.equal(f.decode(bytes(0x75)), "က");
 });
+
+test("a selected keyboard layout follows PDF Differences independently of the face name", () => {
+  const doc = new DocumentDecoding("legacy", new Map(), WININNWA_LEGACY_CODE_PAGE, {
+    legacyFontNames: ["DecorativeFace"],
+  });
+  const options = {
+    baseFont: "DecorativeFace", doc, hasEncoding: true, encodingHasDifferences: true,
+    encoding: new Map([[1, "t"], [2, "c"], [3, "s"], [4, "d"], [5, "e"], [6, "f"], [7, "u"], [8, "k"],
+      [9, " "], [10, "|"]]),
+  };
+  const f = new FontDecoder("F", options);
+  // PDF-local 01..08 represent WinInnwa character slots tcsdefuk.
+  assert.equal(f.decode(bytes(1, 2, 3, 4, 5, 6, 7, 4, 8)), "အချိန်ကို");
+  assert.equal(f.decode(bytes(10)), "|"); // An unresolved layout slot stays visible.
+  const other = new FontDecoder("Other", { ...options, baseFont: "EnglishFace" });
+  assert.equal(other.decode(bytes(1, 2, 3)), "tcs");
+});

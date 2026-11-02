@@ -1,0 +1,874 @@
+{
+  "description": "Representative pages copied from the nine merged PDFs and parsed with the current JavaScript Parser. Page numbers in this file are one-based.",
+  "sourceRepository": "https://github.com/htetmyetflam3/Myangustis",
+  "sourceNote": "Source paths were recorded under the trash ref. Git blob IDs identify the original merged PDFs; the filename label on each page is from the preceding separator in the merged source, not an original-document page number.",
+  "sourceParts": {
+    "1": {
+      "path": "pdf-part/part-1.pdf",
+      "bytes": 33336410,
+      "gitBlob": "48decf9d31c2b032a63ba596e229446389ce8909"
+    },
+    "2": {
+      "path": "pdf-part/part-2.pdf",
+      "bytes": 46988465,
+      "gitBlob": "05449ff8622354bbca4c2f37fc5eaf02265f0bc3"
+    },
+    "3": {
+      "path": "pdf-part/part-3.pdf",
+      "bytes": 41681489,
+      "gitBlob": "02bac26d6d7a58c36b92b3a7354d40fdd3e2d1ae"
+    },
+    "4": {
+      "path": "pdf-part/part-4.pdf",
+      "bytes": 9241853,
+      "gitBlob": "26707f323f41d7a061afd3a8b4816b4078ab2561"
+    },
+    "5": {
+      "path": "pdf-parts/part-5.pdf",
+      "bytes": 4159274,
+      "gitBlob": "ecf079d6f075b4c12377a3f2709c95e25d65cb18"
+    },
+    "6": {
+      "path": "pdf-parts/part-6.pdf",
+      "bytes": 20291011,
+      "gitBlob": "c9f707041858f0a60311e2677cc94e755a3ecbe1"
+    },
+    "7": {
+      "path": "pdf-parts/part-7.pdf",
+      "bytes": 19999897,
+      "gitBlob": "90758cabeffd561550cc6c079e1279bc0275f92a"
+    },
+    "8": {
+      "path": "pdf-parts/part-8.pdf",
+      "bytes": 10018189,
+      "gitBlob": "db9e8ad289b592c52f4aa3e840e986000a54a17f"
+    },
+    "9": {
+      "path": "pdf-part/part-9.pdf",
+      "bytes": 12476014,
+      "gitBlob": "bdd5073b43b90cefe12227fd88dcc21b14fbfef3"
+    }
+  },
+  "parser": {
+    "entry": "B.Parser/main/parser/manager.js",
+    "commit": "ff8d8f4cc3506b7397c7c45b8db92954ef96ab54",
+    "output": "txt",
+    "pageCount": 78,
+    "detectionCounts": {
+      "ZAWGYI": 36,
+      "UNICODE": 32,
+      "UNKNOWN": 10
+    },
+    "warningCount": 54,
+    "warningPageCount": 42
+  },
+  "verification": "Each copied PDF page was compared with its source for extracted text, dimensions, and rendered pixels at 35% scale. This verifies the copied pages, not Parser accuracy.",
+  "files": {
+    "representative.pdf": {
+      "sha256": "7dae3d93b68639950be0e81464557b31c14c15a94302489103f763e7dcc30409"
+    },
+    "parser-output.txt": {
+      "sha256": "4d9b45b66efcecc3ce33b29b2967719f6dd9f7298454d67f3909240f1c19d965"
+    }
+  },
+  "pages": [
+    {
+      "samplePage": 1,
+      "sourcePart": 1,
+      "sourcePage": 3,
+      "sourceSection": 1,
+      "sourceFilename": "36-short-stories-of-jue-1708877870919.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 2,
+      "sourcePart": 1,
+      "sourcePage": 4,
+      "sourceSection": 1,
+      "sourceFilename": "36-short-stories-of-jue-1708877870919.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 3,
+      "sourcePart": 1,
+      "sourcePage": 44,
+      "sourceSection": 2,
+      "sourceFilename": "1680800753958.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 4,
+      "sourcePart": 1,
+      "sourcePage": 125,
+      "sourceSection": 4,
+      "sourceFilename": "1681774700481.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review",
+        "unicode-order-needs-review"
+      ]
+    },
+    {
+      "samplePage": 5,
+      "sourcePart": 1,
+      "sourcePage": 128,
+      "sourceSection": 4,
+      "sourceFilename": "1681774700481.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review"
+      ]
+    },
+    {
+      "samplePage": 6,
+      "sourcePart": 1,
+      "sourcePage": 136,
+      "sourceSection": 5,
+      "sourceFilename": "1683082497742.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 7,
+      "sourcePart": 1,
+      "sourcePage": 257,
+      "sourceSection": 8,
+      "sourceFilename": "1686651510593.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review"
+      ]
+    },
+    {
+      "samplePage": 8,
+      "sourcePart": 1,
+      "sourcePage": 411,
+      "sourceSection": 13,
+      "sourceFilename": "1691340688985.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review"
+      ]
+    },
+    {
+      "samplePage": 9,
+      "sourcePart": 2,
+      "sourcePage": 252,
+      "sourceSection": 47,
+      "sourceFilename": "1706302190221.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review",
+        "unicode-glyph-mapping-needs-review"
+      ]
+    },
+    {
+      "samplePage": 10,
+      "sourcePart": 2,
+      "sourcePage": 341,
+      "sourceSection": 52,
+      "sourceFilename": "1706302447717.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review",
+        "unicode-glyph-mapping-needs-review"
+      ]
+    },
+    {
+      "samplePage": 11,
+      "sourcePart": 2,
+      "sourcePage": 509,
+      "sourceSection": 58,
+      "sourceFilename": "1706303575223.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review"
+      ]
+    },
+    {
+      "samplePage": 12,
+      "sourcePart": 2,
+      "sourcePage": 946,
+      "sourceSection": 69,
+      "sourceFilename": "1758614515798.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review"
+      ]
+    },
+    {
+      "samplePage": 13,
+      "sourcePart": 2,
+      "sourcePage": 1315,
+      "sourceSection": 80,
+      "sourceFilename": "1759264676234.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review",
+        "unicode-glyph-mapping-needs-review",
+        "unicode-order-needs-review"
+      ]
+    },
+    {
+      "samplePage": 14,
+      "sourcePart": 3,
+      "sourcePage": 131,
+      "sourceSection": 86,
+      "sourceFilename": "1765481030976.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review"
+      ]
+    },
+    {
+      "samplePage": 15,
+      "sourcePart": 3,
+      "sourcePage": 618,
+      "sourceSection": 98,
+      "sourceFilename": "1786504776280.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review",
+        "unicode-order-needs-review"
+      ]
+    },
+    {
+      "samplePage": 16,
+      "sourcePart": 3,
+      "sourcePage": 1358,
+      "sourceSection": 120,
+      "sourceFilename": "bg-mlc-2-5.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 17,
+      "sourcePart": 4,
+      "sourcePage": 1,
+      "sourceSection": 120,
+      "sourceFilename": "bg-mlc-2-5.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 18,
+      "sourcePart": 4,
+      "sourcePage": 175,
+      "sourceSection": 125,
+      "sourceFilename": "chillers-and-chilled-water-systems-1785673326897.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 19,
+      "sourcePart": 4,
+      "sourcePage": 176,
+      "sourceSection": 125,
+      "sourceFilename": "chillers-and-chilled-water-systems-1785673326897.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 20,
+      "sourcePart": 4,
+      "sourcePage": 177,
+      "sourceSection": 125,
+      "sourceFilename": "chillers-and-chilled-water-systems-1785673326897.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 21,
+      "sourcePart": 4,
+      "sourcePage": 179,
+      "sourceSection": 125,
+      "sourceFilename": "chillers-and-chilled-water-systems-1785673326897.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 22,
+      "sourcePart": 4,
+      "sourcePage": 204,
+      "sourceSection": 125,
+      "sourceFilename": "chillers-and-chilled-water-systems-1785673326897.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 23,
+      "sourcePart": 6,
+      "sourcePage": 4,
+      "sourceSection": 131,
+      "sourceFilename": "curiosity-science-magazine-year-1-issue-1-1760318923964.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 24,
+      "sourcePart": 6,
+      "sourcePage": 47,
+      "sourceSection": 133,
+      "sourceFilename": "curiosity-science-magazine-year-1-issue-7-1787061931055.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "text-after-checkpoint"
+      ]
+    },
+    {
+      "samplePage": 25,
+      "sourcePart": 6,
+      "sourcePage": 84,
+      "sourceSection": 133,
+      "sourceFilename": "curiosity-science-magazine-year-1-issue-7-1787061931055.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 26,
+      "sourcePart": 7,
+      "sourcePage": 50,
+      "sourceSection": 135,
+      "sourceFilename": "curiosity-science-magazine-year-2-issue-2-1696435557299.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review"
+      ]
+    },
+    {
+      "samplePage": 27,
+      "sourcePart": 7,
+      "sourcePage": 64,
+      "sourceSection": 135,
+      "sourceFilename": "curiosity-science-magazine-year-2-issue-2-1696435557299.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review"
+      ]
+    },
+    {
+      "samplePage": 28,
+      "sourcePart": 7,
+      "sourcePage": 65,
+      "sourceSection": 135,
+      "sourceFilename": "curiosity-science-magazine-year-2-issue-2-1696435557299.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review",
+        "unicode-order-needs-review"
+      ]
+    },
+    {
+      "samplePage": 29,
+      "sourcePart": 7,
+      "sourcePage": 80,
+      "sourceSection": 135,
+      "sourceFilename": "curiosity-science-magazine-year-2-issue-2-1696435557299.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review",
+        "unicode-order-needs-review"
+      ]
+    },
+    {
+      "samplePage": 30,
+      "sourcePart": 8,
+      "sourcePage": 3,
+      "sourceSection": 136,
+      "sourceFilename": "curiosity-science-magazine-year-2-issue-3-1696435577934.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review"
+      ]
+    },
+    {
+      "samplePage": 31,
+      "sourcePart": 8,
+      "sourcePage": 50,
+      "sourceSection": 137,
+      "sourceFilename": "curiosity-science-magazine-year-2-issue-4-1696435591836.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review"
+      ]
+    },
+    {
+      "samplePage": 32,
+      "sourcePart": 8,
+      "sourcePage": 70,
+      "sourceSection": 137,
+      "sourceFilename": "curiosity-science-magazine-year-2-issue-4-1696435591836.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review",
+        "unicode-order-needs-review"
+      ]
+    },
+    {
+      "samplePage": 33,
+      "sourcePart": 9,
+      "sourcePage": 63,
+      "sourceSection": 139,
+      "sourceFilename": "family-handbook-1706101731370.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 34,
+      "sourcePart": 9,
+      "sourcePage": 75,
+      "sourceSection": 140,
+      "sourceFilename": "fear-and-your-life-1760260200746.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 35,
+      "sourcePart": 9,
+      "sourcePage": 92,
+      "sourceSection": 140,
+      "sourceFilename": "fear-and-your-life-1760260200746.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 36,
+      "sourcePart": 9,
+      "sourcePage": 171,
+      "sourceSection": 143,
+      "sourceFilename": "h1-n1-1688180802659.pdf",
+      "selectionReason": "rendered or previously selected source page",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review"
+      ]
+    },
+    {
+      "samplePage": 37,
+      "sourcePart": 1,
+      "sourcePage": 103,
+      "sourceSection": 3,
+      "sourceFilename": "1681716042142.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "text-after-checkpoint"
+      ]
+    },
+    {
+      "samplePage": 38,
+      "sourcePart": 1,
+      "sourcePage": 235,
+      "sourceSection": 7,
+      "sourceFilename": "1683988423841.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 39,
+      "sourcePart": 1,
+      "sourcePage": 348,
+      "sourceSection": 11,
+      "sourceFilename": "1689959710117.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 40,
+      "sourcePart": 1,
+      "sourcePage": 468,
+      "sourceSection": 15,
+      "sourceFilename": "1692171082250.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 41,
+      "sourcePart": 1,
+      "sourcePage": 561,
+      "sourceSection": 18,
+      "sourceFilename": "1693245630110.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 42,
+      "sourcePart": 1,
+      "sourcePage": 650,
+      "sourceSection": 21,
+      "sourceFilename": "1693914057531.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "text-after-checkpoint"
+      ]
+    },
+    {
+      "samplePage": 43,
+      "sourcePart": 1,
+      "sourcePage": 773,
+      "sourceSection": 24,
+      "sourceFilename": "1697083096373.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 44,
+      "sourcePart": 1,
+      "sourcePage": 896,
+      "sourceSection": 27,
+      "sourceFilename": "1702644363071.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 45,
+      "sourcePart": 1,
+      "sourcePage": 1010,
+      "sourceSection": 30,
+      "sourceFilename": "1703270109879.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 46,
+      "sourcePart": 1,
+      "sourcePage": 1133,
+      "sourceSection": 33,
+      "sourceFilename": "1704101675047.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "encoding-order-needs-review"
+      ]
+    },
+    {
+      "samplePage": 47,
+      "sourcePart": 1,
+      "sourcePage": 1256,
+      "sourceSection": 36,
+      "sourceFilename": "1706085249444.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 48,
+      "sourcePart": 2,
+      "sourcePage": 4,
+      "sourceSection": 39,
+      "sourceFilename": "1706118384028.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 49,
+      "sourcePart": 2,
+      "sourcePage": 110,
+      "sourceSection": 42,
+      "sourceFilename": "1706119141337.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 50,
+      "sourcePart": 2,
+      "sourcePage": 194,
+      "sourceSection": 45,
+      "sourceFilename": "1706300888234.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "unicode-order-needs-review"
+      ]
+    },
+    {
+      "samplePage": 51,
+      "sourcePart": 2,
+      "sourcePage": 299,
+      "sourceSection": 49,
+      "sourceFilename": "1706302441939.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review",
+        "unicode-glyph-mapping-needs-review"
+      ]
+    },
+    {
+      "samplePage": 52,
+      "sourcePart": 2,
+      "sourcePage": 362,
+      "sourceSection": 53,
+      "sourceFilename": "1706302600730.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review"
+      ]
+    },
+    {
+      "samplePage": 53,
+      "sourcePart": 2,
+      "sourcePage": 446,
+      "sourceSection": 56,
+      "sourceFilename": "1706303228990.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "encoding-order-needs-review"
+      ]
+    },
+    {
+      "samplePage": 54,
+      "sourcePart": 2,
+      "sourcePage": 598,
+      "sourceSection": 60,
+      "sourceFilename": "1706494294594.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 55,
+      "sourcePart": 2,
+      "sourcePage": 721,
+      "sourceSection": 63,
+      "sourceFilename": "1707666661680.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 56,
+      "sourcePart": 2,
+      "sourcePage": 841,
+      "sourceSection": 66,
+      "sourceFilename": "1712821408320.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "text-after-checkpoint"
+      ]
+    },
+    {
+      "samplePage": 57,
+      "sourcePart": 2,
+      "sourcePage": 983,
+      "sourceSection": 70,
+      "sourceFilename": "1758614531892.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "unicode-glyph-recovery-needs-review",
+        "unicode-order-needs-review"
+      ]
+    },
+    {
+      "samplePage": 58,
+      "sourcePart": 2,
+      "sourcePage": 1047,
+      "sourceSection": 73,
+      "sourceFilename": "1758620453187.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "zawgyi-font-on-legacy-page"
+      ]
+    },
+    {
+      "samplePage": 59,
+      "sourcePart": 2,
+      "sourcePage": 1170,
+      "sourceSection": 76,
+      "sourceFilename": "1758980418795.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 60,
+      "sourcePart": 2,
+      "sourcePage": 1293,
+      "sourceSection": 79,
+      "sourceFilename": "1759199573598.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 61,
+      "sourcePart": 3,
+      "sourcePage": 44,
+      "sourceSection": 83,
+      "sourceFilename": "1759845684572.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "encoding-order-needs-review"
+      ]
+    },
+    {
+      "samplePage": 62,
+      "sourcePart": 3,
+      "sourcePage": 191,
+      "sourceSection": 87,
+      "sourceFilename": "1773705881963.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 63,
+      "sourcePart": 3,
+      "sourcePage": 314,
+      "sourceSection": 90,
+      "sourceFilename": "1783948012042.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "text-after-checkpoint",
+        "legacy-font-on-shared-page"
+      ]
+    },
+    {
+      "samplePage": 64,
+      "sourcePart": 3,
+      "sourcePage": 434,
+      "sourceSection": 93,
+      "sourceFilename": "1784999368188.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "encoding-order-needs-review"
+      ]
+    },
+    {
+      "samplePage": 65,
+      "sourcePart": 3,
+      "sourcePage": 554,
+      "sourceSection": 96,
+      "sourceFilename": "1785661897658.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 66,
+      "sourcePart": 3,
+      "sourcePage": 646,
+      "sourceSection": 100,
+      "sourceFilename": "1789180271132.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "encoding-order-needs-review"
+      ]
+    },
+    {
+      "samplePage": 67,
+      "sourcePart": 3,
+      "sourcePage": 745,
+      "sourceSection": 103,
+      "sourceFilename": "1792041524361.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "unicode-order-needs-review"
+      ]
+    },
+    {
+      "samplePage": 68,
+      "sourcePart": 3,
+      "sourcePage": 861,
+      "sourceSection": 106,
+      "sourceFilename": "1792388014179.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "encoding-order-needs-review"
+      ]
+    },
+    {
+      "samplePage": 69,
+      "sourcePart": 3,
+      "sourcePage": 917,
+      "sourceSection": 109,
+      "sourceFilename": "-1759341726906.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "unicode-order-needs-review"
+      ]
+    },
+    {
+      "samplePage": 70,
+      "sourcePart": 3,
+      "sourcePage": 1040,
+      "sourceSection": 112,
+      "sourceFilename": "anawrahta-the-founder-of-the-bagan-empire-1783991149510.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "legacy-font-on-shared-page"
+      ]
+    },
+    {
+      "samplePage": 71,
+      "sourcePart": 3,
+      "sourcePage": 1153,
+      "sourceSection": 115,
+      "sourceFilename": "antivirus-book-1706454614822.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "text-after-checkpoint"
+      ]
+    },
+    {
+      "samplePage": 72,
+      "sourcePart": 3,
+      "sourcePage": 1265,
+      "sourceSection": 118,
+      "sourceFilename": "best-theory-of-physical-education-1693147797764.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "encoding-order-needs-review"
+      ]
+    },
+    {
+      "samplePage": 73,
+      "sourcePart": 4,
+      "sourcePage": 70,
+      "sourceSection": 122,
+      "sourceFilename": "bg-mlc-3.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 74,
+      "sourcePart": 4,
+      "sourcePage": 234,
+      "sourceSection": 126,
+      "sourceFilename": "chinese-stories-2-1705316817328.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "encoding-order-needs-review"
+      ]
+    },
+    {
+      "samplePage": 75,
+      "sourcePart": 5,
+      "sourcePage": 17,
+      "sourceSection": 129,
+      "sourceFilename": "city-poems-1706870169476.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 76,
+      "sourcePart": 7,
+      "sourcePage": 22,
+      "sourceSection": 134,
+      "sourceFilename": "curiosity-science-magazine-year-1-issue-9-1696435525386.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 77,
+      "sourcePart": 9,
+      "sourcePage": 162,
+      "sourceSection": 142,
+      "sourceFilename": "global-new-light-of-myanmar-31-march-2024-1711897224693.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": []
+    },
+    {
+      "samplePage": 78,
+      "sourcePart": 9,
+      "sourcePage": 264,
+      "sourceSection": 146,
+      "sourceFilename": "harddisk-issues-1791994279395.pdf",
+      "selectionReason": "distinct merged filename section",
+      "parserWarnings": [
+        "encoding-order-needs-review"
+      ]
+    }
+  ]
+}

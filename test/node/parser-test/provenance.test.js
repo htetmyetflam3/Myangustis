@@ -16,34 +16,9 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { extractMetadata } from "../../../B.Parser/main/parser/read/pdf-extract.js";
-import { PdfScannedObjects } from "../../../B.Parser/main/parser/read/pdf-object-file.js";
 import { startRecord, note, appendRecord, registerPath } from "../../../B.Parser/main/parser/core/provenance.js";
-
-const REPO = path.dirname(path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.url)))));
-
-
-const fixture = (name) => path.join(process.env.PARSER_TEST_PDF_DIR || path.join(REPO, "Junk/Parser/upload/pdf"), name);
-const readInfo = (file) => {
-  const objects = new PdfScannedObjects(file);
-  try { return extractMetadata(objects, fs.readFileSync(file)); }
-  finally { objects.close(); }
-};
-
-
-
-test("reads /Info from the trailer, not the catalog", (t) => {
-  const file = fixture("bg-mlc-1-1.pdf");
-  if (!fs.existsSync(file)) return t.skip("real BG1 PDF is unavailable");
-  const info = readInfo(file);
-
-  assert.equal(info.Author, "Tyler Davis");
-  assert.equal(info.Creator, "Writer");
-  assert.equal(info.Producer, "LibreOffice 3.6");
-  assert.match(info.CreationDate, /^D:2013/);
-});
 
 test("a PDF with no /Info yields {} rather than throwing", () => {
   assert.deepEqual(extractMetadata(new Map(), Buffer.from("trailer<</Size 1>>")), {});

@@ -148,3 +148,34 @@
 - Full Python suite: 352 passed, 2 failed, 3 skipped, and 35 subtests passed. The failures concern the unported comparison POS exporter and a space/mark ordering expectation.
 - Focused Node suite: 101 passed, 1 skipped; real image-only PDF and manual DOCX OCR/POS tests passed. The `D.Scraper` continuous OCR worker also processed a real one-page image PDF.
 - POS processing is per line and does not reproduce three historical repair cases; PDF `job: "null"` has not been wired to OCR. These are not claims of full behavioral equivalence.
+
+## [Unreleased] - 2026-11-02 — Parser output normalization and test maintenance
+### Changed / Fixed / Removed
+- Apply the Engine's `normalize` after parsing, repairs and any OCR merge, before writing PDF/DOCX/TXT output or scanning its POS contexts. Preserve zero-width format characters and the combining grapheme joiner; let the Engine handle ordinary spaces.
+- Apply the same final normalization to the existing continuous-OCR worker without changing the native Scraper/Parquet extraction path.
+- Update tests for current secure-data and workspace paths, and remove only tests that depended on unavailable external PDF fixtures. Keep the shipped PDF, generated fixtures and independent tests.
+### Verification
+- Full Node suite: 366 passed, 0 failed, 1 skipped; the remaining skip needs unavailable OCR PNG fixtures. The preceding run before removing unavailable-PDF tests had 366 passed and 20 skipped.
+- Full Python suite: 356 passed, 0 failed, 0 skipped, and 35 subtests passed; the preceding run had 356 passed, 3 skipped, and 35 subtests passed.
+- Targeted ESLint on all 21 changed JavaScript files reports five errors and six warnings in three files; the same findings occur on the unchanged baseline. `git diff --check` passed.
+- Ran the JS Parser on all nine uploaded PDF parts (5,098 pages). This is not a quality pass: the visible title on part 1 page 3 is duplicated in Parser output, and the newly reported PDF/Parquet extraction problems are not fixed by this PR.
+
+## [Unreleased] - 2026-11-02 — PDF source-page decoding follow-up
+### Changed / Fixed / Removed
+- Preserve PDF text/graphics state across graphics saves, page geometry and resource boundaries; distinguish facing-page spreads from ruled tables and retain text past an inconclusive prefix.
+- Restore evidence-based legacy-resource decoding, respect simple-font Differences and padded ToUnicode maps, and preserve spaces in PDF-only Rabbit conversion.
+- Recover specific conflicted Unicode glyph clusters only when independently witnessed by full-font outlines, shaping and source pages. Preserve unresolved multi-character mappings and emit review warnings; do not change the existing vector format.
+### Verification / Remaining work
+- Full Node suite: 394 passed, 0 failed, 1 skipped because the OCR PNG fixture is unavailable. Full Python suite: 356 passed, 0 failed.
+- All nine merged source PDFs were parsed (5,098 pages). A 78-page subset spanning 65 merged-file sections was checked for extraction/render fidelity; selected output was compared with rendered sources, not treated as a complete accuracy proof.
+- Changed-file ESLint reports the same 9 errors and 15 warnings as PR head; the two new JavaScript files pass. `git diff --check` passed.
+- Part 2 retains 65 pages with unresolved glyph-mapping warnings; for example, page 1315 still misreads the isolated `(က)` label. Part 1 page 3 still duplicates its overprinted title. Part 8 page 3 has raster text; manual OCR identified the page but produced errors and repeated text. Column ordering and OCR accuracy remain unverified.
+
+## [Unreleased] - 2026-11-02 — Representative Parser output for review
+### Added
+- Include a 78-page representative source PDF, its actual JS Parser TXT output, and a page-to-source mapping under `C.Proofreading/main/content/review/pdf-parser-representative/`. The pages cover 65 merged filename sections.
+- Record the Parser's 54 warnings on 42 sample pages in the mapping. The sample contains known unresolved extraction issues; it is not a claim of perfect parsing.
+- Add scoped Git attributes to keep the PDF binary and preserve the verbatim TXT, including its trailing spaces.
+### Verification
+- Checked every copied page against its merged source for extracted text, dimensions and rendered pixels at 35% scale. Verified 78 sequential TXT page headers and byte-for-byte identical TXT output on a second Parser run.
+- Full Node suite: 394 passed, 0 failed, 1 skipped because the OCR PNG fixture is unavailable. Full Python suite: 356 passed, 0 failed.

@@ -21,9 +21,9 @@ import {
   OCR_MODEL_DIR,
   OUTPUT_FONT_DIR,
   findLatinFont,
-  findModelPath,
   findMyanmarFont,
 } from "../../../B.Parser/_path.js";
+import { loadDetector } from "../../../B.Parser/extend/pipeline.js";
 import { ruleCount } from "../../../B.Parser/main/parser/text/rabbit.js";
 import { loadSidecarMap } from "../../../B.Parser/main/parser/read/pdf-extract.js";
 import { Manager } from "../../../B.Parser/main/parser/manager.js";
@@ -70,7 +70,8 @@ test("parser maps and models resolve outside the executable module directory", (
   assert.equal(path.basename(MAP_DIR), "jason-map");
   assert.equal(path.basename(MODEL_DIR), "model");
   assert.equal(OCR_MODEL_DIR, MODEL_DIR);
-  assert.equal(findModelPath(), path.join(MODEL_DIR, "zawgyiUnicodeModel.dat"));
+  assert.deepEqual(loadDetector().detect("က", { sourceEncoding: "unicode" }), ["UNICODE", 0]);
+  assert.deepEqual(loadDetector().detect("က", { sourceEncoding: "zawgyi-one" }), ["ZAWGYI", 1]);
   assert.ok(isFile(path.join(OCR_MODEL_DIR, "mya.traineddata")));
   assert.ok(ruleCount() > 100);
   assert.ok(loadSidecarMap().size > 0);
@@ -124,6 +125,7 @@ test("manager writes its default output under the parser workspace", async () =>
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "parser-default-output-"));
   const manager = new Manager();
   let output;
+  let report;
   try {
     const input = path.join(dir, "input.docx");
     await writeDocxPlain(input, "မြန်မာစာ စမ်းသပ်ချက်");
@@ -132,11 +134,13 @@ test("manager writes its default output under the parser workspace", async () =>
       inPath: input, filename: "input.docx",
     });
     output = result.file;
+    report = result.posScan?.file;
     assert.equal(path.dirname(output), DEFAULT_OUTPUT_DIR);
     assert.match(await fsp.readFile(output, "utf8"), /မြန်မာစာ/);
   } finally {
     await manager.close();
     if (output) await fsp.unlink(output).catch(() => {});
+    if (report) await fsp.unlink(report).catch(() => {});
     await fsp.rm(dir, { recursive: true, force: true });
   }
 });

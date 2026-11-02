@@ -1,5 +1,4 @@
 import { getMasterMapData } from "./cleanup.js";
-import { normalizePageLines } from "./preserved-transform.js";
 
 const E = "\u1031";
 const YA = "\u103B";
@@ -70,14 +69,11 @@ export function arrangeZawCodeOrder(text) {
   return out.join("");
 }
 
-// This is called only after a ZawCode scan verdict. The supplied function is
-// Engine's normalize, not mapperNormalize; each text line is handled alone.
-export function orderZawCodePages(pages, report, { path = null, normalize } = {}) {
+// Arrange only after a ZawCode scan verdict. Output normalization happens
+// separately, after parsing and any image text have been merged.
+export function orderZawCodePages(pages, report, { path = null } = {}) {
   if (path !== "zawcode" || !report) return pages;
-  if (typeof normalize !== "function") throw new TypeError("Expected Engine normalize function");
-  const orderTextLines = (text) => [...normalizePageLines(
-    arrangeZawCodeOrder(String(text ?? "")), normalize,
-  )].join("\n");
+  const orderTextLines = (text) => arrangeZawCodeOrder(String(text ?? ""));
 
   return pages.map((page) => {
     const originalText = String(page?.text ?? "");

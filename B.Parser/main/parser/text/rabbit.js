@@ -20,10 +20,17 @@ function compileLocal() {
 let compiled = null;
 let external = null;
 
-function applyLocal(text, { preserveZeroWidth = false } = {}) {
+function keepRule(rx, to, { preserveZeroWidth = false, preserveSpaces = false } = {}) {
+  // The original table drops U+200B and a space before dot below. PDF
+  // extraction retains these characters; Engine owns final spacing.
+  if (preserveZeroWidth && rx.source === "\u200b" && to === "") return false;
+  if (preserveSpaces && rx.source === " ့" && to === "့") return false;
+  return true;
+}
+
+function applyLocal(text, options = {}) {
   for (const [rx, to] of compiled) {
-    // The original Rabbit table drops U+200B. Page extraction must retain it.
-    if (preserveZeroWidth && rx.source === "\u200b" && to === "") continue;
+    if (!keepRule(rx, to, options)) continue;
     text = text.replace(new RegExp(rx.source, "gu"), to);
   }
   return text;
@@ -58,11 +65,10 @@ export class Rabbit {
 
 // Convert a whole page as a stream. All rules still see the original page in
 // order; only the intermediate representations are kept in bounded chunks.
-export function createRabbitStream(onChunk, { preserveZeroWidth = false } = {}) {
+export function createRabbitStream(onChunk, options = {}) {
   if (external?.external) throw new Error("An external Rabbit module does not expose streaming conversion");
   if (compiled === null) compiled = compileLocal();
-  const rules = preserveZeroWidth
-    ? compiled.filter(([rx, to]) => !(rx.source === "\u200b" && to === "")) : compiled;
+  const rules = compiled.filter(([rx, to]) => keepRule(rx, to, options));
   return createReplacementPipeline(rules, onChunk);
 }
 

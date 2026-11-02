@@ -1,6 +1,8 @@
 import { PageStoreWriter, pageRecords, textChunks } from "../read/page-store.js";
 import { writePageStore } from "../write/emit.js";
 import { PosScanner } from "../text/scan.js";
+import { normalizeOutputText } from "../text/preserved-transform.js";
+import { getEngineNormalize } from "../../../_path.js";
 
 // DOCX extraction already holds paragraph chunks in memory. Merge OCR into
 // those source chunks before writing any output or assigning POS locations;
@@ -23,6 +25,7 @@ export async function finishManualDocx({
     replacements.set(image.marker, recognized.get(image.id));
   }
   const used = new Set();
+  const normalize = await getEngineNormalize();
   const finalPages = new PageStoreWriter(directory, "merged");
   let scanner;
   try {
@@ -34,8 +37,9 @@ export async function finishManualDocx({
         used.add(marker);
         return replacements.get(marker);
       });
-      finalPages.addPage({ text: [merged] });
-      await scanner.writePage(null, [merged]);
+      const output = normalizeOutputText(merged, normalize);
+      finalPages.addPage({ text: [output] });
+      await scanner.writePage(null, [output]);
     }
     if (used.size !== replacements.size) throw new Error("DOCX image placeholders were not preserved during parsing");
     finalPages.close();

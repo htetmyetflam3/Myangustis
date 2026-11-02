@@ -14,7 +14,6 @@ import { streamPdfPages, processPageRecord, collectPdfResult, buildFinalPages, l
 import { runQpdfFile } from "../../../B.Parser/main/parser/core/qpdf.js";
 import { findPdfEnd, copyPdfPrefix } from "../../../B.Parser/main/parser/read/pdf-tail.js";
 import { PdfScannedObjects } from "../../../B.Parser/main/parser/read/pdf-object-file.js";
-import { classifyScraperSource } from "../../../B.Parser/main/parser/codepage/classify.js";
 import { runPdfStream } from "../../../B.Parser/main/parser/worker/pdf-stream.js";
 import { finishManualPdf } from "../../../B.Parser/main/parser/worker/manual-pdf.js";
 import { finishManualDocx } from "../../../B.Parser/main/parser/worker/manual-docx.js";
@@ -27,6 +26,7 @@ import { extractDocxParagraphs } from "../../../B.Parser/main/parser/read/docx-e
 import { Rabbit, createRabbitStream } from "../../../B.Parser/main/parser/text/rabbit.js";
 import { Manager } from "../../../B.Parser/main/parser/manager.js";
 import { createSourceRunner } from "../../../B.Parser/main/parser/worker/runtime.js";
+import { getEngineNormalize } from "../../../B.Parser/_path.js";
 
 const png = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
@@ -109,6 +109,47 @@ test("streamed PDF output writes actual POS unknown contexts with source page nu
   }
 });
 
+test("PDF output uses Engine normalize after parsing across jobs, methods and formats", async () => {
+  const dir = scratch();
+  const previous = process.env.PRASER_REGISTER;
+  process.env.PRASER_REGISTER = path.join(dir, "register.log");
+  const manager = new Manager({ outputDir: dir });
+  try {
+    const source = "စဥ် ကိ";
+    const normalize = await getEngineNormalize();
+    const expected = normalize(source);
+    assert.equal(expected, "စဉ် ကိ");
+    const pdf = await PDFDocument.create();
+    pdf.registerFontkit(fontkit);
+    const fontPath = new URL("../../../Junk/fonts/Unicode/PYIDAUNGSU-2.5.2_REGULAR.TTF", import.meta.url);
+    const font = await pdf.embedFont(fs.readFileSync(fontPath), { subset: false });
+    pdf.addPage([400, 400]).drawText(source, { font, x: 20, y: 300 });
+    const bytes = await pdf.save({ useObjectStreams: false });
+    const [, , parsed] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+    assert.equal(parsed.next().value.text, source);
+    const input = path.join(dir, "input.pdf");
+    fs.writeFileSync(input, bytes);
+    for (const [job, method] of [["extracting", "default"], ["extracting", "manual"], ["null", "default"], ["null", "manual"]]) {
+      for (const extension of ["txt", "docx", "pdf"]) {
+        const result = await manager.dispatch({
+          job, method, output: extension, inputKind: "pdf", filename: "input.pdf",
+          inPath: input, outPath: path.join(dir, `${job}-${method}.${extension}`),
+          includeText: true, sourceEncoding: "unicode",
+        });
+        assert.equal(result.text, expected, `${job}/${method}/${extension}`);
+        const report = fs.readFileSync(result.posScan.file, "utf8");
+        assert.ok(report.includes(`Original: ${expected}`), `${job}/${method}/${extension} POS source`);
+        if (extension === "docx") assert.ok(docxDocument(result.file).includes(expected));
+      }
+    }
+  } finally {
+    await manager.close();
+    if (previous === undefined) delete process.env.PRASER_REGISTER;
+    else process.env.PRASER_REGISTER = previous;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("DOCX scanning uses explicit source markers rather than paragraph-chunk page numbers", async () => {
   const dir = scratch();
   const previous = process.env.PRASER_REGISTER;
@@ -130,6 +171,70 @@ test("DOCX scanning uses explicit source markers rather than paragraph-chunk pag
     const report = fs.readFileSync(result.posScan.file, "utf8");
     assert.match(report, /Page 12, line 1\nOriginal: ကောင်းကင် စမ်းသပ် ကိ မြန်မာ စာ။/u);
     assert.match(report, /Page 13, line 1\nOriginal: ဤ စာ ကိ ဃု ကောင်းကင် မြန်မာ။/u);
+  } finally {
+    await manager.close();
+    if (previous === undefined) delete process.env.PRASER_REGISTER;
+    else process.env.PRASER_REGISTER = previous;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("DOCX output normalizes after parsing across jobs, methods and formats", async () => {
+  const dir = scratch();
+  const previous = process.env.PRASER_REGISTER;
+  process.env.PRASER_REGISTER = path.join(dir, "register.log");
+  const manager = new Manager({ outputDir: dir });
+  try {
+    const source = "စဥ် ကိ";
+    const doc = new Document({ sections: [{ children: [new Paragraph(source)] }] });
+    const input = path.join(dir, "input.docx");
+    fs.writeFileSync(input, await Packer.toBuffer(doc));
+    const run = createSourceRunner({ kind: "docx", method: "manual" });
+    const parsed = await run({ filename: "input.docx", inPath: input, sourceEncoding: "unicode" });
+    const raw = parsed.result.reports[0].base;
+    assert.ok(raw.startsWith(source));
+    const normalize = await getEngineNormalize();
+    const expected = raw.split("\n").map(normalize).join("\n");
+    assert.ok(expected.startsWith("စဉ် ကိ"));
+    for (const [job, method] of [
+      ["extracting", "default"], ["extracting", "manual"], ["extracting", "null"], ["null", "default"], ["null", "null"],
+    ]) {
+      for (const extension of ["txt", "docx", "pdf"]) {
+        const result = await manager.dispatch({
+          job, method, output: extension, inputKind: "docx", filename: "input.docx", inPath: input,
+          outPath: path.join(dir, `${job}-${method}.${extension}`), sourceEncoding: "unicode",
+          applyCleanup: false, includeText: true,
+        });
+        assert.equal(result.text, expected, `${job}/${method}/${extension}`);
+        assert.ok(fs.readFileSync(result.posScan.file, "utf8").includes("Original: စဉ် ကိ"));
+      }
+    }
+  } finally {
+    await manager.close();
+    if (previous === undefined) delete process.env.PRASER_REGISTER;
+    else process.env.PRASER_REGISTER = previous;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("DOCX preserves zero-width characters through parsing and final normalization", async () => {
+  const dir = scratch();
+  const previous = process.env.PRASER_REGISTER;
+  process.env.PRASER_REGISTER = path.join(dir, "register.log");
+  const manager = new Manager({ outputDir: dir });
+  try {
+    const source = "\u200bစဥ်";
+    const doc = new Document({ sections: [{ children: [new Paragraph(source)] }] });
+    const input = path.join(dir, "input.docx");
+    fs.writeFileSync(input, await Packer.toBuffer(doc));
+    for (const applyCleanup of [false, true]) {
+      const result = await manager.dispatch({
+        job: "extracting", method: "manual", output: "txt", inputKind: "docx", filename: "input.docx",
+        inPath: input, outPath: path.join(dir, `output-${applyCleanup}.txt`), sourceEncoding: "unicode",
+        applyCleanup, includeText: true,
+      });
+      assert.ok(result.text.startsWith("\u200bစဉ်"));
+    }
   } finally {
     await manager.close();
     if (previous === undefined) delete process.env.PRASER_REGISTER;
@@ -208,6 +313,415 @@ test("file pages preserve checkpoint, commands, image geometry and page decision
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
+test("a page-number checkpoint retains later Zawgyi text on the shared route", async () => {
+  let document = await PDFDocument.create();
+  document.registerFontkit(fontkit);
+  const fontPath = new URL("../../../Junk/fonts/zawgyi one/ZAWGYI-ONE_V3.1.TTF", import.meta.url);
+  const font = await document.embedFont(fs.readFileSync(fontPath), { subset: false });
+  const page = document.addPage([400, 500]);
+  page.drawText("2", { x: 30, y: 460 });
+  page.drawText("နဂါးခေါင္းဗ်ပ္ေစာင္း", { font, x: 30, y: 420 });
+  document = await PDFDocument.load(await document.save({ useObjectStreams: false }));
+  const savedPage = document.getPage(0);
+  const fonts = savedPage.node.Resources().lookup(PDFName.of("Font"));
+  for (const [, ref] of fonts.entries()) {
+    const resource = document.context.lookup(ref);
+    if (String(resource.get(PDFName.of("BaseFont"))).includes("Zawgyi-One")) {
+      resource.set(PDFName.of("BaseFont"), PDFName.of("Zawgyi-One"));
+    }
+  }
+  const list = document.context.lookup(savedPage.node.get(PDFName.of("Contents")));
+  const stream = document.context.lookup(list.asArray()[0]);
+  const content = Buffer.from(decodePDFRawStream(stream).decode()).toString("latin1");
+  const boundary = content.indexOf("ET\n") + 3;
+  assert.ok(boundary >= 3 && boundary < 2048);
+  const delayed = `${content.slice(0, boundary)}%${"x".repeat(2050)}\n${content.slice(boundary)}`;
+  savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(delayed)));
+  const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
+  const checkpoints = [];
+  const [, count, pages] = streamPdfPages(bytes, null, () => {}, {
+    onPagePrefix: (...args) => checkpoints.push(args),
+  });
+  try {
+    const parsed = pages.next().value;
+    assert.equal(count, 1);
+    assert.equal(checkpoints[0][1].length, 2048);
+    assert.equal(checkpoints[0][2], "zawgyi-one");
+    assert.equal(checkpoints[0][3].reason, "page-number-only");
+    assert.equal(parsed.parsingPath, "zawgyi-one");
+    assert.ok(parsed.text.includes("နဂါးခေါင်းဗျပ်စောင်း"), `${parsed.decision}: ${[...parsed.fontKinds]}: ${[...parsed.fontNames]}: ${parsed.text}`);
+  } finally { pages.return?.(); }
+});
+
+test("a later Zawgyi resource on a legacy page is retained and reported", async () => {
+  let document = await PDFDocument.create();
+  document.registerFontkit(fontkit);
+  const fontPath = new URL("../../../Junk/fonts/zawgyi one/ZAWGYI-ONE_V3.1.TTF", import.meta.url);
+  const font = await document.embedFont(fs.readFileSync(fontPath), { subset: false });
+  const page = document.addPage([400, 500]);
+  page.drawText("B", { x: 30, y: 460 });
+  page.drawText("နဂါးခေါင္းဗ်ပ္ေစာင္း", { font, x: 30, y: 420 });
+  document = await PDFDocument.load(await document.save({ useObjectStreams: false }));
+  const savedPage = document.getPage(0);
+  const fonts = savedPage.node.Resources().lookup(PDFName.of("Font"));
+  for (const [, ref] of fonts.entries()) {
+    const resource = document.context.lookup(ref);
+    if (String(resource.get(PDFName.of("BaseFont"))).includes("Zawgyi-One")) {
+      resource.set(PDFName.of("BaseFont"), PDFName.of("Zawgyi-One"));
+    }
+  }
+  const list = document.context.lookup(savedPage.node.get(PDFName.of("Contents")));
+  const stream = document.context.lookup(list.asArray()[0]);
+  const content = Buffer.from(decodePDFRawStream(stream).decode()).toString("latin1");
+  const boundary = content.indexOf("ET\n") + 3;
+  assert.ok(boundary >= 3 && boundary < 2048);
+  const delayed = `${content.slice(0, boundary)}%${"x".repeat(2050)}\n${content.slice(boundary)}`;
+  savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(delayed)));
+  const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
+  const [, , pages] = streamPdfPages(bytes, null, () => {});
+  try {
+    const parsed = pages.next().value;
+    assert.equal(parsed.parsingPath, "legacy");
+    assert.equal(parsed.category, "UNKNOWN");
+    assert.ok(parsed.text.includes("နဂါးခေါင္းဗ်ပ္ေစာင္း"), parsed.text);
+    assert.ok(parsed.warnings.some((warning) => warning.code === "zawgyi-font-on-legacy-page"));
+  } finally { pages.return?.(); }
+});
+
+test("simple-font ToUnicode entries padded to two bytes decode on the shared page route", async () => {
+  let document = await PDFDocument.create();
+  const page = document.addPage([400, 500]);
+  page.drawText("seed");
+  document = await PDFDocument.load(await document.save({ useObjectStreams: false }));
+  const savedPage = document.getPage(0);
+  const fonts = savedPage.node.Resources().lookup(PDFName.of("Font"));
+  const mapping = "1 begincodespacerange\n<0000> <ffff>\nendcodespacerange\n"
+    + "2 beginbfchar\n<0001> <1000>\n<0002> <1001>\nendbfchar\n";
+  const simpleFont = document.context.obj({
+    Type: PDFName.of("Font"), Subtype: PDFName.of("Type1"), BaseFont: PDFName.of("Helvetica"),
+    ToUnicode: document.context.register(document.context.stream(mapping)),
+  });
+  fonts.set(PDFName.of("Padded"), document.context.register(simpleFont));
+  const commands = "BT /Padded 12 Tf 1 0 0 1 20 420 Tm <0102> Tj ET";
+  savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(commands)));
+  const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
+  const [, , pages] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+  try {
+    const parsed = pages.next().value;
+    assert.equal(parsed.parsingPath, "zawgyi-one");
+    assert.equal(parsed.text, "ကခ");
+  } finally { pages.return?.(); }
+});
+
+test("selected keyboard slots are read through Differences without converting another font's URL", async () => {
+  let document = await PDFDocument.create();
+  const page = document.addPage([400, 500]);
+  page.drawText("seed");
+  document = await PDFDocument.load(await document.save({ useObjectStreams: false }));
+  const savedPage = document.getPage(0);
+  const fonts = savedPage.node.Resources().lookup(PDFName.of("Font"));
+  const englishFont = String(fonts.keys()[0]);
+  const names = ["t", "c", "s", "d", "e", "f", "u", "k", "space", "K", "semicolon", "ampersand",
+    "S", "p", "D", "r", "H", "y", "n", "two", "six", "o", "G", "comma", "M", "i"];
+  const keyboardFont = document.context.obj({
+    Type: PDFName.of("Font"), Subtype: PDFName.of("Type1"), BaseFont: PDFName.of("Helvetica"),
+    Encoding: { Type: PDFName.of("Encoding"), BaseEncoding: PDFName.of("WinAnsiEncoding"),
+      Differences: [1, ...names.map((name) => PDFName.of(name))] },
+  });
+  fonts.set(PDFName.of("Keyboard"), document.context.register(keyboardFont));
+  const namedEnglishFont = document.context.obj({
+    Type: PDFName.of("Font"), Subtype: PDFName.of("Type1"), BaseFont: PDFName.of("WinYadanapon"),
+    Encoding: PDFName.of("WinAnsiEncoding"),
+  });
+  fonts.set(PDFName.of("NamedEnglish"), document.context.register(namedEnglishFont));
+  const namedWordFont = document.context.obj({
+    Type: PDFName.of("Font"), Subtype: PDFName.of("Type1"), BaseFont: PDFName.of("WinYadanapon"),
+    Encoding: PDFName.of("WinAnsiEncoding"),
+  });
+  fonts.set(PDFName.of("NamedWord"), document.context.register(namedWordFont));
+  const raw = "010203040506070408090107030a040b0c0d040c0d04090e0f10110108120602030a12060513060b0914141509161718060919071306101a060b09";
+  const commands = `BT ${englishFont} 12 Tf 1 0 0 1 20 460 Tm (example.com) Tj ET\n`
+    + "BT /NamedEnglish 12 Tf 1 0 0 1 20 440 Tm (example.org) Tj ET\n"
+    + "BT /NamedWord 12 Tf 1 0 0 1 20 430 Tm (bookkeeper) Tj ET\n"
+    + `BT /Keyboard 12 Tf 1 0 0 1 20 420 Tm <${raw}> Tj ET`;
+  savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(commands)));
+  const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
+  const [, , pages] = streamPdfPages(bytes, null, () => {});
+  try {
+    const parsed = pages.next().value;
+    assert.equal(parsed.parsingPath, "legacy");
+    assert.ok(parsed.text.includes("example.com"), parsed.text);
+    assert.ok(parsed.text.includes("example.org"), parsed.text);
+    assert.ok(parsed.text.includes("bookkeeper"), parsed.text);
+    assert.ok(parsed.text.includes("အချိန်ကို"), parsed.text);
+    assert.ok(parsed.text.includes("စီမံအုပ်ချုပ်နည်း"), parsed.text);
+  } finally { pages.return?.(); }
+});
+
+test("legacy keyboard evidence on an unrelated face preserves English headings", async () => {
+  let document = await PDFDocument.create();
+  const page = document.addPage([400, 500]);
+  page.drawText("seed");
+  document = await PDFDocument.load(await document.save({ useObjectStreams: false }));
+  const savedPage = document.getPage(0);
+  const fonts = savedPage.node.Resources().lookup(PDFName.of("Font"));
+  const englishFont = String(fonts.keys()[0]);
+  const keyboardFont = document.context.obj({
+    Type: PDFName.of("Font"), Subtype: PDFName.of("Type1"), BaseFont: PDFName.of("Pinny9"),
+    Encoding: PDFName.of("WinAnsiEncoding"),
+  });
+  fonts.set(PDFName.of("Keyboard"), document.context.register(keyboardFont));
+  const raw = "b0rSmtcuftcJqHk;tcdkuftwefhrsm;rS q&matmifudkOD;ESifhawGYqHkjcif;";
+  const commands = `BT ${englishFont} 12 Tf 1 0 0 1 20 460 Tm (INTERVIEW) Tj ET\n`
+    + `BT /Keyboard 12 Tf 1 0 0 1 20 420 Tm (${raw}) Tj ET`;
+  savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(commands)));
+  const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
+  const [, , pages] = streamPdfPages(bytes, null, () => {});
+  try {
+    const parsed = pages.next().value;
+    assert.equal(parsed.parsingPath, "legacy");
+    assert.ok(parsed.text.includes("INTERVIEW"), parsed.text);
+    assert.ok(parsed.text.includes("ဘဝမှာအခက်အခဲ"), parsed.text);
+    assert.ok(parsed.text.includes("ဆရာအောင်ကိုဦး"), parsed.text);
+  } finally { pages.return?.(); }
+});
+
+test("an overprinted legacy title does not hide the later body from its keyboard layout", async () => {
+  let document = await PDFDocument.create();
+  const page = document.addPage([400, 500]);
+  page.drawText("seed");
+  document = await PDFDocument.load(await document.save({ useObjectStreams: false }));
+  const savedPage = document.getPage(0);
+  const fonts = savedPage.node.Resources().lookup(PDFName.of("Font"));
+  const legacyFont = document.context.obj({
+    Type: PDFName.of("Font"), Subtype: PDFName.of("Type1"), BaseFont: PDFName.of("WinInnwa"),
+    Encoding: PDFName.of("WinAnsiEncoding"),
+  });
+  fonts.set(PDFName.of("Legacy"), document.context.register(legacyFont));
+  const commands = "BT /Legacy 12 Tf 1 0 0 1 20 460 Tm (ooopppfffwwwpppfffyyyiiifffaaauuum) Tj ET\n"
+    + `%${"x".repeat(2050)}\n`
+    + "BT /Legacy 12 Tf 1 0 0 1 20 420 Tm (vdyfusqdkwm jyifOD;vGifem;u) Tj ET";
+  savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(commands)));
+  const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
+  const [, , pages] = streamPdfPages(bytes, null, () => {});
+  try {
+    const parsed = pages.next().value;
+    assert.equal(parsed.parsingPath, "legacy");
+    assert.ok(parsed.text.includes("လိပ်ကျဆိုတာ"), parsed.text);
+    assert.ok(parsed.text.includes("ပြင်ဦးလွင်နားက"), parsed.text);
+  } finally { pages.return?.(); }
+});
+
+test("a centered alphabetic footer alone is not legacy body evidence", async () => {
+  const input = async (x, y, label = "B") => {
+    let document = await PDFDocument.create();
+    const page = document.addPage([400, 500]);
+    page.drawText("seed");
+    document = await PDFDocument.load(await document.save({ useObjectStreams: false }));
+    const savedPage = document.getPage(0);
+    const fonts = savedPage.node.Resources().lookup(PDFName.of("Font"));
+    const font = String(fonts.keys()[0]);
+    const commands = [
+      `BT ${font} 12 Tf 1 0 0 1 ${x} ${y} Tm (${label}) Tj ET`,
+      `%${"x".repeat(2050)}`,
+      `BT ${font} 12 Tf 1 0 0 1 30 420 Tm (later text) Tj ET`,
+    ].join("\n");
+    savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(commands)));
+    return Buffer.from(await document.save({ useObjectStreams: false }));
+  };
+  for (const [x, y, label, expected] of [
+    [200, 20, "B", "page-letter-only"],
+    [200, 250, "B", "not-english"],
+    [20, 20, "B", "not-english"],
+    [200, 20, "BB", "not-english"],
+    [200, 20, "b", "not-english"],
+  ]) {
+    const [, , pages] = streamPdfPages(await input(x, y, label), null, () => {});
+    try {
+      const parsed = pages.next().value;
+      assert.equal(parsed.checkpoint.reason, expected, `${label} at ${x},${y}`);
+      assert.ok(parsed.text.includes("later text"), "text after the checkpoint is retained");
+    } finally { pages.return?.(); }
+  }
+});
+
+test("saved graphics state restores the font, size and leading for later text", async () => {
+  let document = await PDFDocument.create();
+  const page = document.addPage([400, 500]);
+  page.drawText("seed");
+  document = await PDFDocument.load(await document.save({ useObjectStreams: false }));
+  const savedPage = document.getPage(0);
+  const fonts = savedPage.node.Resources().lookup(PDFName.of("Font"));
+  const font = String(fonts.keys()[0]);
+  const variant = document.context.obj({
+    Type: PDFName.of("Font"), Subtype: PDFName.of("Type1"), BaseFont: PDFName.of("Helvetica"),
+    Encoding: { Type: PDFName.of("Encoding"), BaseEncoding: PDFName.of("WinAnsiEncoding"),
+      Differences: [65, PDFName.of("B")] },
+  });
+  fonts.set(PDFName.of("Variant"), document.context.register(variant));
+  const commands = [
+    `BT ${font} 12 Tf 20 TL 1 0 0 1 30 470 Tm (A) Tj ET`,
+    "q BT /Variant 18 Tf 30 TL 1 0 0 1 30 440 Tm (A) Tj ET Q",
+    "BT 1 0 0 1 30 410 Tm (A) Tj T* (A) Tj ET",
+  ].join("\n");
+  savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(commands)));
+  const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
+  const [, , pages] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+  try {
+    const parsed = pages.next().value;
+    assert.deepEqual(parsed.text.split("\n"), ["A", "B", "A", "A"]);
+    assert.deepEqual(parsed.lines.map(([x, y, size]) => [x, y, size]), [
+      [30, 470, 12], [30, 440, 18], [30, 410, 12], [30, 390, 12],
+    ]);
+  } finally { pages.return?.(); }
+});
+
+test("one PDF text object preserves separate baselines and text-matrix scaling", async () => {
+  let document = await PDFDocument.create();
+  const page = document.addPage([400, 500]);
+  page.drawText("seed");
+  document = await PDFDocument.load(await document.save({ useObjectStreams: false }));
+  const savedPage = document.getPage(0);
+  const fonts = savedPage.node.Resources().lookup(PDFName.of("Font"));
+  const font = String(fonts.keys()[0]);
+  const commands = [
+    "q 1 0 0 1 40 70 cm BT", `${font} 1 Tf 2 TL`,
+    "12 0 0 12 10 10 Tm (one) Tj",
+    "0 -1 Td (two) Tj 2 0 Td ( and) Tj",
+    "0 -1 TD (three) Tj (four) ' 0 0 (five) \"",
+    "ET Q",
+  ].join("\n");
+  savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(commands)));
+  const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
+  const [, , pages] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+  try {
+    const parsed = pages.next().value;
+    assert.deepEqual(parsed.text.split("\n"), ["one", "two and", "three", "four", "five"]);
+    assert.deepEqual(parsed.lines.map(([x, y, size]) => [x, y, size]), [
+      [50, 80, 12], [50, 68, 12], [74, 56, 12], [74, 44, 12], [74, 32, 12],
+    ]);
+  } finally { pages.return?.(); }
+});
+
+test("a text-rich landscape spread reads the left page before the right", async () => {
+  const document = await PDFDocument.create();
+  const page = document.addPage([1000, 600]);
+  const left = [];
+  const right = [];
+  for (let index = 0; index < 6; index += 1) {
+    left.push(`Left page line number ${index + 1}`);
+    right.push(`Right page line number ${index + 1}`);
+    page.drawText(left[index], { x: 30, y: 550 - index * 30, size: 10 });
+    page.drawText(right[index], { x: 530, y: 550 - index * 30, size: 10 });
+  }
+  const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
+  const [, , pages] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+  try { assert.deepEqual(pages.next().value.text.split("\n"), [...left, ...right]); }
+  finally { pages.return?.(); }
+});
+
+test("a single text object can move between two spread halves on one baseline", async () => {
+  let document = await PDFDocument.create();
+  const page = document.addPage([1000, 600]);
+  page.drawText("seed");
+  document = await PDFDocument.load(await document.save({ useObjectStreams: false }));
+  const savedPage = document.getPage(0);
+  const fonts = savedPage.node.Resources().lookup(PDFName.of("Font"));
+  const font = String(fonts.keys()[0]);
+  const left = [];
+  const right = [];
+  const commands = [`BT ${font} 10 Tf`];
+  for (let index = 0; index < 6; index += 1) {
+    left.push(`Left page line number ${index + 1}`);
+    right.push(`Right page line number ${index + 1}`);
+    commands.push(`1 0 0 1 30 ${550 - index * 30} Tm (Left page ) Tj`);
+    commands.push(`1 0 0 1 90 ${550 - index * 30} Tm (line number ${index + 1}) Tj`);
+    commands.push(`1 0 0 1 530 ${550 - index * 30} Tm (Right page ) Tj`);
+    commands.push(`1 0 0 1 590 ${550 - index * 30} Tm (line number ${index + 1}) Tj`);
+  }
+  commands.push("ET");
+  savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(commands.join("\n"))));
+  const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
+  const [, , pages] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+  try { assert.deepEqual(pages.next().value.text.split("\n"), [...left, ...right]); }
+  finally { pages.return?.(); }
+});
+
+test("spread and table detection respect a nonzero MediaBox origin", async () => {
+  for (const ruled of [false, true]) {
+    let document = await PDFDocument.create();
+    const page = document.addPage([1000, 600]);
+    page.setMediaBox(-100, -50, 1000, 600);
+    page.drawText("seed");
+    document = await PDFDocument.load(await document.save({ useObjectStreams: false }));
+    const savedPage = document.getPage(0);
+    const fonts = savedPage.node.Resources().lookup(PDFName.of("Font"));
+    const font = String(fonts.keys()[0]);
+    const commands = [];
+    if (ruled) {
+      for (const x of [-90, 80, 280, 480, 680, 880]) commands.push(`${x} 50 m ${x} 530 l S`);
+    }
+    const left = [];
+    const right = [];
+    commands.push(`BT ${font} 10 Tf`);
+    for (let index = 0; index < 6; index += 1) {
+      left.push(`Left page line number ${index + 1}`);
+      right.push(`Right page line number ${index + 1}`);
+      commands.push(`1 0 0 1 -70 ${500 - index * 30} Tm (${left[index]}) Tj`);
+      commands.push(`1 0 0 1 430 ${500 - index * 30} Tm (${right[index]}) Tj`);
+    }
+    commands.push("ET");
+    savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(commands.join("\n"))));
+    const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
+    const [, , pages] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+    try {
+      const text = pages.next().value.text;
+      if (ruled) {
+        assert.ok(text.indexOf(right[0]) < text.indexOf(left[1]), text);
+      } else {
+        assert.deepEqual(text.split("\n"), [...left, ...right]);
+      }
+    } finally { pages.return?.(); }
+  }
+});
+
+test("a landscape page without two substantial halves keeps row order", async () => {
+  const document = await PDFDocument.create();
+  const page = document.addPage([1000, 600]);
+  for (let index = 0; index < 6; index += 1) {
+    page.drawText(`Left page line number ${index + 1}`, { x: 30, y: 550 - index * 30, size: 10 });
+    if (index < 2) page.drawText(`Right short ${index + 1}`, { x: 530, y: 550 - index * 30, size: 10 });
+  }
+  const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
+  const [, , pages] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+  try {
+    const text = pages.next().value.text;
+    assert.ok(text.indexOf("Left page line number 1") < text.indexOf("Right short 1"), text);
+    assert.ok(text.indexOf("Right short 1") < text.indexOf("Left page line number 2"), text);
+    assert.ok(text.indexOf("Right short 2") < text.indexOf("Left page line number 3"), text);
+  } finally { pages.return?.(); }
+});
+
+test("a ruled landscape table is not reordered as facing pages", async () => {
+  const document = await PDFDocument.create();
+  const page = document.addPage([1000, 600]);
+  for (const x of [20, 200, 400, 600, 800, 980]) {
+    page.drawLine({ start: { x, y: 100 }, end: { x, y: 580 }, thickness: 1 });
+  }
+  for (let index = 0; index < 6; index += 1) {
+    page.drawText(`Left table row number ${index + 1}`, { x: 30, y: 550 - index * 60, size: 10 });
+    page.drawText(`Right table row number ${index + 1}`, { x: 630, y: 550 - index * 60, size: 10 });
+  }
+  const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
+  const [, , pages] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+  try {
+    const text = pages.next().value.text;
+    assert.ok(text.indexOf("Left table row number 1") < text.indexOf("Right table row number 1"), text);
+    assert.ok(text.indexOf("Right table row number 1") < text.indexOf("Left table row number 2"), text);
+    assert.ok(text.indexOf("Right table row number 2") < text.indexOf("Left table row number 3"), text);
+  } finally { pages.return?.(); }
+});
+
 test("file object scans preserve original boundaries across blocks and updates", () => {
   const dir = scratch();
   try {
@@ -233,32 +747,13 @@ test("file object scans preserve original boundaries across blocks and updates",
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
-test("Scraper file classification preserves original legacy, object-stream and encrypted decisions", async (t) => {
-  const fixture = process.env.PARSER_TEST_PDF_DIR && path.join(process.env.PARSER_TEST_PDF_DIR, "bg-mlc-1-1.pdf");
-  if (!fixture || !fs.existsSync(fixture)) return t.skip("requires the external real-PDF fixture");
-  const dir = scratch();
-  try {
-    const cases = [
-      ["original", fixture, true],
-      ["linearized", path.join(dir, "linearized.pdf"), true, ["--linearize"]],
-      ["object-streams", path.join(dir, "objects.pdf"), false, ["--object-streams=generate"]],
-      ["empty-password", path.join(dir, "encrypted.pdf"), false, ["--encrypt", "", "test-owner-password", "256", "--"]],
-    ];
-    for (const [name, file, skipped, args] of cases) {
-      if (args) await runQpdfFile(fixture, file, args);
-      const buffered = await classifyScraperSource(fs.readFileSync(file), "pdf");
-      const fileBacked = await classifyScraperSource(file, "pdf");
-      assert.equal(buffered.skip, skipped, name);
-      assert.deepEqual(fileBacked, buffered, name);
-    }
-  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
-});
-
 test("file-backed layout keeps the same coordinates and split-line rules", () => {
   const original = [[1, 2, 3, "first\ninside"], [4, 5, 6, "second"]];
   const store = { *lines() { yield* original; } };
   const fileText = (value) => ({ *chunks() { for (let i = 0; i < value.length; i += 3) yield value.slice(i, i + 3); } });
   assert.deepEqual([...pageLayoutLines(store, fileText("first\ninside\nsecond"), 2)], original);
+  const replayable = { [Symbol.iterator]: () => pageLayoutLines(store, fileText("first\ninside\nsecond"), 2) };
+  assert.deepEqual([...pageLayoutLines({ lines: () => replayable }, fileText("first\ninside\nsecond"), 2)], original);
   assert.deepEqual([...pageLayoutLines(store, fileText("changed\nsecond"), 2)], [
     [1, 2, 3, "changed"], [4, 5, 6, "second"],
   ]);
@@ -553,6 +1048,34 @@ test("object streams, long trailing comments and encrypted PDFs preserve qpdf be
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
+test("manual PDF normalizes after OCR merge and scans the same final text", async () => {
+  const root = scratch();
+  try {
+    const sourceText = "စဥ် ကိ";
+    const normalize = await getEngineNormalize();
+    const expected = normalize(sourceText);
+    for (const extension of ["txt", "docx", "pdf"]) {
+      const dir = path.join(root, extension);
+      fs.mkdirSync(dir);
+      const source = new PageStoreWriter(dir, "input");
+      source.addPage({ text: [sourceText], lines: [[10, 20, 12, sourceText]], wh: [400, 500] });
+      source.addPage({ text: [""], images: [{ pageSized: true }], hasImg: true, wh: [400, 500] });
+      source.close();
+      const result = await finishManualPdf({
+        pageStore: source.store, sourcePath: "ignored.pdf", directory: dir,
+        outPath: path.join(dir, `output.${extension}`), source: "input.pdf", counts: {},
+        includeText: true, owner: false, maxOcrPages: 1,
+        pageHasImage: async () => false, ocrPage: async () => sourceText, ocrRegion: async () => "",
+      });
+      assert.equal(result.text, `${expected}\n\n${expected}`, extension);
+      assert.deepEqual(result.ocrPages, [2]);
+      const report = fs.readFileSync(result.posScan.file, "utf8");
+      assert.equal((report.match(/Original: စဉ် ကိ/gu) ?? []).length, 2);
+      if (extension === "docx") assert.ok(docxDocument(result.file).includes(expected));
+    }
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
 test("manual page spool preserves full-page and regional OCR merge semantics", async () => {
   const dir = scratch();
   try {
@@ -673,6 +1196,18 @@ test("streaming Rabbit retains long runs and zero-width characters across chunks
   }
 });
 
+test("streaming Rabbit can retain spaces across chunk boundaries", () => {
+  const source = "တူပါရဲ ႔၊\u200bနားရြက္ေတြ";
+  const options = { preserveZeroWidth: true, preserveSpaces: true };
+  let result = "";
+  const converter = createRabbitStream((part) => { result += part; }, options);
+  for (const char of source) converter.push(char);
+  converter.push("", true);
+  assert.equal(result, Rabbit.zg2uni(source, options));
+  assert.equal(result, "တူပါရဲ ့၊\u200bနားရွက်တွေ");
+  assert.equal(Rabbit.zg2uni("ရဲ ႔"), "ရဲ့");
+});
+
 test("actual OCR of an image-only PDF feeds recognized text into the POS sidecar", async (t) => {
   let canvas;
   try {
@@ -750,6 +1285,31 @@ test("DOCX image markers follow actual relationships and reused images", async (
     assert.deepEqual(fs.readFileSync(files[0].path), blue);
     assert.deepEqual(fs.readFileSync(files[1].path), red);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("manual DOCX normalizes only after image OCR is merged", async () => {
+  const root = scratch();
+  try {
+    const sourceText = "စဥ် ကိ";
+    const normalize = await getEngineNormalize();
+    const expected = normalize(sourceText);
+    const marker = "\uE000OCR-12345678-1234-4234-8234-123456789abc-0001\uE001";
+    for (const extension of ["txt", "docx", "pdf"]) {
+      const dir = path.join(root, extension);
+      fs.mkdirSync(dir);
+      const source = new PageStoreWriter(dir, "input");
+      source.addPage({ text: [`${sourceText}\n${marker}`] });
+      source.close();
+      const result = await finishManualDocx({
+        pageStore: source.store, directory: dir, outPath: path.join(dir, `output.${extension}`),
+        source: "input.docx", counts: {}, includeText: true, owner: false,
+        imageFiles: [{ id: "0001", marker }], ocr: [{ id: "0001", text: sourceText }],
+      });
+      assert.equal(result.text, `${expected}\n${expected}`, extension);
+      assert.equal((fs.readFileSync(result.posScan.file, "utf8").match(/Original: စဉ် ကိ/gu) ?? []).length, 2);
+      if (extension === "docx") assert.ok(docxDocument(result.file).includes(expected));
+    }
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
 test("manual DOCX OCR merges source chunks before writing all output formats and POS", async () => {

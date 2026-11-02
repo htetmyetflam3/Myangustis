@@ -4,8 +4,8 @@ import { randomUUID } from "node:crypto";
 import { StringDecoder } from "node:string_decoder";
 import { containsMyanmar } from "./detector.js";
 import { arrangeZawCodeOrder } from "./zawcode-order.js";
-import { correctWorldWord, markOrderAligned, normalizePageLines } from "./page-decision.js";
-import { protectedCharacters } from "./preserved-transform.js";
+import { correctWorldWord, markOrderAligned } from "./page-decision.js";
+import { preserveCharacters, protectedCharacters } from "./preserved-transform.js";
 import { createRabbitStream } from "./rabbit.js";
 import { StreamingReplace } from "./stream-replace.js";
 
@@ -138,10 +138,41 @@ export class PageTextFile {
   close() { fs.rmSync(this.path, { force: true }); }
 }
 
+// Normalize only the final page text, after parsing and any OCR merge. The
+// resulting spool is shared by the POS scanner and the output writer.
+export function normalizePageToFile(chunks, { directory, normalize } = {}) {
+  if (typeof normalize !== "function") throw new TypeError("Expected Engine normalize function");
+  const file = path.join(directory, `normalized-page-${randomUUID()}.txt`);
+  let fd = null;
+  let chars = 0;
+  let bytes = 0;
+  const write = (text) => {
+    writeAll(fd, text);
+    chars += text.length;
+    bytes += Buffer.byteLength(text, "utf8");
+  };
+  try {
+    fd = fs.openSync(file, "wx", 0o600);
+    let first = true;
+    for (const line of textLines(chunks)) {
+      if (!first) write("\n");
+      first = false;
+      write(preserveCharacters(line, normalize));
+    }
+    fs.closeSync(fd);
+    fd = null;
+    return new PageTextFile(file, chars, bytes);
+  } catch (error) {
+    if (fd !== null) fs.closeSync(fd);
+    fs.rmSync(file, { force: true });
+    throw error;
+  }
+}
+
 // Decide once for the entire page, but make the decision in passes over the
 // disk-backed lines. No Rabbit rule is applied to a partially repaired page.
 export function finishPageToFile(store, {
-  directory, parsingPath, sourceEncoding = "auto", fontKinds = new Set(), normalize,
+  directory, parsingPath, sourceEncoding = "auto", fontKinds = new Set(),
 } = {}) {
   let originalHasText = false;
   let hasMyanmar = false;
@@ -186,14 +217,12 @@ export function finishPageToFile(store, {
       bytes += Buffer.byteLength(text, "utf8");
       outputHasMyanmar ||= containsMyanmar(text);
     };
-    const writeOriginal = ({ transform = (text) => text, normalizeLines = false } = {}) => {
+    const writeOriginal = ({ transform = (text) => text } = {}) => {
       let first = true;
       for (const [, , , text] of store.lines()) {
         if (!first) write("\n");
         first = false;
-        let result = transform(text);
-        if (normalizeLines) result = [...normalizePageLines(result, normalize)].join("\n");
-        write(correctWorldWord(result, worldEvidence));
+        write(correctWorldWord(transform(text), worldEvidence));
       }
     };
 
@@ -207,7 +236,7 @@ export function finishPageToFile(store, {
           const transformed = world ? world.push(text) : text;
           write(transformed);
         };
-        const rabbit = createRabbitStream(output, { preserveZeroWidth: true });
+        const rabbit = createRabbitStream(output, { preserveZeroWidth: true, preserveSpaces: true });
         let first = true;
         for (const [, , , text] of store.lines()) {
           const chunk = first ? text : `\n${text}`;
@@ -227,16 +256,15 @@ export function finishPageToFile(store, {
         outputHasMyanmar = false;
         writeOriginal();
       }
-    } else if (decision === "legacy" || decision === "aligned") {
-      writeOriginal({ normalizeLines: true });
     } else if (decision === "zawcode") {
-      writeOriginal({ transform: arrangeZawCodeOrder, normalizeLines: true });
+      writeOriginal({ transform: arrangeZawCodeOrder });
     } else {
       writeOriginal();
     }
     fs.closeSync(fd);
     fd = null;
-    const category = !outputHasMyanmar || decision === "unaligned-unknown" ? "UNKNOWN"
+    const unconvertedZawgyi = parsingPath === "legacy" && fontKinds.has("ZAWGYI");
+    const category = !outputHasMyanmar || decision === "unaligned-unknown" || unconvertedZawgyi ? "UNKNOWN"
       : decision === "rabbit" || decision === "unaligned-zawgyi" ? "ZAWGYI" : "UNICODE";
     return { text: new PageTextFile(file, chars, bytes), decision, category, originalHasText, lineCount: count };
   } catch (error) {

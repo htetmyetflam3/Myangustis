@@ -4,6 +4,8 @@ import { copyTextFile } from "../write/pdf-text-sink.js";
 import { writePageStore } from "../write/emit.js";
 import { PageStoreWriter, layoutLines, pageRecords, textChunks } from "../read/page-store.js";
 import { PosScanner } from "../text/scan.js";
+import { normalizePageToFile, pageLayoutLines } from "../text/page-file-decision.js";
+import { getEngineNormalize } from "../../../_path.js";
 
 function writeAll(fd, value) {
   const bytes = typeof value === "string" ? Buffer.from(value, "utf8") : value;
@@ -114,6 +116,7 @@ export async function finishManualPdf({
     throw new Error(`PDF has ${ocrPages.length} image pages; the OCR lane accepts at most ${maxOcrPages} at a time`);
   }
 
+  const normalize = await getEngineNormalize();
   const finalPages = new PageStoreWriter(directory, "final");
   const scanner = new PosScanner({ directory });
   const currentPage = path.join(directory, "ocr-page.txt");
@@ -136,13 +139,16 @@ export async function finishManualPdf({
         }
         chunks = textChunks(currentPage);
       }
-      await scanner.writePage(page.index + 1, page.tasks.length
-        ? textChunks(currentPage) : textChunks(pageStore.textPath, page.start, page.length));
-      finalPages.addPage({
-        text: chunks,
-        lines: changed ? [] : layoutLines(pageStore, page),
-        wh: page.wh, images: page.images ?? [], hasImg: changed || page.hasImg === true,
-      });
+      const output = normalizePageToFile(chunks, { directory, normalize });
+      try {
+        await scanner.writePage(page.index + 1, output.chunks());
+        const layout = { lines: () => layoutLines(pageStore, page) };
+        finalPages.addPage({
+          text: output.chunks(),
+          lines: changed || !page.lineCount ? [] : pageLayoutLines(layout, output, page.lineCount),
+          wh: page.wh, images: page.images ?? [], hasImg: changed || page.hasImg === true,
+        });
+      } finally { output.close(); }
     }
     finalPages.close();
     const written = await writePageStore(outPath, finalPages.store, {
