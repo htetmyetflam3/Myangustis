@@ -195,3 +195,23 @@ vite.config.ts.timestamp-*
 /tools-box/kit/box/payload.bin
 /tools-box/kit/build/payload.key.txt
 /tools-box/kit/build/payload.bin
+
+
+# --- svg frame work -------------------------------------------------------
+# The 9 source PDFs in pdf-part/ and pdf-parts/ are tracked inputs; pages.json
+# refers to those exact paths. Everything else the prototype produced is a
+# working file, regenerated on demand.
+experiments/
+keyboards/
+data/
+analysis/
+page2.svg
+Canvas.svg
+BRANCH.txt
+svgout/proof/
+svgout/.work/
+svgout/*.svg
+svgout/*.png
+svgout/*.json
+svgout/known/*.svg
+svgout/known/*.png
