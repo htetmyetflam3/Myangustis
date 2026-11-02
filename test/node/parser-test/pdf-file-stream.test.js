@@ -217,13 +217,14 @@ test("DOCX output normalizes after parsing across jobs, methods and formats", as
   }
 });
 
-test("DOCX preserves zero-width characters through parsing and final normalization", async () => {
+test("DOCX final normalization uses the Engine result", async () => {
   const dir = scratch();
   const previous = process.env.PRASER_REGISTER;
   process.env.PRASER_REGISTER = path.join(dir, "register.log");
   const manager = new Manager({ outputDir: dir });
   try {
-    const source = "\u200bစဥ်";
+    const source = "\u200b\u200c\u200d\u034fစဥ်";
+    const normalize = await getEngineNormalize();
     const doc = new Document({ sections: [{ children: [new Paragraph(source)] }] });
     const input = path.join(dir, "input.docx");
     fs.writeFileSync(input, await Packer.toBuffer(doc));
@@ -233,7 +234,7 @@ test("DOCX preserves zero-width characters through parsing and final normalizati
         inPath: input, outPath: path.join(dir, `output-${applyCleanup}.txt`), sourceEncoding: "unicode",
         applyCleanup, includeText: true,
       });
-      assert.ok(result.text.startsWith("\u200bစဉ်"));
+      assert.equal(result.text.replace(/\n+$/u, ""), normalize(source));
     }
   } finally {
     await manager.close();
@@ -1185,26 +1186,27 @@ test("manual OCR spool preserves DOCX layout and PDF text when merging images", 
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
-test("streaming Rabbit retains long runs and zero-width characters across chunks", () => {
+test("streaming Rabbit handles long runs and U+200B consistently across chunks", () => {
   const input = `ကေ${"ျြွှ".repeat(200_000)}😀\u200b${"ိ".repeat(200_000)}\n`;
-  for (const preserveZeroWidth of [false, true]) {
+  for (const preserveSpaces of [false, true]) {
     let actual = "";
-    const converter = createRabbitStream((part) => { actual += part; }, { preserveZeroWidth });
+    const converter = createRabbitStream((part) => { actual += part; }, { preserveSpaces });
     for (let i = 0; i < input.length; i += 1023) converter.push(input.slice(i, i + 1023));
     converter.push("", true);
-    assert.equal(actual, Rabbit.zg2uni(input, { preserveZeroWidth }));
+    assert.equal(actual, Rabbit.zg2uni(input, { preserveSpaces }));
+    assert.equal(actual.includes("\u200b"), false);
   }
 });
 
 test("streaming Rabbit can retain spaces across chunk boundaries", () => {
   const source = "တူပါရဲ ႔၊\u200bနားရြက္ေတြ";
-  const options = { preserveZeroWidth: true, preserveSpaces: true };
+  const options = { preserveSpaces: true };
   let result = "";
   const converter = createRabbitStream((part) => { result += part; }, options);
   for (const char of source) converter.push(char);
   converter.push("", true);
   assert.equal(result, Rabbit.zg2uni(source, options));
-  assert.equal(result, "တူပါရဲ ့၊\u200bနားရွက်တွေ");
+  assert.equal(result, "တူပါရဲ ့၊နားရွက်တွေ");
   assert.equal(Rabbit.zg2uni("ရဲ ႔"), "ရဲ့");
 });
 

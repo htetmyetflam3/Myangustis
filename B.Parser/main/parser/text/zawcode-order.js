@@ -1,6 +1,10 @@
 import { getMasterMapData } from "./cleanup.js";
 
 const E = "\u1031";
+const AA = "\u102C";
+const ASAT = "\u103A";
+const DOT = "\u1037";
+const TONE = "\u1038";
 const YA = "\u103B";
 const RA = "\u103C";
 
@@ -31,6 +35,26 @@ export function arrangeZawCodeOrder(text) {
 
     // The position immediately before a pattern must not be e.
     if (chars[i - 1] !== E) {
+      if (current === E && next === RA && isEngineBase(after) && fourth === E && isEngineBase(fifth)) {
+        out.push(after, RA, E, fifth, E);
+        i += 5;
+        continue;
+      }
+      if (current === E && isEngineBase(next) && isEngineBase(after) && fourth === AA) {
+        out.push(next, E, after, AA);
+        i += 4;
+        continue;
+      }
+      if (next === AA && after === RA && isEngineBase(current) && isEngineBase(fourth)) {
+        out.push(current, AA, fourth, RA);
+        i += 4;
+        continue;
+      }
+      if (current === E && isEngineBase(next) && after === ASAT && (fourth === DOT || fourth === TONE)) {
+        out.push(next, ASAT, fourth, E);
+        i += 4;
+        continue;
+      }
       if (current === E && isEngineBase(next) && isEngineBase(after) && fourth === YA) {
         out.push(next, E, after, YA);
         i += 4;
@@ -39,6 +63,11 @@ export function arrangeZawCodeOrder(text) {
       if (current === RA && isEngineBase(next) && after === E && fourth === RA && isEngineBase(fifth)) {
         out.push(next, RA, fifth, RA, E);
         i += 5;
+        continue;
+      }
+      if (current === E && isEngineBase(next) && after === AA) {
+        out.push(next, AA, E);
+        i += 3;
         continue;
       }
       if (current === E && isEngineBase(next) && after === YA) {

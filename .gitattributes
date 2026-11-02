@@ -1,0 +1,3 @@
+# Keep the local source PDFs binary in diffs and future checkouts.
+/pdf-part/*.pdf binary
+/pdf-parts/*.pdf binary

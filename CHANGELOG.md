@@ -188,3 +188,14 @@
 - Full Node suite: 406 passed, 0 failed, 1 skipped because the OCR PNG fixture is unavailable. Full Python suite: 356 passed, 0 failed.
 - Built both Site frontends and started the real Site and Engine entry points independently with isolated test configuration. Verified local and HTTP API calls, including PDF and DOCX conversion and positional output. Deployed production services were not tested.
 - The local CLI parsed the 78-page representative PDF to the same TXT bytes as the committed Parser output; the Engine CLI also processed selected real-source text. Changed JavaScript files pass ESLint.
+
+## [Unreleased] - 2026-11-03 — Parser ordering and local PDF sources
+### Changed / Fixed / Removed
+- Add the supplied ZawCode rearrangements and the asat/tone pattern without changing the page order checker or fallback decisions.
+- Let Rabbit handle U+200B normally and pass final page text directly to Engine normalization. The ZawCode rearrangements leave U+200B unchanged.
+- Remove the nine merged source PDFs from Git and ignore their local paths; retain the representative PDF and the existing, unwired SVG prototype. Treat the local source PDFs as binary in Git diffs.
+### Verification / Remaining work
+- Full Node suite: 411 passed, 0 failed, 1 skipped because an OCR fixture is unavailable. Full Python suite: 356 passed, 0 failed, and 35 subtests passed.
+- Changed-file ESLint reported four errors and five warnings; the same findings occur on the unchanged main baseline.
+- Reparsed the 78-page representative PDF: one page differs from the committed output. It corresponds to source part 2 page 598, whose Zawgyi-One footer now takes the Rabbit path; its correctness has not been established by this comparison.
+- The copied SVG prototype remains unwired. Its line assignment omitted 1,465 of 1,845 collected glyph uses on rotated source part 9 page 63; the original PDF was not altered.
