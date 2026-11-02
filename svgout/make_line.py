@@ -14,7 +14,7 @@ import math
 import re
 import sys
 
-from scan_frame import (framesOf, pitchOf, blankOf, overflow,  # noqa: F401
+from scan_frame import (framesOf, pitchOf, blankOf, overflow, bandFor,  # noqa: F401
                         lineSvg, sheetSvg, fixed, num)
 
 # Size is NOT a constant. Every glyph carries its own: the page export writes
@@ -247,7 +247,12 @@ def main():
                  "text": "", "glyphs": g}
                 for _, g in sorted(buckets.items(), key=lambda kv: kv[0])]
 
-    lines = [(r["x"], r["y"], r["size"], r["text"]) for r in rows]
+    # Each line takes the calibrated band, raised only if its own ink needs
+    # more. The four rules stay equally spaced; only the spacing scales, so the
+    # design holds on a page the calibration did not cover.
+    for r in rows:
+        r["band"] = bandFor(r["y"], r["size"], r["glyphs"])
+    lines = [(r["x"], r["y"], r["size"], r["text"], r["band"]) for r in rows]
 
     frames = framesOf(lines)
     pitch = pitchOf(frames)
@@ -268,9 +273,11 @@ def main():
 
     print(f"{page}   width {num(W)}   {len(uses)} glyphs   {len(frames)} lines")
     print("sizes " + ", ".join(num(v) for v in sorted({f["size"] for f in frames})))
-    print(f"pitch {num(pitch)}   slot {fixed(frame['slot'])}   "
-          f"blank {fixed(blankOf(frame, pitch))}")
-    print(f"E {fixed(frame['E'])}  rules "
+    blank = blankOf(frame, pitch)
+    print(f"pitch {num(pitch) if pitch else '— (not uniform)'}   "
+          f"slot {fixed(frame['slot'])}   "
+          f"blank {'—' if blank is None else fixed(blank)}")
+    print(f"band {fixed(frame['band'], 3)}  E {fixed(frame['E'])}  rules "
           + " / ".join(fixed(v) for v in (frame["r1"], frame["r2"],
                                           frame["r3"], frame["r4"])))
     print(f"random line {pick} of {len(frames)}   "
@@ -281,7 +288,8 @@ def main():
         o = overflow(f, rows_uses(f["baseline"]))
         if not o["ok"]:
             bad += 1
-            print(f"  ! line {f['index']} (size {num(f['size'])}) "
+            print(f"  ! line {f['index']} (size {num(f['size'])}, "
+                  f"band {fixed(f['band'], 3)}) "
                   f"ink {fixed(o['above'])} above / {fixed(o['below'])} below")
     print(f"fit: {len(frames) - bad}/{len(frames)} lines inside the rules")
 

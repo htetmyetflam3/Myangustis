@@ -80,6 +80,21 @@ The four rules come from the line's own size: `E = size/2`, rules at
 matrices are in em units, so their scale factor is the font size in points, and
 a page that mixes 11 pt and 12.96 pt is framed correctly line by line.
 
+`BAND = 0.5` is a **floor**, not the whole answer. Each line's own outlines are
+measured and the band is raised only where the ink needs it, so a page the
+calibration did not cover still frames correctly instead of reporting a fit
+failure. `E` for that line is then `size * band`. The four rules stay equally
+spaced — only the spacing scales.
+
+`pitch` is the page's modal baseline gap, and it is reported as `— (not
+uniform)` when the page has none: a signature block stacks names 0.4 to 1.9 pt
+apart, and a number there would be invented. `data-pitch` is omitted in that
+case rather than written as `0`.
+
+Rules are drawn inset by half their stroke, so the round cap sits inside the
+canvas instead of being cut off by its edge. The canvas stays exactly page
+width, so sheets still overlay.
+
 Every output carries the frame in its own attributes, so a consumer never has
 to recompute it:
 

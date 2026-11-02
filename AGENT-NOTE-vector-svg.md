@@ -338,3 +338,43 @@ and is the owner's call, not a bug fix.
 
 Pre-fix runs looked better on those pages only because `E` was pinned at 6.48 pt
 regardless of size, which is 0.587 em on an 11 pt page.
+
+---
+
+## Follow-up: adaptive band, honest pitch, round tips
+
+Three things the fit report above exposed, fixed in both languages.
+
+**The band adapts instead of failing.** `BAND = 0.5` is now a floor. Each line's
+own outlines are measured — a glyph rising `a` points needs `E >= a/2` — and the
+band is raised only where the ink needs it, rounded up to 3 decimals so what is
+measured is what is drawn. The four rules stay equally spaced; only the spacing
+scales. Pages the calibration never saw now frame correctly:
+
+| page | band | E | fit |
+|---|---|---|---|
+| `representative` p14 | 0.500 | 6.48 | 22/22 |
+| `part-9` p7 | 0.500 | 10.02 | 18/18 |
+| `part-8` p9 (Zawgyi) | **0.507** | 5.60 | **29/29** |
+| `part-6` p2 | 0.500 | 6.00 | 82/82 |
+
+345 of 345 lines across the 11-page corpus are inside their rules. Page 14 is
+byte-stable: its ink needs 0.471, the floor wins, and `docs/known-lines.svg`
+regenerates identically.
+
+**Pitch no longer invents a number.** `pitchOf` ignores gaps under 2 pt and
+returns 0 when no gap repeats. `blankOf` returns `null`, the runner prints
+`— (not uniform)`, and `data-pitch` is omitted rather than written as `0`.
+`part-7` p5 — a signature page with baselines 0.4 to 1.9 pt apart — used to
+report a pitch of 1.87 pt.
+
+**Round tips were declared but clipped.** Every stroked element already had
+`stroke-linecap="round"`, but the rules ran `x=0` to `x=width`, so half of each
+cap sat outside the canvas and was cut square by the edge — measured: rule ink
+started at x = 0.000. The rules are now inset by half their stroke (0.25 pt for
+the 0.5 pt rules, 0.35 pt for the 0.7 pt baseline), which puts the whole cap
+inside the canvas. The canvas stays exactly page width, so overlaying still
+works. Verified at 30x: the rule end is a semicircle, ink starts at x = 0.125.
+
+Parity after all three: **92/92** byte-identical over 11 pages, 2 seeds, both
+paths.

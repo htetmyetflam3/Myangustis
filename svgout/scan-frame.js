@@ -77,6 +77,45 @@ export function num(v) {
 export const BAND = 0.5;
 
 /**
+ * The band a page's own outlines actually need, as a fraction of size.
+ *
+ * E must clear 2E of ink above the baseline and E below, so a glyph rising
+ * `above` points needs E >= above/2 and a glyph dropping `below` needs
+ * E >= below. Measured from the page, never from a font table.
+ *
+ * @param {number} baseline  the line's baseline, page points
+ * @param {number} size      the line's font size in points
+ * @param {Array}  uses      that line's glyphs, with page-space ink boxes
+ */
+export function needOf(baseline, size, uses) {
+  let above = 0;
+  let below = 0;
+  for (const u of uses) {
+    if (!u.ink) continue;
+    const a = baseline - u.ink[1];
+    const b = u.ink[3] - baseline;
+    if (a > above) above = a;
+    if (b > below) below = b;
+  }
+  if (!size) return 0;
+  return Math.max(above / (2 * size), below / size);
+}
+
+/**
+ * BAND is the floor, the page is the ceiling: a line gets the calibrated band
+ * unless its own ink needs more. Returns BAND itself for an empty line, so a
+ * page with no overflow keeps the calibrated frame exactly.
+ */
+export function bandFor(baseline, size, uses, floor = BAND) {
+  // Ceiling, not the raw quotient: size * (above / (2 * size)) can land a
+  // rounding error below above / 2, which would put the rule a hair inside the
+  // ink it was computed to clear. A 3-decimal ceiling is also the precision the
+  // frame is written at, so what is measured is what is drawn.
+  const need = Math.ceil(needOf(baseline, size, uses) * 1000) / 1000;
+  return Math.max(floor, need);
+}
+
+/**
  * The four rules for one line.
  * @param {number} baseline  baseline y in page points (PDF user space)
  * @param {number} size      font size in points
@@ -106,36 +145,56 @@ export function frameOf(baseline, size, band = BAND) {
  *   ... pieces.add(...) / pieces.finish(...)
  *   const frames = framesOf(pieces.lines());   // yields [x, y, size, text]
  *
- * @param {Iterable<[number, number, number, string]>} lines
+ * A 5th element on a line overrides the band for that line, which is how the
+ * runner feeds in a band raised to fit the line's own ink. The page default is
+ * the calibrated BAND.
+ *
+ * @param {Iterable<[number, number, number, string, number?]>} lines
  */
 export function framesOf(lines, { band = BAND } = {}) {
   const out = [];
   let i = 0;
-  for (const [x, y, size, text] of lines) {
-    out.push({ index: i += 1, x, y, size, text, ...frameOf(y, size, band) });
+  for (const [x, y, size, text, own] of lines) {
+    out.push({ index: i += 1, x, y, size, text, ...frameOf(y, size, own ?? band) });
   }
   return out;
 }
 
 /**
  * The page's line spacing, taken from the frames and not assumed.
- * Modal consecutive baseline gap, ignoring the page-break outliers.
+ *
+ * Returns 0 when the page has no spacing to report, and callers must treat 0 as
+ * "not uniform" rather than as a number. Two things disqualify a page:
+ *
+ *   - gaps too small to be between text lines. A signature block stacks names
+ *     on baselines 0.4 to 1.9 pt apart; taking the modal gap there reports a
+ *     pitch of 1.87 pt, which is not a spacing anyone set.
+ *   - no gap used more than once. With one of everything there is no mode, and
+ *     reporting the smallest such gap is worse than reporting nothing.
  */
+export const MIN_PITCH = 2;
+
 export function pitchOf(frames) {
   const gaps = [];
   for (let i = 1; i < frames.length; i += 1) {
     const d = frames[i].baseline - frames[i - 1].baseline;
-    if (d > 1) gaps.push(Math.round(d * 100) / 100);
+    if (d >= MIN_PITCH) gaps.push(Math.round(d * 100) / 100);
   }
   if (!gaps.length) return 0;
   const tally = new Map();
   for (const g of gaps) tally.set(g, (tally.get(g) || 0) + 1);
-  return [...tally.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0];
+  const [gap, count] = [...tally.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0] - b[0])[0];
+  return count >= 2 ? gap : 0;
 }
 
-/** What is left between one slot and the next. The blank in the sketch. */
+/**
+ * What is left between one slot and the next. The blank in the sketch.
+ * Returns null when the page has no uniform pitch, so nothing prints a blank
+ * computed from a spacing that does not exist.
+ */
 export function blankOf(frame, pitch) {
-  return pitch - frame.slot;
+  return pitch ? pitch - frame.slot : null;
 }
 
 /**
@@ -164,7 +223,11 @@ export function overflow(frame, uses) {
   if (lo === Infinity) return { ok: true, above: 0, below: 0 };
   const above = frame.baseline - lo;   // how far ink rises past the baseline
   const below = hi - frame.baseline;   // how far it drops
-  return { ok: above <= 2 * frame.E && below <= frame.E, above, below };
+  // EPS absorbs floating-point noise only. A rule landing 1e-16 inside the ink
+  // that set it is not a fit failure; a visible overflow still is.
+  const EPS = 1e-9;
+  const ok = above <= 2 * frame.E * (1 + EPS) && below <= frame.E * (1 + EPS);
+  return { ok, above, below };
 }
 
 /**
@@ -205,6 +268,20 @@ const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
  * @param {number}   [o.pitch]  page line spacing, for the blank readout
  * @param {object}   [o.paint]  colours
  */
+/** Stroke widths of the frame, and the rule endpoints that keep the caps whole. */
+export const RULE_W = 0.5;
+export const BASE_W = 0.7;
+
+export function baseInset(width, strokeWidth) {
+  const half = strokeWidth / 2;
+  return width > 2 * half ? half : 0;
+}
+
+function ruleLine(y, width, strokeWidth) {
+  const d = baseInset(width, strokeWidth);
+  return `<line x1="${fixed(d)}" y1="${fixed(y)}" x2="${fixed(width - d)}" y2="${fixed(y)}"/>`;
+}
+
 export function lineSvg({ width, frame, uses, defs, pitch, label, paint = {} }) {
   const c = { slot: "#D6EAF8", rule: "#FF6EAE", base: "#FFC300", ink: "#000000", ...paint };
   const pad = frame.size * 0.6;
@@ -220,9 +297,13 @@ export function lineSvg({ width, frame, uses, defs, pitch, label, paint = {} }) 
 
   const ink = uses.map((u) => u.raw).join("");
 
-  // round tips everywhere, so a rule reads as a drawn line and not a cut edge
+  // Round tips everywhere, so a rule reads as a drawn line and not a cut edge.
+  // The rules are inset by half their stroke width: a line drawn 0..width has
+  // half of each round cap outside the canvas, where it is clipped and reads as
+  // a square end. Insetting keeps the canvas exactly page width and puts the
+  // whole cap inside it.
   const rules = [frame.r1, frame.r2, frame.r4]
-    .map((y) => `<line x1="0" y1="${fixed(y)}" x2="${fixed(width)}" y2="${fixed(y)}"/>`)
+    .map((y) => ruleLine(y, width, RULE_W))
     .join("");
 
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" `
@@ -239,7 +320,7 @@ export function lineSvg({ width, frame, uses, defs, pitch, label, paint = {} }) 
     + `<defs>${defsXml}</defs>\n`
     + `<g fill="${c.ink}">${ink}</g>\n`
     + `<g stroke="${c.rule}" stroke-width="0.5" fill="none" stroke-linecap="round" stroke-linejoin="round">${rules}</g>\n`
-    + `<line x1="0" y1="${fixed(frame.r3)}" x2="${fixed(width)}" y2="${fixed(frame.r3)}" stroke="${c.base}" stroke-width="0.7" stroke-linecap="round"/>\n`
+    + `<line x1="${fixed(baseInset(width, BASE_W))}" y1="${fixed(frame.r3)}" x2="${fixed(width - baseInset(width, BASE_W))}" y2="${fixed(frame.r3)}" stroke="${c.base}" stroke-width="${BASE_W}" stroke-linecap="round"/>\n`
     + `</svg>\n`;
 }
 
@@ -293,10 +374,14 @@ export function sheetSvg({ width, rows, defs, pitch, mode = "page", paint = {} }
     slots.push(`<rect x="0" y="${fixed(b - 2 * frame.E)}" width="${fixed(width)}" `
       + `height="${fixed(frame.slot)}" fill="${c.slot}"/>`);
     for (const y of [b - 2 * frame.E, b - frame.E, b + frame.E]) {
-      slotRules.push(`<line x1="0" y1="${fixed(y)}" x2="${fixed(width)}" y2="${fixed(y)}"/>`);
+      slotRules.push(ruleLine(y, width, RULE_W));
     }
-    baseRules.push(`<line x1="0" y1="${fixed(b)}" x2="${fixed(width)}" y2="${fixed(b)}"/>`);
+    baseRules.push(ruleLine(b, width, BASE_W));
   }
+
+  // one band per line, so the sheet reports the set rather than a single value
+  const bandList = [...new Set(rows.map((r) => fixed(r.frame.band, 3)))]
+    .sort().join(",");
 
   const top = mode === "stack" ? 0 : Math.min(...rows.map((r) => r.frame.r1));
   const h = mode === "stack" ? cursor + 8 : Math.max(...rows.map((r) => r.frame.r4)) - top + 8;
@@ -307,12 +392,14 @@ export function sheetSvg({ width, rows, defs, pitch, mode = "page", paint = {} }
 
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" `
     + `width="${fixed(width)}" height="${fixed(h)}" viewBox="0 ${fixed(top)} ${fixed(width)} ${fixed(h)}" `
-    + `data-lines="${rows.length}" data-pitch="${fixed(pitch)}" data-band="${num(BAND)}">\n`
+    + `data-lines="${rows.length}"`
+    + (pitch ? ` data-pitch="${fixed(pitch)}"` : "")
+    + ` data-band="${bandList}">\n`
     + `<rect x="0" y="${fixed(top)}" width="${fixed(width)}" height="${fixed(h)}" fill="#FFFFFF"/>\n`
     + `<g fill="${c.slot}">${slots.join("")}</g>\n`
     + `<defs>${defsXml}</defs>\n`
     + `<g fill="${c.ink}">${body.join("")}</g>\n`
-    + `<g stroke="${c.rule}" stroke-width="0.5" fill="none" stroke-linecap="round" stroke-linejoin="round">${slotRules.join("")}</g>\n`
-    + `<g stroke="${c.base}" stroke-width="0.7" fill="none" stroke-linecap="round" stroke-linejoin="round">${baseRules.join("")}</g>\n`
+    + `<g stroke="${c.rule}" stroke-width="${RULE_W}" fill="none" stroke-linecap="round" stroke-linejoin="round">${slotRules.join("")}</g>\n`
+    + `<g stroke="${c.base}" stroke-width="${BASE_W}" fill="none" stroke-linecap="round" stroke-linejoin="round">${baseRules.join("")}</g>\n`
     + `</svg>\n`;
 }

@@ -7,7 +7,7 @@
 //
 //   node svgout/make-line.js svgout/representative-p14.svg
 import fs from "node:fs";
-import { framesOf, pitchOf, blankOf, overflow, lineSvg, sheetSvg, fixed, num } from "./scan-frame.js";
+import { framesOf, pitchOf, blankOf, overflow, bandFor, lineSvg, sheetSvg, fixed, num } from "./scan-frame.js";
 
 const SRC = process.argv[2] ?? "svgout/representative-p14.svg";
 const SEED = Number(process.argv[3] ?? 14);
@@ -192,7 +192,11 @@ if (pageLines) {
     }));
 }
 
-const lines = rows.map((r) => [r.x, r.y, r.size, r.text]);
+// Each line takes the calibrated band, raised only if its own ink needs more.
+// The four rules stay equally spaced; only the spacing scales, so the design
+// holds on a page the calibration did not cover.
+for (const r of rows) r.band = bandFor(r.y, r.size, r.glyphs);
+const lines = rows.map((r) => [r.x, r.y, r.size, r.text, r.band]);
 const rowOf = (y) => {
   const r = rows.find((v) => Math.abs(v.y - y) < 1e-9);
   if (!r) throw new Error(`no row at baseline ${y}`);
@@ -212,15 +216,18 @@ const lineUses = rowsUses(frame.baseline);
 
 console.log(`${PAGE}   width ${W}   ${uses.length} glyphs   ${frames.length} lines`);
 console.log(`sizes ${[...new Set(frames.map((f) => f.size))].sort((p, q) => p - q).join(", ")}`);
-console.log(`pitch ${pitch}   slot ${fixed(frame.slot)}   blank ${fixed(blankOf(frame, pitch))}`);
-console.log(`E ${fixed(frame.E)}  rules ${[frame.r1, frame.r2, frame.r3, frame.r4].map((v) => fixed(v)).join(" / ")}`);
+const blank = blankOf(frame, pitch);
+console.log(`pitch ${pitch ? num(pitch) : "— (not uniform)"}   slot ${fixed(frame.slot)}   `
+  + `blank ${blank === null ? "—" : fixed(blank)}`);
+console.log(`band ${fixed(frame.band, 3)}  E ${fixed(frame.E)}  `
+  + `rules ${[frame.r1, frame.r2, frame.r3, frame.r4].map((v) => fixed(v)).join(" / ")}`);
 console.log(`random line ${pick} of ${frames.length}   baseline ${fixed(frame.baseline)}   ${lineUses.length} glyphs`);
 
 // fit check from the page's own ink, no font file
 let bad = 0;
 for (const f of frames) {
   const o = overflow(f, rowsUses(f.baseline));
-  if (!o.ok) { bad += 1; console.log(`  ! line ${f.index} (size ${num(f.size)}) ink ${fixed(o.above)} above / ${fixed(o.below)} below`); }
+  if (!o.ok) { bad += 1; console.log(`  ! line ${f.index} (size ${num(f.size)}, band ${fixed(f.band, 3)}) ink ${fixed(o.above)} above / ${fixed(o.below)} below`); }
 }
 console.log(`fit: ${frames.length - bad}/${frames.length} lines inside the rules`);
 
