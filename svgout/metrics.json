@@ -1,0 +1,53 @@
+[
+  {
+    "source": "pdf-part/part-2.pdf",
+    "page": 341,
+    "svg": "part-2-p341.svg",
+    "svg_kib": 349.251953125,
+    "page_pt": "595x842",
+    "chars": 2022,
+    "images": 0,
+    "fonts": [
+      "ABCDEE+Myanmar3"
+    ],
+    "size": [
+      1241,
+      1754
+    ],
+    "identical_pct": 92.50167913653333,
+    "near_pct": 93.7253125582874,
+    "clear_pct": 4.78321910917098,
+    "max_diff": 169,
+    "blur_mean": 1.2834451379464642,
+    "blur_over32_pct": 0.01833038240209784,
+    "ink_pdf_pct": 5.494153113362619,
+    "ink_svg_pct": 5.454368373612702,
+    "ink_ratio": 0.9927587129573885
+  },
+  {
+    "source": "pdf-part/part-2.pdf",
+    "page": 342,
+    "svg": "part-2-p342.svg",
+    "svg_kib": 380.8955078125,
+    "page_pt": "595x842",
+    "chars": 2372,
+    "images": 0,
+    "fonts": [
+      "ABCDEE+Myanmar2ex",
+      "ABCDEE+Myanmar3"
+    ],
+    "size": [
+      1241,
+      1754
+    ],
+    "identical_pct": 91.03134357568334,
+    "near_pct": 92.42270688753781,
+    "clear_pct": 5.826397037001645,
+    "max_diff": 179,
+    "blur_mean": 1.5015909301819164,
+    "blur_over32_pct": 0.008912516756909726,
+    "ink_pdf_pct": 6.571465061556089,
+    "ink_svg_pct": 6.519276303639339,
+    "ink_ratio": 0.9920582765900923
+  }
+]
