@@ -195,3 +195,21 @@ vite.config.ts.timestamp-*
 /tools-box/kit/box/payload.bin
 /tools-box/kit/build/payload.key.txt
 /tools-box/kit/build/payload.bin
+
+# --- svg frame work: working files, regenerated on demand ---
+pdf-part/
+pdf-parts/
+experiments/
+keyboards/
+data/
+analysis/
+page2.svg
+Canvas.svg
+BRANCH.txt
+svgout/proof/
+svgout/known/*.png
+svgout/known/*.svg
+svgout/*.png
+svgout/*.svg
+svgout/*.json
+svgout/.work/
