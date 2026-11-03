@@ -14,6 +14,7 @@ import { extractDocxParagraphs, validateDocxArchive } from "../main/parser/read/
 import { extractDocxParagraphsExternal } from "../main/parser/read/docx-external.js";
 import { scoreText, englishLikeness } from "../main/parser/text/mm-score.js";
 import { choosePageParser } from "../main/parser/text/page-decision.js";
+import { withoutZeroWidthSpace } from "../main/parser/text/zero-width.js";
 import { countImpossiblePairs } from "../main/parser/text/scan.js";
 import { WININNWA_LEGACY_CODE_PAGE } from "../main/parser/codepage/registry.js";
 import { isLegacyFontName } from "../main/parser/codepage/names.js";
@@ -52,7 +53,7 @@ export function loadDetector() {
 // simple resource, irrespective of its display font. Do not promote a URL,
 // short label, ordinary English, or an isolated long word into the layout.
 function hasWinLayoutEvidence(text) {
-  const sample = String(text || "");
+  const sample = withoutZeroWidthSpace(text);
   if (containsMyanmar(sample)) return false;
   const english = englishLikeness(sample);
   if (english.verdict !== "not-english" || !english.hasSpaces
@@ -81,7 +82,7 @@ function hasWinLayoutEvidence(text) {
 // Its name is only supporting evidence on an already selected legacy page:
 // require non-English byte patterns as well, and leave addresses untouched.
 function hasNamedWinLayoutEvidence(text) {
-  const sample = String(text || "");
+  const sample = withoutZeroWidthSpace(text);
   if (containsMyanmar(sample) || /(?:https?:\/\/|www\.|\b[a-z0-9.-]+\.[a-z]{2,}\b)/iu.test(sample)) return false;
   const english = englishLikeness(sample);
   if (english.verdict === "english" || english.letters < 8) return false;
@@ -212,7 +213,7 @@ export function streamPdfPages(source, detector = null, log = () => {}, {
             reason: choice.reason,
             ...(choice.english !== undefined ? { english: choice.english } : {}),
             hasShownText: probe.hasShownText,
-            hasText: Boolean(probe.shared.trim() || probe.legacy.trim()),
+            hasText: Boolean(withoutZeroWidthSpace(probe.shared).trim() || withoutZeroWidthSpace(probe.legacy).trim()),
           };
           onPagePrefix?.(idx, prefix, parsingPath, checkpoint);
           if (parsingPath !== PDF_PARSING_PATHS.LEGACY) return shared;

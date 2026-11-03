@@ -1,11 +1,8 @@
 import { getMasterMapData } from "./cleanup.js";
+import { withoutZeroWidthSpace } from "./zero-width.js";
 
 const E = "\u1031";
 const AA = "\u102C";
-const ASAT = "\u103A";
-const DOT = "\u1037";
-const TONE = "\u1038";
-const YA = "\u103B";
 const RA = "\u103C";
 
 let engineBases = null;
@@ -23,7 +20,8 @@ function isEngineBase(ch) {
 // before a pattern (or a virtual boundary at the start of a line).
 export function arrangeZawCodeOrder(text) {
   if (typeof text !== "string") throw new TypeError("Expected text");
-  const chars = Array.from(text);
+  // The caller applies this result only in the ZawCode lane; comparisons use a copy.
+  const chars = Array.from(withoutZeroWidthSpace(text));
   const out = [];
 
   for (let i = 0; i < chars.length;) {
@@ -50,16 +48,6 @@ export function arrangeZawCodeOrder(text) {
         i += 4;
         continue;
       }
-      if (current === E && isEngineBase(next) && after === ASAT && (fourth === DOT || fourth === TONE)) {
-        out.push(next, ASAT, fourth, E);
-        i += 4;
-        continue;
-      }
-      if (current === E && isEngineBase(next) && isEngineBase(after) && fourth === YA) {
-        out.push(next, E, after, YA);
-        i += 4;
-        continue;
-      }
       if (current === RA && isEngineBase(next) && after === E && fourth === RA && isEngineBase(fifth)) {
         out.push(next, RA, fifth, RA, E);
         i += 5;
@@ -67,11 +55,6 @@ export function arrangeZawCodeOrder(text) {
       }
       if (current === E && isEngineBase(next) && after === AA) {
         out.push(next, AA, E);
-        i += 3;
-        continue;
-      }
-      if (current === E && isEngineBase(next) && after === YA) {
-        out.push(next, YA, E);
         i += 3;
         continue;
       }

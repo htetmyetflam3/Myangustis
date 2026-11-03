@@ -7,7 +7,7 @@ import { getEngineNormalize } from "../../../B.Parser/_path.js";
 import { arrangeZawCodeOrder, orderZawCodePages } from "../../../B.Parser/main/parser/text/zawcode-order.js";
 import { repairFromScanVerdict } from "../../../B.Parser/main/parser/text/repair.js";
 import { scanText } from "../../../B.Parser/main/parser/text/scan.js";
-import { markOrderAligned, normalizePageLines } from "../../../B.Parser/main/parser/text/page-decision.js";
+import { choosePageParser, markOrderAligned, normalizePageLines } from "../../../B.Parser/main/parser/text/page-decision.js";
 import { normalizeOutputText, protectedCharacters } from "../../../B.Parser/main/parser/text/preserved-transform.js";
 import { finishPageToFile, normalizePageToFile } from "../../../B.Parser/main/parser/text/page-file-decision.js";
 import { Rabbit } from "../../../B.Parser/main/parser/text/rabbit.js";
@@ -22,7 +22,7 @@ function codePoints(text) {
 
 test("the four indexed patterns preserve position zero", () => {
   for (const [input, expected] of [
-    ["Xေကျ", "Xကျေ"],
+    ["Xေကာ", "Xကာေ"],
     ["Xေြက", "Xကြေ"],
     ["Xြက", "Xကြ"],
     ["Xေက", "Xကေ"],
@@ -33,7 +33,7 @@ test("the four indexed patterns preserve position zero", () => {
 });
 
 test("the four patterns can start at the beginning of a line", () => {
-  assert.equal(arrangeZawCodeOrder("ေကျ"), "ကျေ");
+  assert.equal(arrangeZawCodeOrder("ေကာ"), "ကာေ");
   assert.equal(arrangeZawCodeOrder("ေြက"), "ကြေ");
   assert.equal(arrangeZawCodeOrder("ြက"), "ကြ");
   assert.equal(arrangeZawCodeOrder("ေက"), "ကေ");
@@ -57,22 +57,27 @@ test("the eight supplied indexed swaps produce the stated sequences", () => {
       const result = arrangeZawCodeOrder(prefix + input);
       assert.equal(result, prefix + expected);
       assert.deepEqual(codePoints(result), codePoints(prefix + input));
+      const chars = Array.from(prefix + input);
+      for (let i = 0; i <= chars.length; i += 1) {
+        const withZeroWidth = [...chars.slice(0, i), "\u200b", ...chars.slice(i)].join("");
+        assert.equal(arrangeZawCodeOrder(withZeroWidth), prefix + expected, `zero width at ${i}`);
+      }
+      assert.equal(arrangeZawCodeOrder(chars.join("\u200b\u200b")), prefix + expected);
     }
   }
 });
 
-test("asat and the original tone stay together before 31", () => {
-  const asat = "\u103a";
-  for (const tone of ["\u1038", "\u1037"]) {
-    const input = "X" + E + "\u1000" + asat + tone;
-    const expected = "X" + "\u1000" + asat + tone + E;
+test("rule 4 leaves characters outside its pattern in place", () => {
+  for (const suffix of [YA, "\u103a\u1037", "\u103a\u1038", RA + "\u102c"]) {
+    const input = "X" + E + "\u1000" + suffix;
+    const expected = "X" + "\u1000" + E + suffix;
     const result = arrangeZawCodeOrder(input);
     assert.equal(result, expected);
     assert.deepEqual(codePoints(result), codePoints(input));
   }
 });
 
-test("safety pattern 01234 becomes 02134", () => {
+test("rule 4 leaves a following base and 3B outside its pattern", () => {
   for (const [base1, base2] of [["က", "မ"], ["ဣ", "ဥ"], ["ဦ", "ဪ"]]) {
     const input = "X" + E + base1 + base2 + YA + "ို";
     const expected = "X" + base1 + E + base2 + YA + "ို";
@@ -82,7 +87,7 @@ test("safety pattern 01234 becomes 02134", () => {
   }
 });
 
-test("safety pattern 012345 becomes 021543", () => {
+test("the eighth supplied pattern becomes 021543", () => {
   for (const [base1, base2] of [["က", "ခ"], ["ဣ", "ဥ"], ["ဿ", "၎"]]) {
     const input = "X" + RA + base1 + E + RA + base2 + "ို";
     const expected = "X" + base1 + RA + base2 + RA + E + "ို";
@@ -92,7 +97,7 @@ test("safety pattern 012345 becomes 021543", () => {
   }
 });
 
-test("safety patterns are arranged before per-line normalize", () => {
+test("supplied patterns are arranged before per-line normalize", () => {
   const inputs = [E + "က" + "မ" + YA, RA + "က" + E + RA + "ခ"];
   const expected = ["က" + E + "မ" + YA, "က" + RA + "ခ" + RA + E];
   const calls = [];
@@ -138,9 +143,9 @@ test("base matching uses the Engine MMap.Base inventory", async () => {
     assert.equal(arrangeZawCodeOrder(RA + base), base + RA, base);
     assert.equal(arrangeZawCodeOrder(E + RA + base), base + RA + E, base);
     assert.equal(arrangeZawCodeOrder(E + base + "\u102c"), base + "\u102c" + E, base);
-    assert.equal(arrangeZawCodeOrder(E + base + YA), base + YA + E, base);
+    assert.equal(arrangeZawCodeOrder(E + base + YA), base + E + YA, base);
     for (const tone of ["\u1037", "\u1038"]) {
-      assert.equal(arrangeZawCodeOrder(E + base + "\u103a" + tone), base + "\u103a" + tone + E, base);
+      assert.equal(arrangeZawCodeOrder(E + base + "\u103a" + tone), base + E + "\u103a" + tone, base);
     }
   }
   for (const cp of [0x1022, 0x1024, 0x1028]) {
@@ -149,11 +154,22 @@ test("base matching uses the Engine MMap.Base inventory", async () => {
   }
 });
 
-test("patterns do not cross line breaks or invisible characters", () => {
+test("ZawCode swaps trim U+200B but do not cross lines or other characters", () => {
   assert.equal(arrangeZawCodeOrder("ေ\nက"), "ေ\nက");
-  assert.equal(arrangeZawCodeOrder("ေ\u200bက"), "ေ\u200bက");
-  assert.equal(arrangeZawCodeOrder("\u200bေက"), "\u200bကေ");
+  assert.equal(arrangeZawCodeOrder("ေ\u200bက"), "ကေ");
+  assert.equal(arrangeZawCodeOrder("\u200bေက\u200b"), "ကေ");
+  assert.equal(arrangeZawCodeOrder("ေ\u200bေက"), "ေေက");
+  assert.equal(arrangeZawCodeOrder("ေ\u200cက"), "ေ\u200cက");
   assert.throws(() => arrangeZawCodeOrder(null), TypeError);
+});
+
+test("the checkpoint chooses a lane using a zero-width-free comparison", () => {
+  for (const sample of ["", "Page-1", "English text", "jrefrmo'gtwGJ (1)? tcef; (1)trSmpmjrefrmo'gukd", "ေက"]) {
+    const withZeroWidth = `\u200b${Array.from(sample).join("\u200b")}\u200b`;
+    const probe = { shared: withZeroWidth };
+    assert.deepEqual(choosePageParser(probe), choosePageParser({ shared: sample }), sample);
+    assert.equal(probe.shared, withZeroWidth);
+  }
 });
 
 test("scan ordering is ZawCode-only and requires a scan verdict", () => {
@@ -172,10 +188,10 @@ test("repair ordering precedes normalize once per line", () => {
   const normalize = (line) => { calls.push(line); return `<${line}>`; };
   const result = orderZawCodePages(pages, {}, { path: "zawcode" });
   assert.deepEqual(calls, []);
-  assert.equal(result[0].text, "သေမှ\nကျေိ");
-  assert.deepEqual(result[0].lines, [[1, 2, 10, "သေမှ"], [3, 4, 10, "ကျေိ"]]);
-  assert.equal(normalizeOutputText(result[0].text, normalize), "<သေမှ>\n<ကျေိ>");
-  assert.deepEqual(calls, ["သေမှ", "ကျေိ"]);
+  assert.equal(result[0].text, "သေမှ\nကေျိ");
+  assert.deepEqual(result[0].lines, [[1, 2, 10, "သေမှ"], [3, 4, 10, "ကေျိ"]]);
+  assert.equal(normalizeOutputText(result[0].text, normalize), "<သေမှ>\n<ကေျိ>");
+  assert.deepEqual(calls, ["သေမှ", "ကေျိ"]);
   assert.equal(pages[0].text, source);
 });
 
@@ -187,12 +203,13 @@ test("Engine normalize, not mapperNormalize, follows repair ordering", async () 
   const source = "ေသမှ\nေြကိ\nေကျိ";
   const pages = [{ text: source, lines: source.split("\n").map((line) => [0, 0, 10, line]) }];
   const result = orderZawCodePages(pages, scanText(source), { path: "zawcode" });
-  assert.equal(normalizeOutputText(result[0].text, normalize), "သေမှ\nကြေိ\nကျေိ");
+  assert.equal(result[0].text, "သေမှ\nကြေိ\nကေျိ");
+  assert.equal(normalizeOutputText(result[0].text, normalize), "သေမှ\nကြေိ\nကေျိ");
   assert.deepEqual(result[0].lines.map((line) => line[3]), result[0].text.split("\n"));
-  // The ZawCode swap does not alter U+200B; final Engine normalization is separate.
-  assert.equal(arrangeZawCodeOrder("\u200bေက"), "\u200bကေ");
+  // Only the chosen ZawCode swap trims U+200B; normalization stays separate.
+  assert.equal(arrangeZawCodeOrder("\u200bေက"), "ကေ");
   const ordered = orderZawCodePages([{ text: "\u200bေက" }], {}, { path: "zawcode" });
-  assert.equal(ordered[0].text, "\u200bကေ");
+  assert.equal(ordered[0].text, "ကေ");
   assert.equal(normalizeOutputText(ordered[0].text, normalize), normalize(ordered[0].text));
 });
 
@@ -219,13 +236,13 @@ test("Unicode mark order ignores spaces and accepts canonical asat order", () =>
   assert.equal(markOrderAligned("ေ က"), false);
 });
 
-test("the swap leaves U+200B alone; final normalization follows the Engine", async () => {
+test("the lane decision ignores U+200B without trimming non-ZawCode text", async () => {
   const normalize = await getEngineNormalize();
   const zeroWidth = "\u200b";
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "zawcode-page-test-"));
-  const finish = (input) => {
+  const finish = (input, options = {}) => {
     const store = { *lines() { yield [0, 0, 10, input]; } };
-    const result = finishPageToFile(store, { directory: dir, parsingPath: "zawgyi-one" });
+    const result = finishPageToFile(store, { directory: dir, parsingPath: "zawgyi-one", ...options });
     let output;
     try {
       const parsed = [...result.text.chunks()].join("");
@@ -238,15 +255,25 @@ test("the swap leaves U+200B alone; final normalization follows the Engine", asy
     assert.equal(unchanged.decision, "aligned");
     assert.equal(unchanged.parsed, zeroWidth + "ြ");
     assert.equal(unchanged.text, normalize(unchanged.parsed));
-    const ordered = finish(zeroWidth + "ြက");
+    const ordered = finish(zeroWidth + "ြ" + zeroWidth + "က");
     assert.equal(ordered.decision, "zawcode");
-    assert.equal(ordered.parsed, zeroWidth + "ကြ");
+    assert.equal(ordered.parsed, "ကြ");
     assert.equal(ordered.text, normalize(ordered.parsed));
     const otherFormats = "\u200c\u200d\u034f";
     const mixed = finish(zeroWidth + otherFormats + "ြက");
     assert.equal(mixed.decision, "zawcode");
-    assert.equal(mixed.parsed, zeroWidth + otherFormats + "ကြ");
+    assert.equal(mixed.parsed, otherFormats + "ကြ");
     assert.equal(mixed.text, normalize(mixed.parsed));
+    const unaligned = "ေ" + zeroWidth + "ကိျု";
+    const unknown = finish(unaligned);
+    assert.equal(unknown.decision, "unaligned-unknown");
+    assert.equal(unknown.parsed, unaligned);
+    const unicode = finish(unaligned, { fontKinds: new Set(["UNICODE"]) });
+    assert.equal(unicode.decision, "unaligned-unicode");
+    assert.equal(unicode.parsed, unaligned);
+    const rabbit = finish(unaligned, { fontKinds: new Set(["ZAWGYI"]) });
+    assert.equal(rabbit.decision, "rabbit");
+    assert.equal(rabbit.parsed, Rabbit.zg2uni(unaligned, { preserveSpaces: true }));
     const glue = finish("#\u00a0\u200d");
     assert.equal(glue.parsed, "#\u00a0\u200d");
     assert.equal(glue.text, normalize(glue.parsed));
