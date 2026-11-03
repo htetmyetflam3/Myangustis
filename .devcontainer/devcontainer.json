@@ -1,24 +1,13 @@
 {
-  "name": "Full Dev Stack (Node, Python, MuPDF, UV, SQLite, GH)",
-  "build": {
-    "dockerfile": "Dockerfile"
+  "name": "Myangustis",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12",
+      "installTools": true
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/sshd:1": {}
   },
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "ms-python.python",
-        "charliermarsh.ruff",
-        "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode",
-        "GitHub.vscode-pull-request-github",
-        "alexcvzz.vscode-sqlite"
-      ],
-      "settings": {
-        "terminal.integrated.defaultProfile.linux": "bash",
-        "python.defaultInterpreterPath": "/usr/bin/python3"
-      }
-    }
-  },
-  "remoteUser": "vscode",
-  "postCreateCommand": "echo '✅ Container Ready!' && node -v && yarn -v && python3 -c 'import fitz; print(\"PyMuPDF Version:\", fitz.__version__)' && gh --version && uv --version"
+  "postCreateCommand": "bash -c 'apt-get update && apt-get install -y libcairo2-dev libpango1.0-dev libmupdf-dev tesseract-ocr-mya && npm install && uv venv && uv pip install -r pyproject.toml'"
 }
