@@ -225,19 +225,34 @@ DEFAULT_PAINT = {"slot": "#D6EAF8", "rule": "#FF6EAE",
                  "base": "#FFC300", "ink": "#000000"}
 
 
-def lineSvg(width, frame, uses, defs, pitch=None, label=None, paint=None) -> str:
+def sourceClip(width, height, clip_id, scene):
+    """Keep source ink within the original page viewport."""
+    if height is None or clip_id is None or scene is None:
+        return "", ""
+    safe_id = _esc(clip_id)
+    return (f'<defs><clipPath id="{safe_id}"><rect x="0" y="0" '
+            f'width="{fixed(width)}" height="{fixed(height)}"/></clipPath></defs>',
+            f' clip-path="url(#{safe_id})"')
+
+
+def lineSvg(width, frame, uses, defs, pitch=None, label=None, paint=None,
+            definitions=None, namespaces="", scene=None, source_height=None, clip_id=None,
+            full_page=False) -> str:
     """One line as a standalone SVG on the page-width canvas."""
     c = {**DEFAULT_PAINT, **(paint or {})}
     pad = frame["size"] * 0.6
-    top = frame["r1"] - pad
-    bot = frame["r4"] + pad
+    top = min(0, frame["r1"] - pad) if full_page and source_height is not None else frame["r1"] - pad
+    bot = max(source_height, frame["r4"] + pad) if full_page and source_height is not None else frame["r4"] + pad
     h = bot - top
 
     used = {u["href"] for u in uses}
     defsXml = "".join(f'<path id="{_esc(i)}" d="{defs[i]}"/>'
                       for i in defs if i in used)
 
-    ink = "".join(u["raw"] for u in uses)
+    ink = "".join(u["raw"] for u in uses) if scene is None else scene
+    clip_def, clip_attr = sourceClip(width, source_height, clip_id, scene)
+    defs_block = (f"<defs>{defsXml}</defs>" if definitions is None else definitions) + clip_def
+    source_attr = '' if scene is None else f' data-source-uses="true"{clip_attr}'
 
     rules = "".join(ruleLine(y, width, RULE_W)
                     for y in (frame["r1"], frame["r2"], frame["r4"]))
@@ -251,8 +266,8 @@ def lineSvg(width, frame, uses, defs, pitch=None, label=None, paint=None) -> str
                       f' data-blank="{fixed(blankOf(frame, pitch))}"')
 
     return (
-        '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" '
-        'version="1.1" '
+        '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
+        f'{namespaces} version="1.1" '
         f'width="{fixed(width)}" height="{fixed(h)}" '
         f'viewBox="0 {fixed(top)} {fixed(width)} {fixed(h)}" '
         f'data-line="{idx}" data-baseline="{fixed(frame["baseline"])}" '
@@ -265,8 +280,8 @@ def lineSvg(width, frame, uses, defs, pitch=None, label=None, paint=None) -> str
         f'<rect x="0" y="{fixed(top)}" width="{fixed(width)}" height="{fixed(h)}" fill="#FFFFFF"/>\n'
         f'<rect x="0" y="{fixed(frame["r1"])}" width="{fixed(width)}" '
         f'height="{fixed(frame["slot"])}" fill="{c["slot"]}"/>\n'
-        f'<defs>{defsXml}</defs>\n'
-        f'<g fill="{c["ink"]}">{ink}</g>\n'
+        f'{defs_block}\n'
+        f'<g fill="{c["ink"]}"{source_attr}>{ink}</g>\n'
         f'<g stroke="{c["rule"]}" stroke-width="{RULE_W}" fill="none" '
         f'stroke-linecap="round" stroke-linejoin="round">{rules}</g>\n'
         f'<line x1="{fixed(bd)}" y1="{fixed(frame["r3"])}" '
@@ -277,10 +292,14 @@ def lineSvg(width, frame, uses, defs, pitch=None, label=None, paint=None) -> str
     )
 
 
-def sheetSvg(width, rows, defs, pitch, mode="page", paint=None) -> str:
-    """Many lines as one sheet: page-width canvas, page-space coordinates."""
+def sheetSvg(width, rows, defs, pitch, mode="page", paint=None,
+             definitions=None, namespaces="", scene=None, page_height=None,
+             source_height=None, clip_id=None) -> str:
+    """A page-space sheet; full-page height can retain unframed source uses."""
     if not rows:
         raise ValueError("sheetSvg: no rows — the line selector matched nothing")
+    if scene is not None and mode != "page":
+        raise ValueError("source scene requires page mode")
     c = {**DEFAULT_PAINT, **(paint or {})}
 
     used: set[str] = set()
@@ -313,15 +332,21 @@ def sheetSvg(width, rows, defs, pitch, mode="page", paint=None) -> str:
     if mode == "stack":
         top, h = 0.0, cursor + 8
     else:
-        top = min(r["frame"]["r1"] for r in rows)
-        h = max(r["frame"]["r4"] for r in rows) - top + 8
+        row_top = min(r["frame"]["r1"] for r in rows)
+        top = row_top if page_height is None else min(0, row_top)
+        row_bottom = max(r["frame"]["r4"] for r in rows) + 8
+        h = max(row_bottom, row_bottom if page_height is None else page_height) - top
 
     defsXml = "".join(f'<path id="{_esc(i)}" d="{defs[i]}"/>'
                       for i in defs if i in used)
+    clip_def, clip_attr = sourceClip(width, source_height, clip_id, scene)
+    defs_block = (f"<defs>{defsXml}</defs>" if definitions is None else definitions) + clip_def
+    source_attr = '' if scene is None else f' data-source-uses="true"{clip_attr}'
+    ink = "".join(body) if scene is None else scene
 
     return (
-        '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" '
-        'version="1.1" '
+        '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
+        f'{namespaces} version="1.1" '
         f'width="{fixed(width)}" height="{fixed(h)}" '
         f'viewBox="0 {fixed(top)} {fixed(width)} {fixed(h)}" '
         f'data-lines="{len(rows)}"'
@@ -329,8 +354,8 @@ def sheetSvg(width, rows, defs, pitch, mode="page", paint=None) -> str:
         + f' data-band="{band_list}">\n'
         f'<rect x="0" y="{fixed(top)}" width="{fixed(width)}" height="{fixed(h)}" fill="#FFFFFF"/>\n'
         f'<g fill="{c["slot"]}">{"".join(slots)}</g>\n'
-        f'<defs>{defsXml}</defs>\n'
-        f'<g fill="{c["ink"]}">{"".join(body)}</g>\n'
+        f'{defs_block}\n'
+        f'<g fill="{c["ink"]}"{source_attr}>{ink}</g>\n'
         f'<g stroke="{c["rule"]}" stroke-width="{RULE_W}" fill="none" '
         f'stroke-linecap="round" stroke-linejoin="round">{"".join(slotRules)}</g>\n'
         f'<g stroke="{c["base"]}" stroke-width="{BASE_W}" fill="none" '

@@ -1,5 +1,6 @@
 import { englishLikeness } from "./mm-score.js";
 import { containsMyanmar } from "./detector.js";
+import { withoutZeroWidthSpace } from "./zero-width.js";
 export { normalizePageLines } from "./preserved-transform.js";
 
 const LATIN_LIKE = /^[\x20-\xff\p{Script=Latin}\p{Number}\p{Punctuation}\p{Symbol}\s]+$/u;
@@ -58,7 +59,7 @@ export function choosePageParser(probe, { sourceEncoding = "auto" } = {}) {
   if (sourceEncoding === "unicode" || sourceEncoding === "zawgyi-one") {
     return { parser: "zawgyi-one", reason: "source-encoding" };
   }
-  const text = String(probe?.shared ?? "");
+  const text = withoutZeroWidthSpace(probe?.shared);
   if (!text.trim()) return { parser: "zawgyi-one", reason: "no-checkpoint-text" };
   if (containsMyanmar(text)) return { parser: "zawgyi-one", reason: "myanmar" };
   // A page-number-only checkpoint has no evidence of a legacy font. In

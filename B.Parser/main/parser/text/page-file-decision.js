@@ -8,6 +8,7 @@ import { correctWorldWord, markOrderAligned } from "./page-decision.js";
 import { protectedCharacters } from "./preserved-transform.js";
 import { createRabbitStream } from "./rabbit.js";
 import { StreamingReplace } from "./stream-replace.js";
+import { withoutZeroWidthSpace } from "./zero-width.js";
 
 const READ_SIZE = 64 * 1024;
 
@@ -182,11 +183,12 @@ export function finishPageToFile(store, {
   let count = 0;
   for (const [, , , text] of store.lines()) {
     count += 1;
-    originalHasText ||= Boolean(text.trim());
-    hasMyanmar ||= containsMyanmar(text);
-    aligned &&= markOrderAligned(text);
-    const candidate = arrangeZawCodeOrder(text);
-    candidateChanged ||= candidate !== text;
+    const inspected = withoutZeroWidthSpace(text);
+    originalHasText ||= Boolean(inspected.trim());
+    hasMyanmar ||= containsMyanmar(inspected);
+    aligned &&= markOrderAligned(inspected);
+    const candidate = arrangeZawCodeOrder(inspected);
+    candidateChanged ||= candidate !== inspected;
     candidateAligned &&= markOrderAligned(candidate);
   }
   const unicodeEvidence = fontKinds.has("UNICODE");

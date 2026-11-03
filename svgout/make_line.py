@@ -23,8 +23,7 @@ from scan_frame import (framesOf, pitchOf, blankOf, overflow, bandFor,  # noqa: 
 UNITS = 0.9           # baseline grouping tolerance, as a fraction of the size
 
 NUM = re.compile(r"[A-Za-z]|-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?")
-ARITY = {"M": 2, "L": 2, "T": 2, "H": 1, "V": 1,
-         "C": 6, "S": 4, "Q": 4, "A": 7, "Z": 0}
+ARITY = {"M": 2, "L": 2, "H": 1, "V": 1, "C": 6, "Q": 4, "Z": 0}
 
 
 def bbox_of(d: str, cache: dict):
@@ -55,22 +54,23 @@ def bbox_of(d: str, cache: dict):
 
     cmd = None
     while i < len(tok):
-        if re.match(r"[A-Za-z]", tok[i]):
+        if re.fullmatch(r"[A-Za-z]", tok[i]):
             cmd = tok[i]
             i += 1
-        if cmd is None or i >= len(tok):
-            continue
+        if cmd is None:
+            raise ValueError("invalid glyph path: missing command")
         rel = cmd == cmd.lower()
         C = cmd.upper()
         if C == "Z":
-            x, y = sx, sy
+            x, y, cmd = sx, sy, None
             continue
         n = ARITY.get(C)
         if n is None:
-            i += 1
-            continue
-        if i + n > len(tok) or re.match(r"[A-Za-z]", tok[i]):
-            continue
+            raise ValueError(f"unsupported glyph path command {cmd}")
+        if i + n > len(tok):
+            raise ValueError("invalid glyph path: truncated command")
+        if any(re.fullmatch(r"[A-Za-z]", v) for v in tok[i:i + n]):
+            raise ValueError("invalid glyph path: missing arguments")
         v = [float(tok[i + k]) for k in range(n)]
         i += n
         ox, oy = x, y
@@ -86,7 +86,7 @@ def bbox_of(d: str, cache: dict):
             sx, sy = x, y
             note(x, y)
             cmd = "l" if rel else "L"
-        elif C in ("L", "T"):
+        elif C == "L":
             x = x + v[0] if rel else v[0]
             y = y + v[1] if rel else v[1]
             note(x, y)
@@ -95,51 +95,268 @@ def bbox_of(d: str, cache: dict):
                 note(ox + v[k] if rel else v[k], oy + v[k + 1] if rel else v[k + 1])
             x = ox + v[4] if rel else v[4]
             y = oy + v[5] if rel else v[5]
-        elif C in ("S", "Q"):
+        elif C == "Q":
             for k in range(0, 4, 2):
                 note(ox + v[k] if rel else v[k], oy + v[k + 1] if rel else v[k + 1])
             x = ox + v[2] if rel else v[2]
             y = oy + v[3] if rel else v[3]
-        elif C == "A":
-            x = ox + v[5] if rel else v[5]
-            y = oy + v[6] if rel else v[6]
-            note(x, y)
 
     r = None if x0 == math.inf else [x0, y0, x1, y1]
     cache[d] = r
     return r
 
 
-def collect_uses(svg: str, defs: dict):
-    cache: dict = {}
-    uses, seen = [], set()
-    for m in re.finditer(r"<use\b[^>]*/>", svg):
-        tag = m.group(0)
-        href = re.search(r'(?:xlink:)?href="#([^"]+)"', tag)
-        mat = re.search(r'transform="matrix\(([^)]+)\)"', tag)
-        if not href or not mat:
+# Preserve every use in its source group/order. The reader accepts the SVG form
+# produced by pdf2svg.py; unfamiliar containers or references fail explicitly
+# rather than yielding a partial sheet.
+TAGS = re.compile(r'''<!--[\s\S]*?-->|<\?[\s\S]*?\?>|<!\[CDATA\[[\s\S]*?\]\]>|<![^>]*>|<(?:[^>"']|"[^"]*"|'[^']*')*>''')
+IDENTITY = (1, 0, 0, 1, 0, 0)
+CSS_ATTRS = ("style", "class")
+EFFECT_ATTRS = ("stroke", "stroke-width", "filter", "mask", "marker",
+                "marker-start", "marker-mid", "marker-end")
+
+
+def attr(tag, name):
+    match = re.search(r'(?:^|\s)' + re.escape(name) + r'''\s*=\s*(["'])([\s\S]*?)\1''', tag)
+    return match.group(2) if match else None
+
+
+def has_any(tag, names):
+    return any(attr(tag, name) is not None for name in names)
+
+
+def matrix(value):
+    if value is None:
+        return IDENTITY
+    match = re.fullmatch(r"matrix\s*\(([^)]*)\)\s*", value.strip())
+    if not match:
+        return None
+    try:
+        parts = [float(v) for v in re.split(r"[\s,]+", match.group(1).strip())]
+    except ValueError:
+        return None
+    return parts if len(parts) == 6 and all(math.isfinite(v) for v in parts) else None
+
+
+def multiply(p, q):
+    if p is None or q is None:
+        return None
+    a, b, c, d, e, f = p
+    g, h, i, j, k, l = q
+    return (a * g + c * h, b * g + d * h, a * i + c * j,
+            b * i + d * j, a * k + c * l + e, b * k + d * l + f)
+
+
+def read_scene(source):
+    defs, path_flags, body_defs, references = {}, {}, {}, {}
+    defined, all_ids = set(), set()
+    definitions, scene, source_uses, groups = [], [], [], []
+    defs_depth = defs_start = end = 0
+    root, root_closed = None, False
+    stylesheet = definition_effects = False
+
+    def remember_path(gid, tag):
+        d = attr(tag, "d")
+        if d is None:
+            return
+        defs[gid] = d
+        path_flags[gid] = {"css": has_any(tag, CSS_ATTRS) or attr(tag, "transform") is not None,
+                           "effects": has_any(tag, EFFECT_ATTRS)}
+
+    for match in TAGS.finditer(source):
+        if "<" in source[end:match.start()]:
+            raise ValueError("malformed SVG markup")
+        tag = match.group(0)
+        end = match.end()
+        if tag.startswith("<!--") or tag.startswith("<?"):
             continue
-        a, b, c, d, e, f = (float(v) for v in mat.group(1).split(","))
-        # the page draws each glyph twice: once filled, once stroked. Keep one.
-        key = f"{href.group(1)}:{fixed(e)}:{fixed(f)}"
-        if key in seen:
+        if tag.startswith("<!"):
+            raise ValueError("unsupported SVG declaration")
+        if "<" in tag[1:]:
+            raise ValueError("malformed SVG markup")
+        name_match = re.match(r"<\s*(/?)\s*([A-Za-z_][A-Za-z0-9:_.-]*)", tag)
+        if not name_match:
+            raise ValueError("unsupported SVG tag")
+        closing, name = bool(name_match.group(1)), name_match.group(2)
+        if ":" in name:
+            raise ValueError(f"unsupported namespaced SVG element <{name}>")
+        self_closing = bool(re.search(r"/\s*>$", tag))
+        gid = None if closing else attr(tag, "id")
+        if gid:
+            if gid in all_ids:
+                raise ValueError(f"duplicate SVG id {gid}; the page was not emitted")
+            all_ids.add(gid)
+        href = None if closing else (attr(tag, "xlink:href") or attr(tag, "href"))
+        if name == "use" and href and not href.startswith("#"):
+            raise ValueError("unsupported external SVG use reference; the page was not emitted")
+        if name == "image" and href and not href.startswith(("#", "data:")):
+            raise ValueError("unsupported external SVG image reference; the page was not emitted")
+        if name in ("use", "image") and href and href.startswith("#"):
+            references[href[1:]] = None
+        for ref in re.finditer(r'''url\(\s*(["']?)([^"')]+)\1\s*\)''', tag):
+            value = ref.group(2).strip()
+            if not value.startswith("#"):
+                raise ValueError("unsupported external SVG resource; the page was not emitted")
+            references[value[1:]] = None
+
+        if defs_depth:
+            if gid:
+                defined.add(gid)
+            if not closing and name == "path" and gid:
+                remember_path(gid, tag)
+            if not closing and name == "style":
+                stylesheet = True
+            if not closing and name == "g":
+                if has_any(tag, CSS_ATTRS) or attr(tag, "transform") is not None:
+                    stylesheet = True
+                if has_any(tag, EFFECT_ATTRS):
+                    definition_effects = True
+            if name == "defs" and not closing and not self_closing:
+                defs_depth += 1
+            if name == "defs" and closing:
+                defs_depth -= 1
+                if not defs_depth:
+                    definitions.append(source[defs_start:match.end()])
             continue
-        seen.add(key)
-        gid = href.group(1)
-        bb = bbox_of(defs.get(gid, ""), cache)
-        if not bb:
+        if name == "svg":
+            if not closing and root is None:
+                root = tag
+            elif closing and root and not root_closed and not groups:
+                root_closed = True
+            else:
+                raise ValueError("unsupported nested or malformed SVG root")
             continue
-        bx0, by0, bx1, by1 = bb
-        xs = [a * bx0 + c * by0 + e, a * bx1 + c * by0 + e,
-              a * bx0 + c * by1 + e, a * bx1 + c * by1 + e]
-        ys = [b * bx0 + d * by0 + f, b * bx1 + d * by0 + f,
-              b * bx0 + d * by1 + f, b * bx1 + d * by1 + f]
-        ink = [min(xs), min(ys), max(xs), max(ys)]
-        if ink[2] - ink[0] < 0.01 and ink[3] - ink[1] < 0.01:
-            continue                                   # space ghost
-        uses.append({"href": gid, "x": e, "y": f, "ink": ink,
-                     "size": float(fixed(abs(a))), "raw": tag})
-    return uses
+        if not root or root_closed:
+            raise ValueError("SVG content outside the root element")
+        if name == "defs":
+            if closing:
+                raise ValueError("unexpected closing defs")
+            if self_closing:
+                definitions.append(tag)
+            else:
+                defs_depth, defs_start = 1, match.start()
+            continue
+        if name == "g":
+            if closing:
+                if not groups:
+                    raise ValueError("unmatched SVG group")
+                groups.pop()
+            elif not self_closing:
+                parent = groups[-1] if groups else {"matrix": IDENTITY, "css": False, "effects": False}
+                groups.append({"matrix": multiply(parent["matrix"], matrix(attr(tag, "transform"))),
+                               "css": parent["css"] or has_any(tag, CSS_ATTRS),
+                               "effects": parent["effects"] or has_any(tag, EFFECT_ATTRS)})
+            scene.append({"raw": tag})
+            continue
+        if name == "use":
+            if closing or not self_closing:
+                raise ValueError("unsupported non-empty SVG use")
+            parent = groups[-1] if groups else {"matrix": IDENTITY, "css": False, "effects": False}
+            item = {"raw": tag, "index": len(source_uses), "parent": parent["matrix"], "href": href,
+                    "css": parent["css"] or has_any(tag, CSS_ATTRS),
+                    "effects": parent["effects"] or has_any(tag, EFFECT_ATTRS)}
+            source_uses.append(item)
+            scene.append(item)
+            continue
+        # A body image may be referenced by a later <use>; put that definition
+        # in <defs> without drawing the original image a second time.
+        if name in ("image", "path") and gid and self_closing and not closing:
+            body_defs[gid] = tag
+            if name == "path":
+                remember_path(gid, tag)
+        elif not self_closing or closing:
+            raise ValueError(f"unsupported SVG container <{name}>")
+    if "<" in source[end:]:
+        raise ValueError("malformed SVG markup")
+    if not root or not root_closed or defs_depth or groups:
+        raise ValueError("incomplete SVG page")
+
+    extra = []
+    for gid in references:
+        if gid in defined:
+            continue
+        raw = body_defs.get(gid)
+        if raw is None:
+            raise ValueError(f"cannot preserve SVG reference #{gid}: definition is missing or unsupported")
+        defined.add(gid)
+        extra.append(raw)
+    if extra:
+        definitions.append("<defs>" + "".join(extra) + "</defs>")
+
+    uses, unframed, cache = [], [], {}
+    for item in source_uses:
+        href = item["href"]
+        gid = href[1:] if href and href.startswith("#") else None
+        transform = attr(item["raw"], "transform")
+        combined = None if transform is None else multiply(item["parent"], matrix(transform))
+        try:
+            ox = float(attr(item["raw"], "x") or 0)
+            oy = float(attr(item["raw"], "y") or 0)
+        except ValueError:
+            ox = oy = math.nan
+        if (not gid or gid not in defs or combined is None
+                or not math.isfinite(ox) or not math.isfinite(oy)
+                or stylesheet or item["css"] or path_flags[gid]["css"]):
+            unframed.append(item["index"])
+            continue
+        a, b, c, d, tx, ty = combined
+        e, f = tx + a * ox + c * oy, ty + b * ox + d * oy
+        size = float(fixed(math.hypot(a, b)))
+        # The four rules are horizontal. Keep rotated glyphs on the full page
+        # rather than guessing which horizontal line they belong to.
+        if not size or abs(b) > size * 1e-6:
+            unframed.append(item["index"])
+            continue
+        bb = bbox_of(defs[gid], cache)
+        ink = None
+        if bb:
+            x0, y0, x1, y1 = bb
+            xs = [a * x0 + c * y0 + e, a * x1 + c * y0 + e,
+                  a * x0 + c * y1 + e, a * x1 + c * y1 + e]
+            ys = [b * x0 + d * y0 + f, b * x1 + d * y0 + f,
+                  b * x0 + d * y1 + f, b * x1 + d * y1 + f]
+            ink = [min(xs), min(ys), max(xs), max(ys)]
+        uses.append({"href": gid, "x": e, "y": f, "ink": ink, "size": size,
+                     "raw": item["raw"], "index": item["index"],
+                     "fullPage": item["effects"] or path_flags[gid]["effects"] or definition_effects})
+    try:
+        width, height = float(attr(root, "width")), float(attr(root, "height"))
+    except (TypeError, ValueError):
+        raise ValueError("SVG page needs numeric width and height") from None
+    if not (math.isfinite(width) and width > 0 and math.isfinite(height) and height > 0):
+        raise ValueError("SVG page needs numeric width and height")
+    if (attr(root, "xmlns") != "http://www.w3.org/2000/svg"
+            or attr(root, "xmlns:xlink") not in (None, "http://www.w3.org/1999/xlink")):
+        raise ValueError("unsupported SVG root namespace")
+    viewbox = attr(root, "viewBox")
+    if viewbox is not None:
+        try:
+            box = [float(v) for v in re.split(r"[\s,]+", viewbox.strip())]
+        except ValueError:
+            box = []
+        expected = (0, 0, width, height)
+        if (len(box) != 4 or any(not math.isfinite(v)
+                                 or abs(v - expected[i]) > max(width, height, 1) * 1e-6
+                                 for i, v in enumerate(box))):
+            raise ValueError("unsupported SVG root viewBox; the page was not emitted")
+    for name in ("style", "class", "transform", "fill", "stroke", "opacity", "color",
+                 "clip-path", "mask", "filter", "display", "visibility", "overflow"):
+        if attr(root, name) is not None:
+            raise ValueError(f"unsupported SVG root {name}; the page was not emitted")
+    namespaces = "".join(ns.group(0) for ns in re.finditer(
+        r'''\s+xmlns:([A-Za-z_][\w.-]*)\s*=\s*(["'])([\s\S]*?)\2''', root)
+        if ns.group(1) != "xlink")
+    clip_id = "__svgout_page_clip"
+    while clip_id in all_ids:
+        clip_id += "_"
+    return {"width": width, "height": height, "defs": defs,
+            "definitions": "".join(definitions), "namespaces": namespaces, "scene": scene,
+            "uses": uses, "unframed": unframed, "clip_id": clip_id}
+
+
+def render_scene(scene, selected=None):
+    return "".join(item["raw"] for item in scene
+                   if "index" not in item or selected is None or item["index"] in selected)
 
 
 def modal(values):
@@ -185,15 +402,14 @@ def main():
     only = sys.argv[4] if len(sys.argv) > 4 else ""
     page = src.replace("\\", "/").split("/")[-1].rsplit(".", 1)[0]
 
-    svg = open(src, encoding="utf-8").read()
-    W = float(re.search(r'width="([\d.]+)"', svg).group(1))
-
-    defs = {m.group(1): m.group(2)
-            for m in re.finditer(r'<path id="([^"]+)" d="([^"]*)"', svg)}
-
-    uses = collect_uses(svg, defs)
+    with open(src, encoding="utf-8") as fh:
+        svg = fh.read()
+    page_scene = read_scene(svg)
+    W, H = page_scene["width"], page_scene["height"]
+    defs, uses, unframed = (page_scene["defs"], page_scene["uses"],
+                            page_scene["unframed"])
     if not uses:
-        print(f"no glyphs in {src} — is it a text page exported with text_as_path?",
+        print(f"no frameable glyph uses in {src} — the page was not emitted",
               file=sys.stderr)
         return 1
 
@@ -210,28 +426,52 @@ def main():
     page_lines = None
     try:
         with open(lines_path, encoding="utf-8") as fh:
-            page_lines = json.load(fh)["lines"]
-    except OSError:
+            metadata = json.load(fh)
+        if metadata.get("coordinates") == "svg-page":
+            page_lines = metadata["lines"]
+        else:
+            print(f"unverified coordinates in {lines_path} — falling back to a baseline tolerance; "
+                  "re-export the page with pdf2svg.py", file=sys.stderr)
+    except FileNotFoundError:
         print(f"no {lines_path} — falling back to a baseline tolerance; "
               "run pdf2svg.py to get exact line boundaries", file=sys.stderr)
+    if page_lines is not None and not isinstance(page_lines, list):
+        raise ValueError("invalid page line metadata")
+    if page_lines == []:
+        print(f"no text lines in {lines_path} — falling back to a baseline tolerance",
+              file=sys.stderr)
 
+    def inferred_row(glyphs):
+        return {"x": min(u["ink"][0] if u["ink"] else u["x"] for u in glyphs),
+                "y": modal(float(fixed(u["y"])) for u in glyphs),
+                "size": modal(u["size"] for u in glyphs),
+                "text": "", "glyphs": glyphs}
+
+    def nearest_row(u, candidates):
+        best, distance = None, math.inf
+        for r in candidates:
+            d = abs(r["y"] - u["y"])
+            if d < distance:
+                best, distance = r, d
+        return best if distance <= tol else None
+
+    unmatched_ink = []
     if page_lines:
-        rows = [{**{"x": x, "y": y, "size": size, "text": text}, "glyphs": []}
+        rows = [{"x": x, "y": y, "size": size, "text": text, "glyphs": []}
                 for x, y, size, text in page_lines]
-        # each glyph joins the nearest declared baseline; anything further than
-        # tol away belongs to no line and is dropped rather than smeared onto a
-        # neighbour. The fallback below already grouped its own glyphs.
         for u in uses:
-            best, dist = None, math.inf
-            for r in rows:
-                d = abs(r["y"] - u["y"])
-                if d < dist:
-                    best, dist = r, d
-            if best is not None and dist <= tol:
-                best["glyphs"].append(u)
+            row = nearest_row(u, rows)
+            if row is not None:
+                row["glyphs"].append(u)
+            elif u["ink"]:
+                unmatched_ink.append(u)
+            else:
+                unframed.append(u["index"])
     else:
+        # Empty outlines do not establish a line. Attach them to a nearby
+        # inferred row, or retain them unframed on the full page sheet.
         buckets: dict[float, list] = {}
-        for u in uses:
+        for u in (v for v in uses if v["ink"]):
             key = None
             for k in buckets:
                 if abs(k - u["y"]) <= tol:
@@ -241,11 +481,27 @@ def main():
                 key = u["y"]
                 buckets[key] = []
             buckets[key].append(u)
-        rows = [{"x": min(u["ink"][0] for u in g),
-                 "y": modal(float(fixed(u["y"])) for u in g),
-                 "size": modal(u["size"] for u in g),
-                 "text": "", "glyphs": g}
-                for _, g in sorted(buckets.items(), key=lambda kv: kv[0])]
+        rows = [inferred_row(g) for g in buckets.values()]
+        for u in (v for v in uses if not v["ink"]):
+            row = nearest_row(u, rows)
+            if row is not None:
+                row["glyphs"].append(u)
+            else:
+                unframed.append(u["index"])
+
+    if unmatched_ink:
+        buckets = {}
+        for u in unmatched_ink:
+            buckets.setdefault(fixed(u["y"]), []).append(u)
+        rows.extend(inferred_row(g) for g in buckets.values())
+        print(f"{len(unmatched_ink)} unmatched glyph uses retained in "
+              f"{len(buckets)} inferred row(s)", file=sys.stderr)
+    rows.sort(key=lambda r: (r["y"], r["x"]))
+    if not rows:
+        raise ValueError("no text rows or visible glyphs; the page was not emitted")
+    if unframed:
+        print(f"{len(unframed)} uses could not be assigned to a line; retained "
+              "at their original positions on the full sheet", file=sys.stderr)
 
     # Each line takes the calibrated band, raised only if its own ink needs
     # more. The four rules stay equally spaced; only the spacing scales, so the
@@ -257,21 +513,17 @@ def main():
     frames = framesOf(lines)
     pitch = pitchOf(frames)
 
-    def row_of(y):
-        for r in rows:
-            if abs(r["y"] - y) < 1e-9:
-                return r
-        raise KeyError(f"no row at baseline {y}")
-
-    def rows_uses(y):
-        return row_of(y)["glyphs"]
+    def rows_uses(frame):
+        return rows[frame["index"] - 1]["glyphs"]
 
     rnd = mulberry32(seed)
     pick = 1 + int(rnd() * len(frames))
     frame = frames[pick - 1]
-    line_uses = rows_uses(frame["baseline"])
+    line_uses = rows_uses(frame)
 
-    print(f"{page}   width {num(W)}   {len(uses)} glyphs   {len(frames)} lines")
+    print(f"{page}   width {num(W)}   {len(uses)} glyph uses   {len(frames)} lines")
+    print(f"assigned {sum(len(r['glyphs']) for r in rows)}/{len(uses)} glyph uses; "
+          f"{len(unframed)} uses retained unframed on the full sheet")
     print("sizes " + ", ".join(num(v) for v in sorted({f["size"] for f in frames})))
     blank = blankOf(frame, pitch)
     print(f"pitch {num(pitch) if pitch else '— (not uniform)'}   "
@@ -283,25 +535,50 @@ def main():
     print(f"random line {pick} of {len(frames)}   "
           f"baseline {fixed(frame['baseline'])}   {len(line_uses)} glyphs")
 
-    bad = 0
+    bad = unchecked = 0
     for f in frames:
-        o = overflow(f, rows_uses(f["baseline"]))
+        glyphs = rows_uses(f)
+        if any(u["fullPage"] for u in glyphs):
+            unchecked += 1
+            continue
+        o = overflow(f, glyphs)
         if not o["ok"]:
             bad += 1
             print(f"  ! line {f['index']} (size {num(f['size'])}, "
                   f"band {fixed(f['band'], 3)}) "
                   f"ink {fixed(o['above'])} above / {fixed(o['below'])} below")
-    print(f"fit: {len(frames) - bad}/{len(frames)} lines inside the rules")
-
-    open(f"svgout/known/line-sample{suffix}.svg", "w", encoding="utf-8").write(
-        lineSvg(width=W, frame=frame, uses=line_uses, defs=defs, pitch=pitch,
-                label=f"{page} line {pick}"))
+    fit_note = f"; {unchecked} not assessed for strokes or effects" if unchecked else ""
+    print(f"fit: {len(frames) - bad - unchecked}/{len(frames)} lines inside the rules{fit_note}")
 
     keep = parse_lines(only, len(frames))
-    selected = [f for f in frames if f["index"] in keep] if keep else frames
-    all_rows = [{"frame": f, "uses": rows_uses(f["baseline"])} for f in selected]
-    open(f"svgout/known/frame-sheet{suffix}.svg", "w", encoding="utf-8").write(
-        sheetSvg(width=W, rows=all_rows, defs=defs, pitch=pitch))
+    selected = frames if keep is None else [f for f in frames if f["index"] in keep]
+    if not selected:
+        raise ValueError("the line selector matched nothing; the page was not emitted")
+    all_rows = [{"frame": f, "uses": rows_uses(f)} for f in selected]
+    all_lines = len(selected) == len(frames)
+    selected_ids = (None if all_lines else
+                    {u["index"] for row in all_rows for u in row["uses"]})
+    line_ids = {u["index"] for u in line_uses}
+    line_full_page = any(u["fullPage"] for u in line_uses)
+    sheet_full_page = all_lines or any(u["fullPage"] for row in all_rows for u in row["uses"])
+    if line_full_page or (not all_lines and sheet_full_page):
+        print("stroke or effects present; retained the source page viewport to avoid clipping a selected use",
+              file=sys.stderr)
+
+    line_output = lineSvg(width=W, frame=frame, uses=line_uses, defs=defs, pitch=pitch,
+                          label=f"{page} line {pick}", definitions=page_scene["definitions"],
+                          namespaces=page_scene["namespaces"], source_height=H,
+                          clip_id=page_scene["clip_id"], full_page=line_full_page,
+                          scene=render_scene(page_scene["scene"], line_ids))
+    sheet_output = sheetSvg(width=W, rows=all_rows, defs=defs, pitch=pitch,
+                            definitions=page_scene["definitions"], namespaces=page_scene["namespaces"],
+                            scene=render_scene(page_scene["scene"], selected_ids),
+                            source_height=H, clip_id=page_scene["clip_id"],
+                            page_height=H if sheet_full_page else None)
+    with open(f"svgout/known/line-sample{suffix}.svg", "w", encoding="utf-8") as fh:
+        fh.write(line_output)
+    with open(f"svgout/known/frame-sheet{suffix}.svg", "w", encoding="utf-8") as fh:
+        fh.write(sheet_output)
 
     print(f"-> svgout/known/line-sample{suffix}.svg")
     print(f"-> svgout/known/frame-sheet{suffix}.svg")

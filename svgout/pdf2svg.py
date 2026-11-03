@@ -86,7 +86,9 @@ def text_band(page, frac=0.55):
         return (r.x0 + 20, r.y0 + 40, w, r.height * 0.18)
 
     blocks.sort(key=lambda b: len(b[4]), reverse=True)
-    x0, y0, x1, y1 = blocks[0][:4]
+    # Text extraction uses the unrotated page; the PDF/SVG proofs use the
+    # displayed page coordinates.
+    x0, y0, x1, y1 = pymupdf.Rect(blocks[0][:4]) * page.rotation_matrix
     w = min(page.rect.width - x0 - 10, max(x1 - x0, page.rect.width * frac))
     h = min(page.rect.height - y0 - 10, max(y1 - y0, page.rect.height * 0.12))
     return (x0, y0, w, h)
@@ -162,10 +164,13 @@ def page_lines(page):
                 continue
             text = "".join(sp["text"] for sp in ln["spans"])
             size = max(sp["size"] for sp in spans)
-            out.append([round(ln["bbox"][0], 2),
-                        round(spans[0]["origin"][1], 2),
-                        round(size, 2),
-                        text])
+            # PyMuPDF's text origins and boxes are unrotated, whereas its SVG
+            # page is displayed with /Rotate applied. Use one coordinate space
+            # for both the line metadata and the exported <use> matrices.
+            bbox = pymupdf.Rect(ln["bbox"]) * page.rotation_matrix
+            origin = pymupdf.Point(spans[0]["origin"]) * page.rotation_matrix
+            out.append([round(bbox.x0, 2), round(origin.y, 2),
+                        round(size, 2), text])
     # Several text-layer lines can share one baseline (a heading and the body
     # beside it, two columns, a line split by a gap). One baseline is one row:
     # the frame is page-wide, so every glyph sitting on that baseline belongs to
@@ -182,8 +187,7 @@ def page_lines(page):
     return sorted(merged.values(), key=lambda r: (r[1], r[0]))
 
 
-def process(path, page_no, dpi):
-    doc = pymupdf.open(path)
+def process(doc, path, page_no, dpi):
     if not 1 <= page_no <= doc.page_count:
         raise SystemExit(f"{path}: page {page_no} out of range 1..{doc.page_count}")
     page = doc[page_no - 1]
@@ -198,20 +202,22 @@ def process(path, page_no, dpi):
     with open(svg_path, "w", encoding="utf-8") as fh:
         fh.write(page.get_svg_image(matrix=pymupdf.Matrix(1, 1), text_as_path=True))
 
+    lines = page_lines(page)
     lines_path = os.path.join(OUT, base + ".lines.json")
     with open(lines_path, "w", encoding="utf-8") as fh:
         json.dump({"width": round(page.rect.width, 2),
                    "height": round(page.rect.height, 2),
-                   "lines": page_lines(page)}, fh, ensure_ascii=False)
+                   "coordinates": "svg-page",
+                   "rotation": page.rotation,
+                   "lines": lines}, fh, ensure_ascii=False)
 
     scale = dpi / 72.0
     pdf_png = os.path.join(WORK, base + "-pdf.png")
     svg_png = os.path.join(WORK, base + "-svg.png")
     page.get_pixmap(dpi=dpi).save(pdf_png)
 
-    svg_doc = pymupdf.open(svg_path)
-    svg_doc[0].get_pixmap(matrix=pymupdf.Matrix(scale, scale)).save(svg_png)
-    svg_doc.close()
+    with pymupdf.open(svg_path) as svg_doc:
+        svg_doc[0].get_pixmap(matrix=pymupdf.Matrix(scale, scale)).save(svg_png)
 
     stats = png_stats(pdf_png, svg_png)
     band = text_band(page)
@@ -226,14 +232,12 @@ def process(path, page_no, dpi):
     fonts = sorted({f[3] for f in page.get_fonts(full=True)})
     page_pt = f"{page.rect.width:.0f}x{page.rect.height:.0f}"
 
-    doc.close()
-
     return {
         "source": path,
         "page": page_no,
         "svg": os.path.basename(svg_path),
         "lines_json": os.path.basename(lines_path),
-        "lines": len(page_lines(page)),
+        "lines": len(lines),
         "svg_kib": os.path.getsize(svg_path) / 1024,
         "page_pt": page_pt,
         "chars": chars,
@@ -251,19 +255,22 @@ def main():
     args = ap.parse_args()
 
     results = []
-    for p in parse_pages(args.pages):
-        r = process(args.file, p, args.dpi)
-        results.append(r)
-        print(f"\n{r['source']}  page {r['page']}  ({r['page_pt']} pt, {r['chars']} chars, "
-              f"{r['images']} images)")
-        print(f"   {r['svg']}  {r['svg_kib']:.0f} KiB"
-              f"  + {r['lines_json']} ({r['lines']} lines)")
-        print(f"   ink coverage : pdf {r['ink_pdf_pct']:.3f}%  svg {r['ink_svg_pct']:.3f}%"
-              f"  ratio {r['ink_ratio']:.4f}")
-        print(f"   raw diff     : identical {r['identical_pct']:.2f}%  "
-              f"clear {r['clear_pct']:.2f}%  max {r['max_diff']}/255")
-        print(f"   blurred 1.2px: mean {r['blur_mean']:.2f}/255  "
-              f">32: {r['blur_over32_pct']:.4f}%")
+    # Keep the original PDF open once for the requested pages. Each page is
+    # exported once; proofs use a separate handle to the resulting SVG.
+    with pymupdf.open(args.file) as doc:
+        for p in parse_pages(args.pages):
+            r = process(doc, args.file, p, args.dpi)
+            results.append(r)
+            print(f"\n{r['source']}  page {r['page']}  ({r['page_pt']} pt, {r['chars']} chars, "
+                  f"{r['images']} images)")
+            print(f"   {r['svg']}  {r['svg_kib']:.0f} KiB"
+                  f"  + {r['lines_json']} ({r['lines']} lines)")
+            print(f"   ink coverage : pdf {r['ink_pdf_pct']:.3f}%  svg {r['ink_svg_pct']:.3f}%"
+                  f"  ratio {r['ink_ratio']:.4f}")
+            print(f"   raw diff     : identical {r['identical_pct']:.2f}%  "
+                  f"clear {r['clear_pct']:.2f}%  max {r['max_diff']}/255")
+            print(f"   blurred 1.2px: mean {r['blur_mean']:.2f}/255  "
+                  f">32: {r['blur_over32_pct']:.4f}%")
 
     with open(os.path.join(OUT, "metrics.json"), "w", encoding="utf-8") as fh:
         json.dump(results, fh, indent=2)
