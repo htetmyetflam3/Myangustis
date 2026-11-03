@@ -10,13 +10,14 @@ only place both are known, and it only reads their files.
 """
 from __future__ import annotations
 
-import os
+import json
 import pathlib
+import shutil
 import subprocess
 import sys
+import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-KNOWN = ROOT / "svgout" / "known"
 
 # Seed picks the random single-line sample, so a couple of seeds per page also
 # proves the picker agrees. Pages are discovered, not listed: page exports are
@@ -40,48 +41,50 @@ def main():
     if not pages:
         print("no page exports in svgout/. Make one first:")
         print("  python3 svgout/pdf2svg.py --file book.pdf --pages 14")
-        return 0
+        return 1
     cases = [(p, seed) for p in pages for seed in SEEDS]
 
     rows, failures = [], 0
-    for name, seed in cases:
-        src = f"svgout/{name}"
-        json_path = (ROOT / src).with_suffix(".lines.json")
+    # The fallback test must not rename or overwrite the user's page metadata
+    # or generated sheets. Both implementations write into a temporary copy.
+    with tempfile.TemporaryDirectory(prefix="svg-frame-parity-") as tmp:
+        work = pathlib.Path(tmp)
+        (work / "svgout" / "known").mkdir(parents=True)
+        for name, seed in cases:
+            source = ROOT / "svgout" / name
+            src = work / "svgout" / name
+            shutil.copyfile(source, src)
+            original_lines = source.with_suffix(".lines.json")
+            temp_lines = src.with_suffix(".lines.json")
+            if original_lines.exists():
+                metadata = json.loads(original_lines.read_text(encoding="utf-8"))
+                if metadata.get("coordinates") != "svg-page":
+                    raise SystemExit(f"unverified coordinates in {original_lines}; re-export the page")
+            modes = ("lines", "fallback") if original_lines.exists() else ("fallback",)
 
-        # Both paths must agree in both languages: the text-layer path, and the
-        # tick-tolerance fallback used when pdf2svg.py has not written a line
-        # file. The fallback is exercised by moving the file aside, so a bug in
-        # one path cannot hide behind the other.
-        for mode in ("lines", "fallback"):
-            parked = None
-            if mode == "fallback" and json_path.exists():
-                parked = json_path.with_suffix(".lines.json.parked")
-                json_path.rename(parked)
+            for mode in modes:
+                if mode == "lines":
+                    shutil.copyfile(original_lines, temp_lines)
+                elif temp_lines.exists():
+                    temp_lines.unlink()
+                run(["node", str(ROOT / "svgout" / "make-line.js"), str(src),
+                     str(seed), f".{seed}.js"], work)
+                run([sys.executable, str(ROOT / "svgout" / "make_line.py"), str(src),
+                     str(seed), f".{seed}.py"], work)
 
-            try:
-                run(["node", "svgout/make-line.js", src, str(seed), f".{seed}.js"], ROOT)
-                run([sys.executable, "svgout/make_line.py", src, str(seed), f".{seed}.py"], ROOT)
-            finally:
-                if parked:
-                    parked.rename(json_path)
-
-            if mode == "fallback" and not parked:
-                continue   # nothing to fall back from: this page has no line file
-
-            for stem in ("line-sample", "frame-sheet"):
-                a = (KNOWN / f"{stem}.{seed}.js.svg").read_bytes()
-                b = (KNOWN / f"{stem}.{seed}.py.svg").read_bytes()
-                same = a == b
-                if not same:
-                    failures += 1
-                    n = next((i for i, (x, y) in enumerate(zip(a, b)) if x != y),
-                             min(len(a), len(b)))
-                    print(f"  DIFF {stem} {name} seed {seed} [{mode}] at byte {n}:")
-                    print(f"    js {a[max(0, n - 60):n + 60]!r}")
-                    print(f"    py {b[max(0, n - 60):n + 60]!r}")
-                rows.append((name, seed, mode, stem, len(a), same))
-                os.remove(KNOWN / f"{stem}.{seed}.js.svg")
-                os.remove(KNOWN / f"{stem}.{seed}.py.svg")
+                for stem in ("line-sample", "frame-sheet"):
+                    known = work / "svgout" / "known"
+                    a = (known / f"{stem}.{seed}.js.svg").read_bytes()
+                    b = (known / f"{stem}.{seed}.py.svg").read_bytes()
+                    same = a == b
+                    if not same:
+                        failures += 1
+                        n = next((i for i, (x, y) in enumerate(zip(a, b)) if x != y),
+                                 min(len(a), len(b)))
+                        print(f"  DIFF {stem} {name} seed {seed} [{mode}] at byte {n}:")
+                        print(f"    js {a[max(0, n - 60):n + 60]!r}")
+                        print(f"    py {b[max(0, n - 60):n + 60]!r}")
+                    rows.append((name, seed, mode, stem, len(a), same))
 
     print(f"\n{'page':26} {'seed':>4} {'mode':9} {'file':13} {'bytes':>8}  identical")
     print("-" * 76)

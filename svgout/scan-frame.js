@@ -117,7 +117,7 @@ export function bandFor(baseline, size, uses, floor = BAND) {
 
 /**
  * The four rules for one line.
- * @param {number} baseline  baseline y in page points (PDF user space)
+ * @param {number} baseline  baseline y in the associated SVG's page coordinates
  * @param {number} size      font size in points
  * @param {number} band      E as a fraction of size
  */
@@ -143,8 +143,10 @@ export function frameOf(baseline, size, band = BAND) {
  *
  *   const pieces = new PdfPagePieces(dir);
  *   ... pieces.add(...) / pieces.finish(...)
- *   const frames = framesOf(pieces.lines());   // yields [x, y, size, text]
+ *   const frames = framesOf(lines);            // yields [x, y, size, text]
  *
+ * The caller must first put line coordinates in the same space as the SVG;
+ * raw PDF y-up coordinates are not interchangeable with SVG y-down values.
  * A 5th element on a line overrides the band for that line, which is how the
  * runner feeds in a band raised to fit the line's own ink. The page default is
  * the calibrated BAND.
@@ -282,11 +284,21 @@ function ruleLine(y, width, strokeWidth) {
   return `<line x1="${fixed(d)}" y1="${fixed(y)}" x2="${fixed(width - d)}" y2="${fixed(y)}"/>`;
 }
 
-export function lineSvg({ width, frame, uses, defs, pitch, label, paint = {} }) {
+function sourceClip(width, height, id, scene) {
+  if (height === null || id === null || scene === null) return { definition: "", attribute: "" };
+  const safeId = esc(id);
+  return {
+    definition: `<defs><clipPath id="${safeId}"><rect x="0" y="0" width="${fixed(width)}" height="${fixed(height)}"/></clipPath></defs>`,
+    attribute: ` clip-path="url(#${safeId})"`,
+  };
+}
+
+export function lineSvg({ width, frame, uses, defs, pitch, label, paint = {}, definitions = null,
+  namespaces = "", scene = null, sourceHeight = null, clipId = null, fullPage = false }) {
   const c = { slot: "#D6EAF8", rule: "#FF6EAE", base: "#FFC300", ink: "#000000", ...paint };
   const pad = frame.size * 0.6;
-  const top = frame.r1 - pad;
-  const bot = frame.r4 + pad;
+  const top = fullPage && sourceHeight !== null ? Math.min(0, frame.r1 - pad) : frame.r1 - pad;
+  const bot = fullPage && sourceHeight !== null ? Math.max(sourceHeight, frame.r4 + pad) : frame.r4 + pad;
   const h = bot - top;
 
   const used = new Set(uses.map((u) => u.href));
@@ -295,7 +307,10 @@ export function lineSvg({ width, frame, uses, defs, pitch, label, paint = {} }) 
     .map((id) => `<path id="${esc(id)}" d="${defs[id]}"/>`)
     .join("");
 
-  const ink = uses.map((u) => u.raw).join("");
+  const ink = scene ?? uses.map((u) => u.raw).join("");
+  const clip = sourceClip(width, sourceHeight, clipId, scene);
+  const defsBlock = (definitions ?? `<defs>${defsXml}</defs>`) + clip.definition;
+  const sourceAttr = scene === null ? "" : ` data-source-uses="true"${clip.attribute}`;
 
   // Round tips everywhere, so a rule reads as a drawn line and not a cut edge.
   // The rules are inset by half their stroke width: a line drawn 0..width has
@@ -306,7 +321,7 @@ export function lineSvg({ width, frame, uses, defs, pitch, label, paint = {} }) 
     .map((y) => ruleLine(y, width, RULE_W))
     .join("");
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" `
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"${namespaces} version="1.1" `
     + `width="${fixed(width)}" height="${fixed(h)}" `
     + `viewBox="0 ${fixed(top)} ${fixed(width)} ${fixed(h)}" `
     + `data-line="${frame.index ?? ""}" data-baseline="${fixed(frame.baseline)}" `
@@ -317,16 +332,16 @@ export function lineSvg({ width, frame, uses, defs, pitch, label, paint = {} }) 
     + `<title>${esc(label ?? `line ${frame.index ?? "?"}`)}</title>\n`
     + `<rect x="0" y="${fixed(top)}" width="${fixed(width)}" height="${fixed(h)}" fill="#FFFFFF"/>\n`
     + `<rect x="0" y="${fixed(frame.r1)}" width="${fixed(width)}" height="${fixed(frame.slot)}" fill="${c.slot}"/>\n`
-    + `<defs>${defsXml}</defs>\n`
-    + `<g fill="${c.ink}">${ink}</g>\n`
+    + `${defsBlock}\n`
+    + `<g fill="${c.ink}"${sourceAttr}>${ink}</g>\n`
     + `<g stroke="${c.rule}" stroke-width="0.5" fill="none" stroke-linecap="round" stroke-linejoin="round">${rules}</g>\n`
     + `<line x1="${fixed(baseInset(width, BASE_W))}" y1="${fixed(frame.r3)}" x2="${fixed(width - baseInset(width, BASE_W))}" y2="${fixed(frame.r3)}" stroke="${c.base}" stroke-width="${BASE_W}" stroke-linecap="round"/>\n`
     + `</svg>\n`;
 }
 
 /**
- * Many lines as one sheet: page-width canvas, page-space coordinates, the
- * sheet grows downwards exactly as far as the requested lines go.
+ * Many lines as one sheet: page-width canvas and page-space coordinates.
+ * A full source page can retain its original height so unframed uses stay visible.
  *
  * Rows are stacked at the page's own pitch, so the blank between slots is the
  * blank the PDF set, never a constant.
@@ -337,8 +352,10 @@ export function lineSvg({ width, frame, uses, defs, pitch, label, paint = {} }) 
  * @param {object} o.defs       { id: pathData }; shared by every row
  * @param {number} o.pitch      page line spacing
  */
-export function sheetSvg({ width, rows, defs, pitch, mode = "page", paint = {} }) {
+export function sheetSvg({ width, rows, defs, pitch, mode = "page", paint = {},
+  definitions = null, namespaces = "", scene = null, pageHeight = null, sourceHeight = null, clipId = null }) {
   if (!rows.length) throw new Error("sheetSvg: no rows — the line selector matched nothing");
+  if (scene !== null && mode !== "page") throw new Error("source scene requires page mode");
   const c = { slot: "#D6EAF8", rule: "#FF6EAE", base: "#FFC300", ink: "#000000", ...paint };
 
   const used = new Set();
@@ -383,22 +400,27 @@ export function sheetSvg({ width, rows, defs, pitch, mode = "page", paint = {} }
   const bandList = [...new Set(rows.map((r) => fixed(r.frame.band, 3)))]
     .sort().join(",");
 
-  const top = mode === "stack" ? 0 : Math.min(...rows.map((r) => r.frame.r1));
-  const h = mode === "stack" ? cursor + 8 : Math.max(...rows.map((r) => r.frame.r4)) - top + 8;
+  const rowTop = Math.min(...rows.map((r) => r.frame.r1));
+  const top = mode === "stack" ? 0 : (pageHeight === null ? rowTop : Math.min(0, rowTop));
+  const rowBottom = Math.max(...rows.map((r) => r.frame.r4)) + 8;
+  const h = mode === "stack" ? cursor + 8 : Math.max(rowBottom, pageHeight ?? rowBottom) - top;
   const defsXml = Object.keys(defs)
     .filter((id) => used.has(id))
     .map((id) => `<path id="${esc(id)}" d="${defs[id]}"/>`)
     .join("");
+  const clip = sourceClip(width, sourceHeight, clipId, scene);
+  const defsBlock = (definitions ?? `<defs>${defsXml}</defs>`) + clip.definition;
+  const sourceAttr = scene === null ? "" : ` data-source-uses="true"${clip.attribute}`;
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" `
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"${namespaces} version="1.1" `
     + `width="${fixed(width)}" height="${fixed(h)}" viewBox="0 ${fixed(top)} ${fixed(width)} ${fixed(h)}" `
     + `data-lines="${rows.length}"`
     + (pitch ? ` data-pitch="${fixed(pitch)}"` : "")
     + ` data-band="${bandList}">\n`
     + `<rect x="0" y="${fixed(top)}" width="${fixed(width)}" height="${fixed(h)}" fill="#FFFFFF"/>\n`
     + `<g fill="${c.slot}">${slots.join("")}</g>\n`
-    + `<defs>${defsXml}</defs>\n`
-    + `<g fill="${c.ink}">${body.join("")}</g>\n`
+    + `${defsBlock}\n`
+    + `<g fill="${c.ink}"${sourceAttr}>${scene ?? body.join("")}</g>\n`
     + `<g stroke="${c.rule}" stroke-width="${RULE_W}" fill="none" stroke-linecap="round" stroke-linejoin="round">${slotRules.join("")}</g>\n`
     + `<g stroke="${c.base}" stroke-width="${BASE_W}" fill="none" stroke-linecap="round" stroke-linejoin="round">${baseRules.join("")}</g>\n`
     + `</svg>\n`;
