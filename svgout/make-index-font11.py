@@ -1,0 +1,357 @@
+#!/usr/bin/env python3
+"""Build font-11 Burmese index sheets (build-time HarfBuzz shaping).
+
+Order requested by the owner:
+  1. Myanmar marks separately, omitting the standalone U+1039 entry;
+  2. all base consonants from master MMap.Base;
+  3. all Myanmar digits;
+  4. all Burmese syllables from tools-box/js/scripts.db.
+
+Pali is intentionally not included yet; the owner will provide that list.
+
+The visual frame follows the owner's line+gap sketch at font size 11:
+E = 5.5, word slot = 3E = 16.5, spacing band = E = 5.5, pitch/cell = 22.
+Pink is the shared cell border (end of spacing / start of next cell), the two
+inner bounded lines are blue, and the baseline is yellow.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sqlite3
+import sys
+from pathlib import Path
+from xml.sax.saxutils import escape
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_FONT = ROOT / "Junk/fonts/Unicode/PYIDAUNGSU-2.5.2_REGULAR.TTF"
+DEFAULT_DB = ROOT / "tools-box/js/scripts.db"
+DEFAULT_OUT_PREFIX = (
+    ROOT / "B.Parser/main/parser/jason-map/vector/index-font11-burmese-sheet-"
+)
+
+SIZE = 11.0
+E = SIZE * 0.5
+SLOT = 3 * E
+PITCH = 22.0
+BASELINE0 = 33.0
+WIDTH = 595.276
+PAGE_HEIGHT = 841.89
+MARGIN_X = 22.0
+ROWS_PER_PAGE = 37
+GAP = 3.206  # old 7 pt sheet median inter-entry gap (2.04) scaled to 11 pt
+
+# Owner slot order (as in MARK_ORDER: asat before dot-below), without U+1039.
+MARKS = [
+    "\u103B", "\u103C", "\u103D", "\u103E",  # medials ya/ra/wa/ha
+    "\u1031",  # e
+    "\u102D", "\u102E", "\u102F", "\u1030", "\u1032",  # i/ii/u/uu/ai
+    "\u102C", "\u102B",  # aa/tall aa
+    "\u1036", "\u103A", "\u1037", "\u1038",  # anusvara/asat/dot/visarga
+]
+
+# Master MMap.Base (42), as copied for the combined list.
+BASE_CONSONANTS_MASTER_ORDER = [
+    "က", "ခ", "ဂ", "ဃ", "င", "စ", "ဇ", "ည", "ဋ", "ဉ", "ဍ", "ဏ", "တ", "ထ", "ဒ", "န",
+    "ပ", "ဖ", "ဗ", "ဘ", "မ", "ယ", "ရ", "လ", "သ", "ဟ", "အ", "ဥ", "ဧ", "ဈ", "ဝ", "ဓ",
+    "ဩ", "ဿ", "ဣ", "ဦ", "ဠ", "ဌ", "ဆ", "ဎ", "ဪ", "၎",
+]
+DIGITS = ["၀", "၁", "၂", "၃", "၄", "၅", "၆", "၇", "၈", "၉"]
+
+
+def fmt(value: float, digits: int = 2) -> str:
+    text = f"{value:.{digits}f}"
+    return "0" if text in {"-0", "-0.0", "-0.00", "-0.000"} else text
+
+
+def _path_number(token: str) -> str:
+    text = f"{float(token):.3f}".rstrip("0").rstrip(".")
+    return "0" if text in {"", "-0"} else text
+
+
+def round_path_numbers(path_data: str) -> str:
+    """Round numbers and make every parameter group carry an explicit command.
+
+    SVGPathPen can emit implicit lineto pairs after M (valid SVG, but the
+    parser's small path reader expects the explicit form used by the sheets).
+    """
+    tokens = re.findall(
+        r"[AaCcHhLlMmQqSsTtVvZz]|-?\d*\.\d+(?:e-?\d+)?|-?\d+", path_data
+    )
+    params = {"M": 2, "L": 2, "H": 1, "V": 1, "Q": 4, "C": 6, "S": 4, "T": 2, "A": 7, "Z": 0}
+    out: list[str] = []
+    cmd = ""
+    first_group = True
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+        if token.isalpha():
+            cmd = token
+            first_group = True
+            out.append(cmd)
+            i += 1
+            continue
+        if not cmd:
+            i += 1
+            continue
+        count = params[cmd.upper()]
+        group = tokens[i:i + count]
+        if len(group) < count:
+            break
+        if not first_group:
+            out.append("L" if cmd == "M" else "l" if cmd == "m" else cmd)
+        out.extend(_path_number(part) for part in group)
+        first_group = False
+        i += count
+    return "".join(
+        token if token.isalpha() else f" {token}" for token in out
+    ).replace(" ", " ", 1).strip()
+
+
+def attr(value: object) -> str:
+    return escape(str(value), {'"': "&quot;"})
+
+
+def codepoints(text: str) -> str:
+    return " ".join(f"U+{ord(ch):04X}" for ch in text)
+
+
+def load_units(db_path: Path) -> tuple[list[dict], dict]:
+    con = sqlite3.connect(f"file:{db_path}?mode=ro&immutable=1", uri=True)
+    try:
+        burmese = [row[0] for row in con.execute(
+            "SELECT line FROM burmese_syllables ORDER BY id"
+        )]
+    finally:
+        con.close()
+
+    # Present the master base set in codepoint order for a readable index.
+    bases = sorted(set(BASE_CONSONANTS_MASTER_ORDER), key=lambda ch: ord(ch))
+    groups = [
+        ("mark", MARKS),
+        ("consonant", bases),
+        ("digit", DIGITS),
+        ("syllable", burmese),
+    ]
+    seen: set[str] = set()
+    units: list[dict] = []
+    counts = {}
+    duplicates = 0
+    for kind, values in groups:
+        kept = 0
+        for text in values:
+            if text in seen:
+                duplicates += 1
+                continue
+            seen.add(text)
+            units.append({
+                "text": text,
+                "kind": kind,
+                "cp": codepoints(text),
+                "newRowBefore": kept == 0 and bool(units),
+            })
+            kept += 1
+        counts[kind] = kept
+    counts["total"] = len(units)
+    counts["duplicatesSkipped"] = duplicates
+    counts["burmeseRows"] = len(burmese)
+    return units, counts
+
+
+class Shaper:
+    def __init__(self, font_path: Path) -> None:
+        try:
+            import uharfbuzz as hb
+            from fontTools.pens.svgPathPen import SVGPathPen
+            from fontTools.pens.transformPen import TransformPen
+            from fontTools.ttLib import TTFont
+        except ImportError as exc:  # pragma: no cover - build-time dependency
+            raise SystemExit(
+                "Missing build-time dependency: install uharfbuzz and fonttools"
+            ) from exc
+        self.hb = hb
+        self.SVGPathPen = SVGPathPen
+        self.TransformPen = TransformPen
+        self.ttfont = TTFont(str(font_path))
+        self.upm = float(self.ttfont["head"].unitsPerEm)
+        self.k = SIZE / self.upm
+        self.glyph_set = self.ttfont.getGlyphSet()
+        self.font = hb.Font(hb.Face(hb.Blob.from_file_path(str(font_path))))
+        self.paths: dict[int, str] = {}
+        self.notdef_texts: list[str] = []
+
+    def glyph_path(self, gid: int) -> str:
+        if gid not in self.paths:
+            name = self.ttfont.getGlyphName(gid)
+            pen = self.SVGPathPen(self.glyph_set)
+            transform = self.TransformPen(pen, (self.k, 0, 0, -self.k, 0, 0))
+            self.glyph_set[name].draw(transform)
+            self.paths[gid] = round_path_numbers(pen.getCommands())
+        return self.paths[gid]
+
+    def shape(self, text: str) -> dict:
+        buf = self.hb.Buffer()
+        buf.add_str(text)
+        buf.guess_segment_properties()
+        self.hb.shape(self.font, buf, {})
+        cursor = 0.0
+        uses: list[dict] = []
+        saw_notdef = False
+        for info, pos in zip(buf.glyph_infos, buf.glyph_positions):
+            gid = int(info.codepoint)
+            name = self.ttfont.getGlyphName(gid)
+            x = (cursor + float(pos.x_offset)) * self.k
+            y = -float(pos.y_offset) * self.k
+            cursor += float(pos.x_advance)
+            if gid == 0:
+                saw_notdef = True
+            # HarfBuzz inserts a dotted circle for an isolated mark. Keep its
+            # advance (so the mark sits where it would on a base) but do not
+            # draw the circle, matching the existing specimen sheets.
+            if name == "uni25CC":
+                continue
+            if self.glyph_path(gid):
+                uses.append({"gid": gid, "x": x, "y": y})
+        if saw_notdef:
+            self.notdef_texts.append(text)
+        return {"uses": uses, "advance": cursor * self.k}
+
+
+def layout(units: list[dict]) -> list[list[dict]]:
+    sheets: list[list[dict]] = []
+    sheet: list[dict] = []
+    row = 0
+    cursor_x = MARGIN_X
+
+    def start_row() -> None:
+        nonlocal sheet, row, cursor_x
+        if row + 1 >= ROWS_PER_PAGE:
+            sheets.append(sheet)
+            sheet = []
+            row = 0
+        else:
+            row += 1
+        cursor_x = MARGIN_X
+
+    for unit in units:
+        advance = float(unit["advance"]) + GAP
+        if unit.get("newRowBefore") and cursor_x > MARGIN_X:
+            start_row()
+        if cursor_x + advance > WIDTH - MARGIN_X and cursor_x > MARGIN_X:
+            start_row()
+        placed = {
+            **unit,
+            "row": row,
+            "x": cursor_x,
+            "baseline": BASELINE0 + row * PITCH,
+        }
+        sheet.append(placed)
+        cursor_x += advance
+    if sheet:
+        sheets.append(sheet)
+    return sheets
+
+
+def rule_line(y: float, inset: float = 0.35) -> str:
+    return (
+        f'<line x1="{fmt(inset)}" y1="{fmt(y)}" '
+        f'x2="{fmt(WIDTH - inset)}" y2="{fmt(y)}"/>'
+    )
+
+
+def sheet_svg(entries: list[dict], page: int, pages: int, shaper: Shaper) -> str:
+    rows = sorted({entry["row"] for entry in entries})
+    used_gids = sorted({use["gid"] for entry in entries for use in entry["uses"]})
+    defs = "\n".join(
+        f'<path id="g{gid}" d="{attr(shaper.glyph_path(gid))}"/>'
+        for gid in used_gids
+    )
+    cells = "".join(
+        f'<rect id="line{r + 1}+gap" x="0" y="{fmt(BASELINE0 + r * PITCH - 2 * E)}" '
+        f'width="{fmt(WIDTH)}" height="{fmt(PITCH)}"/>'
+        for r in rows
+    )
+    blue = "".join(
+        rule_line(baseline + delta)
+        for baseline in (BASELINE0 + r * PITCH for r in rows)
+        for delta in (-E, E)
+    )
+    yellow = "".join(rule_line(BASELINE0 + r * PITCH) for r in rows)
+    body_parts: list[str] = []
+    for entry in entries:
+        uses = "".join(
+            f'<use href="#g{use["gid"]}" x="{fmt(entry["x"] + use["x"])}" '
+            f'y="{fmt(entry["baseline"] + use["y"])}"/>'
+            for use in entry["uses"]
+        )
+        body_parts.append(
+            f'<g id="{attr(entry["text"])}" data-kind="{attr(entry["kind"])}" '
+            f'data-cp="{attr(entry["cp"])}" data-row="{entry["row"]}" '
+            f'data-x="{fmt(entry["x"])}" data-baseline="{fmt(entry["baseline"])}">{uses}</g>'
+        )
+    rules = ";".join(
+        ",".join(fmt(BASELINE0 + r * PITCH + d) for d in (-2 * E, -E, 0, E, 2 * E))
+        for r in rows
+    )
+    return f'''<?xml version="1.0" encoding="UTF-8"?>
+<!-- Burmese index sheet (font 11). Page {page} of {pages}.
+     Order: marks separately (no standalone U+1039), base consonants, Myanmar digits,
+     then Burmese syllables. Pali is not included yet.
+     E = 5.5; word slot = 16.5 (baseline-11..baseline+5.5); spacing band = 5.5;
+     line+gap cell/pitch = 22. Pink = shared cell border/end of spacing,
+     blue = baseline +/- 5.5, yellow = baseline. Shaped with HarfBuzz at build time. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="{fmt(WIDTH)}" height="{fmt(PAGE_HEIGHT)}" viewBox="0 0 {fmt(WIDTH)} {fmt(PAGE_HEIGHT)}"
+     data-font="PYIDAUNGSU-2.5.2_REGULAR.TTF" data-shaped="harfbuzz" data-size="11" data-em="11"
+     data-line-h="22" data-pitch="22" data-E="5.5" data-band="0.5" data-slot="16.5" data-cell="22" data-spacing="5.5"
+     data-rows="{len(rows)}" data-rows-per-page="{ROWS_PER_PAGE}" data-page="{page}" data-pages="{pages}"
+     data-baseline0="33" data-count="{len(entries)}" data-glyphs="{len(used_gids)}" data-rules="{attr(rules)}">
+<title>Pyidaungsu Burmese index — font 11, sheet {page} of {pages}</title>
+<rect x="0" y="0" width="{fmt(WIDTH)}" height="{fmt(PAGE_HEIGHT)}" fill="#FFFFFF"/>
+<g id="lines" fill="#E5E5E5" stroke="#FF6EAE" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round">{cells}</g>
+<defs>
+{defs}
+</defs>
+<g fill="#000000" fill-rule="evenodd">
+{''.join(body_parts)}
+</g>
+<g id="bounded" stroke="#77BDFD" stroke-width="0.7" fill="none" stroke-linecap="round" stroke-linejoin="round">{blue}</g>
+<g id="baselinegroup" stroke="#FFFF00" stroke-width="0.7" fill="none" stroke-linecap="round" stroke-linejoin="round">{yellow}</g>
+</svg>
+'''
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--font", type=Path, default=DEFAULT_FONT)
+    parser.add_argument("--db", type=Path, default=DEFAULT_DB)
+    parser.add_argument("--out-prefix", default=str(DEFAULT_OUT_PREFIX))
+    args = parser.parse_args()
+
+    units, counts = load_units(args.db)
+    shaper = Shaper(args.font)
+    for unit in units:
+        unit.update(shaper.shape(unit["text"]))
+    sheets = layout(units)
+    outputs: list[str] = []
+    for index, entries in enumerate(sheets, start=1):
+        out = Path(f"{args.out_prefix}{index}.svg")
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(sheet_svg(entries, index, len(sheets), shaper), encoding="utf-8")
+        outputs.append(str(out))
+    print(json.dumps({
+        "counts": counts,
+        "sheets": [
+            {"file": outputs[i], "entries": len(entries),
+             "rows": len({entry["row"] for entry in entries})}
+            for i, entries in enumerate(sheets)
+        ],
+        "distinctGlyphs": len(shaper.paths),
+        "notdefTexts": shaper.notdef_texts,
+    }, ensure_ascii=False, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

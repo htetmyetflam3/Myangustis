@@ -1,20 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- INDEX SAMPLE ONLY (2 lines) — not a runtime sheet.
      Font size is defined as 11pt. Bounded box comes from svgout/scan-frame.js frameOf():
-       E = 0.5 * 11 = 5.5; rules = baseline-11, baseline-5.5, baseline, baseline+5.5.
-     Pitch/line-h = 22 (16.5 slot + 5.5 blank), baseline0 = 33, A4 width = 595.276.
+       E = 0.5 * 11 = 5.5; word slot = baseline-11, baseline-5.5, baseline, baseline+5.5.
+     Drawn as owner-sketch line+gap cells: pink is the cell border / end of spacing,
+     blue lines are baseline-5.5 and baseline+5.5, yellow is the baseline. The pink
+     bottom of one 22pt cell is the pink top of the next cell.
+     Pitch/line-h = 22 (16.5 word slot + 5.5 spacing band), baseline0 = 33, A4 width = 595.276.
      Capacity at this definition: 37 rows per A4 sheet; about 101 rows for
      2979 units -> 3 SVG files. Glyph outlines are the existing HarfBuzz
      Pyidaungsu contours scaled 7pt -> 11pt for this visual/layout sample. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="595.28" height="74.00" viewBox="0 0 595.28 74.00"
      data-sample="index" data-font="PYIDAUNGSU-2.5.2_REGULAR.TTF" data-shaped="harfbuzz"
-     data-size="11" data-em="11" data-line-h="22" data-pitch="22" data-E="5.5" data-band="0.5" data-slot="16.5"
+     data-size="11" data-em="11" data-line-h="22" data-pitch="22" data-E="5.5" data-band="0.5" data-slot="16.5" data-cell="22" data-spacing="5.5"
      data-baseline0="33" data-rows="2" data-rows-per-page="37" data-page-height="841.89"
      data-total-units="2979" data-estimated-rows="101" data-estimated-sheets="3"
-     data-rules="22.00,27.50,33.00,38.50;44.00,49.50,55.00,60.50" data-count="104" data-glyphs="103">
-<title>Pyidaungsu index sample — font 11, four-rule bounded box</title>
+     data-rules="22.00,27.50,33.00,38.50,44.00;44.00,49.50,55.00,60.50,66.00" data-count="104" data-glyphs="103">
+<title>Pyidaungsu index sample — font 11, line+gap bounded box</title>
 <rect x="0" y="0" width="595.28" height="74.00" fill="#FFFFFF"/>
-<g fill="#D6EAF8"><rect x="0" y="22.00" width="595.28" height="16.50"/><rect x="0" y="44.00" width="595.28" height="16.50"/></g>
+<g id="2line" fill="#E5E5E5" stroke="#FF6EAE" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"><rect id="firstline+gap" x="0" y="22.00" width="595.28" height="22.00"/><rect id="secondline+gap" x="0" y="44.00" width="595.28" height="22.00"/></g>
 <defs>
 <path id="g134" d="M10.827 -2.750Q10.827 -1.619 9.979 -0.739Q9.539 -0.314 8.989 -0.094Q8.423 0.126 7.700 0.094Q7.590 0.079 7.511 0.079Q7.433 0.063 7.276 0.016Q7.009 -0.094 7.009 -0.361Q7.009 -0.786 7.417 -0.786L7.559 -0.754L7.779 -0.691Q8.784 -0.691 9.397 -1.320Q9.696 -1.587 9.837 -1.964Q9.994 -2.357 9.994 -2.750Q9.994 -3.630 9.397 -4.211Q8.816 -4.793 7.983 -4.793Q7.559 -4.793 7.197 -4.636Q6.836 -4.494 6.537 -4.180Q6.286 -3.944 6.144 -3.551Q5.987 -3.159 5.924 -2.734Q5.924 -1.697 5.594 -1.053Q5.264 -0.409 4.573 0.000Q4.463 0.063 4.369 0.063Q4.196 0.063 4.086 -0.063Q3.976 -0.189 3.976 -0.346Q3.976 -0.597 4.164 -0.691Q4.589 -0.943 4.824 -1.399Q5.060 -1.854 5.123 -2.420Q5.123 -3.473 4.557 -4.133Q3.976 -4.793 3.096 -4.793Q2.279 -4.793 1.666 -4.164Q1.069 -3.536 1.069 -2.687Q1.069 -2.137 1.351 -1.587Q1.634 -1.021 2.137 -0.676Q2.341 -0.581 2.341 -0.377Q2.341 -0.220 2.216 -0.079Q2.090 0.063 1.886 0.063L1.697 0.000Q1.006 -0.471 0.613 -1.194Q0.236 -1.917 0.236 -2.687Q0.236 -3.850 1.069 -4.730Q1.901 -5.594 3.096 -5.594Q3.897 -5.594 4.557 -5.170Q5.217 -4.761 5.516 -4.196Q5.641 -4.463 5.940 -4.761Q6.380 -5.186 6.899 -5.390Q7.417 -5.610 7.983 -5.610Q9.114 -5.610 9.979 -4.761Q10.827 -3.913 10.827 -2.750Z"/>
 <path id="g135" d="M0.377 -1.854Q1.131 -2.640 2.074 -2.640Q3.033 -2.640 3.866 -1.886Q4.149 -1.587 4.290 -1.257Q4.934 -1.791 4.934 -2.671Q4.934 -3.567 4.321 -4.149Q3.709 -4.730 2.813 -4.730Q2.169 -4.730 1.791 -4.447Q1.634 -4.337 1.257 -3.850Q1.147 -3.599 0.880 -3.599Q0.440 -3.599 0.440 -3.991Q0.471 -4.196 0.629 -4.384Q0.990 -4.871 1.336 -5.107Q1.980 -5.531 2.813 -5.531Q4.007 -5.531 4.871 -4.714Q5.736 -3.897 5.736 -2.719Q5.736 -1.524 4.934 -0.676Q4.133 0.173 2.954 0.173Q2.326 0.173 1.744 -0.094Q1.147 -0.361 0.801 -0.723L0.519 -1.100L0.299 -1.446L0.377 -1.854ZM1.226 -1.509Q1.273 -1.414 1.399 -1.289Q2.027 -0.644 2.954 -0.644Q3.316 -0.644 3.614 -0.801Q3.520 -1.100 3.237 -1.351Q2.734 -1.776 2.074 -1.776Q1.399 -1.776 1.226 -1.509Z"/>
@@ -226,6 +229,6 @@
 <g id="္ဈ" data-kind="layout" data-cp="U+1039 U+1008" data-row="1" data-x="552.81" data-baseline="55.00"><use href="#g369" x="559.54" y="55.00"/></g>
 <g id="္စ" data-kind="layout" data-cp="U+1039 U+1005" data-row="1" data-x="563.44" data-baseline="55.00"><use href="#g366" x="570.16" y="55.00"/></g>
 </g>
-<g stroke="#FF6EAE" stroke-width="0.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="0.25" y1="22.00" x2="595.03" y2="22.00"/><line x1="0.25" y1="27.50" x2="595.03" y2="27.50"/><line x1="0.25" y1="38.50" x2="595.03" y2="38.50"/><line x1="0.25" y1="44.00" x2="595.03" y2="44.00"/><line x1="0.25" y1="49.50" x2="595.03" y2="49.50"/><line x1="0.25" y1="60.50" x2="595.03" y2="60.50"/></g>
-<g stroke="#FFC300" stroke-width="0.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="0.35" y1="33.00" x2="594.93" y2="33.00"/><line x1="0.35" y1="55.00" x2="594.93" y2="55.00"/></g>
+<g id="bounded" stroke="#77BDFD" stroke-width="0.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="0.35" y1="27.50" x2="594.93" y2="27.50"/><line x1="0.35" y1="38.50" x2="594.93" y2="38.50"/><line x1="0.35" y1="49.50" x2="594.93" y2="49.50"/><line x1="0.35" y1="60.50" x2="594.93" y2="60.50"/></g>
+<g id="baselinegroup" stroke="#FFFF00" stroke-width="0.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="0.35" y1="33.00" x2="594.93" y2="33.00"/><line x1="0.35" y1="55.00" x2="594.93" y2="55.00"/></g>
 </svg>
