@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build one expanded font-11 Burmese index SVG (build-time HarfBuzz shaping).
+"""Build one expanded font-11 Burmese+Pali index SVG (build-time HarfBuzz shaping).
 
 The A4 pages are not separate files: they are placed side by side horizontally
 in one SVG canvas (panel 1 at the left, then panel 2, panel 3, ...).
@@ -8,9 +8,10 @@ Order requested by the owner:
   1. Myanmar marks separately, omitting the standalone U+1039 entry;
   2. all base consonants from master MMap.Base;
   3. all Myanmar digits;
-  4. all Burmese syllables from tools-box/js/scripts.db.
-
-Pali is intentionally not included yet; the owner will provide that list.
+  4. all Burmese syllables from tools-box/js/scripts.db;
+  5. Pali syllables for the SVG only: the stack parts filtered from the
+     master dictionary (segments containing U+1039) plus the owner's given
+     Pali list. This deliberately does NOT use master ``syllables.pali``.
 
 The visual frame follows the owner's line+gap sketch at font size 11:
 E = 5.5, word slot = 3E = 16.5, spacing band = E = 5.5, pitch/cell = 22.
@@ -32,7 +33,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_FONT = ROOT / "Junk/fonts/Unicode/PYIDAUNGSU-2.5.2_REGULAR.TTF"
 DEFAULT_DB = ROOT / "tools-box/js/scripts.db"
 DEFAULT_OUT = (
-    ROOT / "B.Parser/main/parser/jason-map/vector/index-font11-burmese.svg"
+    ROOT / "B.Parser/main/parser/jason-map/vector/index-font11-burmese-pali.svg"
 )
 
 SIZE = 11.0
@@ -62,6 +63,27 @@ BASE_CONSONANTS_MASTER_ORDER = [
     "ဩ", "ဿ", "ဣ", "ဦ", "ဠ", "ဌ", "ဆ", "ဎ", "ဪ", "၎",
 ]
 DIGITS = ["၀", "၁", "၂", "၃", "၄", "၅", "၆", "၇", "၈", "၉"]
+
+# Owner-given Pali list for the SVG. Keep the exact sequences: in particular
+# "က်ျား" is U+1000 U+103A U+103B U+102C U+1038 here, not clean Burmese
+# "ကျား" (U+1000 U+103B U+102C U+1038). "တိံ" is in the owner's list too, but
+# it is already present in Burmese syllables, so de-duplication keeps one entry.
+USER_GIVEN_PALI = [
+    "\u1004\u103A\u1039\u1000",  # င်္က
+    "\u1004\u103A\u1039\u1001",  # င်္ခ
+    "\u1004\u103A\u1039\u1002",  # င်္ဂ
+    "\u1004\u103A\u1039\u1002\u102B",  # င်္ဂါ
+    "\u1010\u1039\u1010\u1030",  # တ္တူ
+    "\u1000\u1039\u1000\u1030",  # က္ကူ
+    "\u1000\u1039\u1000\u102D\u102F",  # က္ကို
+    "\u1000\u103A\u103B\u102C\u1038",  # က်ျား (not ကျား)
+    "\u1004\u103A\u1039\u101E\u1031\u1037",  # င်္သေ့
+    "\u1019\u1039\u1018\u102C",  # မ္ဘာ
+    "\u1005\u1039\u1005\u100A\u103A\u1038",  # စ္စည်း
+    "\u1010\u102D\u1036",  # တိံ (already Burmese)
+    "\u1010\u1039\u1010\u102F",  # တ္တု
+    "\u1010\u1039\u1011\u102D",  # တ္ထိ
+]
 
 
 def fmt(value: float, digits: int = 2) -> str:
@@ -127,8 +149,40 @@ def load_units(db_path: Path) -> tuple[list[dict], dict]:
         burmese = [row[0] for row in con.execute(
             "SELECT line FROM burmese_syllables ORDER BY id"
         )]
+        master = json.loads(con.execute(
+            "SELECT data FROM master_json WHERE id=1"
+        ).fetchone()[0])
     finally:
         con.close()
+
+    # SVG Pali, by owner rule: only stack parts filtered from the master
+    # dictionary (two-space syllable segments containing U+1039), in first
+    # dictionary occurrence order, plus the owner-given list above. Do not
+    # read master["syllables"]["pali"] for this group.
+    dictionary_pali: list[str] = []
+    dictionary_seen: set[str] = set()
+    dictionary_occurrences = 0
+    dictionary_entries = 0
+    for entries in master["dictionary"].values():
+        for entry in entries:
+            hits = [
+                seg for seg in re.split(r"\s{2,}", entry.strip())
+                if seg and "\u1039" in seg
+            ]
+            if hits:
+                dictionary_entries += 1
+            for seg in hits:
+                dictionary_occurrences += 1
+                if seg not in dictionary_seen:
+                    dictionary_seen.add(seg)
+                    dictionary_pali.append(seg)
+
+    pali = list(dictionary_pali)
+    user_given_candidates = []
+    for text in USER_GIVEN_PALI:
+        if text not in dictionary_seen:
+            user_given_candidates.append(text)
+            pali.append(text)
 
     # Present the master base set in codepoint order for a readable index.
     bases = sorted(set(BASE_CONSONANTS_MASTER_ORDER), key=lambda ch: ord(ch))
@@ -137,6 +191,7 @@ def load_units(db_path: Path) -> tuple[list[dict], dict]:
         ("consonant", bases),
         ("digit", DIGITS),
         ("syllable", burmese),
+        ("pali", pali),
     ]
     seen: set[str] = set()
     units: list[dict] = []
@@ -160,6 +215,12 @@ def load_units(db_path: Path) -> tuple[list[dict], dict]:
     counts["total"] = len(units)
     counts["duplicatesSkipped"] = duplicates
     counts["burmeseRows"] = len(burmese)
+    counts["dictionaryPaliUnique"] = len(dictionary_pali)
+    counts["dictionaryPaliOccurrences"] = dictionary_occurrences
+    counts["dictionaryPaliEntries"] = dictionary_entries
+    counts["userGivenPali"] = len(USER_GIVEN_PALI)
+    counts["userGivenPaliCandidates"] = len(user_given_candidates)
+    counts["userGivenPaliAdded"] = counts["pali"] - len(dictionary_pali)
     return units, counts
 
 
@@ -314,10 +375,11 @@ def merged_svg(panels: list[list[dict]], shaper: Shaper) -> str:
             )
 
     return f'''<?xml version="1.0" encoding="UTF-8"?>
-<!-- Burmese index (font 11), one expanded SVG: {len(panels)} A4 panels side by side horizontally.
+<!-- Burmese+Pali index (font 11), one expanded SVG: {len(panels)} A4 panels side by side horizontally.
      Panel 1 is at the left, then panel 2, then panel 3; there are no separate sheet files.
      Order: marks separately (no standalone U+1039), base consonants, Myanmar digits,
-     then Burmese syllables. Pali is not included yet.
+     then Burmese syllables, then Pali syllables. SVG Pali is restricted to the
+     dictionary U+1039 parts plus the owner-given list; it is not master syllables.pali.
      E = 5.5; word slot = 16.5 (baseline-11..baseline+5.5); spacing band = 5.5;
      line+gap cell/pitch = 22. Pink = shared cell border/end of spacing,
      blue = baseline +/- 5.5, yellow = baseline. Shaped with HarfBuzz at build time. -->
@@ -327,7 +389,7 @@ def merged_svg(panels: list[list[dict]], shaper: Shaper) -> str:
      data-layout="horizontal-a4-panels" data-panels="{len(panels)}" data-pages="{len(panels)}" data-panel-width="{fmt(WIDTH)}"
      data-rows="{max(panel_rows, default=0)}" data-total-rows="{sum(panel_rows)}" data-rows-per-page="{ROWS_PER_PAGE}"
      data-baseline0="33" data-count="{len(all_entries)}" data-glyphs="{len(used_gids)}" data-rules="{attr(';'.join(rules))}">
-<title>Pyidaungsu Burmese index — font 11, {len(panels)} A4 panels in one SVG</title>
+<title>Pyidaungsu Burmese+Pali index — font 11, {len(panels)} A4 panels in one SVG</title>
 <rect x="0" y="0" width="{fmt(total_width)}" height="{fmt(PAGE_HEIGHT)}" fill="#FFFFFF"/>
 <g id="lines" fill="#E5E5E5" stroke="#FF6EAE" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round">{''.join(cells)}</g>
 <defs>
