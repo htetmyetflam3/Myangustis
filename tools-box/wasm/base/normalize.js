@@ -1,4 +1,3 @@
-import { debugLogInit } from "../../../Bridge/logen.js";
 import { isLowerOrUpperAZ } from "./_function.js";
 import {
 	Priority,
@@ -9,8 +8,6 @@ import {
 	BLOCK_PUNCT,
 } from "./sourceMap.js";
 import { mapperStr } from "./sourceMapper.js";
-
-debugLogInit();
 
 // flat char tables come from sourceMap.js (data: sourceMap.json) — re-exported
 // here so map-loader.js's surface is unchanged.

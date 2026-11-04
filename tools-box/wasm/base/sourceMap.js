@@ -5,11 +5,15 @@
  * regenerated, and reused without editing executable code. This module only
  * turns the JSON arrays into Sets and exposes the JSON tables to consumers.
  */
-// The readable tables: knowledge/isTreasure/master.json is the single source
-// of truth on this branch. The obfuscator INLINES this JSON into the flattened
-// bundle at build time (the shipped payload never reads a readable JSON); the
-// encrypted twin for runtime reads is MonoSyllabism/map/master.json.enc.
-import mapData from "../../../knowledge/isTreasure/master.json" with { type: "json" };
+// The readable tables: this kit's ../master.json is the single source of
+// truth. The payload builder INLINES its mapData section at build time (the
+// shipped payload never reads a readable JSON); the encrypted twin for
+// runtime reads is ../master.json.enc via ../secure.js.
+import master from "../master.json" with { type: "json" };
+
+// This master.json nests every mapping table under "mapData" (top level holds
+// dictionary/syllables/...). Fall back to a flat master for portability.
+const mapData = master.mapData ?? master;
 
 // Set-based tables used by normalize.js and the segmenter.
 export const PUNCTUATION = new Set(mapData.PUNCTUATION);
@@ -27,4 +31,4 @@ const newClause = mapData.newClause;
 const Priority = mapData.Priority;
 const IMPOSTER = mapData.IMPOSTER;
 
-export { MMap, NewMap, newClause, IMPOSTER, Priority,BLOCK_PUNCT,ALL_DIGITS, PUNCTUATION,Glue,BURMESE_DIGITS,ENGLISH_DIGITS};
+export { MMap, NewMap, newClause, IMPOSTER, Priority };

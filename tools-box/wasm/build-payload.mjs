@@ -54,7 +54,13 @@ export function buildPack() {
   const pack = {};
   let inlined = 0;
   const inlineSection = (_, name) => {
-    const section = JSON.parse(fs.readFileSync(KNOWLEDGE, "utf8"))[name];
+    const full = JSON.parse(fs.readFileSync(KNOWLEDGE, "utf8"));
+    const section =
+      name === "master"
+        ? full.mapData === undefined
+          ? undefined
+          : { mapData: full.mapData }
+        : full[name];
     if (section === undefined) throw new Error(`missing "${name}" in ${KNOWLEDGE}`);
     inlined++;
     return `const ${name} = ${JSON.stringify(section)};`;
