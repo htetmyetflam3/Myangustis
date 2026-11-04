@@ -34,7 +34,7 @@
 
 import { getEngineData } from "../../../_path.js";
 import { loadMapJson } from "../core/json-map.js";
-import { MARK_ORDER as PRIORITY, isIndex } from "./mm-score.js";
+import { MARK_ORDER as PRIORITY, isIndex } from "./myanmar-score.js";
 
 const { readMasterJson } = await getEngineData();
 let masterMapData = null;

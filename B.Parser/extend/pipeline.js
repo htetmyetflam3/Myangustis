@@ -11,7 +11,7 @@ import { orderText } from "../main/parser/text/cleanup.js";
 import { preserveCharacters } from "../main/parser/text/preserved-transform.js";
 import { extractDocxParagraphs, validateDocxArchive } from "../main/parser/read/docx-extract.js";
 import { extractDocxParagraphsExternal } from "../main/parser/read/docx-external.js";
-import { scoreText, englishLikeness } from "../main/parser/text/mm-score.js";
+import { scoreText, englishLikeness } from "../main/parser/text/myanmar-score.js";
 import { choosePageParser } from "../main/parser/text/page-decision.js";
 import { withoutZeroWidthSpace } from "../main/parser/text/zero-width.js";
 import { countImpossiblePairs } from "../main/parser/text/scan.js";

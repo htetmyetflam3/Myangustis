@@ -26,7 +26,7 @@ installPassiveLog({
   checks: /^(1|true|on|yes)$/i.test(String(process.env.LOG_CHECKS ?? "")),
 });
 
-async function repairPages(pages, eligible = () => true) {
+async function beautifyPages(pages, eligible = () => true) {
   const totals = { pages: 0, repairs: 0, splits: 0 };
   const repairedPages = [];
   for (let index = 0; index < pages.length; index += 1) {
@@ -125,7 +125,7 @@ export function createSourceRunner({ kind, method, docxImages = false, pdfImages
       // Already-finalized PDF pages never run this document-wide repair path.
       const eligible = (index) => !pageLocal && job.reports[index]?.category !== "UNKNOWN";
       const { pages: repairedPages, totals: repairTotals } = applyCleanup && !isDraft && !pageLocal
-        ? await repairPages(finalPages, eligible)
+        ? await beautifyPages(finalPages, eligible)
         : { pages: finalPages, totals: { pages: 0, repairs: 0, splits: 0 } };
       let scanRepairedPages = repairedPages;
       if (!isDraft && !pageLocal && applyCleanup && chosenPath === "zawcode") {

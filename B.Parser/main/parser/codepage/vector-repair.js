@@ -56,7 +56,7 @@ import {
   FontResourceLoader, DocumentDecoding, pageFontDecoders, PdfRef,
   detectLegacyLayoutFonts,
 } from "../read/pdf-fonts.js";
-import { englishLikeness } from "../text/mm-score.js";
+import { englishLikeness } from "../text/myanmar-score.js";
 import { crowdVote, loadWitnesses } from "./outline-vote.js";
 import { WININNWA_LEGACY_CODE_PAGE } from "./registry.js";
 

@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  HOMOGLYPH_PAIRS, homoglyphVariants, repairToken, repairHomoglyphs,
-} from "../../../B.Parser/main/parser/text/repair.js";
+  HOMOGLYPH_PAIRS, homoglyphVariants, beautifyToken, beautifyHomoglyphs,
+} from "../../../B.Parser/main/parser/text/beautify.js";
 
 const words = new Set(["စဉ်", "အစဉ်", "လုံးဝ", "ဝဂ်", "ယာဉ်", "ရေ"]);
 
@@ -22,35 +22,35 @@ test("variants swap in both directions and never include the input", () => {
 });
 
 test("a token already in the dictionary is never touched", () => {
-  assert.equal(repairToken("စဉ်", words), null);
-  assert.equal(repairToken("လုံးဝ", words), null);
+  assert.equal(beautifyToken("စဉ်", words), null);
+  assert.equal(beautifyToken("လုံးဝ", words), null);
 });
 
 test("a single resolving variant is the repair", () => {
-  assert.equal(repairToken("စဥ်", words), "စဉ်");
-  assert.equal(repairToken("အစဥ်", words), "အစဉ်");
-  assert.equal(repairToken("လုံး\u1040", words), "လုံးဝ");
+  assert.equal(beautifyToken("စဥ်", words), "စဉ်");
+  assert.equal(beautifyToken("အစဥ်", words), "အစဉ်");
+  assert.equal(beautifyToken("လုံး\u1040", words), "လုံးဝ");
 });
 
 test("a token with no resolving variant is left alone", () => {
-  assert.equal(repairToken("ကကကက", words), null);
-  assert.equal(repairToken("စဥ်ကကက", words), null);
+  assert.equal(beautifyToken("ကကကက", words), null);
+  assert.equal(beautifyToken("စဥ်ကကက", words), null);
 });
 
 test("ambiguity changes nothing", () => {
 
   const ambiguous = new Set(["ကဝခ", "က\u1040ခ"]);
-  assert.equal(repairToken("ကဝခ", ambiguous), null);
+  assert.equal(beautifyToken("ကဝခ", ambiguous), null);
 });
 
 test("an empty or missing dictionary is a no-op", () => {
-  assert.equal(repairToken("စဥ်", new Set()), null);
-  assert.equal(repairToken("စဥ်", null), null);
-  assert.deepEqual(repairHomoglyphs("စဥ်", new Set()).repairs, []);
+  assert.equal(beautifyToken("စဥ်", new Set()), null);
+  assert.equal(beautifyToken("စဥ်", null), null);
+  assert.deepEqual(beautifyHomoglyphs("စဥ်", new Set()).repairs, []);
 });
 
 test("whole-text repair rewrites and tallies", () => {
-  const { text, repairs } = repairHomoglyphs("အစဥ် နှင့် စဥ် နှင့် စဥ်", words);
+  const { text, repairs } = beautifyHomoglyphs("အစဥ် နှင့် စဥ် နှင့် စဥ်", words);
   assert.equal(text, "အစဉ် နှင့် စဉ် နှင့် စဉ်");
   const total = repairs.reduce((n, r) => n + r.count, 0);
   assert.equal(total, 3);
@@ -61,11 +61,11 @@ test("whole-text repair rewrites and tallies", () => {
 
 test("non-Myanmar text passes through untouched", () => {
   const src = "Chapter 7: hello world 2024";
-  assert.equal(repairHomoglyphs(src, words).text, src);
+  assert.equal(beautifyHomoglyphs(src, words).text, src);
 });
 
 
-import { splitGluedNumber, repairText } from "../../../B.Parser/main/parser/text/repair.js";
+import { splitGluedNumber, beautifyText } from "../../../B.Parser/main/parser/text/beautify.js";
 
 const toc = new Set(["သဒ္ဒါ", "ဝဂ်", "မျိုး", "စဉ်"]);
 
@@ -93,23 +93,24 @@ test("ambiguity at both ends changes nothing", () => {
   assert.equal(splitGluedNumber("\u1041ကခ\u1042", both), null);
 });
 
-test("repairText applies swaps and splits together", () => {
+test("beautifyText applies swaps and splits together", () => {
   const words = new Set(["စဉ်", "သဒ္ဒါ"]);
-  const { text, repairs, splits } = repairText("စဥ် သဒ္ဒါ\u1041", words);
+  const { text, repairs, splits } = beautifyText("စဥ် သဒ္ဒါ\u1041", words);
   assert.equal(text, "စဉ် သဒ္ဒါ \u1041");
   assert.equal(repairs.reduce((n, r) => n + r.count, 0), 1);
   assert.equal(splits.reduce((n, r) => n + r.count, 0), 1);
 });
 
-test("repairText is a no-op without a dictionary", () => {
-  assert.equal(repairText("သဒ္ဒါ\u1041", new Set()).text, "သဒ္ဒါ\u1041");
+test("beautifyText is a no-op without a dictionary", () => {
+  assert.equal(beautifyText("သဒ္ဒါ\u1041", new Set()).text, "သဒ္ဒါ\u1041");
 });
 
 
 
 
 test("zawcode mend rewrites scan-flagged spans and nothing else", async () => {
-  const { mendZawCodeText, mendZawCodeTextWithPos } = await import("../../../B.Parser/main/parser/text/repair.js");
+  const { mendZawCodeText } = await import("../../../B.Parser/main/parser/text/beautify.js");
+  const { mendZawCodeTextWithPos } = await import("../../../B.Parser/main/parser/text/repair.js");
 
   const line = "မြေတော်တွင် ကြေနပ်စွာ \u1014\u103C\u1031\u1015\u102E ကြေးဇူးပါ";
   const { text, repairs } = await mendZawCodeTextWithPos(line);
@@ -121,7 +122,8 @@ test("zawcode mend rewrites scan-flagged spans and nothing else", async () => {
 });
 
 test("zawcode guard splits stored order by readable result, not font name", async () => {
-  const { zawCodeGuard, zawCodeGuardWithPos } = await import("../../../B.Parser/main/parser/text/repair.js");
+  const { zawCodeGuard } = await import("../../../B.Parser/main/parser/text/beautify.js");
+  const { zawCodeGuardWithPos } = await import("../../../B.Parser/main/parser/text/repair.js");
 
   const stored = Array(30).fill("\u1014\u103C\u1031\u1015\u102E").join(" ");
   const guard = await zawCodeGuardWithPos(stored);
@@ -138,7 +140,7 @@ test("zawcode guard splits stored order by readable result, not font name", asyn
 
 
 test("zawcode insertion variants offer the dropped glyphs", async () => {
-  const { zawCodeInsertionVariants, zawCodeSpuriousIVariants } = await import("../../../B.Parser/main/parser/text/repair.js");
+  const { zawCodeInsertionVariants, zawCodeSpuriousIVariants } = await import("../../../B.Parser/main/parser/text/beautify.js");
 
   assert.ok(zawCodeInsertionVariants("\u1000\u1031\u102C\u1004\u103A\u1037")
     .includes("\u1000\u103C\u1031\u102C\u1004\u103A\u1037"));
@@ -220,16 +222,16 @@ test("zawcode mend frames cover the damage that still segments", async () => {
   assert.equal((await mendZawCodeTextWithPos(stranded)).text, stranded);
 });
 
-test("repairFromScanVerdict mends only the zawcode path, text and lines together", async () => {
-  const { repairFromPosVerdict } = await import("../../../B.Parser/main/parser/text/repair.js");
+test("beautifyFromScanVerdict mends only the zawcode path, text and lines together", async () => {
+  const { repairFromPosVerdict: beautifyFromPosVerdict } = await import("../../../B.Parser/main/parser/text/repair.js");
   const line = "မြေတော်တွင် \u1014\u103C\u1031\u1015\u102E ကြေးဇူးပါ";
   const pages = [{ text: line, lines: [[0, 0, 10, line]], wh: [1, 1] }];
 
 
-  assert.equal(await repairFromPosVerdict(pages, { path: "wininnwa" }), pages);
-  assert.equal(await repairFromPosVerdict(pages, { path: "unicode" }), pages);
+  assert.equal(await beautifyFromPosVerdict(pages, { path: "wininnwa" }), pages);
+  assert.equal(await beautifyFromPosVerdict(pages, { path: "unicode" }), pages);
 
-  const mended = await repairFromPosVerdict(pages, { path: "zawcode" });
+  const mended = await beautifyFromPosVerdict(pages, { path: "zawcode" });
   assert.equal(mended[0].text, "မြေတော်တွင် နေပြီ ကြေးဇူးပါ");
   assert.equal(mended[0].lines[0][3], mended[0].text);
 
@@ -239,15 +241,15 @@ test("repairFromScanVerdict mends only the zawcode path, text and lines together
     text: "ကြည့်\u1014\u103C\u1031ကသည်",
     lines: [[0, 0, 10, "ကြည့် \u1014\u103C\u1031ကသည်"]],
   }];
-  const splitMended = await repairFromPosVerdict(split, { path: "zawcode" });
+  const splitMended = await beautifyFromPosVerdict(split, { path: "zawcode" });
   // The prefix is still {?} to POS, so do not certify or rewrite this span.
   assert.equal(splitMended[0].text, split[0].text);
   assert.equal(splitMended[0].lines[0][3], split[0].lines[0][3]);
 });
 
 test("production repair uses POS-confirmed candidates without changing standalone Myanmar digits", async () => {
-  const { repairTextWithPos } = await import("../../../B.Parser/main/parser/text/repair.js");
-  const result = await repairTextWithPos("စဥ် သဒ္ဒါ၁ လုံး၀ ၀ ၇ ဝ ရ");
+  const { repairTextWithPos: beautifyTextWithPos } = await import("../../../B.Parser/main/parser/text/repair.js");
+  const result = await beautifyTextWithPos("စဥ် သဒ္ဒါ၁ လုံး၀ ၀ ၇ ဝ ရ");
   assert.equal(result.text, "စဉ် သဒ္ဒါ ၁ လုံးဝ ၀ ၇ ဝ ရ");
   assert.deepEqual(result.splits, [{ from: "သဒ္ဒါ၁", count: 1 }]);
   assert.equal(result.repairs.reduce((total, item) => total + item.count, 0), 2);

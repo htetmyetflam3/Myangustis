@@ -11,7 +11,7 @@ function pool() {
   return evidence;
 }
 
-export function pdfRepairCandidates(font, bytes) {
+export function pdfBeautifyCandidates(font, bytes) {
   if (!font || typeof font.fontSha256 !== "string" || typeof font.toUnicodeSha256 !== "string"
       || typeof font.baseFont !== "string" || !Number.isInteger(font.firstChar)
       || !Number.isInteger(font.lastChar) || typeof font.hasEncoding !== "boolean") {

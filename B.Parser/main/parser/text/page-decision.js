@@ -1,4 +1,4 @@
-import { englishLikeness } from "./mm-score.js";
+import { englishLikeness } from "./myanmar-score.js";
 import { containsMyanmar } from "./detector.js";
 import { withoutZeroWidthSpace } from "./zero-width.js";
 export { normalizePageLines } from "./preserved-transform.js";

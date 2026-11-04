@@ -1,525 +1,26 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import { loadMapJson } from "../core/json-map.js";
-import { scanText, scanBrokenSpans, tagPosLine, parseTaggedLine } from "./scan.js";
+// Repair is a separate stage after Parser output is written.
+//
+// repairFirstStage wraps scan.js. Scan owns the hash-free BindEngine POS
+// generator: repair reads Parser's tmp output one line at a time, scan calls
+// BindEngine for that line, and repair keeps only broken lines with their
+// original PDF page/line reference. Each broken line becomes one line-scope
+// SVG request for the original-PDF cache. The cache response then enters
+// actualRepair, where the vector decisions are applied. Nothing here feeds
+// back into Parser's first circle.
+import fs from "node:fs";
+import readline from "node:readline";
 import {
-  orderText, unmixZawCodeMarks, retraceZawCodeMarks, settleZawCodeAhE,
-  medialFollows, reorderMarks,
-} from "./cleanup.js";
-import { scoreText, isIndex } from "./mm-score.js";
-import { arrangeZawCodeOrder } from "./zawcode-order.js";
+  scanBrokenSpans, scanLineWithPos, tagPosLine, parseTaggedLine,
+} from "./scan.js";
+import {
+  beautifyText, beautifyFromScanVerdict, mendZawCodeText, zawCodeGuard,
+} from "./beautify.js";
 
 // Raw-font evidence is available to a repair caller that retained provenance.
 // These lookups return candidates only; they never alter text automatically.
-export { pdfRepairCandidates, physicalKeyCandidates, evidenceForOutput } from "../codepage/pooled-candidates.js";
-
-const DATA = loadMapJson("homoglyphs.json");
-
-
-export const HOMOGLYPH_PAIRS = DATA.pairs.map(([a, b]) => [a, b]);
-
-
-const SWAPS = HOMOGLYPH_PAIRS.flatMap(([a, b]) => [[a, b], [b, a]]);
-
+export { pdfBeautifyCandidates, physicalKeyCandidates, evidenceForOutput } from "../codepage/pooled-candidates.js";
 
 const MM_RUN = /[\u1000-\u1049\u105a-\u109f]+/gu;
-
-
-
-
-
-export function homoglyphVariants(token) {
-  const out = new Set();
-  for (const [from, to] of SWAPS) {
-    if (!token.includes(from)) continue;
-    out.add(token.split(from).join(to));
-    let i = -1;
-    while ((i = token.indexOf(from, i + 1)) >= 0) {
-      out.add(token.slice(0, i) + to + token.slice(i + 1));
-    }
-  }
-  out.delete(token);
-  return [...out];
-}
-
-
-
-
-
-export function repairToken(token, words) {
-  // A number on its own is not evidence that ၀ or ၇ should become a letter.
-  if (/^[၀-၉]+$/u.test(token) || !words || !words.size) return null;
-  const variants = homoglyphVariants(token);
-  if (!variants.length || words.has(token)) return null;
-  const hits = variants.filter((v) => words.has(v));
-  return hits.length === 1 ? hits[0] : null;
-}
-
-
-
-
-
-export function repairHomoglyphs(text, words) {
-  if (!text || !words || !words.size) return { text, repairs: [] };
-  const tally = new Map();
-  const out = String(text).replace(MM_RUN, (token) => {
-    const fixed = repairToken(token, words);
-    if (!fixed) return token;
-    const key = `${token}\u0000${fixed}`;
-    tally.set(key, (tally.get(key) || 0) + 1);
-    return fixed;
-  });
-  const repairs = [...tally].map(([k, count]) => {
-    const [from, to] = k.split("\u0000");
-    return { from, to, count };
-  }).sort((a, b) => b.count - a.count);
-  return { text: out, repairs };
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-export function splitGluedNumber(token, words) {
-  if (!words || !words.size) return null;
-  const tail = /^(.*?)([\u1040-\u1049]+)$/u.exec(token);
-  const head = /^([\u1040-\u1049]+)(.*)$/u.exec(token);
-  if ((!tail?.[1] && !head?.[2]) || words.has(token)) return null;
-  const tailOk = Boolean(tail && tail[1] && words.has(tail[1]));
-  const headOk = Boolean(head && head[2] && words.has(head[2]));
-  if (tailOk && headOk) return null;
-  if (tailOk) return [tail[1], tail[2]];
-  if (headOk) return [head[1], head[2]];
-  return null;
-}
-
-
-
-
-
-export function repairText(text, words) {
-  const first = repairHomoglyphs(text, words);
-  const tally = new Map();
-  const out = first.text.replace(MM_RUN, (token) => {
-    const parts = splitGluedNumber(token, words);
-    if (!parts) return token;
-    tally.set(token, (tally.get(token) || 0) + 1);
-    return parts.join(" ");
-  });
-  const splits = [...tally].map(([from, count]) => ({ from, count }))
-    .sort((a, b) => b.count - a.count);
-  return { text: out, repairs: first.repairs, splits };
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const MEND_GATE_RULES = ["orphan", "impossible", "stray", "virama", "unknown"];
-
-function gateHits(token, words, standalone) {
-  const rep = scanText(token, { perRule: 1 });
-  const structural = MEND_GATE_RULES.reduce((n, k) => n + (rep[k]?.total ?? 0), 0);
-  return structural + (typeof words?.unknownCount === "function" ? words.unknownCount(token) : 0);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-export function zawCodeGuard(sample, words, standalone = []) {
-  const empty = {
-    zawcode: false, pureScore: 0, crossedScore: 0, marks: 0,
-    pureGate: 0, crossedGate: 0, gain: 0,
-  };
-  if (!sample || !words || !words.size) return empty;
-  const pureText = orderText(String(sample));
-  const crossedText = orderText(unmixZawCodeMarks(String(sample)));
-  const pure = scoreText(pureText);
-  const crossed = scoreText(crossedText);
-  const pureGate = gateHits(pureText, words, standalone);
-  const crossedGate = gateHits(crossedText, words, standalone);
-  const gain = pureGate - crossedGate;
-  const zawcode = pure.marks >= 50
-    && pure.score >= 0.99
-    && crossed.score >= pure.score - 0.001
-    && crossedText !== pureText
-    && pureGate >= 10
-    && gain >= 2
-    && gain * 20 >= pureGate;
-  return {
-    zawcode,
-    pureScore: pure.score,
-    crossedScore: crossed.score,
-    marks: pure.marks,
-    pureGate,
-    crossedGate,
-    gain,
-  };
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const MEND_MEDIALS = new Set(["\u103B", "\u103C", "\u103D", "\u103E"]);
-const MEND_VOWEL_MARKS = new Set([
-  "\u102B", "\u102C", "\u102D", "\u102E", "\u102F", "\u1030", "\u1031",
-  "\u1032", "\u1033", "\u1034", "\u1035",
-]);
-const MEND_HA_HOSTS = new Set(["\u1019", "\u100A", "\u101B"]);
-const MEND_WA_HA_HOSTS = new Set(["\u101C", "\u101B", "\u100A", "\u1014", "\u1019"]);
-const MEND_STACK_SECONDS = new Set([
-  "\u1001", "\u1005", "\u1006", "\u1010", "\u1012", "\u1013", "\u1015",
-  "\u1018", "\u1019",
-]);
-
-
-
-
-function zawCodeClusters(chars) {
-  const res = [];
-  let i = 0;
-  while (i < chars.length) {
-    if (isIndex(chars[i])) {
-      let j = i + 1;
-      while (j < chars.length && !isIndex(chars[j])) {
-        if (chars[j] === "\u1039" && j + 1 < chars.length && isIndex(chars[j + 1])) break;
-        j += 1;
-      }
-      res.push({ start: i, end: j });
-      i = j;
-    } else i += 1;
-  }
-  return res;
-}
-
-
-export function zawCodeInsertionVariants(token) {
-  const chars = Array.from(token);
-  const variants = new Set();
-  const add = (pos, str) => {
-    const c = [...chars];
-    c.splice(pos, 0, ...Array.from(str));
-    variants.add(reorderMarks(c.join("")));
-  };
-  for (const cl of zawCodeClusters(chars)) {
-    const base = chars[cl.start];
-    const marks = chars.slice(cl.start + 1, cl.end);
-    let medialEnd = cl.start + 1;
-    while (medialEnd < cl.end && MEND_MEDIALS.has(chars[medialEnd])) medialEnd += 1;
-    const closed = marks.includes("\u103A");
-    const vowelFree = !marks.some((m) => MEND_VOWEL_MARKS.has(m));
-    if (medialFollows("\u103C", base) && !marks.includes("\u103C")) add(cl.start + 1, "\u103C");
-    if (MEND_HA_HOSTS.has(base) && !marks.includes("\u103E")) add(cl.start + 1, "\u103E");
-    if (MEND_WA_HA_HOSTS.has(base) && !marks.includes("\u103D") && !marks.includes("\u103E")) {
-      add(cl.start + 1, "\u103D\u103E");
-    }
-
-
-
-    if (vowelFree && !closed && chars[cl.start - 1] !== "\u1031") add(medialEnd, "\u1030");
-    const uFree = !marks.some((m) => [
-      "\u102B", "\u102C", "\u102E", "\u102F", "\u1030", "\u1031", "\u1032",
-    ].includes(m));
-    if (uFree && !closed) {
-      let pos = medialEnd;
-      if (chars[pos] === "\u102D") pos += 1;
-      add(pos, "\u102F");
-    }
-  }
-  for (let i = 0; i + 1 < chars.length; i += 1) {
-    if (isIndex(chars[i]) && isIndex(chars[i + 1]) && MEND_STACK_SECONDS.has(chars[i + 1])) {
-      add(i + 1, "\u1039");
-    }
-  }
-  variants.delete(token);
-  return [...variants];
-}
-
-
-export function zawCodeSpuriousIVariants(token) {
-  const out = new Set();
-  let idx = -1;
-  while ((idx = token.indexOf("\u102D\u102F", idx + 1)) >= 0) {
-    out.add(token.slice(0, idx) + "\u102F" + token.slice(idx + 2));
-  }
-  out.delete(token);
-  return [...out];
-}
-
-
-
-
-
-
-
-
-
-
-function mendZawCodeToken(token, words, standalone) {
-  const own = gateHits(token, words, standalone);
-  const wins = (cand) => (cand && cand !== token
-    && (typeof words.unknownCount !== "function" || words.unknownCount(cand) === 0)
-    && gateHits(cand, words, standalone) < own ? cand : null);
-  const arbitrate = (variants) => {
-    const hits = variants.filter((v) => wins(v));
-    return hits.length === 1 ? hits[0] : null;
-  };
-  const unmixed = unmixZawCodeMarks(token);
-  let fixed = wins(unmixed);
-  if (fixed) return fixed;
-  const retraced = retraceZawCodeMarks(token);
-  fixed = wins(retraced) || wins(unmixZawCodeMarks(retraced)) || wins(retraceZawCodeMarks(unmixed));
-  if (fixed) return fixed;
-  const base = retraced !== token ? retraced : token;
-  return arbitrate(zawCodeInsertionVariants(base))
-    || arbitrate(zawCodeSpuriousIVariants(base))
-    || wins(settleZawCodeAhE(base));
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function zawCodeFrameFix(token, words, standalone) {
-  const candidates = [];
-  if (token.startsWith("\u101e\u1010\u102d\u102f\u1037")) {
-    candidates.push("\u101e\u1030" + token.slice(1));
-  } else if (token.startsWith("\u101e\u1037") && token.length > 2) {
-    candidates.push("\u101e\u1030\u1037" + token.slice(2));
-  } else {
-    const chars = Array.from(token);
-    if (!(chars[0] === "\u1021" && chars[1] === "\u1031" && chars[2] !== undefined && isIndex(chars[2]))) {
-      return null;
-    }
-    const retraced = retraceZawCodeMarks(token);
-    candidates.push(settleZawCodeAhE(retraced), retraced, settleZawCodeAhE(token));
-  }
-  if (words.has(token)) return null;
-  for (const cand of candidates) {
-    for (const v of [cand, retraceZawCodeMarks(cand)]) {
-      if (v && v !== token && gateHits(v, words, standalone) === 0) return v;
-    }
-  }
-  return null;
-}
-
-export function mendZawCodeText(text, words, standalone = [], { skipTokens = null } = {}) {
-  if (!text || !words || !words.size) return { text, repairs: [] };
-  const isProtected = (token) => skipTokens?.size
-    && (token.match(MM_RUN) || []).some((part) => skipTokens.has(part));
-  const spans = scanBrokenSpans(String(text));
-  if (typeof words.unknownCount === "function") {
-    for (const match of String(text).matchAll(MM_RUN)) {
-      if (!words.unknownCount(match[0])) continue;
-      const start = match.index;
-      const end = start + match[0].length;
-      if (!spans.some((span) => span.start < end && span.end > start)) {
-        spans.push({ start, end, token: match[0], rules: ["unknown"] });
-      }
-    }
-    spans.sort((a, b) => a.start - b.start);
-  }
-  const tally = new Map();
-  const tallyAdd = (from, to) => {
-    const key = `${from}\u0000${to}`;
-    tally.set(key, (tally.get(key) || 0) + 1);
-  };
-  let out = String(text);
-
-  const cache = new Map();
-  const mendCached = (token) => {
-    if (!cache.has(token)) cache.set(token, mendZawCodeToken(token, words, standalone));
-    return cache.get(token);
-  };
-  for (let s = spans.length - 1; s >= 0; s -= 1) {
-    const { start, end, token } = spans[s];
-
-
-
-
-    if (isProtected(token)) continue;
-    const fixed = mendCached(token);
-    if (!fixed) continue;
-    tallyAdd(token, fixed);
-    out = out.slice(0, start) + fixed + out.slice(end);
-  }
-  out = out.replace(MM_RUN, (token) => {
-    if (isProtected(token)) return token;
-    const fixed = zawCodeFrameFix(token, words, standalone);
-    if (!fixed) return token;
-    tallyAdd(token, fixed);
-    return fixed;
-  });
-  const repairs = [...tally].map(([k, count]) => {
-    const [from, to] = k.split("\u0000");
-    return { from, to, count };
-  }).sort((a, b) => b.count - a.count);
-  return { text: out, repairs };
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-export function repairFromScanVerdict(pages, report, words, {
-  path = null, standalone = [], preserveZawCodeOrder = false,
-} = {}) {
-  if (path !== "zawcode" || !report || !words || !words.size) return pages;
-  return pages.map((page) => {
-    const text = page?.text || "";
-    if (!text) return page;
-    const skipTokens = new Set();
-    if (preserveZawCodeOrder) {
-      const sources = [text, ...(Array.isArray(page.lines) ? page.lines.map((line) => String(line[3] ?? "")) : [])];
-      for (const source of sources) {
-        for (const match of source.matchAll(MM_RUN)) {
-          if (arrangeZawCodeOrder(match[0]) !== match[0]) skipTokens.add(match[0]);
-        }
-      }
-    }
-    const mended = mendZawCodeText(text, words, standalone, { skipTokens });
-    if (mended.text === text) return page;
-    const byToken = new Map(mended.repairs.map(({ from, to }) => [from, to]));
-    let lines = Array.isArray(page.lines)
-      ? page.lines.map(([x, y, size, lineText]) => [
-        x, y, size,
-        String(lineText ?? "").replace(MM_RUN, (token) => byToken.get(token) ?? token),
-      ])
-      : page.lines;
-
-
-
-
-
-    if (Array.isArray(lines)
-      && lines.every((line, i) => line[3] === page.lines[i][3])) {
-      lines = page.lines.map(([x, y, size, lineText]) => [
-        x, y, size,
-        mendZawCodeText(String(lineText ?? ""), words, standalone, { skipTokens }).text,
-      ]);
-    }
-    return { ...page, text: mended.text, ...(lines ? { lines } : {}) };
-  });
-}
 
 export async function inspectPosCandidate(candidate, { bindEngine = null } = {}) {
   if (typeof candidate !== "string") throw new TypeError("A POS candidate must be text");
@@ -547,7 +48,7 @@ export async function scanBrokenSpansWithPos(text, { bindEngine = null } = {}) {
   return spans.sort((a, b) => a.start - b.start);
 }
 
-// The synchronous repair rules above consume a small set-like view of known
+// The synchronous beautify rules in beautify.js consume a small set-like view of known
 // candidates. Resolve that view lazily from Engine POS, never from the master
 // dictionary; replay a rule only when a newly encountered candidate needs a
 // verdict. Source text is changed only after all of its candidates are known.
@@ -576,13 +77,13 @@ async function withPosVerdicts(run, bindEngine = null) {
 }
 
 export async function repairTextWithPos(text, { bindEngine = null } = {}) {
-  return withPosVerdicts((verdicts) => repairText(text, verdicts), bindEngine);
+  return withPosVerdicts((verdicts) => beautifyText(text, verdicts), bindEngine);
 }
 
 export async function repairFromPosVerdict(pages, {
   path = null, preserveZawCodeOrder = false, bindEngine = null,
 } = {}) {
-  return withPosVerdicts((verdicts) => repairFromScanVerdict(pages, {}, verdicts, {
+  return withPosVerdicts((verdicts) => beautifyFromScanVerdict(pages, {}, verdicts, {
     path, preserveZawCodeOrder,
   }), bindEngine);
 }
@@ -593,4 +94,504 @@ export async function mendZawCodeTextWithPos(text, { skipTokens = null, bindEngi
 
 export async function zawCodeGuardWithPos(sample, { bindEngine = null } = {}) {
   return withPosVerdicts((verdicts) => zawCodeGuard(sample, verdicts), bindEngine);
+}
+
+// ---------------------------------------------------------------------------
+// Staged repair flow
+//
+//   repairFirstStage(input)
+//     -> { brokenLines, svgRequests }          // first-stage finish
+//   requestOriginalPdfLineSvgs(firstStage, originalPdfCache)
+//     -> { responses }                          // one SVG per broken line
+//   actualRepair(firstStage, svgResponses)
+//     -> { patches, unresolved }                // final repair result
+//
+// runRepair(input) is only the sequential caller of those stages; it does
+// not merge them, and with no original-PDF cache it stops after first stage
+// and returns the pending SVG requests.
+// ---------------------------------------------------------------------------
+
+const PAGE_MARKER_LINE = /^\s*--- Page (\d+) ---\s*$/u;
+const PARSER_HEADER_LINE = /^(?:# Source:|# Pages:|# Detection:|#{4,})/u;
+
+const repairLineKey = (page, line) => `${page ?? "unknown"}:${line}`;
+
+function normaliseSpans(text, spans) {
+  const valid = [];
+  for (const span of spans ?? []) {
+    const start = span?.start;
+    const end = span?.end;
+    if (!Number.isInteger(start) || !Number.isInteger(end)) continue;
+    if (start < 0 || end < start || end > text.length) continue;
+    valid.push({
+      start,
+      end,
+      token: typeof span.token === "string" ? span.token : text.slice(start, end),
+      rules: [...new Set(Array.isArray(span.rules) ? span.rules : [])],
+    });
+  }
+  valid.sort((a, b) => a.start - b.start || a.end - b.end);
+  const merged = [];
+  for (const span of valid) {
+    const prev = merged[merged.length - 1];
+    if (prev && span.start <= prev.end) {
+      prev.end = Math.max(prev.end, span.end);
+      prev.token = text.slice(prev.start, prev.end);
+      prev.rules = [...new Set([...prev.rules, ...span.rules])];
+    } else {
+      merged.push({ ...span, rules: [...span.rules] });
+    }
+  }
+  return merged;
+}
+
+const MYANMAR_CHAR = /[\u1000-\u109f]/u;
+
+function posUnknownContexts(tokens) {
+  const contexts = [];
+  for (let i = 0; i < tokens.length;) {
+    if (tokens[i].kind !== "unknown") { i += 1; continue; }
+    let end = i + 1;
+    while (end < tokens.length && tokens[end].kind === "unknown") end += 1;
+    const from = Math.max(0, i - 2);
+    const to = Math.min(tokens.length, end + 2);
+    contexts.push(tokens.slice(from, to).map((token) => token.formatted).join("  "));
+    i = end;
+  }
+  return contexts;
+}
+
+async function* readLines(readable, { closeStream = false } = {}) {
+  const lines = readline.createInterface({ input: readable, crlfDelay: Infinity });
+  try {
+    for await (const line of lines) yield line;
+  } finally {
+    lines.close();
+    if (closeStream) readable.destroy?.();
+  }
+}
+
+function pageTextOf(page) {
+  if (typeof page === "string") return page;
+  if (typeof page?.text === "string") return page.text;
+  if (Array.isArray(page?.lines)) {
+    return page.lines.map((line) => {
+      if (typeof line === "string") return line;
+      if (Array.isArray(line)) return String(line[3] ?? "");
+      return String(line?.text ?? "");
+    }).join("\n");
+  }
+  return "";
+}
+
+async function* inputLineRecords(input) {
+  const sources = ["path", "text", "pages", "lines", "stream"]
+    .filter((key) => input?.[key] !== undefined);
+  if (!input || sources.length !== 1) {
+    throw new TypeError("repairFirstStage needs exactly one input source: path, text, pages, lines or stream");
+  }
+  if (typeof input.pages === "string" || typeof input.lines === "string") {
+    throw new TypeError("repairFirstStage pages/lines input must be an iterable, not a string");
+  }
+
+  let sequence = 0;
+  if (input.pages !== undefined) {
+    let fallbackPage = 0;
+    for (const page of input.pages) {
+      fallbackPage += 1;
+      const pageNumber = typeof page === "string"
+        ? fallbackPage
+        : page?.page ?? page?.pageNumber ?? page?.number ?? fallbackPage;
+      const lines = pageTextOf(page).split(/\r?\n/u);
+      for (let i = 0; i < lines.length; i += 1) {
+        sequence += 1;
+        yield { page: pageNumber, line: i + 1, sequence, text: lines[i] };
+      }
+    }
+    return;
+  }
+
+  let rawLines;
+  if (input.path !== undefined) {
+    rawLines = readLines(fs.createReadStream(input.path, { encoding: "utf8" }), { closeStream: true });
+  } else if (input.stream !== undefined) {
+    rawLines = readLines(input.stream);
+  } else if (input.text !== undefined) {
+    rawLines = String(input.text).split(/\r?\n/u);
+  } else {
+    rawLines = input.lines;
+  }
+
+  let page = input.page ?? input.pageNumber ?? null;
+  let lineInPage = 0;
+  let sawPageMarker = false;
+  for await (const raw of rawLines) {
+    if (Array.isArray(raw)) {
+      lineInPage += 1;
+      sequence += 1;
+      yield { page, line: lineInPage, sequence, text: String(raw[3] ?? "") };
+      continue;
+    }
+    if (raw && typeof raw === "object") {
+      const recordPage = raw.page ?? raw.pageNumber ?? page;
+      if (recordPage !== page) { page = recordPage; lineInPage = 0; }
+      const recordLine = Number.isInteger(raw.line)
+        ? raw.line
+        : Number.isInteger(raw.lineNumber) ? raw.lineNumber : lineInPage + 1;
+      lineInPage = recordLine;
+      sequence += 1;
+      yield {
+        page: recordPage,
+        line: recordLine,
+        sequence,
+        text: String(raw.text ?? (typeof raw.line === "string" ? raw.line : "")),
+      };
+      continue;
+    }
+    const text = String(raw ?? "");
+    const marker = PAGE_MARKER_LINE.exec(text);
+    if (marker) {
+      page = Number(marker[1]);
+      sawPageMarker = true;
+      lineInPage = 0;
+      continue;
+    }
+    if (!sawPageMarker && page === null && PARSER_HEADER_LINE.test(text)) continue;
+    lineInPage += 1;
+    sequence += 1;
+    yield { page, line: lineInPage, sequence, text };
+  }
+}
+
+export async function repairFirstStage(input = {}) {
+  const sourcePdf = input?.sourcePdf ?? input?.pdf ?? null;
+  const bindEngine = input?.bindEngine ?? null;
+  const includeRawPos = input?.includeRawPos === true;
+  const brokenLines = [];
+  const svgRequests = [];
+  const seenPages = new Set();
+  let lines = 0;
+  let scannedLines = 0;
+  let brokenSpans = 0;
+
+  for await (const record of inputLineRecords(input)) {
+    lines += 1;
+    if (record.page !== null && record.page !== undefined) seenPages.add(record.page);
+    if (!record.text.trim()) continue;
+    scannedLines += 1;
+
+    const pos = await scanLineWithPos(record.text, { bindEngine });
+    const posUnknownTokens = pos.tokens
+      .filter((token) => token.kind === "unknown" && MYANMAR_CHAR.test(token.word))
+      .map((token) => token.word);
+    // Full-line POS is the line verdict; whole Myanmar runs give the exact
+    // broken spans. This keeps foreign text and punctuation that the Engine
+    // segments as "unknown" out of the SVG request list.
+    const spans = posUnknownTokens.length
+      ? await scanBrokenSpansWithPos(record.text, { bindEngine })
+      : scanBrokenSpans(record.text);
+    const lineSpans = normaliseSpans(record.text, spans);
+    if (!lineSpans.length) continue;
+    const unknownTokens = lineSpans
+      .filter((span) => span.rules.includes("unknown"))
+      .map((span) => span.token);
+    brokenSpans += lineSpans.length;
+    const id = repairLineKey(record.page, record.line);
+    const broken = {
+      id,
+      page: record.page,
+      line: record.line,
+      sequence: record.sequence,
+      text: record.text,
+      spans: lineSpans,
+      unknownTokens,
+      contexts: posUnknownContexts(pos.tokens),
+      sourcePdf,
+    };
+    if (includeRawPos) broken.rawPos = pos.rawPos;
+    brokenLines.push(broken);
+    svgRequests.push({
+      id,
+      page: record.page,
+      line: record.line,
+      sequence: record.sequence,
+      scope: "line",
+      format: "svg",
+      sourcePdf,
+    });
+  }
+
+  return {
+    stage: "repair-scan",
+    sourcePdf,
+    brokenLines,
+    svgRequests,
+    stats: {
+      pages: seenPages.size,
+      lines,
+      scannedLines,
+      brokenLines: brokenLines.length,
+      brokenSpans,
+    },
+  };
+}
+
+function svgRequestsOf(firstStage) {
+  if (Array.isArray(firstStage?.svgRequests)) return firstStage.svgRequests;
+  return (firstStage?.brokenLines ?? []).map((broken) => ({
+    id: broken.id ?? repairLineKey(broken.page, broken.line),
+    page: broken.page,
+    line: broken.line,
+    sequence: broken.sequence,
+    scope: "line",
+    format: "svg",
+    sourcePdf: broken.sourcePdf ?? firstStage?.sourcePdf ?? null,
+  }));
+}
+
+function cacheExporter(originalPdfCache) {
+  if (typeof originalPdfCache === "function") return originalPdfCache;
+  for (const name of ["exportLineSvg", "exportPdfLineSvg", "requestLineSvg", "getLineSvg"]) {
+    if (typeof originalPdfCache?.[name] === "function") {
+      return (request) => originalPdfCache[name](request);
+    }
+  }
+  throw new TypeError("repair SVG stage needs an original-PDF cache: a function or an object with exportLineSvg(request)");
+}
+
+function normaliseSvgResponse(request, response) {
+  if (typeof response === "string") {
+    return { id: request.id, page: request.page, line: request.line, svg: response };
+  }
+  if (response && typeof response === "object") {
+    return {
+      ...response,
+      id: response.id ?? request.id,
+      page: response.page ?? request.page,
+      line: response.line ?? request.line,
+    };
+  }
+  return {
+    id: request.id, page: request.page, line: request.line,
+    missing: true, response: response ?? null,
+  };
+}
+
+export async function* streamOriginalPdfLineSvgs(firstStage, originalPdfCache) {
+  const exportLineSvg = cacheExporter(originalPdfCache);
+  for (const request of svgRequestsOf(firstStage)) {
+    yield normaliseSvgResponse(request, await exportLineSvg(request));
+  }
+}
+
+export async function requestOriginalPdfLineSvgs(firstStage, originalPdfCache) {
+  const responses = [];
+  for await (const response of streamOriginalPdfLineSvgs(firstStage, originalPdfCache)) {
+    responses.push(response);
+  }
+  return { stage: "original-pdf-svg", responses };
+}
+
+function applySpanReplacements(text, replacements) {
+  const usedFrom = new Map();
+  const specs = [];
+  for (const item of replacements ?? []) {
+    const to = item?.to ?? item?.replacement ?? item?.replacementText ?? item?.text;
+    if (typeof to !== "string") return null;
+    let start = item?.start;
+    let end = item?.end;
+    if (!Number.isInteger(start) || !Number.isInteger(end)) {
+      const from = item?.from ?? item?.token;
+      if (typeof from !== "string" || !from) return null;
+      start = text.indexOf(from, usedFrom.get(from) ?? 0);
+      if (start < 0) return null;
+      end = start + from.length;
+      usedFrom.set(from, end);
+    }
+    if (start < 0 || end < start || end > text.length) return null;
+    specs.push({ start, end, from: text.slice(start, end), to });
+  }
+  const ordered = [...specs].sort((a, b) => a.start - b.start || a.end - b.end);
+  for (let i = 1; i < ordered.length; i += 1) {
+    if (ordered[i].start < ordered[i - 1].end) return null;
+  }
+  let out = text;
+  for (const spec of [...ordered].reverse()) {
+    out = out.slice(0, spec.start) + spec.to + out.slice(spec.end);
+  }
+  return { text: out, replacements: ordered };
+}
+
+function decisionToLine(broken, decision, { fromResolver = false } = {}) {
+  if (typeof decision === "string") {
+    return {
+      text: decision,
+      replacements: [{ start: 0, end: broken.text.length, from: broken.text, to: decision }],
+    };
+  }
+  if (!decision || typeof decision !== "object") return null;
+  const full = decision.repairedText ?? decision.replacementText ?? decision.finalText ?? decision.lineText;
+  if (typeof full === "string") {
+    return {
+      text: full,
+      replacements: [{ start: 0, end: broken.text.length, from: broken.text, to: full }],
+    };
+  }
+  if (Array.isArray(decision.replacements)) return applySpanReplacements(broken.text, decision.replacements);
+  if (Number.isInteger(decision.start) && Number.isInteger(decision.end)) {
+    return applySpanReplacements(broken.text, [decision]);
+  }
+  if (fromResolver && decision.accepted === true && typeof decision.text === "string") {
+    return {
+      text: decision.text,
+      replacements: [{ start: 0, end: broken.text.length, from: broken.text, to: decision.text }],
+    };
+  }
+  return null;
+}
+
+async function vectorImageReplacements(broken, entry, vectorOptions) {
+  let vote = null;
+  let sawSource = false;
+  const replacements = [];
+  const missing = [];
+  for (let i = 0; i < broken.spans.length; i += 1) {
+    const span = broken.spans[i];
+    const source = entry?.spanImages?.[i] ?? entry?.spanCrops?.[i]
+      ?? entry?.images?.[i] ?? entry?.crops?.[i]
+      ?? (broken.spans.length === 1 ? entry?.image ?? entry?.crop : null);
+    if (!source) { missing.push(span); continue; }
+    sawSource = true;
+    const candidates = entry?.spanCandidates?.[i] ?? entry?.candidatesBySpan?.[i] ?? entry?.candidates;
+    const options = { ...vectorOptions, ...(candidates !== undefined ? { candidates } : {}) };
+    vote ??= await import("../codepage/vote.js");
+    const match = source?.data && Number.isInteger(source.width) && Number.isInteger(source.height)
+      ? vote.matchPixelsToVector(source, options)
+      : await vote.matchImageToVector(source, options);
+    if (match?.accepted && typeof match.text === "string") {
+      replacements.push({ start: span.start, end: span.end, to: match.text });
+    } else {
+      missing.push(span);
+    }
+  }
+  return sawSource ? { replacements, missing } : null;
+}
+
+function responseEntries(svgResponses) {
+  if (!svgResponses) return [];
+  if (Array.isArray(svgResponses)) return svgResponses;
+  if (svgResponses instanceof Map) {
+    return [...svgResponses.entries()].map(([id, value]) => (
+      typeof value === "string" ? { id, svg: value } : { id, ...value }
+    ));
+  }
+  if (Array.isArray(svgResponses.responses)) return svgResponses.responses;
+  if (typeof svgResponses === "object") {
+    return Object.entries(svgResponses).map(([id, value]) => (
+      typeof value === "string" ? { id, svg: value } : { id, ...value }
+    ));
+  }
+  return [];
+}
+
+export async function actualRepair(firstStage, svgResponses, {
+  vectorResolve = null, vectorOptions = {},
+} = {}) {
+  const byKey = new Map();
+  for (const entry of responseEntries(svgResponses)) {
+    if (!entry || typeof entry !== "object") continue;
+    if (entry.id) byKey.set(String(entry.id), entry);
+    if (entry.page !== undefined && entry.line !== undefined) byKey.set(repairLineKey(entry.page, entry.line), entry);
+  }
+
+  const patches = [];
+  const unresolved = [];
+  for (const broken of firstStage?.brokenLines ?? []) {
+    const id = broken.id ?? repairLineKey(broken.page, broken.line);
+    const entry = byKey.get(String(id)) ?? byKey.get(repairLineKey(broken.page, broken.line));
+    if (!entry || entry.missing) {
+      unresolved.push({
+        id, page: broken.page, line: broken.line, sequence: broken.sequence,
+        reason: "missing-svg-response", spans: broken.spans,
+      });
+      continue;
+    }
+
+    let applied = decisionToLine(broken, entry);
+    let partialMissing = [];
+    if (!applied && vectorResolve) {
+      const decision = await vectorResolve({ broken, entry, svg: entry.svg ?? entry });
+      applied = decisionToLine(broken, decision, { fromResolver: true });
+    }
+    if (!applied) {
+      const vector = await vectorImageReplacements(broken, entry, vectorOptions);
+      if (vector?.replacements.length) {
+        applied = applySpanReplacements(broken.text, vector.replacements);
+        partialMissing = vector.missing;
+      } else if (vector) {
+        partialMissing = vector.missing;
+      }
+    }
+
+    if (!applied || applied.text === broken.text) {
+      unresolved.push({
+        id, page: broken.page, line: broken.line, sequence: broken.sequence,
+        reason: applied ? "vector-decision-unchanged"
+          : entry.svg || entry.format === "svg" ? "svg-vector-resolver-required" : "no-vector-decision",
+        spans: partialMissing.length ? partialMissing : broken.spans,
+      });
+      continue;
+    }
+
+    patches.push({
+      id,
+      page: broken.page,
+      line: broken.line,
+      sequence: broken.sequence,
+      from: broken.text,
+      to: applied.text,
+      replacements: applied.replacements,
+    });
+    if (partialMissing.length) {
+      unresolved.push({
+        id, page: broken.page, line: broken.line, sequence: broken.sequence,
+        reason: "vector-partial", spans: partialMissing,
+      });
+    }
+  }
+
+  return {
+    stage: "actual-repair",
+    patches,
+    unresolved,
+    stats: {
+      brokenLines: (firstStage?.brokenLines ?? []).length,
+      patches: patches.length,
+      unresolved: unresolved.length,
+    },
+  };
+}
+
+export async function runRepair(input = {}) {
+  const {
+    originalPdfCache = null, vectorResolve = null, vectorOptions = {},
+    ...firstInput
+  } = input ?? {};
+  const firstStage = await repairFirstStage(firstInput);
+  if (!firstStage.brokenLines.length) {
+    return {
+      firstStage,
+      svgResponses: [],
+      final: {
+        stage: "actual-repair", patches: [], unresolved: [],
+        stats: { brokenLines: 0, patches: 0, unresolved: 0 },
+      },
+    };
+  }
+  if (!originalPdfCache) {
+    return { firstStage, svgResponses: null, final: null, pending: firstStage.svgRequests };
+  }
+  const svg = await requestOriginalPdfLineSvgs(firstStage, originalPdfCache);
+  const final = await actualRepair(firstStage, svg, { vectorResolve, vectorOptions });
+  return { firstStage, svgResponses: svg.responses, final };
 }

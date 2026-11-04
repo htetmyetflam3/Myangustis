@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { getEngineNormalize } from "../../../B.Parser/_path.js";
 import { arrangeZawCodeOrder, orderZawCodePages } from "../../../B.Parser/main/parser/text/zawcode-order.js";
-import { repairFromScanVerdict } from "../../../B.Parser/main/parser/text/repair.js";
+import { beautifyFromScanVerdict } from "../../../B.Parser/main/parser/text/beautify.js";
 import { scanText } from "../../../B.Parser/main/parser/text/scan.js";
 import { choosePageParser, markOrderAligned, normalizePageLines } from "../../../B.Parser/main/parser/text/page-decision.js";
 import { normalizeOutputText, protectedCharacters } from "../../../B.Parser/main/parser/text/preserved-transform.js";
@@ -221,7 +221,7 @@ test("existing scan repair still fixes tokens without an ordering pattern", asyn
   const pages = [{ text: source, lines: [[0, 0, 10, source]] }];
   const report = scanText(source);
   const words = new Set(["ကှေ", "သူ့အား"]);
-  const existing = repairFromScanVerdict(pages, report, words, {
+  const existing = beautifyFromScanVerdict(pages, report, words, {
     path: "zawcode", preserveZawCodeOrder: true,
   });
   assert.equal(existing[0].text, "ေကှ သူ့အား");

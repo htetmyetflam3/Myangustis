@@ -7,7 +7,7 @@ import { getEngineBinding } from "../../../../index-path.js";
 import { loadMapJson } from "../core/json-map.js";
 import { MAX_LINE_BYTES } from "../../../../Architecture/Engine/MonoSyllabism/generators/SfomatterForP.js";
 import { textLines } from "./page-file-decision.js";
-import { MARKS as MM_MARKS } from "./mm-score.js";
+import { MARKS as MM_MARKS } from "./myanmar-score.js";
 
 // Do not read the Engine master or build a dictionary matcher to validate
 // words. Ask BindEngine's hash-free POS lane and keep its actual tagged output.
@@ -280,6 +280,25 @@ export async function tagPosLine(sourceText, bindEngine = null) {
     rawPos += unit.rawPos;
   }
   return rawPos;
+}
+
+// Scan owns the BindEngine call: callers hand it one source line and consume
+// the parsed POS tokens back. Page furniture and lines with no POS input are
+// classified here so repair can scan per line without re-deciding them.
+export async function scanLineWithPos(source, { bindEngine = null } = {}) {
+  const line = String(source ?? '');
+  if (isPageNumberLine(line)) {
+    const rawPos = `${line.trim()}{page number}`;
+    return { rawPos, tokens: parseTaggedLine(rawPos), skipped: 'page-number' };
+  }
+  if (PAGE_MARKER.test(line)) {
+    const rawPos = `${line.trim()}{page marker}`;
+    return { rawPos, tokens: parseTaggedLine(rawPos), skipped: 'page-marker' };
+  }
+  const input = posSourceLine(line);
+  if (!input.trim()) return { rawPos: '', tokens: [], skipped: 'no-pos-input' };
+  const rawPos = await tagPosLine(input, bindEngine);
+  return { rawPos, tokens: parseTaggedLine(rawPos), skipped: null };
 }
 
 function unknownContexts(tokens) {

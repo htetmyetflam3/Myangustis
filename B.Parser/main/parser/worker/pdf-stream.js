@@ -11,10 +11,12 @@ import { PageStoreWriter } from "../read/page-store.js";
 import { PosScanner } from "../text/scan.js";
 import { PDF_PARSING_PATHS } from "../read/pdf-fonts.js";
 import { startRecord, note, appendRecord, registerPath } from "../core/provenance.js";
-import { REGISTER_LOG, getEngineNormalize } from "../../../_path.js";
-import {
-  convertFinalizedPageText, normalizePageToFile, pageLayoutLines,
-} from "../text/page-file-decision.js";
+import { REGISTER_LOG } from "../../../_path.js";
+import { normalizePageToFile, pageLayoutLines } from "../text/page-file-decision.js";
+import { scoreText } from "../text/myanmar-score.js";
+import { markOrderAligned } from "../text/page-decision.js";
+import { mendZawCodeTextWithPos } from "../text/repair.js";
+import { normalize } from "../../../../Architecture/Engine/MonoSyllabism/map/loader.js";
 import {
   MAX_INPUT_BYTES, MAX_INPUT_MB, MAX_PAGES, MAX_TEXT_CHARS, OWNER_PARSER_WORKER,
 } from "../core/limits.js";
@@ -41,6 +43,26 @@ async function preparePdf(input, prepared, directory, generalized) {
     }
     throw cause;
   }
+}
+
+const UNICODE_LANE_DECISIONS = new Set(["aligned", "zawcode", "unaligned-unicode"]);
+
+// First circle / parsing finish: lane module -> parser -> myanmar-score ->
+// beautify -> WASM normalize. A correct-scored Unicode page passes through
+// beautify untouched. Only a
+// ZawCode-like page (Unicode codepoints, high Myanmar score, order still
+// crossed) is beautified here, before the POS scanner and output writer. The
+// mend itself is POS-confirmed per token, so a high-but-imperfect page score
+// is enough to call it; low-score pages are retained for the next stage.
+async function beautifyParsedPage(parsedText, page, applyCleanup) {
+  if (!applyCleanup || !parsedText) return parsedText;
+  if (page.parsingPath === PDF_PARSING_PATHS.LEGACY) return parsedText;
+  if (!UNICODE_LANE_DECISIONS.has(page.decision) && page.category !== "UNICODE") return parsedText;
+  const score = scoreText(parsedText);
+  if (!score.marks || (markOrderAligned(parsedText) && score.score >= 0.99)) return parsedText;
+  if (score.score < 0.95) return parsedText;
+  const mended = await mendZawCodeTextWithPos(parsedText);
+  return mended.text;
 }
 
 async function runPdfStreamAttempt(msg, { detector, manual = false, pdfImages = false, generalized = false } = {}) {
@@ -92,7 +114,6 @@ async function runPdfStreamAttempt(msg, { detector, manual = false, pdfImages = 
     const counts = { ZAWGYI: 0, UNICODE: 0, UNKNOWN: 0 };
     let pageNumber = 0;
     let textChars = 0;
-    let engineNormalize = null;
     const reports = noOutput ? [] : null;
     // Manual OCR modifies page text later; scan that final text instead.
     if (!manual && !noOutput) scanner = new PosScanner({ directory });
@@ -133,18 +154,19 @@ async function runPdfStreamAttempt(msg, { detector, manual = false, pdfImages = 
             // Keep the page text if its image cannot be rendered, as before.
           }
         }
-        let finalPage = null;
+        let firstCirclePage = null;
         try {
           if (!manual) {
-            engineNormalize ??= await getEngineNormalize();
-            finalPage = normalizePageToFile(text.chunks(), {
+            const parsedText = [...text.chunks()].join("");
+            const beautifiedText = await beautifyParsedPage(
+              parsedText, page, msg.applyCleanup !== false,
+            );
+            firstCirclePage = normalizePageToFile([beautifiedText], {
               directory,
-              normalize: (line) => convertFinalizedPageText(
-                engineNormalize(line), page, msg.applyCleanup !== false,
-              ),
+              normalize: (line) => normalize(line),
             });
           }
-          const output = finalPage ?? text;
+          const output = firstCirclePage ?? text;
           if (scanner) await scanner.writePage(pageNumber, output.chunks());
           function* chunks() {
             yield* output.chunks();
@@ -154,14 +176,14 @@ async function runPdfStreamAttempt(msg, { detector, manual = false, pdfImages = 
             const layout = { lines: () => page.lines ?? [] };
             storeWriter.addPage({
               text: chunks(),
-              lines: finalPage && page.lines
+              lines: firstCirclePage && page.lines
                 ? pageLayoutLines(layout, output, page.lineCount) : (page.lines ?? []),
               wh: page.wh, images: page.images ?? [], hasImg: page.hasImg === true,
             });
           } else {
             sink.addPage(chunks());
           }
-        } finally { finalPage?.close(); }
+        } finally { firstCirclePage?.close(); }
       }
     } finally {
       pages.return?.();
