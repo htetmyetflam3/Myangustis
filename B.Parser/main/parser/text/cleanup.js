@@ -172,6 +172,27 @@ const PREBASE_MARKS = new Set(["\u1031", "\u103C"]);
 
 const MEDIALS = new Set(["\u103B", "\u103C", "\u103D", "\u103E"]);
 
+// A visual glyph run may put the whole medial cluster before its base (for
+// example space + U+103C U+103D + base). U+1031/U+103C are the marks that can
+// open such a run inside a word; at a boundary any orphaned medial run before
+// a base belongs to that base.
+const PREBASE_RUN_MARKS = new Set(["\u1031", ...MEDIALS]);
+
+function startsAtBoundary(chars, i) {
+  if (i === 0) return true;
+  const prev = chars[i - 1];
+  return prev === " " || prev === "\n" || prev === "\t" || prev === "\r"
+    || (!isIndex(prev) && PRIORITY.get(prev) === undefined);
+}
+
+function prebaseRunEnd(chars, i) {
+  const marks = startsAtBoundary(chars, i) || PREBASE_MARKS.has(chars[i])
+    ? PREBASE_RUN_MARKS : PREBASE_MARKS;
+  let j = i;
+  while (j < chars.length && marks.has(chars[j])) j += 1;
+  return j;
+}
+
 
 
 
@@ -266,9 +287,9 @@ function candidateIsReal(chars, j) {
 }
 
 function opensCluster(chars, i) {
-  let j = i;
-  while (j < chars.length && PREBASE_MARKS.has(chars[j])) j += 1;
+  const j = prebaseRunEnd(chars, i);
   if (j >= chars.length || !isIndex(chars[j])) return false;
+  if (startsAtBoundary(chars, i)) return true;
 
   const prev = i > 0 ? chars[i - 1] : undefined;
   if (prev === undefined) return true;
@@ -363,12 +384,10 @@ export function movePrebaseMarks(t) {
 
 
 
-    if (PREBASE_MARKS.has(ch) && opensCluster(chars, i)) {
-      const marks = [];
-      while (i < n && PREBASE_MARKS.has(chars[i])) {
-        marks.push(chars[i]);
-        i += 1;
-      }
+    if (PREBASE_RUN_MARKS.has(ch) && opensCluster(chars, i)) {
+      const end = prebaseRunEnd(chars, i);
+      const marks = chars.slice(i, end);
+      i = end;
       out.push(chars[i]);
       i += 1;
 

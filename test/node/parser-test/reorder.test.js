@@ -67,6 +67,14 @@ test("a medial that sorts after the mark behind it opens a new cluster", () => {
   assert.equal(orderText("ေသမှြဖစ်မယ်"), "သေမှဖြစ်မယ်");
 });
 
+test("an orphaned medial cluster before a base moves behind that base", () => {
+  assert.equal(
+    orderText(" \u103C\u103D\u1001\u102D\u1004\u103A\u1038"),
+    " \u1001\u103C\u103D\u102D\u1004\u103A\u1038",
+  );
+  assert.equal(orderText("\u103D\u1010"), "\u1010\u103D");
+});
+
 
 
 

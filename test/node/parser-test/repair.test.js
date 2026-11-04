@@ -208,8 +208,7 @@ test("zawcode mend frames cover the damage that still segments", async () => {
   const mended = "\u101E\u1030\u1010\u102D\u102F\u1037\u101E\u100A\u103A"
     + " \u101E\u1030\u1037\u1021\u102C\u1038"
     + " \u1021\u101B\u1031\u1038";
-  // POS does not confirm သူ့ here; keep the original rather than inventing a repair.
-  assert.equal((await mendZawCodeTextWithPos(damaged)).text, mended.replace("သူ့အား", "သ့အား"));
+  assert.equal((await mendZawCodeTextWithPos(damaged)).text, mended);
 
 
 
@@ -256,12 +255,12 @@ test("production repair uses POS-confirmed candidates without changing standalon
 
 test("OCR repair locates POS unknowns using source spans and validates candidates through Engine", async () => {
   const { scanBrokenSpansWithPos, inspectPosCandidate } = await import("../../../B.Parser/main/parser/text/repair.js");
-  const source = "ကောင်းကင် ကိ မြန်မာ";
+  const source = "ကောင်းကင် ဃက် မြန်မာ";
   const spans = await scanBrokenSpansWithPos(source);
-  const target = spans.find((span) => span.token === "ကိ");
+  const target = spans.find((span) => span.token === "ဃက်");
   assert.ok(target);
-  assert.equal(source.slice(target.start, target.end), "ကိ");
+  assert.equal(source.slice(target.start, target.end), "ဃက်");
   assert.ok(target.rules.includes("unknown"));
   assert.equal((await inspectPosCandidate("ကောင်းကင်")).singleWord, true);
-  assert.equal((await inspectPosCandidate("ကိ")).singleWord, false);
+  assert.equal((await inspectPosCandidate("ဃက်")).singleWord, false);
 });

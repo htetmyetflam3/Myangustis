@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 
 const MUTE_MS = 24 * 60 * 60 * 1000;
 const shownHere = new Set();
+const agentShownHere = new Set();
 let initialized = false;
 let mutedHereUntil = 0;
 let warnedPersistence = false;
@@ -77,4 +78,24 @@ export function advisoryOnce(name, message) {
   }
   shownHere.add(name);
   process.stderr.write(`${message}\n`);
+}
+
+function agentAdvisorySuppressed() {
+  if (/^(0|false|no|off)$/iu.test(process.env.MYANGUSTIS_AGENT_ADVISORY || '')) return true;
+  if (process.env.NODE_TEST_CONTEXT || process.execArgv.includes('--test')) return true;
+  return /(^|[\\/])test[\\/]/u.test(process.argv[1] || '');
+}
+
+// Agent harnesses capture stderr without allocating a TTY, so TTY-only
+// first-use guidance is invisible to them. Use this only at module boundaries
+// where entering mid-chain is itself the mistake: it writes to stderr once per
+// process/name, has no persistent .seen marker, and is not hidden by the
+// human-facing --quiet state.
+export function agentAdvisory(name, message) {
+  if (!/^[a-z0-9-]+$/u.test(name)) throw new TypeError('Invalid advisory name');
+  if (agentShownHere.has(name) || agentAdvisorySuppressed()) return;
+  agentShownHere.add(name);
+  try {
+    process.stderr.write(`${message}\n`);
+  } catch { /* guidance must never block the job */ }
 }

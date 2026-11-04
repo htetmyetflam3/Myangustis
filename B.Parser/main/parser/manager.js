@@ -167,7 +167,12 @@ export class Manager {
       workerData: { parserOwner: owner },
       // The root loader may read .env again in the worker. Nonempty sentinels
       // prevent it from importing either stored credential into that worker.
-      env: { ...process.env, CURL_KEY: "__parser_worker_disabled__", CURL_KEY_SHA256: "__parser_worker_disabled__" },
+      env: {
+        ...process.env,
+        CURL_KEY: "__parser_worker_disabled__",
+        CURL_KEY_SHA256: "__parser_worker_disabled__",
+        MYANGUSTIS_CHAIN_DOOR: "ParserManager",
+      },
     };
     if (!owner) {
       options.resourceLimits = { maxOldGenerationSizeMb: WORKER_HEAP_MB, stackSizeMb: 8 };

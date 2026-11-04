@@ -264,8 +264,8 @@ export function parseTaggedLine(raw) {
     const match = TAGGED_TOKEN.exec(formatted);
     if (!match) return { formatted, word: formatted, tags: [], kind: 'other' };
     const tags = match[2].split(',').map((tag) => tag.trim()).filter(Boolean);
-    const unknown = tags.length === 1 && tags[0] === '?';
-    const word = tags.some((tag) => tag !== '?' && !NON_WORD_TAGS.has(tag));
+    const unknown = tags.length === 1 && tags[0] === 'F';
+    const word = tags.some((tag) => tag !== 'F' && !NON_WORD_TAGS.has(tag));
     return { formatted, word: match[1], tags, kind: unknown ? 'unknown' : word ? 'known' : 'other' };
   });
 }

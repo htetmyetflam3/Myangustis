@@ -48,7 +48,7 @@ function assertReportMatchesOutput({ result, output, report }) {
   assert.equal(pages.length, originals.length);
   assert.equal(contexts.length, originals.length);
   assert.ok(originals.every((line) => lines.has(line)));
-  assert.ok(contexts.every((context) => context.includes("{?}")));
+  assert.ok(contexts.every((context) => context.includes("{F}")));
 }
 
 test("the shipped Zawgyi book receives a POS report for the final output", async () => {

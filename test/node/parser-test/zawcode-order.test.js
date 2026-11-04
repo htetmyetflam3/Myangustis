@@ -9,7 +9,9 @@ import { repairFromScanVerdict } from "../../../B.Parser/main/parser/text/repair
 import { scanText } from "../../../B.Parser/main/parser/text/scan.js";
 import { choosePageParser, markOrderAligned, normalizePageLines } from "../../../B.Parser/main/parser/text/page-decision.js";
 import { normalizeOutputText, protectedCharacters } from "../../../B.Parser/main/parser/text/preserved-transform.js";
-import { finishPageToFile, normalizePageToFile } from "../../../B.Parser/main/parser/text/page-file-decision.js";
+import {
+  convertFinalizedPageText, finishPageToFile, normalizePageToFile,
+} from "../../../B.Parser/main/parser/text/page-file-decision.js";
 import { Rabbit } from "../../../B.Parser/main/parser/text/rabbit.js";
 
 const E = "\u1031";
@@ -280,6 +282,23 @@ test("the lane decision ignores U+200B without trimming non-ZawCode text", async
     const combiningJoiner = finish("\u034fစဥ်");
     assert.equal(combiningJoiner.text, normalize(combiningJoiner.parsed));
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("finalized Unicode pages get Parser ordering without reopening the lane decision", () => {
+  const unicode = { decision: "unaligned-unicode", category: "UNICODE" };
+  assert.equal(convertFinalizedPageText("ေနွး", unicode, false), "နွေး");
+  assert.equal(
+    convertFinalizedPageText(" \u103C\u103D\u1001\u102D", unicode, false),
+    " \u1001\u103C\u103D\u102D",
+  );
+  assert.equal(
+    convertFinalizedPageText("ေနွး", { decision: "unaligned-unknown", category: "UNKNOWN" }, true),
+    "ေနွး",
+  );
+  assert.equal(
+    convertFinalizedPageText("ေနွး", { decision: "rabbit", category: "ZAWGYI" }, true),
+    "နွေး",
+  );
 });
 
 test("the PDF Rabbit lane uses Rabbit's own U+200B handling", async () => {

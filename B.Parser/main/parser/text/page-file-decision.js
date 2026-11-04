@@ -5,7 +5,9 @@ import { StringDecoder } from "node:string_decoder";
 import { containsMyanmar } from "./detector.js";
 import { arrangeZawCodeOrder } from "./zawcode-order.js";
 import { correctWorldWord, markOrderAligned } from "./page-decision.js";
-import { protectedCharacters } from "./preserved-transform.js";
+import { cleanupText, orderText } from "./cleanup.js";
+import { preserveRegionalRuns } from "./unicode-evidence.js";
+import { preserveCharacters, protectedCharacters } from "./preserved-transform.js";
 import { createRabbitStream } from "./rabbit.js";
 import { StreamingReplace } from "./stream-replace.js";
 import { withoutZeroWidthSpace } from "./zero-width.js";
@@ -139,10 +141,11 @@ export class PageTextFile {
   close() { fs.rmSync(this.path, { force: true }); }
 }
 
-// Normalize only the final page text, after parsing and any OCR merge. The
-// resulting spool is shared by the POS scanner and the output writer.
+// Write one final page transform to a spool file. The resulting spool is
+// shared by the POS scanner and the output writer, so the page is not
+// transformed again by a later document-wide phase.
 export function normalizePageToFile(chunks, { directory, normalize } = {}) {
-  if (typeof normalize !== "function") throw new TypeError("Expected Engine normalize function");
+  if (typeof normalize !== "function") throw new TypeError("Expected page text transform function");
   const file = path.join(directory, `normalized-page-${randomUUID()}.txt`);
   let fd = null;
   let chars = 0;
@@ -168,6 +171,37 @@ export function normalizePageToFile(chunks, { directory, normalize } = {}) {
     fs.rmSync(file, { force: true });
     throw error;
   }
+}
+
+export const orderUnicodeText = (text) => preserveRegionalRuns(
+  text, (part) => preserveCharacters(part, orderText),
+);
+export const cleanupUnicodeText = (text) => preserveRegionalRuns(
+  text, (part) => preserveCharacters(part, cleanupText),
+);
+
+const FINAL_UNICODE_DECISIONS = new Set([
+  "legacy", "aligned", "zawcode", "unaligned-unicode",
+]);
+
+// finishPageToFile() chooses the page lane and, for Rabbit/ZawCode pages,
+// writes that conversion to the page spool. This is the single output-side
+// Parser ordering/cleanup step for a finalized page. The streamed writer may
+// run Engine character normalization immediately before it in the same spool
+// pass; this step then puts the Parser's syllable-slot order last. Unicode
+// lanes get that ordering (and cleanup when requested); retained/unknown
+// lanes are left as supplied with their warnings. Rabbit pages are already
+// converted by finishPageToFile(), so they only need the same ordering here.
+export function convertFinalizedPageText(text, page = {}, applyCleanup = true) {
+  const raw = String(text ?? "");
+  const decision = page?.decision;
+  if (decision === "rabbit") return orderUnicodeText(raw);
+  const unicodeLane = FINAL_UNICODE_DECISIONS.has(decision)
+    || (!decision && page?.category === "UNICODE");
+  if (!unicodeLane) return raw;
+  if (decision === "legacy" && page?.category && page.category !== "UNICODE") return raw;
+  const ordered = orderUnicodeText(raw);
+  return applyCleanup && decision !== "zawcode" ? cleanupUnicodeText(ordered) : ordered;
 }
 
 // Decide once for the entire page, but make the decision in passes over the
