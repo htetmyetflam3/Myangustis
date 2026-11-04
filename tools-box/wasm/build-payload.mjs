@@ -1,7 +1,9 @@
 // step 3: payload = encrypt( pack( base/ entry logic + knowledge ) )
-// External-key design: the AES-256-GCM key is minted/reused in payload.key.txt
-// next to this script (and overridable via PAYLOAD_KEY). It is NEVER written
-// into loader.mjs or into box.wasm. Container: iv(12) || ciphertext || tag(16).
+// External-key design: the AES-256-GCM key is mandatory and reused. Resolve
+// PAYLOAD_KEY from the process/.env beside this script, then the fallback
+// .cache/payload.key.txt, then the tracked payload.key.txt in git. It is
+// NEVER written into loader.mjs or box.wasm, and this script never mints an
+// unretrievable replacement key. Container: iv(12) || ciphertext || tag(16).
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -10,14 +12,42 @@ const HERE = import.meta.dirname;
 const BASE = path.join(HERE, "base");
 const KNOWLEDGE = path.join(HERE, "master.json");
 const KEY_FILE = path.join(HERE, "payload.key.txt");
+const CACHE_KEY_FILE = path.join(HERE, ".cache", "payload.key.txt");
+const ENV_FILE = path.join(HERE, ".env");
+
+function keyFromEnvFile() {
+  if (!fs.existsSync(ENV_FILE)) return "";
+  for (const line of fs.readFileSync(ENV_FILE, "utf8").split(/\r?\n/)) {
+    const t = line.trim();
+    if (!t || t.startsWith("#")) continue;
+    const eq = t.indexOf("=");
+    if (eq === -1) continue;
+    if (t.slice(0, eq).trim() === "PAYLOAD_KEY") return t.slice(eq + 1).trim();
+  }
+  return "";
+}
+
+function keyFromHex(hex, label) {
+  const text = String(hex || "").trim();
+  if (!/^[0-9a-f]{64}$/i.test(text)) {
+    throw new Error(`${label} must hold a 32-byte hex key (64 chars)`);
+  }
+  return Buffer.from(text, "hex");
+}
 
 function loadKey() {
-  const fromEnv = (process.env.PAYLOAD_KEY || "").trim();
-  const hex = fromEnv || (fs.existsSync(KEY_FILE) ? fs.readFileSync(KEY_FILE, "utf8").trim() : "");
-  if (hex && /^[0-9a-f]{64}$/i.test(hex)) return Buffer.from(hex, "hex");
-  const key = crypto.randomBytes(32);
-  fs.writeFileSync(KEY_FILE, key.toString("hex") + "\n", "utf8");
-  return key;
+  const fromEnv = (process.env.PAYLOAD_KEY || "").trim() || keyFromEnvFile();
+  if (fromEnv) return keyFromHex(fromEnv, "PAYLOAD_KEY (.env/process env)");
+  for (const [label, file] of [
+    [".cache/payload.key.txt", CACHE_KEY_FILE],
+    ["payload.key.txt (tracked)", KEY_FILE],
+  ]) {
+    if (fs.existsSync(file)) return keyFromHex(fs.readFileSync(file, "utf8"), label);
+  }
+  throw new Error(
+    "PAYLOAD_KEY is mandatory: set it in .env or place .cache/payload.key.txt " +
+      "or the tracked payload.key.txt beside build-payload.mjs",
+  );
 }
 
 export function buildPack() {

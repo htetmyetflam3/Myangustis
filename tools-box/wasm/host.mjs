@@ -1,8 +1,9 @@
 // Required WASM host (external-key design).
 // The four map sources are never imported here. The linga.payload section is
-// AES-256-GCM encrypted at rest; this host decrypts it with a key held OUTSIDE
-// the box — PAYLOAD_KEY env, else ./payload.key.txt beside this file — and only
-// then boots the engine on the plaintext pack. No Python, no bytenode: Node
+// AES-256-GCM encrypted at rest; this host decrypts it with a mandatory key
+// held OUTSIDE the box — PAYLOAD_KEY from the process/.env beside this file,
+// else .cache/payload.key.txt, else the tracked ./payload.key.txt in git —
+// and only then boots the engine on the plaintext pack. No Python, no bytenode: Node
 // WebAssembly + node:wasi + node:crypto only.
 import fs from "node:fs";
 import path from "node:path";
@@ -13,15 +14,42 @@ import { isDeepStrictEqual } from "node:util";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const KEY_FILE = path.join(HERE, "payload.key.txt");
+const CACHE_KEY_FILE = path.join(HERE, ".cache", "payload.key.txt");
+const ENV_FILE = path.join(HERE, ".env");
+
+function keyFromEnvFile() {
+  if (!fs.existsSync(ENV_FILE)) return "";
+  for (const line of fs.readFileSync(ENV_FILE, "utf8").split(/\r?\n/)) {
+    const t = line.trim();
+    if (!t || t.startsWith("#")) continue;
+    const eq = t.indexOf("=");
+    if (eq === -1) continue;
+    if (t.slice(0, eq).trim() === "PAYLOAD_KEY") return t.slice(eq + 1).trim();
+  }
+  return "";
+}
+
+function keyFromHex(hex, label) {
+  const text = String(hex || "").trim();
+  if (!/^[0-9a-f]{64}$/i.test(text)) {
+    throw new Error(`${label} must hold a 32-byte hex key (64 chars)`);
+  }
+  return Buffer.from(text, "hex");
+}
 
 function loadKey() {
-  const fromEnv = (process.env.PAYLOAD_KEY || "").trim();
-  const hex = fromEnv || (fs.existsSync(KEY_FILE) ? fs.readFileSync(KEY_FILE, "utf8").trim() : "");
-  const key = Buffer.from(hex, "hex");
-  if (key.length !== 32) {
-    throw new Error("PAYLOAD_KEY/payload.key.txt must hold a 32-byte hex key (64 chars)");
+  const fromEnv = (process.env.PAYLOAD_KEY || "").trim() || keyFromEnvFile();
+  if (fromEnv) return keyFromHex(fromEnv, "PAYLOAD_KEY (.env/process env)");
+  for (const [label, file] of [
+    [".cache/payload.key.txt", CACHE_KEY_FILE],
+    ["payload.key.txt (tracked)", KEY_FILE],
+  ]) {
+    if (fs.existsSync(file)) return keyFromHex(fs.readFileSync(file, "utf8"), label);
   }
-  return key;
+  throw new Error(
+    "PAYLOAD_KEY is mandatory: set it in .env or place .cache/payload.key.txt " +
+      "or the tracked payload.key.txt beside host.mjs",
+  );
 }
 
 // container written by build-payload.mjs: iv(12) || ciphertext || tag(16)

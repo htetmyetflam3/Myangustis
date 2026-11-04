@@ -9,23 +9,48 @@ import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const KEY_FILE = path.join(HERE, "master.key.txt");
+const CACHE_KEY_FILE = path.join(HERE, ".cache", "master.key.txt");
 const MAGIC = "MGR1";
 const IV_BYTES = 12;
 const TAG_BYTES = 16;
 
-function loadKey() {
-  // Resolution: deployment env first (MASTER_JSON_KEY in .env), then the
-  // external sidecar master.key.txt beside this loader. The key is never
-  // embedded in this file.
-  const fromEnv = (process.env.MASTER_JSON_KEY || "").trim();
-  if (fromEnv) {
-    const k = Buffer.from(fromEnv, "hex");
-    if (k.length === 32) return k;
-    throw new Error("MASTER_JSON_KEY must be a 32-byte hex key");
+function keyFromHex(hex, label) {
+  const text = String(hex || "").trim();
+  if (!/^[0-9a-f]{64}$/i.test(text)) {
+    throw new Error(label + " must hold a 32-byte hex key (64 chars)");
   }
-  const key = Buffer.from(fs.readFileSync(KEY_FILE, "utf8").trim(), "hex");
-  if (key.length !== 32) throw new Error("master.key.txt must hold a 32-byte hex key");
-  return key;
+  return Buffer.from(text, "hex");
+}
+
+function keyFromEnvFile() {
+  const envPath = path.join(HERE, ".env");
+  if (!fs.existsSync(envPath)) return "";
+  for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
+    const t = line.trim();
+    if (!t || t.startsWith("#")) continue;
+    const eq = t.indexOf("=");
+    if (eq === -1) continue;
+    if (t.slice(0, eq).trim() === "MASTER_JSON_KEY") return t.slice(eq + 1).trim();
+  }
+  return "";
+}
+
+function loadKey() {
+  // Mandatory key resolution, in order: process env, .env beside this
+  // loader, .cache/master.key.txt, then the tracked master.key.txt in git.
+  // The key is never embedded in this file and is never optional.
+  const fromEnv = (process.env.MASTER_JSON_KEY || "").trim() || keyFromEnvFile();
+  if (fromEnv) return keyFromHex(fromEnv, "MASTER_JSON_KEY (.env/process env)");
+  for (const [label, file] of [
+    [".cache/master.key.txt", CACHE_KEY_FILE],
+    ["master.key.txt (tracked)", KEY_FILE],
+  ]) {
+    if (fs.existsSync(file)) return keyFromHex(fs.readFileSync(file, "utf8"), label);
+  }
+  throw new Error(
+    "MASTER_JSON_KEY is mandatory: set it in .env or place .cache/master.key.txt " +
+      "or the tracked master.key.txt beside secure.js",
+  );
 }
 
 function decrypt(file) {
@@ -46,8 +71,12 @@ function decrypt(file) {
 
 export function readSecureText(file) {
   const enc = file.endsWith(".enc") ? file : file + ".enc";
-  if (fs.existsSync(enc)) return decrypt(enc);
-  return fs.readFileSync(file, "utf8");
+  if (!fs.existsSync(enc)) {
+    throw new Error(
+      "sealed file not found: " + enc + " (run node CLI.js obfuscator; the master key is mandatory)",
+    );
+  }
+  return decrypt(enc);
 }
 
 export function readSecureJson(file) {
