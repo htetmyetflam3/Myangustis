@@ -13,9 +13,9 @@
 
 
 import path from "node:path";
-import { Manager } from "../main/core/js/shared/manager.js";
+import { Manager } from "../main/core/shared/manager-core.js";
 import { DEFAULT_OUTPUT_DIR } from "../_path.js";
-import { muteAdvisories } from "../Architecture/host/advisory.js";
+import { muteAdvisories } from "../../Architecture/host/advisory.js";
 
 function parseArgs(argv) {
   const [first, second, third] = argv;

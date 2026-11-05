@@ -33,14 +33,14 @@ const { emitEvent } = (await getLogen()).coreLog;
 
 
 
-import { orderText } from "../text/cleanup.js";
-import { scoreText } from "../text/myanmar-score.js";
+import { orderText } from "../main/core/shared/clean.js";
+import { scoreText } from "../main/core/shared/decide.js";
 import {
   extractPageLines, getStream, parseToUnicodeStream, MAX_PDF_OBJECTS,
-} from "../read/pdf-extract.js";
-import { DocumentDecoding, detectLegacyLayoutFonts } from "../read/pdf-fonts.js";
-import { openPdfScannedObjects } from "../read/pdf-object-file.js";
-import { LEGACY_CODE_PAGES, UNICODE_PATH } from "./registry.js";
+} from "../main/core/shared/pdf-extract.js";
+import { DocumentDecoding, detectLegacyLayoutFonts } from "../main/core/shared/pdf-fonts.js";
+import { openPdfScannedObjects } from "../main/core/shared/pdf-object-file.js";
+import { LEGACY_CODE_PAGES, UNICODE_PATH } from "../main/core/shared/codepage-registry.js";
 import { buildVectorOutlineLayout } from "./vector-repair.js";
 
 

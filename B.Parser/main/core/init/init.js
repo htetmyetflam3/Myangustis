@@ -5,31 +5,10 @@
 // share the same path; identity only affects owner access checks.
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
-import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'url';
-import { PRASER_MANAGER, RAW_TXT_DIR, abs } from './paths.js';
-import { managerPayload } from '../gateway/queue/managerHandoff.js';
-import { streamReader } from '../shared/26-stream-reader.js';
-import { dispatchSite } from '../shared/27-dispatcher.js';
-const MANAGER_MODULE = abs(PRASER_MANAGER);
-let manager = null;
-async function loadManager() {
-  if (manager) return manager;
-  if (!existsSync(MANAGER_MODULE)) {
-    throw new Error(`praser manager not found at ${MANAGER_MODULE}`);
-  }
-  const { Manager } = await import(pathToFileURL(MANAGER_MODULE).href);
-  manager = new Manager({ outputDir: abs(RAW_TXT_DIR) });
-  return manager;
-}
-export async function closePraserManager() {
-  if (manager) {
-    await manager.close();
-    manager = null;
-  }
-}
-export const praserModuleAvailable = () => existsSync(MANAGER_MODULE);
+import { streamReader } from '../api/stream-reader.js';
+import { dispatchSite } from '../api/dispatcher.js';
+
 function stripCliArtifact(raw) {
   return raw
     .split('\n')
@@ -45,46 +24,26 @@ function createPraserParser(label) {
     async parse(filePath, out = null, options = {}) {
       const intent = options.intent;
       if (!intent) throw new Error(`${label} upload intent is required`);
-      const routing = managerPayload(intent, { executionTask: options.executionTask });
-      const filename = intent.uploadName;
-      const outPath = abs(path.join(
-        RAW_TXT_DIR,
-        `${crypto.randomUUID()}.${routing.output}`,
-      ));
-      await fs.mkdir(path.dirname(outPath), { recursive: true, mode: 0o700 });
-      // Caller reads the file on their side (B), passes object to BindParser ($)
+      const method = String(intent.method ?? 'extracting').toLowerCase();
+      const identity = options.authenticatedUser ?? null;
       const object = await streamReader({ path: filePath });
       let reply;
       try {
-        reply = await dispatchSite({
-          object,
-          method: routing.method ?? 'extracting',
-          identity: options.authenticatedUser,
-        });
+        reply = await dispatchSite({ object, method, identity });
       } catch (err) {
-        await fs.unlink(outPath).catch(() => {});
         throw new Error(`${label} manager failed`, { cause: err });
       }
-      if (out) out.manager = {
-        ...reply,
-        ...routing,
-        file: reply.file || outPath,
-        filename: path.basename(reply.file || outPath),
-      };
       const raw = typeof reply.text === 'string'
         ? reply.text
-        : routing.output === 'txt'
-          ? await fs.readFile(reply.file || outPath, 'utf8')
-          : '';
+        : '';
       const text = stripCliArtifact(raw);
-      if (!text && (intent.source === 'analysis' || routing.output === 'txt')) {
+      if (!text) {
         const hint =
           label === 'PDF'
             ? ' It is most likely a scan — image-only pages carry no text to extract.'
             : '';
         throw new Error(`No text found in this ${label}.${hint}`);
       }
-      if (out) out.job = null;
       return text;
     },
     async bindIdentity() {
