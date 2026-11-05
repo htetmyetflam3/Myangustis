@@ -11,20 +11,20 @@ import {
   ocrImage,
   ocrImageDetailed,
   closeOcr,
-} from "../read/ocr.js";
-import { writePageStore } from "../write/emit.js";
-import { PdfTextSink } from "../write/pdf-text-sink.js";
-import { PageStoreWriter } from "../read/page-store.js";
-import { PosScanner } from "../text/scan.js";
-import { normalizeOutputText } from "../text/preserved-transform.js";
-import { getEngineNormalize } from "../../../_path.js";
+} from "./ocr.js";
+import { writePageStore } from "./emit.js";
+import { PdfTextSink } from "./pdf-text-sink.js";
+import { PageStoreWriter } from "./page-store.js";
+import { PosScanner } from "./scan.js";
+import { normalizeOutputText } from "./preserved-transform.js";
+import { getEngineNormalize } from "../../../../_path.js";
 import {
   MAX_INPUT_BYTES,
   MAX_INPUT_MB,
   MAX_PAGES,
   MAX_TEXT_CHARS,
   OWNER_PARSER_WORKER,
-} from "../core/limits.js";
+} from "../limits/local.js";
 
 export function loadOcrBytes({ inPath, data }) {
   const bytes = inPath

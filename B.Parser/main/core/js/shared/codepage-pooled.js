@@ -1,4 +1,4 @@
-import { loadMapJson } from "../core/json-map.js";
+import { loadMapJson } from "./json-map.js";
 import { normaliseFontName } from "./names.js";
 
 // Candidate evidence is intentionally separate from repair decisions. A key

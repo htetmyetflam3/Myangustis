@@ -24,7 +24,7 @@
 
 
 
-import { loadMapJson } from "../core/json-map.js";
+import { loadMapJson } from "./json-map.js";
 import { scanText, scanBrokenSpans } from "./scan.js";
 import {
   orderText, unmixZawCodeMarks, retraceZawCodeMarks, settleZawCodeAhE,

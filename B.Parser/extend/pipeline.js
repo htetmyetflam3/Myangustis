@@ -1,37 +1,37 @@
-import { renderPdfPagePng } from "../main/parser/read/pdf-render.js";
-import { note } from "../main/parser/core/provenance.js";
+import { renderPdfPagePng } from "../main/core/js/shared/pdf-render.js";
+import { note } from "../main/core/js/shared/provenance.js";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { ZawgyiDetector, containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts, isZawgyiOneFont, isUnicodeFont } from "../main/parser/text/detector.js";
-import { isEncryptedPdf, hasObjectStreams, scanPdfFileMarkers } from "../main/parser/read/decrypt.js";
-import { Rabbit } from "../main/parser/text/rabbit.js";
-import { orderText } from "../main/parser/text/cleanup.js";
-import { preserveCharacters } from "../main/parser/text/preserved-transform.js";
-import { extractDocxParagraphs, validateDocxArchive } from "../main/parser/read/docx-extract.js";
-import { extractDocxParagraphsExternal } from "../main/parser/read/docx-external.js";
-import { scoreText, englishLikeness } from "../main/parser/text/myanmar-score.js";
-import { choosePageParser } from "../main/parser/text/page-decision.js";
-import { withoutZeroWidthSpace } from "../main/parser/text/zero-width.js";
-import { countImpossiblePairs } from "../main/parser/text/scan.js";
-import { WININNWA_LEGACY_CODE_PAGE } from "../main/parser/codepage/registry.js";
-import { isLegacyFontName } from "../main/parser/codepage/names.js";
-import { MAX_PAGES, MAX_TEXT_CHARS } from "../main/parser/core/limits.js";
+import { ZawgyiDetector, containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts, isZawgyiOneFont, isUnicodeFont } from "../main/core/js/shared/detect.js";
+import { isEncryptedPdf, hasObjectStreams, scanPdfFileMarkers } from "../main/core/js/shared/decrypt.js";
+import { Rabbit } from "../main/core/js/shared/rabbit.js";
+import { orderText } from "../main/core/js/shared/clean.js";
+import { preserveCharacters } from "../main/core/js/shared/preserved-transform.js";
+import { extractDocxParagraphs, validateDocxArchive } from "../main/core/js/shared/docx-extract.js";
+import { extractDocxParagraphsExternal } from "../main/core/js/shared/docx-external.js";
+import { scoreText, englishLikeness } from "../main/core/js/shared/myanmar-score.js";
+import { choosePageParser } from "../main/core/js/shared/page-decision.js";
+import { withoutZeroWidthSpace } from "../main/core/js/shared/zero-width.js";
+import { countImpossiblePairs } from "../main/core/js/shared/scan.js";
+import { WININNWA_LEGACY_CODE_PAGE } from "../main/core/js/shared/codepage-registry.js";
+import { isLegacyFontName } from "../main/core/js/shared/codepage-names.js";
+import { MAX_PAGES, MAX_TEXT_CHARS } from "../main/core/js/shared/limits.js";
 import {
   MAX_PDF_OBJECTS, findRootPages, collectPages, extractPageLines, probePagePrefix, pageHasImages, extractMetadata,
   legacyAyarToUnicode,
-} from "../main/parser/read/pdf-extract.js";
-import { PdfFileObjects, openPdfScannedObjects } from "../main/parser/read/pdf-object-file.js";
-import { PdfPagePieces } from "../main/parser/read/pdf-page-pieces.js";
+} from "../main/core/js/shared/pdf-extract.js";
+import { PdfFileObjects, openPdfScannedObjects } from "../main/core/js/shared/pdf-object-file.js";
+import { PdfPagePieces } from "../main/core/js/shared/pdf-page-pieces.js";
 import {
   cleanupUnicodeText as cleanupUnicode, convertFinalizedPageText,
   finishPageToFile, orderUnicodeText as orderUnicode, pageLayoutLines,
-} from "../main/parser/text/page-file-decision.js";
-import { DocumentDecoding, PDF_PARSING_PATHS, pageFontDecoders } from "../main/parser/read/pdf-fonts.js";
-import { PAGE_CONTENT_PREFIX_BYTES } from "../main/parser/read/pdf-content-file.js";
-import { pyRound, RuntimeError, baseName } from "../main/parser/core/pylib.js";
-import { agentAdvisory } from "../../Architecture/host/advisory.js";
+} from "../main/core/js/shared/page-file-decision.js";
+import { DocumentDecoding, PDF_PARSING_PATHS, pageFontDecoders } from "../main/core/js/shared/pdf-fonts.js";
+import { PAGE_CONTENT_PREFIX_BYTES } from "../main/core/js/shared/pdf-content-file.js";
+import { pyRound, RuntimeError, baseName } from "../main/core/js/shared/pylib.js";
+import { agentAdvisory } from "../Architecture/host/advisory.js";
 
 const PARSER_CHAIN_DOOR = "ParserManager";
 

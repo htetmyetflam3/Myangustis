@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { writeOutput } from "../write/emit.js";
-import { ocrTimeoutMs, MAX_INPUT_BYTES, MAX_INPUT_MB } from "../core/limits.js";
+import { writeOutput } from "./emit.js";
+import { ocrTimeoutMs, MAX_INPUT_BYTES, MAX_INPUT_MB } from "../limits/local.js";
 
 export class ManagerOcrHelpers {
   #laneTails;

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import evidence from "../jason-map/visual-unicode-glyph-evidence.json" with { type: "json" };
-import { ttfTables } from "../core/ttf-cmap.js";
+import evidence from "../../jason-map/visual-unicode-glyph-evidence.json" with { type: "json" };
+import { ttfTables } from "./ttf-cmap.js";
 
 const PREFIX_MARKS = new Set(["ေ", "ြ"]);
 const MARK_TEXT = { e: "ေ", ra: "ြ", raWa: "ြွ", ya: "ျ", wa: "ွ", kinzi: "င်္" };

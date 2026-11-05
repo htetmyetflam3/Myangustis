@@ -6,11 +6,11 @@ import path from "node:path";
 import os from "node:os";
 import { pipeline } from "node:stream/promises";
 import { TextDecoder } from "node:util";
-import { DEFAULT_OUTPUT_DIR, REGISTER_LOG } from "../../../_path.js";
-import { writeOutput } from "../write/emit.js";
-import { finishManualPdf } from "../worker/manual-pdf.js";
-import { finishManualDocx } from "../worker/manual-docx.js";
-import { appendRecord, note, registerPath } from "../core/provenance.js";
+import { DEFAULT_OUTPUT_DIR, REGISTER_LOG } from "../../../../_path.js";
+import { writeOutput } from "./emit.js";
+import { finishManualPdf } from "./manual-pdf.js";
+import { finishManualDocx } from "./manual-docx.js";
+import { appendRecord, note, registerPath } from "./provenance.js";
 import {
   WORKER_HEAP_MB,
   WORKER_TIMEOUT_MS,
@@ -18,10 +18,10 @@ import {
   MAX_INPUT_BYTES,
   MAX_INPUT_MB,
   ocrTimeoutMs,
-} from "../core/limits.js";
-import { decideForCaller, normalizeCaller } from "../../extend/caller-policy.js";
-import { classifyScraperSource } from "../codepage/classify.js";
-import { advisoryOnce, muteAdvisories } from "../../../Architecture/host/advisory.js";
+} from "../limits/local.js";
+import { decideForCaller, normalizeCaller } from "../../../../extend/caller-policy.js";
+import { classifyScraperSource } from "../../../../extend/classify.js";
+import { advisoryOnce, muteAdvisories } from "../../../../Architecture/host/advisory.js";
 
 const EXTRACT_URL = new URL("../worker/extract.entry.js", import.meta.url);
 const OCR_URL = new URL("../worker/ocr.entry.js", import.meta.url);

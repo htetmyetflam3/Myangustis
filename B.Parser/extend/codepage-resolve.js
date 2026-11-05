@@ -1,4 +1,4 @@
-import { getLogen } from "../../../_path.js";
+import { getLogen } from "../_path.js";
 const { emitEvent } = (await getLogen()).coreLog;
 
 

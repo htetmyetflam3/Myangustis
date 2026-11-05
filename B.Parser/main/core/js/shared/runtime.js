@@ -1,20 +1,20 @@
-import { getEngineNormalize, getLogen } from "../../../_path.js";
+import { getEngineNormalize, getLogen } from "../../../../_path.js";
 const { installPassiveLog } = (await getLogen()).siteLog;
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { loadDetector, processDocxForMethod, buildFinalPages } from "../../../extend/pipeline.js";
-import { writeOutput } from "../write/emit.js";
-import { PosScanner } from "../text/scan.js";
-import { PageStoreWriter } from "../read/page-store.js";
-import { repairTextWithPos, repairFromPosVerdict } from "../text/repair.js";
-import { orderZawCodePages } from "../text/zawcode-order.js";
-import { normalizeOutputText } from "../text/preserved-transform.js";
+import { loadDetector, processDocxForMethod, buildFinalPages } from "../../../../extend/pipeline.js";
+import { writeOutput } from "./emit.js";
+import { PosScanner } from "./scan.js";
+import { PageStoreWriter } from "./page-store.js";
+import { repairTextWithPos, repairFromPosVerdict } from "./repair.js";
+import { orderZawCodePages } from "./zawcode-order.js";
+import { normalizeOutputText } from "./preserved-transform.js";
 import { runPdfStream } from "./pdf-stream.js";
 
-import { MAX_INPUT_BYTES, MAX_INPUT_MB } from "../core/limits.js";
-import { REGISTER_LOG } from "../../../_path.js";
-import { startRecord, note, appendRecord, registerPath } from "../core/provenance.js";
+import { MAX_INPUT_BYTES, MAX_INPUT_MB } from "../limits/local.js";
+import { REGISTER_LOG } from "../../../../_path.js";
+import { startRecord, note, appendRecord, registerPath } from "./provenance.js";
 
 
 

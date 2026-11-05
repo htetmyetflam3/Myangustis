@@ -3,8 +3,8 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { writeDocxLayout, writeDocxPlain, writePdf } from "./render.js";
 import { PdfTextSink } from "./pdf-text-sink.js";
-import { layoutLines, pageRecords, textChunks } from "../read/page-store.js";
-import { MAX_PAGES, MAX_TEXT_CHARS } from "../core/limits.js";
+import { layoutLines, pageRecords, textChunks } from "./page-store.js";
+import { MAX_PAGES, MAX_TEXT_CHARS } from "../limits/local.js";
 
 const MIME_TYPES = {
   ".txt": "text/plain",

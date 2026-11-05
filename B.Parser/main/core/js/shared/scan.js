@@ -4,7 +4,7 @@ import path from "node:path";
 import readline from "node:readline";
 import { randomUUID } from "node:crypto";
 import { getEngineBinding } from "../../../../index-path.js";
-import { loadMapJson } from "../core/json-map.js";
+import { loadMapJson } from "./json-map.js";
 import { MAX_LINE_BYTES } from "../../../../Architecture/Engine/MonoSyllabism/generators/SfomatterForP.js";
 import { textLines } from "./page-file-decision.js";
 import { MARKS as MM_MARKS } from "./myanmar-score.js";

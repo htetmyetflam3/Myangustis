@@ -18,7 +18,7 @@ import {
 
 // Raw-font evidence is available to a repair caller that retained provenance.
 // These lookups return candidates only; they never alter text automatically.
-export { pdfBeautifyCandidates, physicalKeyCandidates, evidenceForOutput } from "../codepage/pooled-candidates.js";
+export { pdfBeautifyCandidates, physicalKeyCandidates, evidenceForOutput } from "./pooled-candidates.js";
 
 const MM_RUN = /[\u1000-\u1049\u105a-\u109f]+/gu;
 

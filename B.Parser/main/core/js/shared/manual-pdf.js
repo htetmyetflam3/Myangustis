@@ -1,11 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
-import { copyTextFile } from "../write/pdf-text-sink.js";
-import { writePageStore } from "../write/emit.js";
-import { PageStoreWriter, layoutLines, pageRecords, textChunks } from "../read/page-store.js";
-import { PosScanner } from "../text/scan.js";
-import { normalizePageToFile, pageLayoutLines } from "../text/page-file-decision.js";
-import { getEngineNormalize } from "../../../_path.js";
+import { copyTextFile } from "./pdf-text-sink.js";
+import { writePageStore } from "./emit.js";
+import { PageStoreWriter, layoutLines, pageRecords, textChunks } from "./page-store.js";
+import { PosScanner } from "./scan.js";
+import { normalizePageToFile, pageLayoutLines } from "./page-file-decision.js";
+import { getEngineNormalize } from "../../../../_path.js";
 
 function writeAll(fd, value) {
   const bytes = typeof value === "string" ? Buffer.from(value, "utf8") : value;

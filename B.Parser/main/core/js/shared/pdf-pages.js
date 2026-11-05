@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { randomUUID } from "node:crypto";
-import { countImpossiblePairs } from "../text/scan.js";
+import { countImpossiblePairs } from "./scan.js";
 
 const require = createRequire(import.meta.url);
 

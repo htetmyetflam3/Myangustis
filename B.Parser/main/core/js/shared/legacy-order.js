@@ -1,4 +1,4 @@
-import inventory from "../jason-map/burmese-inventory.json" with { type: "json" };
+import inventory from "../../jason-map/burmese-inventory.json" with { type: "json" };
 
 const LEGACY_BASES = new Set([...inventory.consonants, "၎"]);
 

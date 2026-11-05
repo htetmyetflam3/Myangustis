@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { MAP_DIR } from '../../../_path.js';
+import { MAP_DIR } from '../../../../_path.js';
 
 const cache = new Map();
 

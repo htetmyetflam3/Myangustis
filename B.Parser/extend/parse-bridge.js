@@ -40,7 +40,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
-import { muteAdvisories } from "../../Architecture/host/advisory.js";
+import { muteAdvisories } from "../Architecture/host/advisory.js";
 
 const NODE_MAJOR = Number(process.versions.node.split(".", 1)[0]);
 if (NODE_MAJOR < 22) {

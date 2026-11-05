@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { MAX_TEXT_CHARS } from "../core/limits.js";
+import { MAX_TEXT_CHARS } from "../limits/local.js";
 
 function writeAll(fd, value) {
   const bytes = typeof value === "string" ? Buffer.from(value, "utf8") : value;

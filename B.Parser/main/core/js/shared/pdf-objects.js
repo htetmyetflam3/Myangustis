@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { ValueError, pyInt, pyStripBytes } from "../core/pylib.js";
+import { ValueError, pyInt, pyStripBytes } from "./pylib.js";
 
 const READ_SIZE = 64 * 1024;
 const STREAM_MARKER = Buffer.from("\nstream\n", "latin1");

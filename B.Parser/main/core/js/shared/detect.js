@@ -1,4 +1,4 @@
-import { normaliseFontName } from "../codepage/names.js";
+import { normaliseFontName } from "./names.js";
 
 const MYANMAR = /[\u1000-\u109F\uA9E0-\uA9FF\uAA60-\uAA7F]/u;
 

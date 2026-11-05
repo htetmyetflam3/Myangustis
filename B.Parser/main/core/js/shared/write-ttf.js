@@ -5,4 +5,4 @@
 
 
 
-export { TtfFont, loadFont } from "../read/ttf.js";
+export { TtfFont, loadFont } from "./ttf.js";

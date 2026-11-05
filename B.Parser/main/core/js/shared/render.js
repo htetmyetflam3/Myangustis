@@ -11,14 +11,14 @@ import {
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { OUTPUT_FONT_DIR } from "../../../_path.js";
+import { OUTPUT_FONT_DIR } from "../../../../_path.js";
 
 const BURMESE_DOCX_NAME = BURMESE_FONTS[DEFAULT_BURMESE_KEY].docx;
 import { PdfWriter } from "./pdf-writer.js";
 import { writeOptimizedPdf } from "./pdf-optimize.js";
-import { ZipStreamWriter } from "../core/zip.js";
-import { pyRound, RuntimeError } from "../core/pylib.js";
-import { textLines } from "../text/page-file-decision.js";
+import { ZipStreamWriter } from "./zip.js";
+import { pyRound, RuntimeError } from "./pylib.js";
+import { textLines } from "./page-file-decision.js";
 
 export function esc(s) {
   

@@ -5,7 +5,7 @@
 // Site caller: passes object + method + caller: "site" (+ identity)
 // Local caller: passes object + method + caller: "local"
 // No temp files, no file paths in the API boundary, no reading back from disk.
-import { BindParser } from "./25-bind-parser.js";
+import { BindParser } from "./bind-parser.js";
 
 export async function dispatchSite({ object, method, identity }) {
   return BindParser({ object, method, caller: "site", identity });

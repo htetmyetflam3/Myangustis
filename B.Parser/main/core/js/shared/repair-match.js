@@ -79,7 +79,7 @@ export function isCrossFontAlias(a, b) {
   const t = aliasTable();
   return t.has(`${a}\u0000${b}`) || t.has(`${b}\u0000${a}`);
 }
-import { loadSheet } from "../svg/svg.js";
+import { loadSheet } from "./svg.js";
 
 const DEFAULT_SHEET_PREFIX = "PYIDAUNGSU-2.5.2_REGULAR-sheet-";
 const DEFAULT_GRID = 48;

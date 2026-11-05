@@ -1,4 +1,4 @@
-import { getLogen } from "../../../_path.js";
+import { getLogen } from "../../../../_path.js";
 const { emitEvent } = (await getLogen()).coreLog;
 
 
@@ -41,22 +41,22 @@ const { emitEvent } = (await getLogen()).coreLog;
 import fs from "node:fs";
 import path from "node:path";
 
-import { loadMapJson, mapNameForPath } from "../core/json-map.js";
-import { VECTOR_MAP_DIR } from "../../../_path.js";
+import { loadMapJson, mapNameForPath } from "./json-map.js";
+import { VECTOR_MAP_DIR } from "../../../../_path.js";
 
-import { TtfFont, glyphContours } from "../read/glyf.js";
-import { glyphSignature } from "../shape/contour.js";
-import { parseTtfCmap } from "../core/ttf-cmap.js";
+import { TtfFont, glyphContours } from "./glyf.js";
+import { glyphSignature } from "./contour.js";
+import { parseTtfCmap } from "./ttf-cmap.js";
 import {
   pickEmbeddedFont, hasMyanmarGlyphs, getStream, MAX_PDF_OBJECTS,
   parseToUnicodeStream, extractPageLines, findRootPages, collectPages,
-} from "../read/pdf-extract.js";
-import { openPdfScannedObjects } from "../read/pdf-object-file.js";
+} from "./pdf-extract.js";
+import { openPdfScannedObjects } from "./pdf-object-file.js";
 import {
   FontResourceLoader, DocumentDecoding, pageFontDecoders, PdfRef,
   detectLegacyLayoutFonts,
-} from "../read/pdf-fonts.js";
-import { englishLikeness } from "../text/myanmar-score.js";
+} from "./pdf-fonts.js";
+import { englishLikeness } from "./myanmar-score.js";
 import { crowdVote, loadWitnesses } from "./outline-vote.js";
 import { WININNWA_LEGACY_CODE_PAGE } from "./registry.js";
 

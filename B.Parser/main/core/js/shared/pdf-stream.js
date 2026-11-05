@@ -1,25 +1,25 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { collectPdfResult, markPdfImagePages, processPageRecord, streamPdfPages } from "../../../extend/pipeline.js";
-import { runQpdfFile } from "../core/qpdf.js";
-import { copyPdfPrefix, findPdfEnd } from "../read/pdf-tail.js";
-import { renderPdfPagePng } from "../read/pdf-render.js";
-import { PdfTextSink } from "../write/pdf-text-sink.js";
-import { writePageStore } from "../write/emit.js";
-import { PageStoreWriter } from "../read/page-store.js";
-import { PosScanner } from "../text/scan.js";
-import { PDF_PARSING_PATHS } from "../read/pdf-fonts.js";
-import { startRecord, note, appendRecord, registerPath } from "../core/provenance.js";
-import { REGISTER_LOG } from "../../../_path.js";
-import { normalizePageToFile, pageLayoutLines } from "../text/page-file-decision.js";
-import { scoreText } from "../text/myanmar-score.js";
-import { markOrderAligned } from "../text/page-decision.js";
-import { mendZawCodeTextWithPos } from "../text/repair.js";
+import { collectPdfResult, markPdfImagePages, processPageRecord, streamPdfPages } from "../../../../extend/pipeline.js";
+import { runQpdfFile } from "./qpdf.js";
+import { copyPdfPrefix, findPdfEnd } from "./pdf-tail.js";
+import { renderPdfPagePng } from "./pdf-render.js";
+import { PdfTextSink } from "./pdf-text-sink.js";
+import { writePageStore } from "./emit.js";
+import { PageStoreWriter } from "./page-store.js";
+import { PosScanner } from "./scan.js";
+import { PDF_PARSING_PATHS } from "./pdf-fonts.js";
+import { startRecord, note, appendRecord, registerPath } from "./provenance.js";
+import { REGISTER_LOG } from "../../../../_path.js";
+import { normalizePageToFile, pageLayoutLines } from "./page-file-decision.js";
+import { scoreText } from "./myanmar-score.js";
+import { markOrderAligned } from "./page-decision.js";
+import { mendZawCodeTextWithPos } from "./repair.js";
 import { normalize } from "../../../../Architecture/Engine/MonoSyllabism/map/loader.js";
 import {
   MAX_INPUT_BYTES, MAX_INPUT_MB, MAX_PAGES, MAX_TEXT_CHARS, OWNER_PARSER_WORKER,
-} from "../core/limits.js";
+} from "../limits/local.js";
 
 async function preparePdf(input, prepared, directory, generalized) {
   const prepare = (source) => runQpdfFile(source, prepared, [

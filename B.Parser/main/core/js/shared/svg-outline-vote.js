@@ -28,10 +28,10 @@
  * WHAT IT CANNOT DO. A scanned page has no embedded font, so there is
  * nothing here to read; that remains the OCR path's job.
  */
-import { glyphSignature, contourDistance, topologyMatches } from '../shape/contour.js';
+import { glyphSignature, contourDistance, topologyMatches } from './contour.js';
 
 const a_isTopologyMismatch = (x, y) => !topologyMatches(x, y);
-import { TtfFont, glyphContours } from '../read/glyf.js';
+import { TtfFont, glyphContours } from './glyf.js';
 
 /** Outlines for a font, keyed however the caller asks: by byte, or by text. */
 function signaturesFor(font, lookups) {

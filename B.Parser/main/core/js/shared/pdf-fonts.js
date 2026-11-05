@@ -1,12 +1,12 @@
 import { createHash } from "node:crypto";
-import { pyChr } from "../core/pylib.js";
+import { pyChr } from "./pylib.js";
 import { BASE_ENCODINGS, GLYPH_NAME_TO_UNICODE } from "./pdf-encodings.js";
-import { isLegacyFontName, isUnresolvedLegacyFont, normaliseFontName } from "../codepage/names.js";
-import { lookupLegacyCode, WININNWA_LEGACY_CODE_PAGE, WININNWA_UNRESOLVED_SLOTS } from "../codepage/registry.js";
-import { confirmedRunAt } from "../codepage/confirmed-pdf-runs.js";
-import { subsetFontBridge } from "../codepage/subset-font-bridges.js";
-import { parseTtfGsubReverse, parseTtfVariantSlots } from "../core/ttf-gsub.js";
-import { hasVisualUnicodeConflicts, matchVisualUnicodeGlyphs } from "../codepage/visual-unicode-glyphs.js";
+import { isLegacyFontName, isUnresolvedLegacyFont, normaliseFontName } from "./names.js";
+import { lookupLegacyCode, WININNWA_LEGACY_CODE_PAGE, WININNWA_UNRESOLVED_SLOTS } from "./registry.js";
+import { confirmedRunAt } from "./confirmed-pdf-runs.js";
+import { subsetFontBridge } from "./subset-font-bridges.js";
+import { parseTtfGsubReverse, parseTtfVariantSlots } from "./ttf-gsub.js";
+import { hasVisualUnicodeConflicts, matchVisualUnicodeGlyphs } from "./visual-unicode-glyphs.js";
 
 
 

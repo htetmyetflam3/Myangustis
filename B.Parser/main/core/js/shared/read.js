@@ -1,13 +1,13 @@
-import { parseTtfCmap } from "../core/ttf-cmap.js";
+import { parseTtfCmap } from "./ttf-cmap.js";
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
-import { ValueError, pyTruthy, pyInt, fromHexStrict } from "../core/pylib.js";
-import { loadMapJson, mapNameForPath } from "../core/json-map.js";
-import { MAX_PAGES, OWNER_PARSER_WORKER, resourceLimit } from "../core/limits.js";
-import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../codepage/registry.js";
-import { containsMyanmar } from "../text/detector.js";
-import { decodeVisualUnicodeRun } from "../codepage/visual-unicode-glyphs.js";
+import { ValueError, pyTruthy, pyInt, fromHexStrict } from "./pylib.js";
+import { loadMapJson, mapNameForPath } from "./json-map.js";
+import { MAX_PAGES, OWNER_PARSER_WORKER, resourceLimit } from "../limits/local.js";
+import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "./registry.js";
+import { containsMyanmar } from "./detector.js";
+import { decodeVisualUnicodeRun } from "./visual-unicode-glyphs.js";
 import {
   Lexer, PdfName, PdfHexBytes, isNumeric, toNumber,
   asDocumentDecoding, DocumentDecoding, FontResourceLoader, LegacyAyarMap, UnsetFontDecoder,

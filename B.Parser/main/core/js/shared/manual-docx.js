@@ -1,8 +1,8 @@
-import { PageStoreWriter, pageRecords, textChunks } from "../read/page-store.js";
-import { writePageStore } from "../write/emit.js";
-import { PosScanner } from "../text/scan.js";
-import { normalizeOutputText } from "../text/preserved-transform.js";
-import { getEngineNormalize } from "../../../_path.js";
+import { PageStoreWriter, pageRecords, textChunks } from "./page-store.js";
+import { writePageStore } from "./emit.js";
+import { PosScanner } from "./scan.js";
+import { normalizeOutputText } from "./preserved-transform.js";
+import { getEngineNormalize } from "../../../../_path.js";
 
 // DOCX extraction already holds paragraph chunks in memory. Merge OCR into
 // those source chunks before writing any output or assigning POS locations;

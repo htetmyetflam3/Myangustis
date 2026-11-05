@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Python invokes the JavaScript Manager; it is not a separate parser.
 import fs from "node:fs/promises";
-import { Manager } from "../main/parser/manager.js";
-import { muteAdvisories } from "../../Architecture/host/advisory.js";
+import { Manager } from "../main/core/js/shared/manager.js";
+import { muteAdvisories } from "../Architecture/host/advisory.js";
 
 const MAX_REQUEST_BYTES = 1_000_000;
 

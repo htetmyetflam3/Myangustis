@@ -11,7 +11,7 @@ let dispatchLocal = null;
 
 async function ensureLoaded() {
   if (!dispatchSite) {
-    const mod = await import("./27-dispatcher.js");
+    const mod = await import("./dispatcher.js");
     dispatchSite = mod.dispatchSite;
     dispatchLocal = mod.dispatchLocal;
   }
