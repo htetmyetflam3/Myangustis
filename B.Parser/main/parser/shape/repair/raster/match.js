@@ -16,8 +16,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { VECTOR_MAP_DIR } from "../../../_path.js";
-import { loadMapJson } from "../core/json-map.js";
+import { VECTOR_MAP_DIR } from "../../../../../_path.js";
+import { loadMapJson } from "../../../core/json-map.js";
 
 
 
@@ -79,7 +79,7 @@ export function isCrossFontAlias(a, b) {
   const t = aliasTable();
   return t.has(`${a}\u0000${b}`) || t.has(`${b}\u0000${a}`);
 }
-import { loadSheet } from "./svg.js";
+import { loadSheet } from "../svg/svg.js";
 
 const DEFAULT_SHEET_PREFIX = "PYIDAUNGSU-2.5.2_REGULAR-sheet-";
 const DEFAULT_GRID = 48;

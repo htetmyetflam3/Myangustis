@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Python twin of svgout/scan-frame.js — same API, same bytes.
+"""Python twin of B.Parser/main/parser/svg/scan-frame.js — same API, same bytes.
 
 The parser exists in two languages by design, so this module does not shell out
 to Node and the JS module does not shell out to Python. Each is standalone.

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Python twin of svgout/make-line.js — same input, same bytes.
+"""Python twin of B.Parser/main/parser/svg/make-line.js — same input, same bytes.
 
 Standalone: does not call Node. The JS side does not call this either. Both read
 the same page export and must produce identical SVG; test_frame_parity.py is the
 check.
 
-    python3 svgout/make_line.py svgout/representative-p14.svg 14
+    python3 B.Parser/main/parser/svg/make_line.py ../svg/representative-p14.svg 14
 """
 from __future__ import annotations
 
@@ -346,7 +346,7 @@ def read_scene(source):
     namespaces = "".join(ns.group(0) for ns in re.finditer(
         r'''\s+xmlns:([A-Za-z_][\w.-]*)\s*=\s*(["'])([\s\S]*?)\2''', root)
         if ns.group(1) != "xlink")
-    clip_id = "__svgout_page_clip"
+    clip_id = "__svg_page_clip"
     while clip_id in all_ids:
         clip_id += "_"
     return {"width": width, "height": height, "defs": defs,
@@ -396,7 +396,7 @@ def mulberry32(a: int):
 
 
 def main():
-    src = sys.argv[1] if len(sys.argv) > 1 else "svgout/representative-p14.svg"
+    src = sys.argv[1] if len(sys.argv) > 1 else "../parser/svg/representative-p14.svg"
     seed = int(sys.argv[2]) if len(sys.argv) > 2 else 14
     suffix = sys.argv[3] if len(sys.argv) > 3 else ""
     only = sys.argv[4] if len(sys.argv) > 4 else ""
@@ -575,13 +575,13 @@ def main():
                             scene=render_scene(page_scene["scene"], selected_ids),
                             source_height=H, clip_id=page_scene["clip_id"],
                             page_height=H if sheet_full_page else None)
-    with open(f"svgout/known/line-sample{suffix}.svg", "w", encoding="utf-8") as fh:
+    with open(f"known/line-sample{suffix}.svg", "w", encoding="utf-8") as fh:
         fh.write(line_output)
-    with open(f"svgout/known/frame-sheet{suffix}.svg", "w", encoding="utf-8") as fh:
+    with open(f"known/frame-sheet{suffix}.svg", "w", encoding="utf-8") as fh:
         fh.write(sheet_output)
 
-    print(f"-> svgout/known/line-sample{suffix}.svg")
-    print(f"-> svgout/known/frame-sheet{suffix}.svg")
+    print(f"-> known/line-sample{suffix}.svg")
+    print(f"-> known/frame-sheet{suffix}.svg")
 
 
 if __name__ == "__main__":

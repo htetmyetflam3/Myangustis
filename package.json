@@ -101,7 +101,7 @@
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
     "fast-levenshtein": "^3.0.0",
-    "harfbuzzjs": "1.6.3",
+    "harfbuzzjs": "^1.6.3",
     "javascript-obfuscator": "^5.6.0",
     "nodemon": "^3.1.11",
     "prettier": "^3.9.5",

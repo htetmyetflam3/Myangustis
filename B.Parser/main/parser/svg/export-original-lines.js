@@ -7,9 +7,9 @@
 // page: object offsets are scanned, page commands are spooled to a temp file,
 // and glyph defs are cached only for glyphs used on that page.
 //
-//   node svgout/export-original-lines.js \
+//   node B.Parser/main/parser/svg/export-original-lines.js \
 //     "C.Proofreading/main/content/review/pdf-parser-representative/representative.pdf" \
-//     --page 61 --outdir svgout/original/representative-p61
+//     --page 61 --outdir ./original/representative-p61
 
 import fs from "node:fs";
 import os from "node:os";
@@ -32,7 +32,7 @@ import { framesOf, pitchOf, bandFor, lineSvg, sheetSvg, fixed } from "./scan-fra
 
 const args = process.argv.slice(2);
 const positional = [];
-const opt = { page: 61, outdir: "svgout/original/representative-p61", lines: "", prepared: false };
+const opt = { page: 61, outdir: "./original/representative-p61", lines: "", prepared: false };
 for (let i = 0; i < args.length; i += 1) {
   const a = args[i];
   if (a === "--page") opt.page = Number(args[++i]);

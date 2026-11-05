@@ -5,7 +5,7 @@
 // matching rules, and the lane verdict this file feeds are all written up in
 // AGENT-NOTE-vector-svg.md at the repository root.
 //
-// The only thing here that is NOT final is svgout/trace_raster.py, which is
+// The only thing here that is NOT final is B.Parser/main/parser/svg/trace_raster.py, which is
 // experimental scratch for the OCR lane.
 //
 // Drop next to B.Parser/main/parser/text/scan.js and import from there.

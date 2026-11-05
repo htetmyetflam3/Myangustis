@@ -5,11 +5,11 @@
 // (pdf2svg.py reads the page operators, not the parser's text), so every
 // outline below is the page's own artwork.
 //
-//   node svgout/make-line.js svgout/representative-p14.svg
+//   node B.Parser/main/parser/svg/make-line.js ./representative-p14.svg
 import fs from "node:fs";
 import { framesOf, pitchOf, blankOf, overflow, bandFor, lineSvg, sheetSvg, fixed, num } from "./scan-frame.js";
 
-const SRC = process.argv[2] ?? "svgout/representative-p14.svg";
+const SRC = process.argv[2] ?? "./representative-p14.svg";
 const SEED = Number(process.argv[3] ?? 14);
 const SUFFIX = process.argv[4] ?? "";
 const ONLY = process.argv[5] ?? "";   // e.g. "1-8" or "1,3,5"; empty = every line
@@ -305,7 +305,7 @@ function readScene(source) {
   }
   const namespaces = [...root.matchAll(/\s+xmlns:([A-Za-z_][\w.-]*)\s*=\s*(["'])([\s\S]*?)\2/g)]
     .filter((ns) => ns[1] !== "xlink").map((ns) => ns[0]).join("");
-  let clipId = "__svgout_page_clip";
+  let clipId = "__svg_page_clip";
   while (allIds.has(clipId)) clipId += "_";
   return { width, height, defs, definitions: definitions.join(""), namespaces, scene, uses, unframed, clipId };
 }
@@ -478,8 +478,8 @@ const lineOutput = lineSvg({ width: W, frame, uses: lineUses, defs, pitch, label
 const sheetOutput = sheetSvg({ width: W, rows: all, defs, pitch, definitions: pageScene.definitions,
   namespaces: pageScene.namespaces, scene: renderScene(pageScene.scene, selectedIds),
   sourceHeight: H, clipId: pageScene.clipId, pageHeight: sheetFullPage ? H : null });
-fs.writeFileSync(`svgout/known/line-sample${SUFFIX}.svg`, lineOutput);
-fs.writeFileSync(`svgout/known/frame-sheet${SUFFIX}.svg`, sheetOutput);
+fs.writeFileSync(`known/line-sample${SUFFIX}.svg`, lineOutput);
+  fs.writeFileSync(`known/frame-sheet${SUFFIX}.svg`, sheetOutput);
 
-console.log(`-> svgout/known/line-sample${SUFFIX}.svg`);
-console.log(`-> svgout/known/frame-sheet${SUFFIX}.svg`);
+console.log(`-> known/line-sample${SUFFIX}.svg`);
+console.log(`-> known/frame-sheet${SUFFIX}.svg`);

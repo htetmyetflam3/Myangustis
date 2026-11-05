@@ -160,7 +160,7 @@ def compare_svg(
      Foreground/overlay: {fg_font.name} (normal loadSheet-readable entries).
      Background: {bg_font.name}, aligned to the same entry origins/baselines and
      tagged for exclusion/overlay inspection. Line register: metadata#line-register.
-     SVG Pali follows svgout/make-index-font11.py: dictionary U+1039 parts plus the
+     SVG Pali follows B.Parser/main/Python/make-index-font11.py: dictionary U+1039 parts plus the
      owner-given list only, not master syllables.pali. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="{idx.fmt(total_width)}" height="{idx.fmt(idx.PAGE_HEIGHT)}" viewBox="0 0 {idx.fmt(total_width)} {idx.fmt(idx.PAGE_HEIGHT)}"
      style="isolation:isolate" data-font="{idx.attr(fg_font.name)}" data-bg-font="{idx.attr(bg_font.name)}" data-shaped="harfbuzz" data-size="11" data-em="11"

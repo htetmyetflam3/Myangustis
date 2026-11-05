@@ -4,9 +4,9 @@
 // cluster blocks out across 3 portrait A4 pages stacked vertically in a single
 // SVG canvas. A4: 595.28 pt × 841.89 pt. Stacked canvas: 595.28 × 2525.67 pt.
 //
-//   node svgout/make-cluster-a4-sheet.js \
+//   node B.Parser/main/parser/svg/make-cluster-a4-sheet.js \
 //     <cluster-report.json> ... \
-//     --out svgout/original/representative-p61-cluster/cluster-sheet-a4-3page.svg
+//     --out ./original/representative-p61-cluster/cluster-sheet-a4-3page.svg
 //
 // Each cluster card: cluster index, top matched label + vote count, glyph count,
 // a small ink-bbox boundary box, and the per-glyph nearest labels/distances.
@@ -16,7 +16,7 @@ import path from "node:path";
 
 const args = process.argv.slice(2);
 const inputs = [];
-let out = "svgout/original/representative-p61-cluster/cluster-sheet-a4-3page.svg";
+let out = "./original/representative-p61-cluster/cluster-sheet-a4-3page.svg";
 for (let i = 0; i < args.length; i += 1) {
   const a = args[i];
   if (a === "--out") out = args[++i];

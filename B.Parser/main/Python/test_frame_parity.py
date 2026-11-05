@@ -6,7 +6,7 @@ then compares the output byte for byte. Each implementation is standalone: Node
 is not called from Python and Python is not called from Node. This script is the
 only place both are known, and it only reads their files.
 
-    python3 svgout/test_frame_parity.py
+    python3 B.Parser/main/parser/svg/test_frame_parity.py
 """
 from __future__ import annotations
 
@@ -36,11 +36,11 @@ def run(cmd, cwd):
 
 def main():
     # the parity check runs on page exports, which are working files. Any page
-    # SVG sitting in svgout/ is fair game; skip the ones that are absent.
-    pages = sorted(p.name for p in (ROOT / "svgout").glob("*.svg"))
+    # SVG sitting in B.Parser/main/parser/svg/ is fair game; skip the ones that are absent.
+    pages = sorted(p.name for p in (ROOT / "parser" / "svg").glob("*.svg"))
     if not pages:
-        print("no page exports in svgout/. Make one first:")
-        print("  python3 svgout/pdf2svg.py --file book.pdf --pages 14")
+        print("no page exports in B.Parser/main/parser/svg/. Make one first:")
+        print("  python3 B.Parser/main/parser/svg/pdf2svg.py --file book.pdf --pages 14")
         return 1
     cases = [(p, seed) for p in pages for seed in SEEDS]
 
@@ -49,10 +49,10 @@ def main():
     # or generated sheets. Both implementations write into a temporary copy.
     with tempfile.TemporaryDirectory(prefix="svg-frame-parity-") as tmp:
         work = pathlib.Path(tmp)
-        (work / "svgout" / "known").mkdir(parents=True)
+        (work / "parser" / "svg" / "known").mkdir(parents=True)
         for name, seed in cases:
-            source = ROOT / "svgout" / name
-            src = work / "svgout" / name
+            source = ROOT / "parser" / "svg" / name
+            src = work / "parser" / "svg" / name
             shutil.copyfile(source, src)
             original_lines = source.with_suffix(".lines.json")
             temp_lines = src.with_suffix(".lines.json")
@@ -67,13 +67,13 @@ def main():
                     shutil.copyfile(original_lines, temp_lines)
                 elif temp_lines.exists():
                     temp_lines.unlink()
-                run(["node", str(ROOT / "svgout" / "make-line.js"), str(src),
+                run(["node", str(ROOT / "parser" / "svg" / "make-line.js"), str(src),
                      str(seed), f".{seed}.js"], work)
-                run([sys.executable, str(ROOT / "svgout" / "make_line.py"), str(src),
+                run([sys.executable, str(ROOT / "parser" / "svg" / "make_line.py"), str(src),
                      str(seed), f".{seed}.py"], work)
 
                 for stem in ("line-sample", "frame-sheet"):
-                    known = work / "svgout" / "known"
+                    known = work / "parser" / "svg" / "known"
                     a = (known / f"{stem}.{seed}.js.svg").read_bytes()
                     b = (known / f"{stem}.{seed}.py.svg").read_bytes()
                     same = a == b

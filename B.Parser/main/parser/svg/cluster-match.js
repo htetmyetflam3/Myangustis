@@ -10,22 +10,22 @@
 //   - results are reported per cluster (bounded box boundary), never per
 //     isolated mark, and never by rasterizing the page
 //
-//   node svgout/cluster-match.js \
-//     svgout/original/representative-p61 \
+//   node B.Parser/main/parser/svg/cluster-match.js \
+//     ./original/representative-p61 \
 //     B.Parser/main/parser/jason-map/vector/index-font11-burmese-pali-compare-pyidaungsu-padauk.svg \
-//     --line 1 --outdir svgout/original/representative-p61-cluster
+//     --line 1 --outdir ./original/representative-p61-cluster
 
 import fs from "node:fs";
 import path from "node:path";
-import { parsePathData } from "../B.Parser/main/parser/shape/svg.js";
+import { parsePathData } from "../shape/repair/svg/svg.js";
 
 const args = process.argv.slice(2);
 const opt = {
-  originalDir: "svgout/original/representative-p61",
+  originalDir: "./original/representative-p61",
   compareSvg:
     "B.Parser/main/parser/jason-map/vector/index-font11-burmese-pali-compare-pyidaungsu-padauk.svg",
   line: null,
-  outdir: "svgout/original/representative-p61-cluster",
+  outdir: "./original/representative-p61-cluster",
   top: 3,
   xGapPt: 2.0,      // pt: x gap that starts a new cluster on the same baseline
   arTol: 0.30,      // accept compare entries whose aspect ratio is within this
