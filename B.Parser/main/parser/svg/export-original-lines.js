@@ -15,19 +15,19 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { PdfFileObjects, openPdfScannedObjects } from "../B.Parser/main/parser/read/pdf-object-file.js";
+import { PdfFileObjects, openPdfScannedObjects } from "../read/pdf-object-file.js";
 import {
   FontResourceLoader, PdfName, PdfRef, PdfHexBytes, isNumeric, toNumber,
   buildSimpleEncoding, CMapEncoding, parseCmapStream,
-} from "../B.Parser/main/parser/read/pdf-fonts.js";
+} from "../read/pdf-fonts.js";
 import {
   collectPages, findRootPages, getStream, iterContentOperations,
   parseToUnicodeStream, MAX_PDF_OBJECTS, MAX_STREAM_MB,
-} from "../B.Parser/main/parser/read/pdf-extract.js";
-import { spoolPageContent } from "../B.Parser/main/parser/read/pdf-content-file.js";
-import { PdfFileLexer } from "../B.Parser/main/parser/read/pdf-file-lexer.js";
-import { TtfFont, glyphContours } from "../B.Parser/main/parser/read/glyf.js";
-import { parseTtfCmap } from "../B.Parser/main/parser/core/ttf-cmap.js";
+} from "../read/pdf-extract.js";
+import { spoolPageContent } from "../read/pdf-content-file.js";
+import { PdfFileLexer } from "../read/pdf-file-lexer.js";
+import { TtfFont, glyphContours } from "../read/glyf.js";
+import { parseTtfCmap } from "../core/ttf-cmap.js";
 import { framesOf, pitchOf, bandFor, lineSvg, sheetSvg, fixed } from "./scan-frame.js";
 
 const args = process.argv.slice(2);

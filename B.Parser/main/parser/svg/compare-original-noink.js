@@ -14,13 +14,13 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { parsePathData } from "../B.Parser/main/parser/shape/svg.js";
+import { parsePathData } from "../shape/repair/svg/svg.js";
 import { fixed } from "./scan-frame.js";
 
 const args = process.argv.slice(2);
 const opt = {
   originalDir: "./original/representative-p61",
-  compareSvg: "B.Parser/main/parser/jason-map/vector/index-font11-burmese-pali-compare-pyidaungsu-padauk.svg",
+  compareSvg: "../jason-map/vector/index-font11-burmese-pali-compare-pyidaungsu-padauk.svg",
   outdir: "./original/representative-p61-noink",
   top: 3,
 };
