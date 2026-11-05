@@ -2,8 +2,19 @@
 // Runs as a long-running systemd service that Site and Python callers connect to.
 // Accepts JSON on stdin/stdout: { caller: "site"|"local", filePath|object, method, identity? }
 // Responds with { ok: true, result } or { ok: false, error }.
+// Lazy loads heavy modules only on first request.
 import { createServer } from "node:http";
-import { dispatchSite, dispatchLocal } from "./27-dispatcher.js";
+
+let dispatchSite = null;
+let dispatchLocal = null;
+
+async function ensureLoaded() {
+  if (!dispatchSite) {
+    const mod = await import("./27-dispatcher.js");
+    dispatchSite = mod.dispatchSite;
+    dispatchLocal = mod.dispatchLocal;
+  }
+}
 
 const PORT = Number(process.env.PARSER_DISPATCHER_PORT || 8099);
 
@@ -28,8 +39,9 @@ const server = createServer(async (req, res) => {
     return jsonResponse(res, 400, { ok: false, error: "Invalid JSON" });
   }
 
-  const { caller, object, method, filePath, identity } = request;
   try {
+    await ensureLoaded();
+    const { caller, object, method, filePath, identity } = request;
     let result;
     if (caller === "site") {
       if (!filePath) throw new Error("site caller requires filePath");
