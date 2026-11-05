@@ -1,6 +1,10 @@
 
 
  ## Global Rules
+ - assgin ur output files location under Junk/SourceParentDir/   and place there properly.
+ - Do not ever place Run time depency under junk dir.
+ -  do not ever point the file  output location to dir where the current script is executed.
+
  - no *.mjs always just *js for esm
  - do not create *.md for whatever case unless explicity request
  - test,read,see to know , understand the problem then  reasoning as second phase and action as third unless there is accessibility issuse.
@@ -9,9 +13,11 @@
 - ask clarification for ambigious case.
 - avoid long tutorials or exhaustive file trees
 -  avoid dumping all new files in one place (except tools and test)
-- backward compability is 
+-  maintaining scripts from old design and keeping old logic for  backward compability ,Python scripts in js parser , making long file names with hypens, using similar file names and functions names , placing script in random locations and Reading files  under Lexic_No_inspect/*   are policy violations.
+
+
+
 ## Exclude 
-- Reading code under Lexic_No_inspect/*
 - generic software advice
 - obvious language conventions 
 - speculative claims or anything you could not verify
@@ -19,7 +25,6 @@
 
 
 ## Avoid
-- finding errors in Lexic_No_inspect/*
 - creating test files in root
 - techanical jargon in architecture questions and  explainations 
 - Do not ask about anything the repo already makes clear.
@@ -49,3 +54,5 @@
   ## Changed / Fixed / Removed
 ```
 
+## !Reminder 
+proofreading is separte service  do nothing with parser output except some pdfs from there are use to test parser that why placing  parser  output  files there will be assumed as * messing up on my dir layout *

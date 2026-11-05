@@ -1,4 +1,4 @@
-## [Unreleased] - 2026-10-28
+## [2.0.0] - 2026-10-28
 ### Changed / Fixed / Removed
 - Keep workspace setup create-only: replace reset helpers with `ensureWorkspace` and preserve existing directories and files on repeated runs.
 - Retain existing Engine logs and append normalization debug session headers instead of truncating logs at startup.
@@ -212,3 +212,7 @@
 - Full Node test suite: 412 passed, 1 skipped because the OCR PNG fixture is unavailable. Full Python suite: 379 passed and 47 subtests passed. Tests used temporary dependencies and protected the real Engine data/cache from writes.
 - The standalone SVG prototype parity check produced 40/40 byte-identical JS/Python outputs on five original-source pages; this comparison does not prove complete rendering fidelity. PyMuPDF was used only as a temporary reference for this test, not added as a project dependency.
 - Validated the report against all nine original Git blob IDs and the previous per-part counts. Its TXT and ZIP contain identical report bytes. No OCR was run; the scan used the Parser worktree changes included in this PR.
+## [2.0.0] - 2026-11-5 anoter layout planning after agent messup 
+- another screw up on dir as they keep messing up my layout
+- another shit entry as  i feel too annoyed on restructuring layout blueprint
+- this changes do nothing but fuck up on myself by doing annyoing reloaction once u reach resding the line look the repo structure this repo each service can go web on A,B,C top dir without root seprately .but if ur working inside project and if u can see root dir  if u dont want to see another ugly  changelog like this **DO NOT EVER screw me up by placing output file randomly**

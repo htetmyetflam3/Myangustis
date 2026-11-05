@@ -1,3 +1,0 @@
-# Keep the input binary and preserve the Parser's exact text output.
-representative.pdf binary
-parser-output.txt -text whitespace=-trailing-space
