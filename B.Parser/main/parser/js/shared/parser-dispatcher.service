@@ -1,0 +1,20 @@
+[Unit]
+Description=Parser Dispatcher (alive service for Site and Python callers)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=exec
+WorkingDirectory=/home/user/Myangustis/B.Parser/main/parser/js/shared
+ExecStart=/usr/bin/node 28-dispatcher-server.js
+Restart=always
+RestartSec=3
+User=root
+Environment=PARSER_DISPATCHER_PORT=8099
+StandardOutput=journal
+StandardError=journal
+KillSignal=SIGINT
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target
