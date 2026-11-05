@@ -1,4 +1,8 @@
-import { MAX_INPUT_BYTES, MAX_INPUT_MB } from "../core/limits.js";
+// Site lane decision (public + authenticated callers)
+// Split from shared 03-manager-payload.js — site caller decides lane and
+// validates job payload with site-specific rules.
+// Public (no identity) and authenticated (identity = authenticatedUser)
+// share the same lane decision; identity only affects owner access checks.
 
 const IDENTITY_FIELDS = [
   "jobToken", "formId", "submitId", "userId", "sessionId", "extension", "task",
