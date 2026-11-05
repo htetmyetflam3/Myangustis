@@ -7,7 +7,7 @@ import {
   isFile,
   registerPdfFonts,
   applyPdfRole,
-} from "../codepage/fonts.js";
+} from "../font/fonts.js";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -16,9 +16,9 @@ import { OUTPUT_FONT_DIR } from "../../../../_path.js";
 const BURMESE_DOCX_NAME = BURMESE_FONTS[DEFAULT_BURMESE_KEY].docx;
 import { PdfWriter } from "../pdf/pdf-writer.js";
 import { writeOptimizedPdf } from "../pdf/pdf-optimize.js";
-import { ZipStreamWriter } from "./zip.js";
+import { ZipStreamWriter } from "./docx-zip.js";
 import { pyRound, RuntimeError } from "../util/pylib.js";
-import { textLines } from "../util/page-file-decision.js";
+import { textLines } from "../page/page-file-decision.js";
 
 export function esc(s) {
   

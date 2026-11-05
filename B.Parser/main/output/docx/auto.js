@@ -1,6 +1,6 @@
-import { createSourceRunner } from "../manager/runtime.js";
-import { runDocxWorker } from "./docx.js";
-import * as ocrWorker from "../ocr/ocr-ops.js";
+import { createSourceRunner } from "../../manager/runtime.js";
+import { runDocxWorker } from "../docx.js";
+import * as ocrWorker from "../../ocr/ocr-ops.js";
 
 
 

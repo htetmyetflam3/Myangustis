@@ -3,7 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { writeDocxLayout, writeDocxPlain, writePdf } from "./render.js";
 import { PdfTextSink } from "../pdf/pdf-text-sink.js";
-import { layoutLines, pageRecords, textChunks } from "./page-store.js";
+import { layoutLines, pageRecords, textChunks } from "../page/page-spool.js";
 import { MAX_PAGES, MAX_TEXT_CHARS } from "../limits/local.js";
 
 const MIME_TYPES = {

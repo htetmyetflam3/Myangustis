@@ -1,22 +1,22 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { collectPdfResult, markPdfImagePages, processPageRecord, streamPdfPages } from "../../../extend/pipeline.js";
-import { runQpdfFile } from "../io/qpdf.js";
+import { collectPdfResult, markPdfImagePages, processPageRecord, streamPdfPages } from "../../extend/pipeline.js";
+import { runQpdfFile } from "./pdf-qpdf.js";
 import { copyPdfPrefix, findPdfEnd } from "./pdf-tail.js";
 import { renderPdfPagePng } from "./pdf-render.js";
 import { PdfTextSink } from "./pdf-text-sink.js";
-import { writePageStore } from "../io/emit.js";
-import { PageStoreWriter } from "./page-store.js";
-import { PosScanner } from "../text/scan.js";
+import { writePageStore } from "../output/write.js";
+import { PageStoreWriter } from "../page/page-spool.js";
+import { PosScanner } from "../core/beautify/scan.js";
 import { PDF_PARSING_PATHS } from "./pdf-fonts.js";
 import { startRecord, note, appendRecord, registerPath } from "../util/provenance.js";
-import { REGISTER_LOG } from "../../../_path.js";
-import { normalizePageToFile, pageLayoutLines } from "../util/page-file-decision.js";
+import { REGISTER_LOG } from "../../_path.js";
+import { normalizePageToFile, pageLayoutLines } from "../page/page-file-decision.js";
 import { scoreText } from "../text/decide.js";
-import { markOrderAligned } from "./page-decision.js";
-import { mendZawCodeTextWithPos } from "../text/repair.js";
-import { normalize } from "../../../../Architecture/Engine/MonoSyllabism/map/loader.js";
+import { markOrderAligned } from "../text/decide.js";
+import { mendZawCodeTextWithPos } from "../core/beautify/repair/repair.js";
+import { normalize } from "../../../Architecture/Engine/MonoSyllabism/map/loader.js";
 import {
   MAX_INPUT_BYTES, MAX_INPUT_MB, MAX_PAGES, MAX_TEXT_CHARS, OWNER_PARSER_WORKER,
 } from "../limits/local.js";

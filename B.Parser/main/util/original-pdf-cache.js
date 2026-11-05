@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { openPdfScannedObjects } from "./pdf-object-file.js";
+import { openPdfScannedObjects } from "../pdf/pdf-objects.js";
 
 // One shared original-PDF handle for a job.
 //

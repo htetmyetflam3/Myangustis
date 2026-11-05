@@ -3,8 +3,8 @@
 // then passes { object, method } to BindParser ($).
 // Public (no identity) and authenticated (identity = authenticatedUser) callers
 // share the same dispatch path; identity only affects owner access checks.
-import { streamReader } from "../api/stream-reader.js";
-import { BindParser } from "../api/bind-parser.js";
+import { streamReader } from "./stream-reader.js";
+import { BindParser } from "./bind-parser.js";
 
 export class SiteDispatch {
   #workers = { extract: null, ocr: null, ownerExtract: null, ownerOcr: null };

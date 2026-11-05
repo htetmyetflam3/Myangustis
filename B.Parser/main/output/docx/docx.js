@@ -1,6 +1,6 @@
-import { PageStoreWriter, pageRecords, textChunks } from "./page-store.js";
-import { writePageStore } from "../io/emit.js";
-import { PosScanner } from "../text/scan.js";
+import { PageStoreWriter, pageRecords, textChunks } from "../../page/page-spool.js";
+import { writePageStore } from "../write.js";
+import { PosScanner } from "../../core/beautify/scan.js";
 import { normalizeOutputText } from "./preserved-transform.js";
 import { getEngineNormalize } from "../../../_path.js";
 

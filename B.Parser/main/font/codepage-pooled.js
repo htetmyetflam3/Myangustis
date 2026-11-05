@@ -1,5 +1,5 @@
-import { loadMapJson } from "../util/json-map.js";
-import { normaliseFontName } from "./codepage-names.js";
+import { loadMapJson } from "../util/loader.js";
+import { normaliseFontName } from "./names.js";
 
 // Candidate evidence is intentionally separate from repair decisions. A key
 // typed on a keyboard is not a PDF byte; neither kind identifies a keyboard.

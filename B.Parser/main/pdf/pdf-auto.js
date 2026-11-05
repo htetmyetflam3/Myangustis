@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { copyTextFile } from "./pdf-text-sink.js";
-import { writePageStore } from "../io/emit.js";
-import { PageStoreWriter, layoutLines, pageRecords, textChunks } from "./page-store.js";
-import { PosScanner } from "../text/scan.js";
-import { normalizePageToFile, pageLayoutLines } from "../util/page-file-decision.js";
+import { writePageStore } from "../output/write.js";
+import { PageStoreWriter, layoutLines, pageRecords, textChunks } from "../page/page-spool.js";
+import { PosScanner } from "../core/beautify/scan.js";
+import { normalizePageToFile, pageLayoutLines } from "../page/page-file-decision.js";
 import { getEngineNormalize } from "../../../_path.js";
 
 function writeAll(fd, value) {

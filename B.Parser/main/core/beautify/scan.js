@@ -4,10 +4,10 @@ import path from "node:path";
 import readline from "node:readline";
 import { randomUUID } from "node:crypto";
 import { getEngineBinding } from "../../../../index-path.js";
-import { loadMapJson } from "../util/json-map.js";
+import { loadMapJson } from "../../util/loader.js";
 import { MAX_LINE_BYTES } from "../../../../Architecture/Engine/MonoSyllabism/generators/SfomatterForP.js";
-import { textLines } from "../util/page-file-decision.js";
-import { MARKS as MM_MARKS } from "./decide.js";
+import { textLines } from "../../page/page-file-decision.js";
+import { MARKS as MM_MARKS } from "../../text/decide.js";
 
 // Do not read the Engine master or build a dictionary matcher to validate
 // words. Ask BindEngine's hash-free POS lane and keep its actual tagged output.

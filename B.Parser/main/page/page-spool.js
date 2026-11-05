@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline";
 import { StringDecoder } from "node:string_decoder";
-import { textLines } from "../util/page-file-decision.js";
+import { textLines } from "./page-file-decision.js";
 
 function writeAll(fd, value) {
   const bytes = Buffer.isBuffer(value) ? value : Buffer.from(value, "utf8");

@@ -6,8 +6,8 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { streamReader } from '../api/stream-reader.js';
-import { dispatchSite } from '../api/dispatcher.js';
+import { streamReader } from './stream-reader.js';
+import { dispatchSite } from './dispatcher.js';
 
 function stripCliArtifact(raw) {
   return raw

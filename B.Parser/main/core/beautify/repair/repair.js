@@ -11,10 +11,10 @@ import fs from "node:fs";
 import readline from "node:readline";
 import {
   scanBrokenSpans, scanLineWithPos, tagPosLine, parseTaggedLine,
-} from "./scan.js";
+} from "../scan.js";
 import {
   beautifyText, beautifyFromScanVerdict, mendZawCodeText, zawCodeGuard,
-} from "./beautify.js";
+} from "../compose/beautify.js";
 
 // Raw-font evidence is available to a repair caller that retained provenance.
 // These lookups return candidates only; they never alter text automatically.
@@ -464,7 +464,7 @@ async function vectorImageReplacements(broken, entry, vectorOptions) {
     sawSource = true;
     const candidates = entry?.spanCandidates?.[i] ?? entry?.candidatesBySpan?.[i] ?? entry?.candidates;
     const options = { ...vectorOptions, ...(candidates !== undefined ? { candidates } : {}) };
-    vote ??= await import("../codepage/vote.js");
+    vote ??= await import("./decision/vote.js");
     const match = source?.data && Number.isInteger(source.width) && Number.isInteger(source.height)
       ? vote.matchPixelsToVector(source, options)
       : await vote.matchImageToVector(source, options);

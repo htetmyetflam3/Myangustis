@@ -24,14 +24,14 @@
 
 
 
-import { loadMapJson } from "../util/json-map.js";
-import { scanText, scanBrokenSpans } from "./scan.js";
+import { loadMapJson } from "../../../util/loader.js";
+import { scanText, scanBrokenSpans } from "../scan.js";
 import {
   orderText, unmixZawCodeMarks, retraceZawCodeMarks, settleZawCodeAhE,
   medialFollows, reorderMarks,
 } from "./clean.js";
-import { scoreText, isIndex } from "./decide.js";
-import { arrangeZawCodeOrder } from "./zawcode-order.js";
+import { scoreText, isIndex } from "../../../text/decide.js";
+import { arrangeZawCodeOrder } from "../../../text/zawcode-order.js";
 
 const DATA = loadMapJson("homoglyphs.json");
 

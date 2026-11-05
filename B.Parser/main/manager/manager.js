@@ -6,10 +6,10 @@ import path from "node:path";
 import os from "node:os";
 import { pipeline } from "node:stream/promises";
 import { TextDecoder } from "node:util";
-import { DEFAULT_OUTPUT_DIR, REGISTER_LOG } from "../../../_path.js";
-import { writeOutput } from "../io/emit.js";
-import { finishManualPdf } from "../pdf/manual-pdf.js";
-import { finishManualDocx } from "../docx/manual-docx.js";
+import { DEFAULT_OUTPUT_DIR, REGISTER_LOG } from "../../_path.js";
+import { writeOutput } from "../output/write.js";
+import { finishManualPdf } from "../pdf/pdf-auto.js";
+import { finishManualDocx } from "../output/docx/docx.js";
 import { appendRecord, note, registerPath } from "../util/provenance.js";
 import {
   WORKER_HEAP_MB,
@@ -19,9 +19,9 @@ import {
   MAX_INPUT_MB,
   ocrTimeoutMs,
 } from "../limits/local.js";
-import { decideForCaller, normalizeCaller } from "../../../extend/caller-policy.js";
+import { decideForCaller, normalizeCaller } from "../../extend/caller-policy.js";
 import { classifyScraperSource } from "../../../extend/classify.js";
-import { advisoryOnce, muteAdvisories } from "../../../../Architecture/host/advisory.js";
+import { advisoryOnce, muteAdvisories } from "../../../Architecture/host/advisory.js";
 
 const EXTRACT_URL = new URL("../worker/extract.entry.js", import.meta.url);
 const OCR_URL = new URL("../worker/ocr.entry.js", import.meta.url);

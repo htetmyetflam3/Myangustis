@@ -41,24 +41,24 @@ const { emitEvent } = (await getLogen()).coreLog;
 import fs from "node:fs";
 import path from "node:path";
 
-import { loadMapJson, mapNameForPath } from "./json-map.js";
-import { VECTOR_MAP_DIR } from "../../../../_path.js";
+import { loadMapJson, mapNameForPath } from "../../../../util/loader.js";
+import { VECTOR_MAP_DIR } from "../../../../../_path.js";
 
-import { TtfFont, glyphContours } from "../codepage/glyf.js";
+import { TtfFont, glyphContours } from "../../../../font/glyf.js";
 import { glyphSignature } from "./svg-contour.js";
-import { parseTtfCmap } from "../codepage/ttf-cmap.js";
+import { parseTtfCmap } from "../../../../font/ttf-cmap.js";
 import {
   pickEmbeddedFont, hasMyanmarGlyphs, getStream, MAX_PDF_OBJECTS,
   parseToUnicodeStream, extractPageLines, findRootPages, collectPages,
-} from "./pdf-extract.js";
-import { openPdfScannedObjects } from "./pdf-object-file.js";
+} from "../../../../pdf/pdf-read.js";
+import { openPdfScannedObjects } from "../../../../pdf/pdf-objects.js";
 import {
   FontResourceLoader, DocumentDecoding, pageFontDecoders, PdfRef,
   detectLegacyLayoutFonts,
-} from "../pdf/pdf-fonts.js";
-import { englishLikeness } from "../text/decide.js";
+} from "../../../../pdf/pdf-fonts.js";
+import { englishLikeness } from "../../../../text/decide.js";
 import { crowdVote, loadWitnesses } from "./svg-outline-vote.js";
-import { WININNWA_LEGACY_CODE_PAGE } from "../codepage/codepage-registry.js";
+import { WININNWA_LEGACY_CODE_PAGE } from "../../../../font/codepage-registry.js";
 
 
 const WITNESS_FILE = path.join(VECTOR_MAP_DIR, "font-witnesses.json");

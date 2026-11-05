@@ -27,9 +27,9 @@ import {
   decodeImageRgba,
   openPdf,
   renderPageCanvas,
-} from "../pdf/pdf-render.js";
-import { binarise } from "./repair/raster/raster.js";
-import { matchRasterMask } from "./repair/raster/match.js";
+} from "../../../../pdf/pdf-render.js";
+import { binarise } from "../raster.js";
+import { matchRasterMask } from "./match.js";
 
 function grayFromRgba({ data, width, height }) {
   const gray = new Uint8Array(width * height);

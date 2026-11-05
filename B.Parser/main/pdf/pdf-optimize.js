@@ -6,7 +6,7 @@
 
 
 import fs from "node:fs";
-import { runQpdfFile } from "../io/qpdf.js";
+import { runQpdfFile } from "./pdf-qpdf.js";
 
 const OPTIMIZE_OFF = new Set(["0", "off", "false", "no"]);
 

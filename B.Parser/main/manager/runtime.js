@@ -3,17 +3,17 @@ const { installPassiveLog } = (await getLogen()).siteLog;
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { loadDetector, processDocxForMethod, buildFinalPages } from "../../../extend/pipeline.js";
-import { writeOutput } from "../io/emit.js";
-import { PosScanner } from "../text/scan.js";
-import { PageStoreWriter } from "./page-store.js";
-import { repairTextWithPos, repairFromPosVerdict } from "../text/repair.js";
+import { loadDetector, processDocxForMethod, buildFinalPages } from "../../extend/pipeline.js";
+import { writeOutput } from "../output/write.js";
+import { PosScanner } from "../core/beautify/scan.js";
+import { PageStoreWriter } from "../page/page-spool.js";
+import { repairTextWithPos, repairFromPosVerdict } from "../core/beautify/repair/repair.js";
 import { orderZawCodePages } from "../text/zawcode-order.js";
 import { normalizeOutputText } from "./preserved-transform.js";
 import { runPdfStream } from "../pdf/pdf-stream.js";
 
 import { MAX_INPUT_BYTES, MAX_INPUT_MB } from "../limits/local.js";
-import { REGISTER_LOG } from "../../../../_path.js";
+import { REGISTER_LOG } from "../../_path.js";
 import { startRecord, note, appendRecord, registerPath } from "../util/provenance.js";
 
 

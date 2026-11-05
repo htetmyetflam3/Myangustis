@@ -1,8 +1,8 @@
 // Local entry dispatch stream (unshared)
 // Caller passes a readable byte stream or object directly; dispatcher receives
 // { object, method } and passes to BindParser ($). No temp file, no read-back.
-import { streamReaderStream } from "../api/stream-reader.js";
-import { BindParser } from "../api/bind-parser.js";
+import { streamReaderStream } from "./stream-reader.js";
+import { BindParser } from "./bind-parser.js";
 
 export class LocalDispatchStream {
   #workers = { extract: null, ocr: null, ownerExtract: null, ownerOcr: null };

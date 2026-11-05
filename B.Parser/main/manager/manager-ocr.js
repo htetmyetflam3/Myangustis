@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { writeOutput } from "../io/emit.js";
+import { writeOutput } from "../output/write.js";
 import { ocrTimeoutMs, MAX_INPUT_BYTES, MAX_INPUT_MB } from "../limits/local.js";
 
 export class ManagerOcrHelpers {

@@ -12,7 +12,7 @@
 
 
 
-import { prepareVectorLayout } from './resolve.js';
+import { prepareVectorLayout } from './codepage-resolve.js';
 
 
 

@@ -1,4 +1,4 @@
-import { getMasterMapData } from "./clean.js";
+import { getMasterMapData } from "../core/beautify/compose/clean.js";
 import { withoutZeroWidthSpace } from "./zero-width.js";
 
 const E = "\u1031";

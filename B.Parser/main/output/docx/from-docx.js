@@ -1,5 +1,5 @@
-import { runDocxWorker } from "../docx/docx.js";
-import { runDocxManualWorker } from "../docx/docx-manual.js";
+import { runDocxWorker } from "../docx.js";
+import { runDocxManualWorker } from "./auto.js";
 
 
 

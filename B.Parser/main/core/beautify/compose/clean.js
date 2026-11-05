@@ -33,8 +33,8 @@
 
 
 import { getEngineData } from "../../../_path.js";
-import { loadMapJson } from "../util/json-map.js";
-import { MARK_ORDER as PRIORITY, isIndex } from "./decide.js";
+import { loadMapJson } from "../../../util/loader.js";
+import { MARK_ORDER as PRIORITY, isIndex } from "../../../text/decide.js";
 
 const { readMasterJson } = await getEngineData();
 let masterMapData = null;

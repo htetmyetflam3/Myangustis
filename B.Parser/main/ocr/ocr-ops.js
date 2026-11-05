@@ -12,10 +12,10 @@ import {
   ocrImageDetailed,
   closeOcr,
 } from "./ocr.js";
-import { writePageStore } from "../io/emit.js";
+import { writePageStore } from "../output/write.js";
 import { PdfTextSink } from "../pdf/pdf-text-sink.js";
-import { PageStoreWriter } from "./page-store.js";
-import { PosScanner } from "../text/scan.js";
+import { PageStoreWriter } from "../page/page-spool.js";
+import { PosScanner } from "../core/beautify/scan.js";
 import { normalizeOutputText } from "./preserved-transform.js";
 import { getEngineNormalize } from "../../../../_path.js";
 import {

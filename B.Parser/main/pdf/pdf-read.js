@@ -1,11 +1,11 @@
-import { parseTtfCmap } from "../codepage/ttf-cmap.js";
+import { parseTtfCmap } from "../font/ttf-cmap.js";
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
 import { ValueError, pyTruthy, pyInt, fromHexStrict } from "../util/pylib.js";
-import { loadMapJson, mapNameForPath } from "../util/json-map.js";
+import { loadMapJson, mapNameForPath } from "../util/loader.js";
 import { MAX_PAGES, OWNER_PARSER_WORKER, resourceLimit } from "../limits/local.js";
-import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../codepage/codepage-registry.js";
+import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../font/codepage-registry.js";
 import { containsMyanmar } from "../text/detect.js";
 import { decodeVisualUnicodeRun } from "../codepage/codepage-visual.js";
 import {
@@ -13,9 +13,9 @@ import {
   asDocumentDecoding, DocumentDecoding, FontResourceLoader, LegacyAyarMap, UnsetFontDecoder,
   pageFontDecoders, PDF_PARSING_PATHS,
 } from "../pdf/pdf-fonts.js";
-import { spoolPageContent } from "./pdf-content-file.js";
-import { PdfFileLexer } from "./pdf-file-lexer.js";
-import { PdfPagePieces } from "./pdf-page-pieces.js";
+import { spoolPageContent } from "./pdf-content.js";
+import { PdfFileLexer } from "./pdf-lexer.js";
+import { PdfPagePieces } from "./pdf-pages.js";
 import { PageImageCollector } from "../pdf/pdf-image-coverage.js";
 
 

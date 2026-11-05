@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { readCentralDirectory, readEntry } from "../io/zip.js";
-import { ValueError } from "../util/pylib.js";
+import { readCentralDirectory, readEntry } from "../docx-zip.js";
+import { ValueError } from "../../util/pylib.js";
 import { OWNER_PARSER_WORKER, resourceLimit } from "../limits/local.js";
-import { containsMyanmar } from "../text/detect.js";
+import { containsMyanmar } from "../../text/detect.js";
 
 
 

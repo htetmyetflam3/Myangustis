@@ -1,11 +1,11 @@
 import { createHash } from "node:crypto";
 import { pyChr } from "../util/pylib.js";
 import { BASE_ENCODINGS, GLYPH_NAME_TO_UNICODE } from "./pdf-encodings.js";
-import { isLegacyFontName, isUnresolvedLegacyFont, normaliseFontName } from "../codepage/codepage-names.js";
-import { lookupLegacyCode, WININNWA_LEGACY_CODE_PAGE, WININNWA_UNRESOLVED_SLOTS } from "../codepage/codepage-registry.js";
-import { confirmedRunAt } from "../codepage/codepage-confirmed.js";
-import { subsetFontBridge } from "../codepage/codepage-subset.js";
-import { parseTtfGsubReverse, parseTtfVariantSlots } from "../codepage/ttf-gsub.js";
+import { isLegacyFontName, isUnresolvedLegacyFont, normaliseFontName } from "../font/names.js";
+import { lookupLegacyCode, WININNWA_LEGACY_CODE_PAGE, WININNWA_UNRESOLVED_SLOTS } from "../font/codepage-registry.js";
+import { confirmedRunAt } from "../font/codepage-confirmed.js";
+import { subsetFontBridge } from "../font/codepage-subset.js";
+import { parseTtfGsubReverse, parseTtfVariantSlots } from "../font/ttf-gsub.js";
 import { hasVisualUnicodeConflicts, matchVisualUnicodeGlyphs } from "../codepage/codepage-visual.js";
 
 

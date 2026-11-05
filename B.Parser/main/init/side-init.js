@@ -2,7 +2,7 @@
 
 // The HTTP commands are clients of already-running servers; this file never
 // imports or starts either server. Local commands use the existing front doors.
-import '../../../../index-path.js';
+import '../../../index-path.js';
 import crypto from 'node:crypto';
 import { createReadStream, createWriteStream, openAsBlob } from 'node:fs';
 import fs from 'node:fs/promises';
@@ -231,7 +231,7 @@ function cookieHeader(response) {
 async function localParser(source, options) {
   await inputFile(source, 'parser');
   const { format, output: chosenOutput } = outputFormat(options);
-  const { Manager } = await import('../../shared/00-index.js');
+  const { Manager } = await import('../manager/index.js');
   const manager = new Manager({ quiet: options.quiet === true });
   const output = chosenOutput || path.join(manager.outputDir, `${crypto.randomUUID()}.${format}`);
   try {
