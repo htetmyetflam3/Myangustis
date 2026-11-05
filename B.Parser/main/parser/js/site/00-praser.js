@@ -1,3 +1,8 @@
+// Site entry point (unshared)
+// Caller reads the file on their side via streamReader (B) and passes the
+// resulting object to BindParser ($) through the dispatcher.
+// Public (no identity) and authenticated (identity = authenticatedUser) callers
+// share the same path; identity only affects owner access checks.
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -5,6 +10,8 @@ import path from 'node:path';
 import { pathToFileURL } from 'url';
 import { PRASER_MANAGER, RAW_TXT_DIR, abs } from './paths.js';
 import { managerPayload } from '../gateway/queue/managerHandoff.js';
+import { streamReader } from '../shared/26-stream-reader.js';
+import { dispatchSite } from '../shared/27-dispatcher.js';
 const MANAGER_MODULE = abs(PRASER_MANAGER);
 let manager = null;
 async function loadManager() {
@@ -45,22 +52,15 @@ function createPraserParser(label) {
         `${crypto.randomUUID()}.${routing.output}`,
       ));
       await fs.mkdir(path.dirname(outPath), { recursive: true, mode: 0o700 });
-      let jobManager;
-      try {
-        jobManager = await loadManager();
-      } catch (err) {
-        throw new Error(`${label} manager unavailable: ${err.message}`, { cause: err });
-      }
+      // Caller reads the file on their side (B), passes object to BindParser ($)
+      const object = await streamReader({ path: filePath });
       let reply;
       try {
-        reply = await jobManager.dispatch({
-          ...routing,
-          inPath: filePath,
-          filename,
-          inputKind: intent.inputFormat,
-          outPath,
-        }, 'site', options.authenticatedUser);
-        await fs.chmod(reply.file || outPath, 0o600);
+        reply = await dispatchSite({
+          object,
+          method: routing.method ?? 'extracting',
+          identity: options.authenticatedUser,
+        });
       } catch (err) {
         await fs.unlink(outPath).catch(() => {});
         throw new Error(`${label} manager failed`, { cause: err });

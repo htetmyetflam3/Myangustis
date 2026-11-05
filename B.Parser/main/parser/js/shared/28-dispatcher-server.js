@@ -1,8 +1,9 @@
 // Alive dispatcher service entry point.
 // Runs as a long-running systemd service that Site and Python callers connect to.
-// Accepts JSON on stdin/stdout: { caller: "site"|"local", filePath|object, method, identity? }
+// Accepts JSON on stdin/stdout: { caller: "site"|"local", object, method, identity? }
 // Responds with { ok: true, result } or { ok: false, error }.
 // Lazy loads heavy modules only on first request.
+// The dispatcher does NOT read files — caller passes objects directly.
 import { createServer } from "node:http";
 
 let dispatchSite = null;
@@ -41,11 +42,11 @@ const server = createServer(async (req, res) => {
 
   try {
     await ensureLoaded();
-    const { caller, object, method, filePath, identity } = request;
+    const { caller, object, method, identity } = request;
     let result;
     if (caller === "site") {
-      if (!filePath) throw new Error("site caller requires filePath");
-      result = await dispatchSite({ filePath, method, identity });
+      if (!object) throw new Error("site caller requires object");
+      result = await dispatchSite({ object, method, identity });
     } else if (caller === "local") {
       if (!object) throw new Error("local caller requires object");
       result = await dispatchLocal({ object, method, identity });
