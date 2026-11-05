@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { englishLikeness } from "../../../B.Parser/main/parser/text/mm-score.js";
+import { englishLikeness } from "../../../B.Parser/main/parser/text/myanmar-score.js";
 import { choosePageParser } from "../../../B.Parser/main/parser/text/page-decision.js";
 import { loadDetector, streamPdfPages } from "../../../B.Parser/extend/pipeline.js";
 import { prepareVectorLayout } from "../../../B.Parser/main/parser/codepage/resolve.js";

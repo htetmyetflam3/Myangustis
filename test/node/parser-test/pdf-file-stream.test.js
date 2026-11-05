@@ -87,7 +87,7 @@ test("streamed PDF output writes actual POS unknown contexts with source page nu
     document.registerFontkit(fontkit);
     const fontPath = new URL("../../../Junk/fonts/Unicode/PYIDAUNGSU-2.5.2_REGULAR.TTF", import.meta.url);
     const font = await document.embedFont(fs.readFileSync(fontPath), { subset: false });
-    const lines = ["ကောင်းကင် စမ်းသပ် ကိ မြန်မာ စာ။", "ဤ စာ ကိ ဃု ကောင်းကင် မြန်မာ။"];
+    const lines = ["ကောင်းကင် စမ်းသပ် ၐ မြန်မာ စာ။", "ဤ စာ ၐ ၑ ကောင်းကင် မြန်မာ။"];
     for (const line of lines) document.addPage([500, 500]).drawText(line, { font, x: 30, y: 440, size: 16 });
     const input = path.join(dir, "source.pdf");
     fs.writeFileSync(input, await document.save({ useObjectStreams: false }));
@@ -99,8 +99,8 @@ test("streamed PDF output writes actual POS unknown contexts with source page nu
     assert.equal(result.posScan.contextCount, 2);
     assert.match(fs.readFileSync(result.file).subarray(0, 5).toString("ascii"), /%PDF-/u);
     const report = fs.readFileSync(result.posScan.file, "utf8");
-    assert.match(report, /Page 1, line 1\nOriginal: ကောင်းကင် စမ်းသပ် ကိ မြန်မာ စာ။\nContext: ကောင်းကင်\{n\}  စမ်းသပ်\{v\}  ကိ\{\?\}  မြန်မာ\{n\}/u);
-    assert.match(report, /Page 2, line 1[\s\S]*ဤ\{pn\}  စာ\{n,p\}  ကိ\{\?\}  ဃု\{\?\}  ကောင်းကင်\{n\}  မြန်မာ\{n\}/u);
+    assert.match(report, /Page 1, line 1\nOriginal: ကောင်းကင် စမ်းသပ် ၐ မြန်မာ စာ။\nContext: ကောင်းကင်\{n\}  စမ်းသပ်\{v\}  ၐ\{F\}  မြန်မာ\{n\}/u);
+    assert.match(report, /Page 2, line 1[\s\S]*ဤ\{pn\}  စာ\{n,p\}  ၐ\{F\}  ၑ\{F\}  ကောင်းကင်\{n\}  မြန်မာ\{n\}/u);
   } finally {
     await manager.close();
     if (previous === undefined) delete process.env.PRASER_REGISTER;
@@ -115,10 +115,10 @@ test("PDF output uses Engine normalize after parsing across jobs, methods and fo
   process.env.PRASER_REGISTER = path.join(dir, "register.log");
   const manager = new Manager({ outputDir: dir });
   try {
-    const source = "စဥ် ကိ";
+    const source = "စဥ် ၐ";
     const normalize = await getEngineNormalize();
     const expected = normalize(source);
-    assert.equal(expected, "စဉ် ကိ");
+    assert.equal(expected, "စဉ် ၐ");
     const pdf = await PDFDocument.create();
     pdf.registerFontkit(fontkit);
     const fontPath = new URL("../../../Junk/fonts/Unicode/PYIDAUNGSU-2.5.2_REGULAR.TTF", import.meta.url);
@@ -158,9 +158,9 @@ test("DOCX scanning uses explicit source markers rather than paragraph-chunk pag
   try {
     const doc = new Document({ sections: [{ children: [
       new Paragraph("Page-12"),
-      new Paragraph("ကောင်းကင် စမ်းသပ် ကိ မြန်မာ စာ။"),
+      new Paragraph("ကောင်းကင် စမ်းသပ် ၐ မြန်မာ စာ။"),
       new Paragraph("Page-13"),
-      new Paragraph("ဤ စာ ကိ ဃု ကောင်းကင် မြန်မာ။"),
+      new Paragraph("ဤ စာ ၐ ၑ ကောင်းကင် မြန်မာ။"),
     ] }] });
     const input = path.join(dir, "source.docx");
     fs.writeFileSync(input, await Packer.toBuffer(doc));
@@ -169,8 +169,8 @@ test("DOCX scanning uses explicit source markers rather than paragraph-chunk pag
     });
     assert.equal(result.posScan.unknownCount, 3);
     const report = fs.readFileSync(result.posScan.file, "utf8");
-    assert.match(report, /Page 12, line 1\nOriginal: ကောင်းကင် စမ်းသပ် ကိ မြန်မာ စာ။/u);
-    assert.match(report, /Page 13, line 1\nOriginal: ဤ စာ ကိ ဃု ကောင်းကင် မြန်မာ။/u);
+    assert.match(report, /Page 12, line 1\nOriginal: ကောင်းကင် စမ်းသပ် ၐ မြန်မာ စာ။/u);
+    assert.match(report, /Page 13, line 1\nOriginal: ဤ စာ ၐ ၑ ကောင်းကင် မြန်မာ။/u);
   } finally {
     await manager.close();
     if (previous === undefined) delete process.env.PRASER_REGISTER;
@@ -185,7 +185,7 @@ test("DOCX output normalizes after parsing across jobs, methods and formats", as
   process.env.PRASER_REGISTER = path.join(dir, "register.log");
   const manager = new Manager({ outputDir: dir });
   try {
-    const source = "စဥ် ကိ";
+    const source = "စဥ် ၐ";
     const doc = new Document({ sections: [{ children: [new Paragraph(source)] }] });
     const input = path.join(dir, "input.docx");
     fs.writeFileSync(input, await Packer.toBuffer(doc));
@@ -195,7 +195,7 @@ test("DOCX output normalizes after parsing across jobs, methods and formats", as
     assert.ok(raw.startsWith(source));
     const normalize = await getEngineNormalize();
     const expected = raw.split("\n").map(normalize).join("\n");
-    assert.ok(expected.startsWith("စဉ် ကိ"));
+    assert.ok(expected.startsWith("စဉ် ၐ"));
     for (const [job, method] of [
       ["extracting", "default"], ["extracting", "manual"], ["extracting", "null"], ["null", "default"], ["null", "null"],
     ]) {
@@ -206,7 +206,7 @@ test("DOCX output normalizes after parsing across jobs, methods and formats", as
           applyCleanup: false, includeText: true,
         });
         assert.equal(result.text, expected, `${job}/${method}/${extension}`);
-        assert.ok(fs.readFileSync(result.posScan.file, "utf8").includes("Original: စဉ် ကိ"));
+        assert.ok(fs.readFileSync(result.posScan.file, "utf8").includes("Original: စဉ် ၐ"));
       }
     }
   } finally {
@@ -1052,7 +1052,7 @@ test("object streams, long trailing comments and encrypted PDFs preserve qpdf be
 test("manual PDF normalizes after OCR merge and scans the same final text", async () => {
   const root = scratch();
   try {
-    const sourceText = "စဥ် ကိ";
+    const sourceText = "စဥ် ၐ";
     const normalize = await getEngineNormalize();
     const expected = normalize(sourceText);
     for (const extension of ["txt", "docx", "pdf"]) {
@@ -1071,7 +1071,7 @@ test("manual PDF normalizes after OCR merge and scans the same final text", asyn
       assert.equal(result.text, `${expected}\n\n${expected}`, extension);
       assert.deepEqual(result.ocrPages, [2]);
       const report = fs.readFileSync(result.posScan.file, "utf8");
-      assert.equal((report.match(/Original: စဉ် ကိ/gu) ?? []).length, 2);
+      assert.equal((report.match(/Original: စဉ် ၐ/gu) ?? []).length, 2);
       if (extension === "docx") assert.ok(docxDocument(result.file).includes(expected));
     }
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
@@ -1142,11 +1142,11 @@ test("the POS sidecar reflects final merged OCR text, not just the PDF text laye
       outPath: path.join(dir, "manual.txt"), source: "scans.pdf",
       counts: { ZAWGYI: 0, UNICODE: 0, UNKNOWN: 1 }, owner: false, maxOcrPages: 1,
       pageHasImage: async () => true,
-      ocrPage: async () => "ကောင်းကင် စမ်းသပ် ကိ မြန်မာ",
+      ocrPage: async () => "ကောင်းကင် စမ်းသပ် ၐ မြန်မာ",
       ocrRegion: async () => "",
     });
     assert.equal(result.posScan.unknownCount, 1);
-    assert.match(fs.readFileSync(result.posScan.file, "utf8"), /Page 1, line 1\nOriginal: ကောင်းကင် စမ်းသပ် ကိ မြန်မာ\nContext: ကောင်းကင်\{n\}  စမ်းသပ်\{v\}  ကိ\{\?\}  မြန်မာ\{n\}/u);
+    assert.match(fs.readFileSync(result.posScan.file, "utf8"), /Page 1, line 1\nOriginal: ကောင်းကင် စမ်းသပ် ၐ မြန်မာ\nContext: ကောင်းကင်\{n\}  စမ်းသပ်\{v\}  ၐ\{F\}  မြန်မာ\{n\}/u);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -1233,8 +1233,8 @@ test("actual OCR of an image-only PDF feeds recognized text into the POS sidecar
     const ctx = bitmap.getContext("2d");
     ctx.fillStyle = "white"; ctx.fillRect(0, 0, 1800, 420);
     ctx.fillStyle = "black"; ctx.font = "60px PosOcrTestFont";
-    ctx.fillText("ကောင်းကင် စမ်းသပ် ကိ မြန်မာ", 70, 155);
-    ctx.fillText("ဤ စာ ကိ ဃု ကောင်းကင် မြန်မာ", 70, 295);
+    ctx.fillText("ကောင်းကင် စမ်းသပ် ၐ မြန်မာ", 70, 155);
+    ctx.fillText("ဤ စာ ၐ ၑ ကောင်းကင် မြန်မာ", 70, 295);
     const pdf = await PDFDocument.create();
     const image = await pdf.embedPng(bitmap.toBuffer("image/png"));
     pdf.addPage([900, 210]).drawImage(image, { x: 0, y: 0, width: 900, height: 210 });
@@ -1292,7 +1292,7 @@ test("DOCX image markers follow actual relationships and reused images", async (
 test("manual DOCX normalizes only after image OCR is merged", async () => {
   const root = scratch();
   try {
-    const sourceText = "စဥ် ကိ";
+    const sourceText = "စဥ် ၐ";
     const normalize = await getEngineNormalize();
     const expected = normalize(sourceText);
     const marker = "\uE000OCR-12345678-1234-4234-8234-123456789abc-0001\uE001";
@@ -1308,7 +1308,7 @@ test("manual DOCX normalizes only after image OCR is merged", async () => {
         imageFiles: [{ id: "0001", marker }], ocr: [{ id: "0001", text: sourceText }],
       });
       assert.equal(result.text, `${expected}\n${expected}`, extension);
-      assert.equal((fs.readFileSync(result.posScan.file, "utf8").match(/Original: စဉ် ကိ/gu) ?? []).length, 2);
+      assert.equal((fs.readFileSync(result.posScan.file, "utf8").match(/Original: စဉ် ၐ/gu) ?? []).length, 2);
       if (extension === "docx") assert.ok(docxDocument(result.file).includes(expected));
     }
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
@@ -1322,22 +1322,22 @@ test("manual DOCX OCR merges source chunks before writing all output formats and
       fs.mkdirSync(dir);
       const marker = "\uE000OCR-12345678-1234-4234-8234-123456789abc-0001\uE001";
       const source = new PageStoreWriter(dir, "source");
-      source.addPage({ text: [`Page-12\nကောင်းကင် စမ်းသပ် ကိ မြန်မာ\n${marker}`] });
-      source.addPage({ text: ["ကိ"] });
+      source.addPage({ text: [`Page-12\nကောင်းကင် စမ်းသပ် ၐ မြန်မာ\n${marker}`] });
+      source.addPage({ text: ["ၐ"] });
       source.close();
       const written = await finishManualDocx({
         pageStore: source.store, directory: dir, outPath: path.join(dir, `output.${extension}`),
         source: "source.docx", counts: {}, includeText: true, owner: false,
         imageFiles: [{ id: "0001", marker }],
-        ocr: [{ id: "0001", text: "ဤ စာ ကိ ဃု ကောင်းကင် မြန်မာ" }],
+        ocr: [{ id: "0001", text: "ဤ စာ ၐ ၑ ကောင်းကင် မြန်မာ" }],
       });
       const report = fs.readFileSync(written.posScan.file, "utf8");
       assert.equal(written.posScan.unknownCount, 4);
-      assert.match(report, /Page 12, line 1\nOriginal: ကောင်းကင် စမ်းသပ် ကိ မြန်မာ/u);
-      assert.match(report, /Page 12, line 2\nOriginal: ဤ စာ ကိ ဃု ကောင်းကင် မြန်မာ/u);
-      assert.match(report, /Page 12, line 3\nOriginal: ကိ/u);
+      assert.match(report, /Page 12, line 1\nOriginal: ကောင်းကင် စမ်းသပ် ၐ မြန်မာ/u);
+      assert.match(report, /Page 12, line 2\nOriginal: ဤ စာ ၐ ၑ ကောင်းကင် မြန်မာ/u);
+      assert.match(report, /Page 12, line 3\nOriginal: ၐ/u);
       assert.doesNotMatch(report, /Page 2,/u);
-      assert.match(written.text, /ဤ စာ ကိ ဃု ကောင်းကင် မြန်မာ/u);
+      assert.match(written.text, /ဤ စာ ၐ ၑ ကောင်းကင် မြန်မာ/u);
       assert.doesNotMatch(written.text, /\uE000OCR-/u);
       if (extension === "docx") assert.equal(fs.readFileSync(written.file).subarray(0, 2).toString(), "PK");
       if (extension === "pdf") assert.equal(fs.readFileSync(written.file).subarray(0, 5).toString(), "%PDF-");
@@ -1360,9 +1360,9 @@ test("Manager manual DOCX OCR scans final recognized text without inventing chun
     const ctx = bitmap.getContext("2d");
     ctx.fillStyle = "white"; ctx.fillRect(0, 0, 1400, 260);
     ctx.fillStyle = "black"; ctx.font = "60px DocxOcrTestFont";
-    ctx.fillText("ဤ စာ ကိ ဃု ကောင်းကင် မြန်မာ", 50, 150);
+    ctx.fillText("ဤ စာ ၐ ၑ ကောင်းကင် မြန်မာ", 50, 150);
     const doc = new Document({ sections: [{ children: [
-      new Paragraph("Page-12"), new Paragraph("ကောင်းကင် စမ်းသပ် ကိ မြန်မာ"),
+      new Paragraph("Page-12"), new Paragraph("ကောင်းကင် စမ်းသပ် ၐ မြန်မာ"),
       new Paragraph({ children: [new ImageRun({ type: "png", data: bitmap.toBuffer("image/png"),
         transformation: { width: 700, height: 130 } })] }),
     ] }] });
@@ -1377,11 +1377,11 @@ test("Manager manual DOCX OCR scans final recognized text without inventing chun
       });
       const text = result.text;
       const report = fs.readFileSync(result.posScan.file, "utf8");
-      assert.match(report, /Page 12, line 1\nOriginal: ကောင်းကင် စမ်းသပ် ကိ မြန်မာ/u);
+      assert.match(report, /Page 12, line 1\nOriginal: ကောင်းကင် စမ်းသပ် ၐ မြန်မာ/u);
       assert.doesNotMatch(text, /\uE000OCR-/u);
       const originals = [...report.matchAll(/^Original: (.*)$/gmu)].map((match) => match[1]);
       assert.ok(originals.every((line) => text.includes(line)));
-      assert.ok(originals.some((line) => line !== "ကောင်းကင် စမ်းသပ် ကိ မြန်မာ"), "recognized image text reached POS");
+      assert.ok(originals.some((line) => line !== "ကောင်းကင် စမ်းသပ် ၐ မြန်မာ"), "recognized image text reached POS");
       const prefix = fs.readFileSync(result.file).subarray(0, 5).toString();
       if (extension === "docx") assert.ok(prefix.startsWith("PK"));
       if (extension === "pdf") assert.equal(prefix, "%PDF-");

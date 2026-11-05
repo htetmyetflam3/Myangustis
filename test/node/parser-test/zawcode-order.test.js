@@ -5,11 +5,13 @@ import os from "node:os";
 import path from "node:path";
 import { getEngineNormalize } from "../../../B.Parser/_path.js";
 import { arrangeZawCodeOrder, orderZawCodePages } from "../../../B.Parser/main/parser/text/zawcode-order.js";
-import { repairFromScanVerdict } from "../../../B.Parser/main/parser/text/repair.js";
+import { beautifyFromScanVerdict } from "../../../B.Parser/main/parser/text/beautify.js";
 import { scanText } from "../../../B.Parser/main/parser/text/scan.js";
 import { choosePageParser, markOrderAligned, normalizePageLines } from "../../../B.Parser/main/parser/text/page-decision.js";
 import { normalizeOutputText, protectedCharacters } from "../../../B.Parser/main/parser/text/preserved-transform.js";
-import { finishPageToFile, normalizePageToFile } from "../../../B.Parser/main/parser/text/page-file-decision.js";
+import {
+  convertFinalizedPageText, finishPageToFile, normalizePageToFile,
+} from "../../../B.Parser/main/parser/text/page-file-decision.js";
 import { Rabbit } from "../../../B.Parser/main/parser/text/rabbit.js";
 
 const E = "\u1031";
@@ -219,7 +221,7 @@ test("existing scan repair still fixes tokens without an ordering pattern", asyn
   const pages = [{ text: source, lines: [[0, 0, 10, source]] }];
   const report = scanText(source);
   const words = new Set(["ကှေ", "သူ့အား"]);
-  const existing = repairFromScanVerdict(pages, report, words, {
+  const existing = beautifyFromScanVerdict(pages, report, words, {
     path: "zawcode", preserveZawCodeOrder: true,
   });
   assert.equal(existing[0].text, "ေကှ သူ့အား");
@@ -280,6 +282,23 @@ test("the lane decision ignores U+200B without trimming non-ZawCode text", async
     const combiningJoiner = finish("\u034fစဥ်");
     assert.equal(combiningJoiner.text, normalize(combiningJoiner.parsed));
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("finalized Unicode pages get Parser ordering without reopening the lane decision", () => {
+  const unicode = { decision: "unaligned-unicode", category: "UNICODE" };
+  assert.equal(convertFinalizedPageText("ေနွး", unicode, false), "နွေး");
+  assert.equal(
+    convertFinalizedPageText(" \u103C\u103D\u1001\u102D", unicode, false),
+    " \u1001\u103C\u103D\u102D",
+  );
+  assert.equal(
+    convertFinalizedPageText("ေနွး", { decision: "unaligned-unknown", category: "UNKNOWN" }, true),
+    "ေနွး",
+  );
+  assert.equal(
+    convertFinalizedPageText("ေနွး", { decision: "rabbit", category: "ZAWGYI" }, true),
+    "နွေး",
+  );
 });
 
 test("the PDF Rabbit lane uses Rabbit's own U+200B handling", async () => {

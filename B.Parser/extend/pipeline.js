@@ -1,34 +1,50 @@
-import { renderPdfPagePng } from "../main/parser/read/pdf-render.js";
-import { note } from "../main/parser/core/provenance.js";
+import { renderPdfPagePng } from "../main/core/pdf/pdf-render.js";
+import { note } from "../main/core/util/provenance.js";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { ZawgyiDetector, containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts, isZawgyiOneFont, isUnicodeFont } from "../main/parser/text/detector.js";
-import { preserveRegionalRuns } from "../main/parser/text/unicode-evidence.js";
-import { isEncryptedPdf, hasObjectStreams, scanPdfFileMarkers } from "../main/parser/read/decrypt.js";
-import { Rabbit } from "../main/parser/text/rabbit.js";
-import { cleanupText, orderText } from "../main/parser/text/cleanup.js";
-import { preserveCharacters } from "../main/parser/text/preserved-transform.js";
-import { extractDocxParagraphs, validateDocxArchive } from "../main/parser/read/docx-extract.js";
-import { extractDocxParagraphsExternal } from "../main/parser/read/docx-external.js";
-import { scoreText, englishLikeness } from "../main/parser/text/mm-score.js";
-import { choosePageParser } from "../main/parser/text/page-decision.js";
-import { withoutZeroWidthSpace } from "../main/parser/text/zero-width.js";
-import { countImpossiblePairs } from "../main/parser/text/scan.js";
-import { WININNWA_LEGACY_CODE_PAGE } from "../main/parser/codepage/registry.js";
-import { isLegacyFontName } from "../main/parser/codepage/names.js";
-import { MAX_PAGES, MAX_TEXT_CHARS } from "../main/parser/core/limits.js";
+import { ZawgyiDetector, containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts, isZawgyiOneFont, isUnicodeFont } from "../main/core/text/detect.js";
+import { isEncryptedPdf, hasObjectStreams, scanPdfFileMarkers } from "../main/core/io/decrypt.js";
+import { Rabbit } from "../main/core/shared/rabbit.js";
+import { orderText } from "../main/core/text/clean.js";
+import { preserveCharacters } from "../main/core/shared/preserved-transform.js";
+import { extractDocxParagraphs, validateDocxArchive } from "../main/core/docx/docx-extract.js";
+import { extractDocxParagraphsExternal } from "../main/core/docx/docx-external.js";
+import { scoreText, englishLikeness } from "../main/core/shared/myanmar-score.js";
+import { choosePageParser } from "../main/core/shared/page-decision.js";
+import { withoutZeroWidthSpace } from "../main/core/text/zero-width.js";
+import { countImpossiblePairs } from "../main/core/text/scan.js";
+import { WININNWA_LEGACY_CODE_PAGE } from "../main/core/codepage/codepage-registry.js";
+import { isLegacyFontName } from "../main/core/codepage/codepage-names.js";
+import { MAX_PAGES, MAX_TEXT_CHARS } from "../main/core/limits/local.js";
 import {
   MAX_PDF_OBJECTS, findRootPages, collectPages, extractPageLines, probePagePrefix, pageHasImages, extractMetadata,
   legacyAyarToUnicode,
-} from "../main/parser/read/pdf-extract.js";
-import { PdfFileObjects, openPdfScannedObjects } from "../main/parser/read/pdf-object-file.js";
-import { PdfPagePieces } from "../main/parser/read/pdf-page-pieces.js";
-import { finishPageToFile, pageLayoutLines } from "../main/parser/text/page-file-decision.js";
-import { DocumentDecoding, PDF_PARSING_PATHS, pageFontDecoders } from "../main/parser/read/pdf-fonts.js";
-import { PAGE_CONTENT_PREFIX_BYTES } from "../main/parser/read/pdf-content-file.js";
-import { pyRound, RuntimeError, baseName } from "../main/parser/core/pylib.js";
+} from "../main/core/shared/pdf-extract.js";
+import { PdfFileObjects, openPdfScannedObjects } from "../main/core/shared/pdf-object-file.js";
+import { PdfPagePieces } from "../main/core/shared/pdf-page-pieces.js";
+import {
+  cleanupUnicodeText as cleanupUnicode, convertFinalizedPageText,
+  finishPageToFile, orderUnicodeText as orderUnicode, pageLayoutLines,
+} from "../main/core/util/page-file-decision.js";
+import { DocumentDecoding, PDF_PARSING_PATHS, pageFontDecoders } from "../main/core/pdf/pdf-fonts.js";
+import { PAGE_CONTENT_PREFIX_BYTES } from "../main/core/shared/pdf-content-file.js";
+import { pyRound, RuntimeError, baseName } from "../main/core/util/pylib.js";
+import { agentAdvisory } from "../../../Architecture/host/advisory.js";
+
+const PARSER_CHAIN_DOOR = "ParserManager";
+
+function adviseParserMiddleChain(api) {
+  if (process.env.MYANGUSTIS_CHAIN_DOOR === PARSER_CHAIN_DOOR) return;
+  agentAdvisory(
+    "parser-middle-chain",
+    `[Parser agent advisor] STOP: B.Parser/extend/pipeline.js:${api}() is a middle-chain API, not the Parser chain door. `
+      + "Start from B.Parser/main/parser/index.js (Manager.dispatchStream/Manager.dispatch) or "
+      + "tools-box/js/pipeline-cli.js parser local, and report only that front-door behavior. "
+      + "Calling pipeline/text/read helpers directly skips Manager spooling, worker preparation, output/POS sidecars and cleanup options.",
+  );
+}
 
 export function normCategory(category) {
   const cat = String(category).toUpperCase();
@@ -99,6 +115,7 @@ export function streamPdfPages(source, detector = null, log = () => {}, {
   provenance = null, sourceEncoding = "auto", onPageContent = null, onPagePrefix = null, scratchDir = null,
   diskPages = false, layoutPages = false,
 } = {}) {
+  adviseParserMiddleChain("streamPdfPages");
   const fileBacked = typeof source === "string";
   if (diskPages && !fileBacked) throw new TypeError("Disk-backed PDF pages require a prepared PDF file path");
   const input = fileBacked ? null : (Buffer.isBuffer(source) ? source : Buffer.from(source));
@@ -327,8 +344,6 @@ export function streamPdfPages(source, detector = null, log = () => {}, {
 }
 
 
-const orderUnicode = (text) => preserveRegionalRuns(text, (part) => preserveCharacters(part, orderText));
-const cleanupUnicode = (text) => preserveRegionalRuns(text, (part) => preserveCharacters(part, cleanupText));
 const orderZawgyi = (text) => preserveCharacters(text, (part) => orderText(Rabbit.zg2uni(part)));
 
 export function cleanupFor(cat, text) {
@@ -359,20 +374,28 @@ export function countDiffLines(base, clean) {
 
 
 export function processPageRecord(pg, detector, applyCleanup, log = () => {}, wantLayout = false, sourceEncoding = "auto") {
+  adviseParserMiddleChain("processPageRecord");
   const idx = pg.idx;
   const raw = pg.text;
   if (pg.perFont) {
     const kinds = pg.fontKinds || new Set();
     const cat = pg.category ?? (kinds.size === 1 ? [...kinds][0] : "UNKNOWN");
+    const finalized = pg.pageFinalized === true;
+    const text = finalized && typeof raw === "string"
+      ? convertFinalizedPageText(raw, pg, applyCleanup !== false) : raw;
     const rep = { page: idx + 1, category: cat, prob: cat === "ZAWGYI" ? 1 : 0,
-      text: raw, nChanges: 0, perFont: true, pageFinalized: pg.pageFinalized === true,
-      scanEligible: !pg.pageFinalized && kinds.size > 0 && !kinds.has("UNKNOWN"),
+      text, nChanges: typeof raw === "string" && text !== raw ? countDiffLines(raw, text) : 0,
+      perFont: true, pageFinalized: finalized,
+      scanEligible: !finalized && kinds.size > 0 && !kinds.has("UNKNOWN"),
       ...(pg.decision === "zawcode" ? { textPath: "zawcode" } : {}),
       ...(pg.checkpoint ? { checkpoint: pg.checkpoint } : {}),
       ...(pg.confirmedRepair ? { confirmedRepair: pg.confirmedRepair } : {}),
       ...(pg.warnings?.length ? { warnings: pg.warnings } : {}) };
     if (wantLayout) {
-      rep.lines = pg.lines;
+      rep.lines = finalized && Array.isArray(pg.lines)
+        ? pg.lines.map(([x, y, size, line]) => [x, y, size,
+          convertFinalizedPageText(line, pg, applyCleanup !== false)])
+        : pg.lines;
       rep.wh = pg.wh;
       rep.hasImg = pg.hasImg;
       rep.images = pg.images;
@@ -496,6 +519,7 @@ export function collectChanges(reports) {
 }
 
 export function collectPdfResult(reportsIter, npages, filename = "upload.pdf") {
+  adviseParserMiddleChain("collectPdfResult");
   const reports = [];
   const pages = [];
   const counts = { ZAWGYI: 0, UNICODE: 0, UNKNOWN: 0 };
@@ -599,6 +623,7 @@ function buildDocxJob(paragraphs, filename, detector, log, sourceEncoding = "aut
   };
 }
 export function processDocxBytes(data, detector, filename = "upload.docx", log = () => {}, { imageDir = null, sourceEncoding = "auto" } = {}) {
+  adviseParserMiddleChain("processDocxBytes");
   const bytes = Buffer.isBuffer(data) ? data : Buffer.from(data);
   const fontNamesByParagraph = [];
   const imageFiles = imageDir ? [] : null;
@@ -643,6 +668,7 @@ export async function processDocxForMethod(data, method, detector, filename = nu
 
 
 export function buildFinalPages(job, applyCleanup) {
+  adviseParserMiddleChain("buildFinalPages");
   const out = [];
   const len = Math.min(job.pages.length, job.reports.length);
   for (let i = 0; i < len; i += 1) {

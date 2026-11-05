@@ -5,12 +5,37 @@ const { taggerStart,
 	tagWordCount, } = (await getLogen()).legacyLog;
 
 import { walkPos } from "../grapheme/traverser.js";
-import { PUNCTUATION, ALL_DIGITS } from "../../map/loader.js";
+import { getPosTree } from "../grapheme/Tree.loaded.js";
+import { PUNCTUATION, ALL_DIGITS, newClause } from "../../map/loader.js";
 import { burmeseToId } from "../../generators/idmap.js";
 import { classifyNumber } from "./classify-number.js";
 import { splitSyllables, asEos, mergedIds } from "../../utilities/formatter.js";
 
 const BURMESE_FULLSTOP = "။";
+const STANDALONE_POS_OVERRIDES = new Map([
+	["ဪ", "in"],
+	["ဦး", "r"],
+]);
+const standalonePosTrees = new WeakSet();
+
+function injectStandalonePosEntries() {
+	const tree = getPosTree();
+	if (standalonePosTrees.has(tree)) return;
+
+	for (const form of newClause.standalone ?? []) {
+		const id = burmeseToId(form, { log: false });
+		if (!id) continue;
+
+		const override = STANDALONE_POS_OVERRIDES.get(form);
+		if (override) {
+			tree[id] = { ...(tree[id] ?? {}), x: [override] };
+		} else if (!tree[id]) {
+			tree[id] = { x: ["r"] };
+		}
+	}
+
+	standalonePosTrees.add(tree);
+}
 
 function isWhitespace(tok) {
 	return tok === " " || tok === "\t" || tok === "\r" || tok === "\n";
@@ -55,7 +80,7 @@ function classifyToken(tok) {
 	if (tok === BURMESE_FULLSTOP) return { rawPos: ["pan"] };
 	if (isPunctuation(tok)) return { rawPos: ["pan"] };
 	if (isEnglishBlock(tok)) return { rawPos: ["en"] };
-	return { rawPos: ["?"] };
+	return { rawPos: ["F"] };
 }
 
 function* walkLine(burmeseTokens, idTokens) {
@@ -110,6 +135,7 @@ function* walkLine(burmeseTokens, idTokens) {
 }
 
 export async function* runTagger(unitGen, hash, { log = true } = {}) {
+	injectStandalonePosEntries();
 	if (log) taggerStart({ hash });
 
 	const startTime = Date.now();

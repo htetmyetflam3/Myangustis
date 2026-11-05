@@ -1,18 +1,18 @@
 {
-  "rebuilt": "2026-10-29",
+  "rebuilt": "2026-11-04",
   "note": "Prebuilt syllable, reverse and POS trees from the encrypted master; verified by cache-integrity.js.",
-  "sourceMasterSha256": "08278a2ee6709aac742eb815b5dedef30440fe2fa43d39cc30bbbb00806d2b36",
+  "sourceMasterSha256": "701241d2430a0fb55c011b8855ce5a0c1c9d84d4d750ea48969b00351ab5880e",
   "excludedPosEntries": 0,
-  "generatedAt": "2026-10-29T15:29:39.159Z",
+  "generatedAt": "2026-11-04T17:14:54.219Z",
   "treeDir": "Architecture/Engine/.cache-tree",
   "counts": {
     "posRoots": 1907
   },
   "files": {
-    "pos.tree.json": "e2998f3d3de4c2c2d5c9d9e2e744c32d24d8ed42c7a07dbd0719075deca7a86b",
-    "ref-syllables.json": "1511035e183d3203fbba0a0d88a03f6ba1466ee5768ce54264076ce1565f682e",
-    "rtl-tree.json": "626cf0a70268c5a53690b0f487b37d47a3ca3555eca35f296b37049926e7b56a",
-    "syllable.mapped.txt": "871e2085d0c6bde01197b1a9560d65e69b56ebcad27bf645dcb5ce1d7e351381",
-    "syllable.tree.json": "6df8dd701882130b8b0e7d80bee6449885d81814c0b1b41e18a1767fe1191512"
+    "pos.tree.json": "78f249d2b3241309c2b0810c44aa35c462105cf83f277d13b8cc398789c887e2",
+    "ref-syllables.json": "ebea6679d9739fafa24c5a0b17b09d233865dd50b0160dfdb65c0ec5dbf5c94d",
+    "rtl-tree.json": "d05b78feca8bbd84f56001042297ba84975cdde3538951005bc50b57c8a785f5",
+    "syllable.mapped.txt": "9374875397b2e1fb997eaab323d1e6a886552fa2ed97690732812db165b918fd",
+    "syllable.tree.json": "8fa09f215a48583a8ea1db07ccb4451c22580b24267bc983311c170a9e45c1b5"
   }
 }
