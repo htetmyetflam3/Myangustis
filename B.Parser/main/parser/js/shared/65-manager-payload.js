@@ -1,13 +1,16 @@
-// Manager payload helpers (shared)
-// Extracted from: B.Parser/main/parser/manager.js
-// Contains: ownerAccess, echoMeta, errorFromWorker, inferInputKind,
-// countOcrPages, readManagerPayload, route, resolveOutput.
-// Not wired into manager.js yet; file names only.
+import { MAX_INPUT_BYTES, MAX_INPUT_MB } from "../core/limits.js";
 
 const IDENTITY_FIELDS = [
   "jobToken", "formId", "submitId", "userId", "sessionId", "extension", "task",
 ];
 
+const OUTPUT_TYPES = new Set(["txt", "docx", "pdf"]);
+const JOBS = new Set(["extracting", "ocr", "null"]);
+const METHODS = new Set(["default", "manual", "null"]);
+const SOURCE_ENCODINGS = new Set(["auto", "unicode", "zawgyi-one"]);
+
+// Identity is a trusted in-process handoff, not a password. Network callers
+// must authenticate before supplying it, and job metadata cannot select it.
 export function ownerAccess(identity) {
   if (identity === undefined || identity === null) return false;
   if (typeof identity !== "object" || Array.isArray(identity) ||
@@ -41,9 +44,11 @@ export function inferInputKind(job) {
   return String(name).toLowerCase().endsWith(".docx") ? "docx" : "pdf";
 }
 
-export async function countOcrPages(job) {
+import path from "node:path";
+
+async function countOcrPages(job) {
   try {
-    const { pdfPageCount } = await import("./read/ocr.js");
+    const { pdfPageCount } = await import("../read/ocr.js");
     const source = job.data ?? job.inPath ?? null;
     if (!source) return 0;
     return (await pdfPageCount(source)) || 0;
@@ -89,3 +94,5 @@ export function route(job) {
 export function resolveOutput(job) {
   return readManagerPayload(job).output;
 }
+
+export { countOcrPages, IDENTITY_FIELDS };

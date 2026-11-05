@@ -1,18 +1,12 @@
-// Site entry dispatch (unshared)
-// Extracted from: B.Parser/main/parser/manager.js
-// Contains: dispatch(), #dispatch() for 'site' caller (public + authenticated),
-// including scraper source classification and manual PDF/DOCX finish.
-// Not wired into manager.js yet; file names only.
-
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
-import { decideForCaller } from "../../extend/caller-policy.js";
-import { classifyScraperSource } from "./codepage/classify.js";
-import { MAX_INPUT_BYTES, MAX_INPUT_MB, WORKER_TIMEOUT_MS, MAX_OCR_PAGES, ocrTimeoutMs } from "./core/limits.js";
-import { appendRecord, note, registerPath } from "./core/provenance.js";
-import { finishManualPdf } from "./worker/manual-pdf.js";
-import { finishManualDocx } from "./worker/manual-docx.js";
+import { decideForCaller } from "../../../extend/caller-policy.js";
+import { classifyScraperSource } from "../shared/codepage/classify.js";
+import { MAX_INPUT_BYTES, MAX_INPUT_MB, WORKER_TIMEOUT_MS, MAX_OCR_PAGES, ocrTimeoutMs } from "../shared/core/limits.js";
+import { appendRecord, note, registerPath } from "../shared/core/provenance.js";
+import { finishManualPdf } from "../shared/worker/manual-pdf.js";
+import { finishManualDocx } from "../shared/worker/manual-docx.js";
 
 export class SiteDispatch {
   #laneTails;
@@ -30,7 +24,12 @@ export class SiteDispatch {
   }
 
   #submit(lane, payload, budget, owner) {
-    // placeholder — wiring deferred
+    // wiring deferred — placeholder
+  }
+
+  #outPathFor(job, out) {
+    if (job.outPath) return job.outPath;
+    return path.join(this.outputDir, `${crypto.randomUUID()}.${out}`);
   }
 
   async #dispatch(job, caller, owner, identity = null) {
@@ -152,7 +151,7 @@ export class SiteDispatch {
         ...(reply.scanLog ? { scanLog: reply.scanLog } : {}),
         ...(reply.scanPath ? { scanPath: reply.scanPath } : {}),
         ...(reply.scanSummary?.length ? { scanSummary: reply.scanSummary } : {}),
-        ...(reply.linearizationWarning ? { linearizationWarning : reply.linearizationWarning } : {}),
+        ...(reply.linearizationWarning ? { linearizationWarning: reply.linearizationWarning } : {}),
         ...(Array.isArray(reply.pageWarnings) ? { pageWarnings: reply.pageWarnings } : {}),
         ...(Array.isArray(reply.ocrPages) ? { ocrPages: reply.ocrPages } : {}),
         ...(reply.posScan ? { posScan: reply.posScan } : {}),
@@ -170,20 +169,32 @@ export class SiteDispatch {
     }
   }
 
-  #outPathFor(job, out) {
-    if (job.outPath) return job.outPath;
-    return path.join(this.outputDir, `${crypto.randomUUID()}.${out}`);
-  }
-
   async #finishManualPdf(reply, job, outPath, owner) {
-    // placeholder — wiring deferred
+    // wiring deferred — placeholder
   }
 
   async #finishManualDocx(reply, job, outPath, owner) {
-    // placeholder — wiring deferred
+    // wiring deferred — placeholder
   }
 
   async dispatch(job, caller = "site", identity = null) {
     return this.#dispatch(job, caller, ownerAccess(identity), identity);
   }
 }
+
+function ownerAccess(identity) {
+  if (identity === undefined || identity === null) return false;
+  if (typeof identity !== "object" || Array.isArray(identity) ||
+      typeof identity.userId !== "string" || !identity.userId.trim()) {
+    throw new Error("A trusted user ID is required");
+  }
+  return true;
+}
+
+function readManagerPayload(job) { return job; }
+function route(job) { return "extract"; }
+function resolveOutput(job) { return "txt"; }
+function countOcrPages(job) { return 0; }
+function echoMeta(job) { return {}; }
+function inferInputKind(job) { return "pdf"; }
+const crypto = require("node:crypto");

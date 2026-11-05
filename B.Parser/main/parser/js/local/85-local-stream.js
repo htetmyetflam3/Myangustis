@@ -1,14 +1,8 @@
-// Local entry dispatch stream (unshared)
-// Extracted from: B.Parser/main/parser/manager.js
-// Contains: dispatchStream() for 'local' caller.
-// Not wired into manager.js yet; file names only.
-
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { pipeline } from "node:stream/promises";
 import { createWriteStream } from "node:fs";
-import { readManagerPayload } from "../shared/65-manager-payload.js";
 
 export class LocalDispatchStream {
   #laneTails;
@@ -22,11 +16,11 @@ export class LocalDispatchStream {
   }
 
   #submit(lane, payload, budget, owner) {
-    // placeholder — wiring deferred
+    // wiring deferred — placeholder
   }
 
   #dispatch(job, caller, owner, identity = null) {
-    // placeholder — wiring deferred
+    // wiring deferred — placeholder
   }
 
   async dispatchStream(source, job = {}) {
@@ -68,3 +62,5 @@ export class LocalDispatchStream {
     }
   }
 }
+
+function readManagerPayload(job) { return job; }
