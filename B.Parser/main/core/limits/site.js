@@ -3,7 +3,7 @@
 // Public (no identity) and authenticated (identity = authenticatedUser)
 // share the same limit profile; the only difference is owner access checks.
 import { isMainThread, workerData } from 'node:worker_threads';
-import { ValueError } from '../shared/pylib.js';
+import { ValueError } from '../util/pylib.js';
 
 // Manager creates this profile for a trusted local stream or an identity
 // handed off by an authenticated caller, never from public job metadata.

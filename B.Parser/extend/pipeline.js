@@ -1,23 +1,23 @@
-import { renderPdfPagePng } from "../main/core/shared/pdf-render.js";
-import { note } from "../main/core/shared/provenance.js";
+import { renderPdfPagePng } from "../main/core/pdf/pdf-render.js";
+import { note } from "../main/core/util/provenance.js";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { ZawgyiDetector, containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts, isZawgyiOneFont, isUnicodeFont } from "../main/core/shared/detect.js";
-import { isEncryptedPdf, hasObjectStreams, scanPdfFileMarkers } from "../main/core/shared/decrypt.js";
+import { ZawgyiDetector, containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts, isZawgyiOneFont, isUnicodeFont } from "../main/core/text/detect.js";
+import { isEncryptedPdf, hasObjectStreams, scanPdfFileMarkers } from "../main/core/io/decrypt.js";
 import { Rabbit } from "../main/core/shared/rabbit.js";
-import { orderText } from "../main/core/shared/clean.js";
+import { orderText } from "../main/core/text/clean.js";
 import { preserveCharacters } from "../main/core/shared/preserved-transform.js";
-import { extractDocxParagraphs, validateDocxArchive } from "../main/core/shared/docx-extract.js";
-import { extractDocxParagraphsExternal } from "../main/core/shared/docx-external.js";
+import { extractDocxParagraphs, validateDocxArchive } from "../main/core/docx/docx-extract.js";
+import { extractDocxParagraphsExternal } from "../main/core/docx/docx-external.js";
 import { scoreText, englishLikeness } from "../main/core/shared/myanmar-score.js";
 import { choosePageParser } from "../main/core/shared/page-decision.js";
-import { withoutZeroWidthSpace } from "../main/core/shared/zero-width.js";
-import { countImpossiblePairs } from "../main/core/shared/scan.js";
-import { WININNWA_LEGACY_CODE_PAGE } from "../main/core/shared/codepage-registry.js";
-import { isLegacyFontName } from "../main/core/shared/codepage-names.js";
-import { MAX_PAGES, MAX_TEXT_CHARS } from "../main/core/shared/limits.js";
+import { withoutZeroWidthSpace } from "../main/core/text/zero-width.js";
+import { countImpossiblePairs } from "../main/core/text/scan.js";
+import { WININNWA_LEGACY_CODE_PAGE } from "../main/core/codepage/codepage-registry.js";
+import { isLegacyFontName } from "../main/core/codepage/codepage-names.js";
+import { MAX_PAGES, MAX_TEXT_CHARS } from "../main/core/limits/local.js";
 import {
   MAX_PDF_OBJECTS, findRootPages, collectPages, extractPageLines, probePagePrefix, pageHasImages, extractMetadata,
   legacyAyarToUnicode,
@@ -27,11 +27,11 @@ import { PdfPagePieces } from "../main/core/shared/pdf-page-pieces.js";
 import {
   cleanupUnicodeText as cleanupUnicode, convertFinalizedPageText,
   finishPageToFile, orderUnicodeText as orderUnicode, pageLayoutLines,
-} from "../main/core/shared/page-file-decision.js";
-import { DocumentDecoding, PDF_PARSING_PATHS, pageFontDecoders } from "../main/core/shared/pdf-fonts.js";
+} from "../main/core/util/page-file-decision.js";
+import { DocumentDecoding, PDF_PARSING_PATHS, pageFontDecoders } from "../main/core/pdf/pdf-fonts.js";
 import { PAGE_CONTENT_PREFIX_BYTES } from "../main/core/shared/pdf-content-file.js";
-import { pyRound, RuntimeError, baseName } from "../main/core/shared/pylib.js";
-import { agentAdvisory } from "../../Architecture/host/advisory.js";
+import { pyRound, RuntimeError, baseName } from "../main/core/util/pylib.js";
+import { agentAdvisory } from "../../../Architecture/host/advisory.js";
 
 const PARSER_CHAIN_DOOR = "ParserManager";
 

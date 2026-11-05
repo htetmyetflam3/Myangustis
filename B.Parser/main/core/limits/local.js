@@ -3,7 +3,7 @@
 // caller already holds the stream/object and the parser never touches the
 // original source path directly.
 import { isMainThread, workerData } from 'node:worker_threads';
-import { ValueError } from '../shared/pylib.js';
+import { ValueError } from '../util/pylib.js';
 
 // Local stream owner is trusted: the caller opened the stream themselves.
 export const OWNER_PARSER_WORKER = !isMainThread && workerData?.parserOwner === true;
