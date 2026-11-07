@@ -13,6 +13,12 @@ import { runStagedParse } from "../../../B.Parser/samples/staged-font-context.mj
 //   the vector-repair stage is armed at most once per font context.
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SAMPLE = path.join(HERE, "..", "..", "..", "F.Site", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
+// 34 different Manager output PDFs merged into one file (index + 362
+// pages), copied from the trash branch:
+// experiments/2026-10-31/current-design/combined-default-manager.pdf
+// Each merged part re-embeds the same-named fonts as separate objects,
+// so this is the "same font name, different GID world" fixture.
+const MERGED = path.join(HERE, "fixtures", "combined-default-manager.pdf");
 
 test("outside plan: page refs, interned MediaBox, font chains per page", () => {
   const { plan } = runStagedParse(SAMPLE, { maxPages: 0 });
@@ -60,4 +66,45 @@ test("decompress stage: tables built once, reused on the next pages", () => {
   assert.ok(stats.blindGids > 0);
   assert.equal(repairCalls.length, 1);
   assert.equal(stats.vectorRepairCalls, 1);
+});
+
+test("merged PDF: context is rebuilt at part boundaries, not per page", () => {
+  const repairCalls = [];
+  const { plan, stats } = runStagedParse(MERGED, {
+    repairStage: (page) => {
+      repairCalls.push(page.page);
+      return { byGid: new Map() };
+    },
+  });
+
+  assert.equal(plan.pageCount, 363);
+  // One MediaBox for all 363 pages, still a single canonical entry.
+  assert.equal(plan.boxes.length, 1);
+  assert.equal(plan.boxes[0].pages, 363);
+
+  // The same font NAMES recur in many parts (AnonymousPro, MyanmarSagar)
+  // but as different objects with different ToUnicode tables: they must
+  // be counted as different font tables, or glyphs would be decoded
+  // against the wrong part's GID world.
+  const names = plan.fontTables.map((t) => t.baseFont);
+  assert.ok(plan.fontTables.length > 90);
+  assert.ok(new Set(names).size < names.length);
+  const regularRefs = new Set(
+    plan.fontTables.filter((t) => t.baseFont === "AnonymousPro-Regular").map((t) => t.fontRef),
+  );
+  assert.ok(regularRefs.size > 10);
+
+  // 34 merged parts + the index page: one context build per part, and
+  // every page inside a part reuses its part's tables.
+  assert.equal(plan.pageContexts, 35);
+  assert.equal(stats.contextBuilds, 35);
+  assert.equal(stats.contentStreamsOpened, 363);
+  assert.equal(stats.pagesReusingContext, 363 - 35);
+  assert.ok(stats.toUnicodeDecompressed >= 35);
+  assert.ok(stats.myanmarChars > 100_000);
+
+  // Vector repair stays bounded per context even across a merged file:
+  // at most one call per context, never 122 calls for 122 blind GIDs.
+  assert.ok(stats.blindGids > 0);
+  assert.ok(repairCalls.length >= 1 && repairCalls.length <= stats.contextBuilds);
 });
