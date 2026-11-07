@@ -99,8 +99,12 @@ export async function zawCodeGuardWithPos(sample, { bindEngine = null } = {}) {
 // ---------------------------------------------------------------------------
 // Staged repair flow
 //
+//   PosScanner.finish()
+//     -> { memory }                             // broken lines from scan
+//   requestScanLineSvgs(scanResult, originalPdfCache)
+//     -> { requests, responses }                // one SVG request per broken line
 //   repairFirstStage(input)
-//     -> { brokenLines, svgRequests }          // first-stage finish
+//     -> { brokenLines, svgRequests }          // standalone text first stage
 //   requestOriginalPdfLineSvgs(firstStage, originalPdfCache)
 //     -> { responses }                          // one SVG per broken line
 //   actualRepair(firstStage, svgResponses)
@@ -390,6 +394,54 @@ export async function requestOriginalPdfLineSvgs(firstStage, originalPdfCache) {
     responses.push(response);
   }
   return { stage: "original-pdf-svg", responses };
+}
+
+// Scan's finish is the request source for the PDF path: PosScanner has
+// already consumed BindEngine output and kept only broken lines in
+// scan.memory. Turn each retained broken line into one line-scope SVG
+// request and send those requests to the job's original-PDF cache, which
+// is the part that owns the PDF and exports PDF lines to SVG.
+export function svgRequestsForScanMemory(scanResult, { sourcePdf = null } = {}) {
+  const memory = Array.isArray(scanResult)
+    ? scanResult
+    : scanResult?.memory ?? scanResult?.brokenLines ?? [];
+  const fallbackSource = sourcePdf ?? scanResult?.sourcePdf ?? null;
+  return memory
+    .filter((entry) => entry && (entry.page !== undefined || entry.line !== undefined))
+    .map((entry, index) => ({
+      id: entry.id ?? repairLineKey(entry.page, entry.line),
+      page: entry.page ?? null,
+      line: entry.line ?? null,
+      sequence: entry.sequence ?? index + 1,
+      scope: "line",
+      format: "svg",
+      sourcePdf: entry.sourcePdf ?? fallbackSource,
+      context: entry.context ?? null,
+      count: entry.count ?? null,
+    }));
+}
+
+export async function requestScanLineSvgs(scanResult, originalPdfCache, { sourcePdf = null } = {}) {
+  const requests = svgRequestsForScanMemory(scanResult, { sourcePdf });
+  if (!requests.length) return { stage: "original-pdf-svg", requests, responses: [] };
+  if (!originalPdfCache) {
+    return { stage: "original-pdf-svg", requests, responses: [], pending: requests };
+  }
+  try {
+    const result = await requestOriginalPdfLineSvgs({ svgRequests: requests }, originalPdfCache);
+    return { stage: result.stage, requests, responses: result.responses };
+  } catch (error) {
+    if (error?.code === "PDF_LINE_SVG_NOT_IMPLEMENTED") {
+      return {
+        stage: "original-pdf-svg",
+        requests,
+        responses: [],
+        pending: requests,
+        unavailable: error.message,
+      };
+    }
+    throw error;
+  }
 }
 
 function applySpanReplacements(text, replacements) {
