@@ -3,6 +3,8 @@ import crypto from 'node:crypto';
 import { getLogen } from "../../../_path.js";
 const { emitEvent } = (await getLogen()).siteLog;
 import { createReadStream } from 'node:fs';
+import { queueTriggerRequest } from './managerHandoff.js';
+import { readFileForTrigger } from '../../../../integration/host/file-reader.js';
 const now = () => new Date().toISOString();
 async function snapshot(filePath) {
   const hash = crypto.createHash('sha256');
@@ -134,6 +136,10 @@ export function createProcessingQueue({
      Nothing here touches a worker directly -- the manager owns the threads
      and the lanes; the queue only ever asks the manager. */
   parseFile = null,
+  /* Reads the queued Site file into the trigger's object before the parse
+     is dispatched. Injectable so queue wiring can be tested or adapted
+     without changing the reader module. */
+  fileReader = readFileForTrigger,
   /* Asked once per finished parse, never cached: wiring an Engine must
      take effect for the next upload without restarting anything. */
   engineWired = () => false,
@@ -163,7 +169,7 @@ export function createProcessingQueue({
     delete snapshotFields.engineTimer;
     return structuredClone(snapshotFields);
   }
-  async function enqueue({ formId, userId, sessionId, clientIp, intent, file, inputPath, taskOverride }) {
+  async function enqueue({ formId, userId, sessionId, clientIp, intent, file, inputPath, taskOverride, caller = 'public' }) {
     prune();
     if (records.has(formId)) throw new Error('Processing queue already contains this formId');
     if (taskOverride !== undefined && !TASK_LEGS.has(taskOverride)) {
@@ -186,6 +192,11 @@ export function createProcessingQueue({
       mode: intent.source === 'analysis' ? (intent.task ?? null) : (intent.method ?? null),
       engineRound: task === 'analysis' ? 'owed' : null,
       job: intent.job ?? null,
+      /* Queue -> trigger contract, built once at enqueue: all six params
+         (job/caller/limit/worker/key/output) ride on the record so
+         runManager cannot drop the worker limit, worker key, or output
+         type on the way to the trigger. */
+      trigger: queueTriggerRequest(intent, { executionTask: task, caller }),
       method: intent.method ?? null,
       route: intent.source === 'analysis' ? intent.task : intent.job,
       outputFormat: intent.outputFormat,
@@ -289,7 +300,23 @@ export function createProcessingQueue({
       api.managerStarted(formId);
       const handoff = {};
       try {
-        const parsed = await parseFile(file, handoff, { intent, savedPath, executionTask: recordFor(formId).task });
+        const record = recordFor(formId);
+        // Site flow: the queue reads the file once here and passes the
+        // resulting object on the trigger request. Downstream parser code
+        // receives the file object instead of reading the same path again.
+        const fileObject = await fileReader({
+          filePath: savedPath ?? record.inputPath,
+          filename: record.originalName ?? file?.originalname ?? intent?.originalName ?? null,
+          mimeType: record.inputMimeType ?? file?.mimetype ?? null,
+          inputFormat: record.inputFormat ?? intent?.inputFormat ?? null,
+        });
+        const trigger = { ...record.trigger, object: fileObject };
+        const parsed = await parseFile(file, handoff, {
+          intent,
+          savedPath,
+          executionTask: record.task,
+          trigger,
+        });
         if (!handoff.manager?.file) throw new Error('Parser completed without an artifact');
         await api.managerFinished(formId, handoff.manager);
         return { ...parsed, manager: handoff.manager };

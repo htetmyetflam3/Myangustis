@@ -26,7 +26,11 @@ const KNOWN_NAMED_PATHS = Object.freeze(new Set(['unicode', 'zawcode', 'wininnwa
 
 export function normalizeCaller(caller) {
   const key = String(caller ?? CALLERS.SITE).trim().toLowerCase();
-  return key === CALLERS.SCRAPER ? CALLERS.SCRAPER : key === CALLERS.LOCAL ? CALLERS.LOCAL : CALLERS.SITE;
+  // Trigger callers map onto the internal caller vocabulary:
+  // public -> site, owner -> local, scraper stays scraper.
+  if (key === CALLERS.SCRAPER) return CALLERS.SCRAPER;
+  if (key === CALLERS.LOCAL || key === 'owner') return CALLERS.LOCAL;
+  return CALLERS.SITE;
 }
 
 

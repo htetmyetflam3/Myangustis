@@ -33,15 +33,15 @@ const { emitEvent } = (await getLogen()).coreLog;
 
 
 
-import { orderText } from "../main/core/text/clean.js";
-import { scoreText } from "../main/core/text/decide.js";
+import { orderText } from "../core/clean.js";
+import { scoreText } from "../core/decoding/decide.js";
 import {
   extractPageLines, getStream, parseToUnicodeStream, MAX_PDF_OBJECTS,
-} from "../main/core/io/read.js";
-import { DocumentDecoding, detectLegacyLayoutFonts } from "../main/core/pdf/pdf-fonts.js";
-import { openPdfScannedObjects } from "../main/core/pdf/pdf-objects.js";
-import { LEGACY_CODE_PAGES, UNICODE_PATH } from "../main/core/codepage/codepage-registry.js";
-import { buildVectorOutlineLayout } from "../main/core/util/svg-repair.js";
+} from "../core/io/read.js";
+import { DocumentDecoding, detectLegacyLayoutFonts } from "../core/pdf/pdf-fonts.js";
+import { openPdfScannedObjects } from "../core/pdf/pdf-objects.js";
+import { LEGACY_CODE_PAGES, UNICODE_PATH } from "../core/codepage/codepage-registry.js";
+import { buildVectorOutlineLayout } from "../core/beautify/vector.js";
 
 
 
