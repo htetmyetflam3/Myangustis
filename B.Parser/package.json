@@ -1,0 +1,36 @@
+{
+  "name": "@myangustis/parser",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Burmese PDF/DOCX parser core: extraction, encoding normalisation, DOCX/PDF writers.",
+  "type": "module",
+  "main": "main/parser/index.js",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "optionalDependencies": {
+    "@napi-rs/canvas": "1.0.10",
+    "mammoth": "^1.13.0",
+    "tesseract.js": "7.0.0"
+  },
+  "dependencies": {
+    "@jspawn/qpdf-wasm": "^0.0.2",
+    "better-sqlite3": "^13.0.3",
+    "fflate": "^0.8.3",
+    "opentype.js": "^2.0.0",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "6.4.299",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "express-session": "^1.19.0",
+    "helmet": "^8.3.0",
+    "mammoth": "^1.13.0",
+    "morgan": "^1.12.1",
+    "multer": "^2.0.2",
+
+  },
+  "devDependencies": {
+    "harfbuzzjs": "^1.6.3"
+  }
+}

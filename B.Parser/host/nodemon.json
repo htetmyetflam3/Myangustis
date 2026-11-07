@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/nodemon.json",
+  "exec": "node index.js",
+  "watch": ["index.js", "Backend", "../Parser/main/parser"],
+  "ext": "js,mjs,cjs,json,sql",
+  "ignore": [
+    "**/node_modules/**",
+    "Frontend/dist/**",
+    ".data/**",
+    "logs/**",
+    "../Parser/main/upload/**",
+    "../Parser/main/.output/**",
+    "**/*.test.js",
+    "**/*.test.mjs"
+  ],
+  "delay": 400
+}
