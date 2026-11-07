@@ -221,7 +221,6 @@ TARGET_PATHS=(
    "test/"
    "package.json"
    ".npmrc"
-   "git"
    "logen.js"
    "jsconfig.js"
    ".gitignore"
