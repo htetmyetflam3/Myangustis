@@ -20,7 +20,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, "..", "..");
 const input = process.argv[2]
   ? path.resolve(process.argv[2])
-  : path.join(repo, "F.Site", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
+  : path.join(repo, "B.Parser", "host", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
 const output = process.argv[3]
   ? path.resolve(process.argv[3])
   : path.join(here, "sample-outside-stream.instructions.txt");

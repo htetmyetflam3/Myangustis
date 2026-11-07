@@ -12,7 +12,7 @@ import { PDFDocument } from 'pdf-lib';
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const CLI = path.join(REPO, 'tools-box/js/pipeline-cli.js');
 const ENGINE_ENTRY = path.join(REPO, 'Architecture/host/index.js');
-const SITE_ENTRY = path.join(REPO, 'F.Site/index.js');
+const SITE_ENTRY = path.join(REPO, 'B.Parser/host/index.js');
 const ENDPOINT = '/UchihaItachiIsMyFavChar';
 const inputText = 'ကောင်းကင် စမ်းသပ်။\nမြန်မာစာ။\n';
 let dir;

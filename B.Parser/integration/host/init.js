@@ -5,6 +5,13 @@
 // share the same path; identity only affects owner access checks.
 import { streamReader } from '../../core/api/stream-reader.js';
 import { dispatchSite } from '../../core/api/dispatcher.js';
+import { pool } from '../../core/manager/manager-core.js';
+
+// Shutdown for the shared parser manager pool behind the site dispatchers.
+// Safe to call more than once; the pool clears its own worker table.
+export async function closePraserManager() {
+  await pool.close();
+}
 
 function stripCliArtifact(raw) {
   return raw
@@ -47,9 +54,17 @@ export function createConverterParser() {
       } catch (err) {
         throw new Error('Converter manager failed', { cause: err });
       }
+      // The dispatcher returns the parse result: per-page records for txt
+      // (pages[].text), or an assembled `text` when a worker provides one.
+      // Assemble page texts with the same separators PdfTextSink writes;
+      // stripCliArtifact below removes them again.
       const raw = typeof reply.text === 'string'
         ? reply.text
-        : '';
+        : Array.isArray(reply.pages)
+          ? reply.pages
+            .map((p, i) => `--- Page ${i + 1} ---\n${typeof p === 'string' ? p : (p?.text ?? '')}`)
+            .join('\n')
+          : '';
       const text = stripCliArtifact(raw);
       if (!text) {
         throw new Error('No text found in this file. It is most likely a scan — image-only pages carry no text to extract.');

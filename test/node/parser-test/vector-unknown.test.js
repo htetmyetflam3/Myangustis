@@ -11,7 +11,7 @@ import { prepareVectorLayout } from "../../../B.Parser/extend/codepage-resolve.j
 import { probePagePrefix } from "../../../B.Parser/core/io/read.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const SAMPLE = path.join(HERE, "..", "..", "..", "F.Site", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
+const SAMPLE = path.join(HERE, "..", "..", "..", "B.Parser/host", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
 
 
 async function decodeFirstPage(bytes) {

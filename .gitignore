@@ -184,7 +184,7 @@ vite.config.ts.timestamp-*
 
 # Site runtime uploads and generated workspace data (not tracked font assets).
 /Junk/Site/
-/F.Site/upload/
+/B.Parser/host/upload/
 
 # Local generated kit files; Engine runtime keys remain tracked.
 /tools-box/kit/master/master.key.txt

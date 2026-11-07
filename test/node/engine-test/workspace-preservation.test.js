@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { createProcessingQueue } from '../../../F.Site/Backend/gateway/queue/processingQueue.js';
+import { createProcessingQueue } from '../../../B.Parser/host/Backend/gateway/queue/processingQueue.js';
 
 const repo = fileURLToPath(new URL('../../../', import.meta.url));
 const read = relative => fs.readFileSync(path.join(repo, relative), 'utf8');
@@ -70,7 +70,7 @@ for (const options of [{ max: 1 }, { ttlMs: -1 }]) {
     const queue = createProcessingQueue(options);
     t.after(() => queue.dispose());
     const request = id => ({ formId: id, userId: 'user', sessionId: 'session', inputPath: files[0],
-      file: { mimetype: 'text/plain' }, intent: { source: 'converter', outputFormat: 'txt', inputFormat: 'txt', originalName: 'input.txt' } });
+      file: { mimetype: 'text/plain' }, intent: { source: 'converter', job: 'extracting', method: 'default', outputFormat: 'txt', inputFormat: 'txt', originalName: 'input.txt' } });
     await queue.enqueue(request('first'));
     await queue.managerFinished('first', { file: files[1], output: 'txt' });
     await queue.bindSavedResult('first', { submitId: 'submit', bridgePath: files[2], originalPath: files[3] });
@@ -83,9 +83,9 @@ for (const options of [{ max: 1 }, { ttlMs: -1 }]) {
 }
 
 test('startup, rebuild and maintenance no longer clear runtime directories', () => {
-  assert.doesNotMatch(read('F.Site/index.js'), /cleanupExpiredRuntimeFiles|runArtifactCleanup|cleanupTimer/);
-  assert.equal(fs.existsSync(path.join(repo, 'F.Site/Backend/file/runtimeCleanup.js')), false);
-  for (const config of ['F.Site/Frontend/frontend-react/vite.config.js', 'F.Site/Frontend/frontend-react/vite.config.ts']) {
+  assert.doesNotMatch(read('B.Parser/host/index.js'), /cleanupExpiredRuntimeFiles|runArtifactCleanup|cleanupTimer/);
+  assert.equal(fs.existsSync(path.join(repo, 'B.Parser/host/Backend/file/runtimeCleanup.js')), false);
+  for (const config of ['B.Parser/host/Frontend/frontend-react/vite.config.js', 'B.Parser/host/Frontend/frontend-react/vite.config.ts']) {
     assert.match(read(config), /emptyOutDir: false/);
   }
   const bootstrap = read('tools-box/bash/bootstrap.sh');

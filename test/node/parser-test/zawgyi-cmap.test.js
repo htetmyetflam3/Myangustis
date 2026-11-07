@@ -20,7 +20,7 @@ const UNICODE_LINE = "သူ့တစ်ကိုယ်လုံးနာကျ�
 
 test("the shipped Zawgyi-One PDF routes its first page through Rabbit", () => {
   const here = path.dirname(fileURLToPath(import.meta.url));
-  const sample = path.join(here, "..", "..", "..", "F.Site", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
+  const sample = path.join(here, "..", "..", "..", "B.Parser/host", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
     const [, , pages] = streamPdfPages(fs.readFileSync(sample), () => {});
   try {
     const pg = pages.next().value;

@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import express from 'express';
 import multer from 'multer';
-import { createPdfParser, createDocxParser } from '../../file/praser.js';
+import { createPdfParser, createDocxParser } from '../../../../integration/host/init.js';
 import { ensureUploadDir } from '../../file/paths.js';
 import { getLogen } from "../../../_path.js";
 const logger = (await getLogen()).siteLog.default;

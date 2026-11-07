@@ -1,6 +1,6 @@
 OUTSIDE-STREAM SAMPLE PARSE -> INSTRUCTIONS
 ============================================================
-Source PDF : F.Site/Frontend/frontend-bootstrap/public/samples/sample.pdf
+Source PDF : B.Parser/host/Frontend/frontend-bootstrap/public/samples/sample.pdf
 Scope      : only objects that live outside object streams.
 Streams    : never opened, never decompressed in this sample.
 
