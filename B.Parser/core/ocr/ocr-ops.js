@@ -78,7 +78,7 @@ export async function ocrToFile(msg) {
       : await writePageStore(msg.outPath, store.store, {
         directory, counts, source, includeText: msg.includeText === true, owner: OWNER_PARSER_WORKER, layout: false,
       });
-    const posScan = await scanner.finish(written.file);
+    const posScan = await scanner.finish();
     return { filename: source || null, pages: n, ...written, posScan };
   } finally {
     await scanner?.close();

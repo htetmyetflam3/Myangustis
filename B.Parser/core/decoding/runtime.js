@@ -192,7 +192,7 @@ export function createSourceRunner({ kind, docxImages = false, pdfImages = false
         const written = await writeOutput(outPath, outputPages, {
           counts: job.counts, source: name ?? "", includeText: msg.includeText === true,
         });
-        const posScan = await scanner.finish(written.file);
+        const posScan = await scanner.finish();
         appendRecord(provenance, { file: registerPath(REGISTER_LOG) });
         return { ...common, pages: pages.length, ...written, posScan };
       } finally {

@@ -242,7 +242,7 @@ async function runPdfStreamAttempt(msg, { manual = false, pdfImages = false, gen
       : await writePageStore(msg.outPath, storeWriter.store, {
         directory, counts, source, includeText: msg.includeText === true, owner: OWNER_PARSER_WORKER,
       });
-    const posScan = scanner ? await scanner.finish(written.file) : null;
+    const posScan = scanner ? await scanner.finish() : null;
     appendRecord(provenance, { file: registerPath(REGISTER_LOG) });
     keepImages = imageFiles.length > 0;
     return { ...common, ...written, ...(posScan ? { posScan } : {}) };

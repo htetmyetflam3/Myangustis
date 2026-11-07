@@ -97,7 +97,7 @@ function baseVerdict(input) {
     textBytes: 0,
     lineCount: 0,
     outputFile: null,
-    unknownFile: null,
+    scanMemory: [],
     unknownCount: null,
     longPosLines: [],
     counts: null,
@@ -116,7 +116,7 @@ function mapResult(input, result, startedAt) {
   v.textBytes = result.textBytes ?? 0;
   v.lineCount = result.lineCount ?? 0;
   v.counts = result.counts ?? null;
-  v.unknownFile = result.posScan?.file ?? null;
+  v.scanMemory = result.posScan?.memory ?? [];
   v.unknownCount = result.posScan?.unknownCount ?? null;
   v.longPosLines = result.posScan?.longLines ?? [];
 

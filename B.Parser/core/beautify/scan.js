@@ -2,7 +2,6 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
-import { randomUUID } from "node:crypto";
 import { bindEngine as engineBind, MAX_LINE_BYTES } from "../../extend/bind-engine.js";
 import { textLines } from "../decoding/finalized-cmap.js";
 import { INDEX_BASES, MARKS as MM_MARKS } from "../decoding/decide.js";
@@ -355,10 +354,9 @@ async function* readRecords(file) {
   }
 }
 
-// A second writer records source pages while the normal document writer runs.
-// Only after it closes do we stream each source line through the hash-free POS
-// bridge. A private staging file lets the tagged output replace the same spool
-// without truncating it while it is being read.
+// The normalized output is written to this private spool while the real
+// output writer runs. Only after that writer finishes does scan read the
+// spool back and send each line through the hash-free POS bridge.
 export class PosScanner {
   constructor({ directory = os.tmpdir(), bindEngine = null } = {}) {
     this.directory = fs.mkdtempSync(path.join(directory, 'linga-pos-scan-'));
@@ -374,6 +372,9 @@ export class PosScanner {
     this.closed = false;
     this.complete = false;
     this.unpagedStarted = false;
+    // Only broken scan results are retained: one entry per unknown-token
+    // context, with its page and line. Tagged lines are consumed and dropped.
+    this.memory = [];
   }
 
   async writePage(page, chunks) {
@@ -388,103 +389,100 @@ export class PosScanner {
     }
   }
 
-  async finish(outputPath) {
+  // Read the normalized-output spool back, hand each line to BindEngine,
+  // consume its tagged output, and scan that output immediately. Only the
+  // broken unknown-token contexts survive, in this.memory as
+  // { page, line, context, count }; all other tagged lines are dropped.
+  async finish() {
     if (this.complete || this.closed) throw new Error('POS scanner is closed');
-    if (typeof outputPath !== 'string' || !outputPath) throw new TypeError('An output path is required for the POS scan');
     this.complete = true;
     try {
       fs.closeSync(this.fd);
       this.fd = null;
-      const taggedPath = path.join(this.directory, 'tagged-stage.txt');
+      this.memory = [];
       const longLines = [];
-      const taggedFd = fs.openSync(taggedPath, 'wx', 0o600);
+      const ranges = [];
       let physicalPage = false;
       let page = null;
       let lineNumber = 0;
       let sequence = 0;
-      try {
-        for await (const record of readRecords(this.file)) {
-          if (record.type === 'page') {
-            page = record.page;
-            physicalPage = page !== null;
-            lineNumber = 0;
-            continue;
-          }
-          const source = record.text;
-          const marker = PAGE_MARKER.exec(source);
-          if (marker && !physicalPage) {
-            page = pageNumber(marker[1]);
-            lineNumber = 0;
-            continue;
-          }
-          lineNumber += 1;
-          sequence += 1;
-          if (Buffer.byteLength(source, 'utf8') > MAX_LINE_BYTES) longLines.push({ page, line: lineNumber });
-          let rawPos = '';
-          const numericPage = isPageNumberLine(source);
-          if (numericPage) {
-            rawPos = `${source.trim()}{page number}`;
-          } else if (marker) {
-            rawPos = `${source.trim()}{page marker}`;
-          } else {
-            const input = posSourceLine(source);
-            if (input.trim()) {
-              this.binding ??= engineBind;
-              rawPos = await tagPosLine(input, this.binding);
-            }
-          }
-          writeAll(taggedFd, `${JSON.stringify({ type: 'line', page, line: lineNumber, sequence, source, rawPos, numericPage })}\n`);
-        }
-      } finally {
-        fs.closeSync(taggedFd);
-      }
-      fs.renameSync(taggedPath, this.file);
-
-      // A physical PDF page or explicit Page-N marker is authoritative. In an
-      // unpaged document, a short numeric footer can label the lines before it.
-      const ranges = [];
-      let first = null;
-      for await (const record of readRecords(this.file)) {
-        if (record.page !== null) { first = null; continue; }
-        first ??= record.sequence;
-        const number = record.numericPage ? pageNumber(record.source.trim()) : null;
-        if (number !== null) {
-          ranges.push({ first, last: record.sequence, page: number });
-          first = null;
-        }
-      }
-
-      const destination = path.resolve(`${outputPath}.unknown.txt`);
-      fs.mkdirSync(path.dirname(destination), { recursive: true });
-      const outputStage = path.join(path.dirname(destination), `.${path.basename(destination)}-${randomUUID()}.tmp`);
-      let outputFd = null;
+      let unpagedFirst = null;
       let unknownCount = 0;
-      let contextCount = 0;
-      let rangeIndex = 0;
-      try {
-        outputFd = fs.openSync(outputStage, 'wx', 0o600);
-        for await (const record of readRecords(this.file)) {
-          while (rangeIndex < ranges.length && ranges[rangeIndex].last < record.sequence) rangeIndex += 1;
-          const range = ranges[rangeIndex];
-          const fallback = record.page === null && range && record.sequence >= range.first && record.sequence <= range.last;
-          const foundPage = fallback ? range.page : record.page;
-          const foundLine = fallback ? record.sequence - range.first + 1 : record.line;
-          const hits = unknownContexts(parseTaggedLine(record.rawPos));
-          for (const hit of hits) {
-            unknownCount += hit.count;
-            contextCount += 1;
-            writeAll(outputFd, `Page ${foundPage ?? 'unknown'}, line ${foundLine}\nOriginal: ${record.source}\nContext: ${hit.context}\n\n`);
+
+      for await (const record of readRecords(this.file)) {
+        if (record.type === 'page') {
+          page = record.page;
+          physicalPage = page !== null;
+          lineNumber = 0;
+          unpagedFirst = null;
+          continue;
+        }
+        const source = record.text;
+        const marker = PAGE_MARKER.exec(source);
+        if (marker && !physicalPage) {
+          page = pageNumber(marker[1]);
+          lineNumber = 0;
+          continue;
+        }
+        lineNumber += 1;
+        sequence += 1;
+        const numericPage = isPageNumberLine(source);
+        const numericValue = numericPage ? pageNumber(source.trim()) : null;
+        // In unpaged text, a short numeric footer names the lines before
+        // it. Remember that range while streaming; only the retained
+        // broken entries are resolved against it afterwards.
+        if (!physicalPage && page === null) {
+          unpagedFirst ??= sequence;
+          if (numericValue !== null) {
+            ranges.push({ first: unpagedFirst, last: sequence, page: numericValue });
+            unpagedFirst = null;
           }
         }
-        fs.fsyncSync(outputFd);
-        fs.closeSync(outputFd);
-        outputFd = null;
-        fs.renameSync(outputStage, destination);
-      } finally {
-        if (outputFd !== null) fs.closeSync(outputFd);
-        fs.rmSync(outputStage, { force: true });
+        const needsFallback = !physicalPage && page === null;
+        if (Buffer.byteLength(source, 'utf8') > MAX_LINE_BYTES) {
+          longLines.push({ page, line: lineNumber, sequence, needsFallback });
+        }
+        let rawPos = '';
+        if (numericPage) {
+          rawPos = `${source.trim()}{page number}`;
+        } else if (marker) {
+          rawPos = `${source.trim()}{page marker}`;
+        } else {
+          const input = posSourceLine(source);
+          if (input.trim()) {
+            this.binding ??= engineBind;
+            rawPos = await tagPosLine(input, this.binding);
+          }
+        }
+        for (const hit of unknownContexts(parseTaggedLine(rawPos))) {
+          unknownCount += hit.count;
+          this.memory.push({
+            page, line: lineNumber, sequence, needsFallback,
+            context: hit.context, count: hit.count,
+          });
+        }
       }
-      return { file: destination, unknownCount, contextCount, longLines };
+
+      const resolveFallback = (entry) => {
+        if (!entry.needsFallback) return;
+        const range = ranges.find((r) => entry.sequence >= r.first && entry.sequence <= r.last);
+        if (range) {
+          entry.page = range.page;
+          entry.line = entry.sequence - range.first + 1;
+        }
+      };
+      for (const entry of this.memory) resolveFallback(entry);
+      for (const entry of longLines) resolveFallback(entry);
+      for (const entry of [...this.memory, ...longLines]) {
+        delete entry.sequence;
+        delete entry.needsFallback;
+      }
+      return {
+        memory: this.memory,
+        unknownCount,
+        contextCount: this.memory.length,
+        longLines,
+      };
     } finally {
       await this.close();
     }
@@ -499,11 +497,11 @@ export class PosScanner {
   }
 }
 
-export async function scanTextWithPos(text, { page = null, directory, bindEngine, outputPath } = {}) {
+export async function scanTextWithPos(text, { page = null, directory, bindEngine } = {}) {
   const scanner = new PosScanner({ directory, bindEngine });
   try {
     await scanner.writePage(page, [String(text ?? '')]);
-    return await scanner.finish(outputPath);
+    return await scanner.finish();
   } finally {
     await scanner.close();
   }
