@@ -1,0 +1,13 @@
+{
+  "name": "@myangustis/proofreading",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Proofreading workflow (Python-driven; JavaScript side is glue only).",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "tag:docx": "python3 main/tag_docx.py"
+  }
+}
