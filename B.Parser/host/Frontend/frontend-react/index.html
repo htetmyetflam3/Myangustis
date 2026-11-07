@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="my">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="AKKHARA — text-based Zawgyi/Myanmar PDF ထဲက embedded font mapping ကို ဖတ်ပြီး စစ်ဆေးနိုင်သော Unicode, TXT နှင့် DOCX output ထုတ်ပေးသည့် parser။ Scan PDF custom OCR လမ်းကြောင်းကို ဖွံ့ဖြိုးနေသည်။"
+    />
+    <title>AKKHARA — Myanmar PDF Text Extraction & Custom OCR</title>
+    <!-- Preload the two faces every page needs up front: Cherry Unicode for
+         body copy, Masterpiece UniSerif for headings. Myanmar Sagar and Yoe
+         Yar One are fallback / on-demand and load when first used. -->
+    <link rel="preload" as="font" type="font/woff2" href="/react/fonts/cherry-unicode-400.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/react/fonts/masterpiece-uni-serif-400.woff2" crossorigin />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

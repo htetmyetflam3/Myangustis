@@ -216,17 +216,25 @@ if git ls-files | grep -qE '^logs/|\.log(\.txt)?$|log\.txt$'; then
 fi
 
 TARGET_PATHS=(
-   "pdfs/"
-   "parquet"
-  
-   "mangled-pdf-names.txt"
+   "B.Parser/"
+   "tools-box/"
+   "test/"
+   "package.json"
+   ".npmrc"
+   "git"
+   "logen.js"
+   "jsconfig.js"
    ".gitignore"
    "gitinit.sh"
    "eslint.config.js"
    "jsconfig.js"
    "package.json"
-   ".env"
+   "LINCENSE"
+   "AGENTS.md"
+   "curlkey.js"
    "bootstrap.js"
+   "README.md"
+   "todo.md"
 
 )
 
