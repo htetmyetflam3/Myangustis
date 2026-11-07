@@ -1,0 +1,13 @@
+{
+  "name": "Myangustis",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12",
+      "installTools": true
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/sshd:1": {}
+  },
+  "postCreateCommand": "bash -c 'apt-get update && apt-get install -y libcairo2-dev libpango1.0-dev libmupdf-dev tesseract-ocr-mya && npm install && uv venv && uv pip install -r pyproject.toml'"
+}

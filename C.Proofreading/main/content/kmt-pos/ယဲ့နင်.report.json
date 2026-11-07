@@ -1,0 +1,21 @@
+{
+  "schema": "mt_compare reference raw_pos (two-space token{tags}, ။<eos> units)",
+  "source_docx": "Proofreading/main/content/merged/episodes.docx",
+  "source_docx_sha256": "e0204f3e8ade59781ebd807d23656185897c536a90385c419ccc0075968453f8",
+  "extractor": "Proofreading/main/format/docx_text.py",
+  "engine_entry": "Proofreading/main/mt/quality/tag.py -> tag-both.mjs -> BindEngine(\"proofreading\")",
+  "raw_pos_path": "Proofreading/main/content/kmt-pos/ယဲ့နင်.raw_pos.txt",
+  "raw_pos_sha256": "abc256453fb66001eca5d485d001758e2bea824f9f7a64430475eaf731049979",
+  "raw_pos_bytes": 10317650,
+  "prose_lines_input": 59200,
+  "chunk_lines": 250,
+  "chunks": 237,
+  "sentences": 24171,
+  "tokens": 622000,
+  "unknown_tokens": 111046,
+  "ambiguous_tokens": 272258,
+  "tag_occurrences": 622000,
+  "rejected_dictionary_entries": 0,
+  "elapsed_seconds": 115.5,
+  "tagger_units": 12221
+}

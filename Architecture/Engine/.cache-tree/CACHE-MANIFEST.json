@@ -1,0 +1,18 @@
+{
+  "rebuilt": "2026-11-04",
+  "note": "Prebuilt syllable, reverse and POS trees from the encrypted master; verified by cache-integrity.js.",
+  "sourceMasterSha256": "701241d2430a0fb55c011b8855ce5a0c1c9d84d4d750ea48969b00351ab5880e",
+  "excludedPosEntries": 0,
+  "generatedAt": "2026-11-04T17:14:54.219Z",
+  "treeDir": "Architecture/Engine/.cache-tree",
+  "counts": {
+    "posRoots": 1907
+  },
+  "files": {
+    "pos.tree.json": "78f249d2b3241309c2b0810c44aa35c462105cf83f277d13b8cc398789c887e2",
+    "ref-syllables.json": "ebea6679d9739fafa24c5a0b17b09d233865dd50b0160dfdb65c0ec5dbf5c94d",
+    "rtl-tree.json": "d05b78feca8bbd84f56001042297ba84975cdde3538951005bc50b57c8a785f5",
+    "syllable.mapped.txt": "9374875397b2e1fb997eaab323d1e6a886552fa2ed97690732812db165b918fd",
+    "syllable.tree.json": "8fa09f215a48583a8ea1db07ccb4451c22580b24267bc983311c170a9e45c1b5"
+  }
+}
