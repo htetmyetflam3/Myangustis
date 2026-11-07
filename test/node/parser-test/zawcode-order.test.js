@@ -244,7 +244,7 @@ test("the lane decision ignores U+200B without trimming non-ZawCode text", async
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "zawcode-page-test-"));
   const finish = (input, options = {}) => {
     const store = { *lines() { yield [0, 0, 10, input]; } };
-    const result = finishPageToFile(store, { directory: dir, parsingPath: "zawgyi-one", ...options });
+    const result = finishPageToFile(store, { directory: dir, parsingPath: "font-cmap", ...options });
     let output;
     try {
       const parsed = [...result.text.chunks()].join("");
@@ -313,7 +313,7 @@ test("the PDF Rabbit lane uses Rabbit's own U+200B handling", async () => {
     ]) {
       const store = { *lines() { yield [0, 0, 10, source]; } };
       const result = finishPageToFile(store, {
-        directory: dir, parsingPath: "zawgyi-one", sourceEncoding: "zawgyi-one", fontKinds: new Set(["ZAWGYI"]),
+        directory: dir, parsingPath: "font-cmap", sourceEncoding: "zawgyi-one", fontKinds: new Set(["ZAWGYI"]),
       });
       let output;
       try {
@@ -369,7 +369,7 @@ test("Rabbit conversion retains source spaces before a dot-below mark", () => {
   const store = { *lines() { yield [0, 0, 10, source]; } };
   let result;
   try {
-    result = finishPageToFile(store, { directory, parsingPath: "zawgyi-one", fontKinds: new Set(["ZAWGYI"]) });
+    result = finishPageToFile(store, { directory, parsingPath: "font-cmap", fontKinds: new Set(["ZAWGYI"]) });
     const text = [...result.text.chunks()].join("");
     assert.equal(result.decision, "rabbit");
     assert.equal(text, "နားရွက်တွေ တူပါရဲ ့၊");
@@ -382,11 +382,11 @@ test("all PDF page decisions normalize only after the parsing decision", async (
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "final-page-normalize-"));
   const cases = [
     ["စဥ်", { parsingPath: "legacy" }, "legacy"],
-    ["စဥ်", { parsingPath: "zawgyi-one" }, "aligned"],
-    ["ေက", { parsingPath: "zawgyi-one" }, "zawcode"],
-    ["ကိ ျ", { parsingPath: "zawgyi-one", fontKinds: new Set(["UNICODE"]) }, "unaligned-unicode"],
-    ["ကိ ျ", { parsingPath: "zawgyi-one" }, "unaligned-unknown"],
-    ["ကိ ျ", { parsingPath: "zawgyi-one", sourceEncoding: "zawgyi-one", fontKinds: new Set(["ZAWGYI"]) }, "rabbit"],
+    ["စဥ်", { parsingPath: "font-cmap" }, "aligned"],
+    ["ေက", { parsingPath: "font-cmap" }, "zawcode"],
+    ["ကိ ျ", { parsingPath: "font-cmap", fontKinds: new Set(["UNICODE"]) }, "unaligned-unicode"],
+    ["ကိ ျ", { parsingPath: "font-cmap" }, "unaligned-unknown"],
+    ["ကိ ျ", { parsingPath: "font-cmap", sourceEncoding: "zawgyi-one", fontKinds: new Set(["ZAWGYI"]) }, "rabbit"],
   ];
   try {
     for (const [source, options, decision] of cases) {

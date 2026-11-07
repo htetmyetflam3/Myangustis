@@ -4,11 +4,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { englishLikeness } from "../../../B.Parser/main/parser/text/myanmar-score.js";
-import { choosePageParser } from "../../../B.Parser/main/parser/text/page-decision.js";
-import { loadDetector, streamPdfPages } from "../../../B.Parser/extend/pipeline.js";
-import { prepareVectorLayout } from "../../../B.Parser/main/parser/codepage/resolve.js";
-import { probePagePrefix } from "../../../B.Parser/main/parser/read/pdf-extract.js";
+import { englishLikeness } from "../../../B.Parser/core/decoding/decide.js";
+import { choosePageParser } from "../../../B.Parser/core/decoding/decide.js";
+import { streamPdfPages } from "../../../B.Parser/core/decoding/source-decoding.js";
+import { prepareVectorLayout } from "../../../B.Parser/extend/codepage-resolve.js";
+import { probePagePrefix } from "../../../B.Parser/core/io/read.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SAMPLE = path.join(HERE, "..", "..", "..", "F.Site", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
@@ -16,7 +16,7 @@ const SAMPLE = path.join(HERE, "..", "..", "..", "F.Site", "Frontend", "frontend
 
 async function decodeFirstPage(bytes) {
   const logs = [];
-  const [, , iterator] = streamPdfPages(bytes, loadDetector(), (l) => logs.push(String(l)));
+  const [, , iterator] = streamPdfPages(bytes, (l) => logs.push(String(l)));
   try {
     const first = iterator.next().value;
     assert.ok(first, "first page must decode");
@@ -68,7 +68,7 @@ test("checkpoint text returns to the font saved before q", () => {
 test("page numbers do not turn an inconclusive checkpoint into a legacy page", () => {
   for (const sample of ["1", "2024", "Page-1", "Page | 12", "Page 19Page 18", "  5 \n 6  "]) {
     assert.deepEqual(choosePageParser({ shared: sample }), {
-      parser: "zawgyi-one", reason: "page-number-only",
+      parser: "font-cmap", reason: "page-number-only",
     }, sample);
   }
   assert.equal(choosePageParser({ shared: "12345" }).parser, "legacy");
@@ -77,13 +77,26 @@ test("page numbers do not turn an inconclusive checkpoint into a legacy page", (
   assert.equal(choosePageParser({ shared: "2" }, { sourceEncoding: "unicode" }).reason, "source-encoding");
 });
 
+test("Burmese checkpoints are guarded by mm-score, not English-likeness", () => {
+  const uni = "သူ့တစ်ကိုယ်လုံးနာကျင်နေသည်ကို ရှီယန်သတိထားမိလိုက်သည်။ ";
+  const zg = "သူ႔တစ္ကိုယ္လုံးနာက်င္ေနသည္ကို ရွီယန္သတိထားမိလိုက္သည္။ ";
+  // Only the legacy reading is Burmese: legacy slots, not Latin text.
+  assert.equal(choosePageParser({ shared: "jrefrmo gtwGJ tcef", legacy: uni }).parser, "legacy");
+  assert.equal(choosePageParser({ shared: "jrefrmo gtwGJ tcef", legacy: uni }).reason, "myanmar-legacy");
+  // Both readings Burmese: mm-score decides, ties keep the font-cmap lane.
+  assert.equal(choosePageParser({ shared: uni, legacy: zg }).parser, "font-cmap");
+  assert.equal(choosePageParser({ shared: zg, legacy: uni }).parser, "legacy");
+  assert.equal(choosePageParser({ shared: zg, legacy: uni }).reason, "myanmar-legacy-score");
+  assert.equal(choosePageParser({ shared: uni, legacy: uni }).parser, "font-cmap");
+});
+
 test("isolated page headers are not treated as legacy body text", () => {
   for (const sample of [
     "example.com 3 | Page 129", "Page | 15 https://example.com Life Keyboard",
     "example.com t t y y p p i i n n g g", "June 9,\n2011", "Typing\n-\nlucky82\n22“",
   ]) {
     assert.deepEqual(choosePageParser({ shared: sample }), {
-      parser: "zawgyi-one", reason: "non-body-header",
+      parser: "font-cmap", reason: "non-body-header",
     }, sample);
   }
   assert.equal(choosePageParser({ shared: "example.com 4/5" }).parser, "legacy");

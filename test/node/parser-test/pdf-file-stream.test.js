@@ -10,7 +10,7 @@ import {
   PDFArray, PDFDocument, PDFName, PDFRawStream, decodePDFRawStream,
 } from "pdf-lib";
 
-import { streamPdfPages, processPageRecord, collectPdfResult, buildFinalPages, loadDetector } from "../../../B.Parser/extend/pipeline.js";
+import { streamPdfPages, processPageRecord, collectPdfResult, buildFinalPages } from "../../../B.Parser/core/decoding/source-decoding.js";
 import { runQpdfFile } from "../../../B.Parser/main/parser/core/qpdf.js";
 import { findPdfEnd, copyPdfPrefix } from "../../../B.Parser/main/parser/read/pdf-tail.js";
 import { PdfScannedObjects } from "../../../B.Parser/main/parser/read/pdf-object-file.js";
@@ -125,7 +125,7 @@ test("PDF output uses Engine normalize after parsing across jobs, methods and fo
     const font = await pdf.embedFont(fs.readFileSync(fontPath), { subset: false });
     pdf.addPage([400, 400]).drawText(source, { font, x: 20, y: 300 });
     const bytes = await pdf.save({ useObjectStreams: false });
-    const [, , parsed] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+    const [, , parsed] = streamPdfPages(bytes, () => {}, { sourceEncoding: "unicode" });
     assert.equal(parsed.next().value.text, source);
     const input = path.join(dir, "input.pdf");
     fs.writeFileSync(input, bytes);
@@ -261,10 +261,9 @@ async function makeAsciiHexPdf() {
 function textOf(filePage) { return [...filePage.text.chunks()].join(""); }
 
 function referenceReports(bytes, sourceEncoding = "auto") {
-  const detector = loadDetector();
-  const [, count, pages] = streamPdfPages(bytes, detector, () => {}, { sourceEncoding });
+    const [, count, pages] = streamPdfPages(bytes, () => {}, { sourceEncoding });
   function* reports() {
-    for (const page of pages) yield processPageRecord(page, detector, false, () => {}, true, sourceEncoding);
+    for (const page of pages) yield processPageRecord(page, false, () => {}, true, sourceEncoding);
   }
   return [count, reports()];
 }
@@ -282,10 +281,10 @@ test("file pages preserve checkpoint, commands, image geometry and page decision
     fs.writeFileSync(input, original);
     await runQpdfFile(input, prepared, ["--object-streams=disable", "--stream-data=preserve"]);
     const checkpoints = [[], []];
-    const [oldMeta, oldCount, oldPages] = streamPdfPages(original, null, () => {}, {
+    const [oldMeta, oldCount, oldPages] = streamPdfPages(original, () => {}, {
       onPagePrefix: (...args) => checkpoints[0].push(args),
     });
-    const [newMeta, newCount, newPages] = streamPdfPages(prepared, null, () => {}, {
+    const [newMeta, newCount, newPages] = streamPdfPages(prepared, () => {}, {
       diskPages: true, onPagePrefix: (...args) => checkpoints[1].push(args),
     });
     assert.deepEqual(newMeta, oldMeta);
@@ -340,16 +339,16 @@ test("a page-number checkpoint retains later Zawgyi text on the shared route", a
   savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(delayed)));
   const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
   const checkpoints = [];
-  const [, count, pages] = streamPdfPages(bytes, null, () => {}, {
+  const [, count, pages] = streamPdfPages(bytes, () => {}, {
     onPagePrefix: (...args) => checkpoints.push(args),
   });
   try {
     const parsed = pages.next().value;
     assert.equal(count, 1);
     assert.equal(checkpoints[0][1].length, 2048);
-    assert.equal(checkpoints[0][2], "zawgyi-one");
+    assert.equal(checkpoints[0][2], "font-cmap");
     assert.equal(checkpoints[0][3].reason, "page-number-only");
-    assert.equal(parsed.parsingPath, "zawgyi-one");
+    assert.equal(parsed.parsingPath, "font-cmap");
     assert.ok(parsed.text.includes("နဂါးခေါင်းဗျပ်စောင်း"), `${parsed.decision}: ${[...parsed.fontKinds]}: ${[...parsed.fontNames]}: ${parsed.text}`);
   } finally { pages.return?.(); }
 });
@@ -379,7 +378,7 @@ test("a later Zawgyi resource on a legacy page is retained and reported", async 
   const delayed = `${content.slice(0, boundary)}%${"x".repeat(2050)}\n${content.slice(boundary)}`;
   savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(delayed)));
   const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
-  const [, , pages] = streamPdfPages(bytes, null, () => {});
+  const [, , pages] = streamPdfPages(bytes, () => {});
   try {
     const parsed = pages.next().value;
     assert.equal(parsed.parsingPath, "legacy");
@@ -406,10 +405,10 @@ test("simple-font ToUnicode entries padded to two bytes decode on the shared pag
   const commands = "BT /Padded 12 Tf 1 0 0 1 20 420 Tm <0102> Tj ET";
   savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(commands)));
   const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
-  const [, , pages] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+  const [, , pages] = streamPdfPages(bytes, () => {}, { sourceEncoding: "unicode" });
   try {
     const parsed = pages.next().value;
-    assert.equal(parsed.parsingPath, "zawgyi-one");
+    assert.equal(parsed.parsingPath, "font-cmap");
     assert.equal(parsed.text, "ကခ");
   } finally { pages.return?.(); }
 });
@@ -447,7 +446,7 @@ test("selected keyboard slots are read through Differences without converting an
     + `BT /Keyboard 12 Tf 1 0 0 1 20 420 Tm <${raw}> Tj ET`;
   savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(commands)));
   const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
-  const [, , pages] = streamPdfPages(bytes, null, () => {});
+  const [, , pages] = streamPdfPages(bytes, () => {});
   try {
     const parsed = pages.next().value;
     assert.equal(parsed.parsingPath, "legacy");
@@ -477,7 +476,7 @@ test("legacy keyboard evidence on an unrelated face preserves English headings",
     + `BT /Keyboard 12 Tf 1 0 0 1 20 420 Tm (${raw}) Tj ET`;
   savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(commands)));
   const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
-  const [, , pages] = streamPdfPages(bytes, null, () => {});
+  const [, , pages] = streamPdfPages(bytes, () => {});
   try {
     const parsed = pages.next().value;
     assert.equal(parsed.parsingPath, "legacy");
@@ -504,7 +503,7 @@ test("an overprinted legacy title does not hide the later body from its keyboard
     + "BT /Legacy 12 Tf 1 0 0 1 20 420 Tm (vdyfusqdkwm jyifOD;vGifem;u) Tj ET";
   savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(commands)));
   const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
-  const [, , pages] = streamPdfPages(bytes, null, () => {});
+  const [, , pages] = streamPdfPages(bytes, () => {});
   try {
     const parsed = pages.next().value;
     assert.equal(parsed.parsingPath, "legacy");
@@ -537,7 +536,7 @@ test("a centered alphabetic footer alone is not legacy body evidence", async () 
     [200, 20, "BB", "not-english"],
     [200, 20, "b", "not-english"],
   ]) {
-    const [, , pages] = streamPdfPages(await input(x, y, label), null, () => {});
+    const [, , pages] = streamPdfPages(await input(x, y, label), () => {});
     try {
       const parsed = pages.next().value;
       assert.equal(parsed.checkpoint.reason, expected, `${label} at ${x},${y}`);
@@ -567,7 +566,7 @@ test("saved graphics state restores the font, size and leading for later text", 
   ].join("\n");
   savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(commands)));
   const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
-  const [, , pages] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+  const [, , pages] = streamPdfPages(bytes, () => {}, { sourceEncoding: "unicode" });
   try {
     const parsed = pages.next().value;
     assert.deepEqual(parsed.text.split("\n"), ["A", "B", "A", "A"]);
@@ -594,7 +593,7 @@ test("one PDF text object preserves separate baselines and text-matrix scaling",
   ].join("\n");
   savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(commands)));
   const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
-  const [, , pages] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+  const [, , pages] = streamPdfPages(bytes, () => {}, { sourceEncoding: "unicode" });
   try {
     const parsed = pages.next().value;
     assert.deepEqual(parsed.text.split("\n"), ["one", "two and", "three", "four", "five"]);
@@ -616,7 +615,7 @@ test("a text-rich landscape spread reads the left page before the right", async 
     page.drawText(right[index], { x: 530, y: 550 - index * 30, size: 10 });
   }
   const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
-  const [, , pages] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+  const [, , pages] = streamPdfPages(bytes, () => {}, { sourceEncoding: "unicode" });
   try { assert.deepEqual(pages.next().value.text.split("\n"), [...left, ...right]); }
   finally { pages.return?.(); }
 });
@@ -643,7 +642,7 @@ test("a single text object can move between two spread halves on one baseline", 
   commands.push("ET");
   savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(commands.join("\n"))));
   const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
-  const [, , pages] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+  const [, , pages] = streamPdfPages(bytes, () => {}, { sourceEncoding: "unicode" });
   try { assert.deepEqual(pages.next().value.text.split("\n"), [...left, ...right]); }
   finally { pages.return?.(); }
 });
@@ -674,7 +673,7 @@ test("spread and table detection respect a nonzero MediaBox origin", async () =>
     commands.push("ET");
     savedPage.node.set(PDFName.of("Contents"), document.context.register(document.context.stream(commands.join("\n"))));
     const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
-    const [, , pages] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+    const [, , pages] = streamPdfPages(bytes, () => {}, { sourceEncoding: "unicode" });
     try {
       const text = pages.next().value.text;
       if (ruled) {
@@ -694,7 +693,7 @@ test("a landscape page without two substantial halves keeps row order", async ()
     if (index < 2) page.drawText(`Right short ${index + 1}`, { x: 530, y: 550 - index * 30, size: 10 });
   }
   const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
-  const [, , pages] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+  const [, , pages] = streamPdfPages(bytes, () => {}, { sourceEncoding: "unicode" });
   try {
     const text = pages.next().value.text;
     assert.ok(text.indexOf("Left page line number 1") < text.indexOf("Right short 1"), text);
@@ -714,7 +713,7 @@ test("a ruled landscape table is not reordered as facing pages", async () => {
     page.drawText(`Right table row number ${index + 1}`, { x: 630, y: 550 - index * 60, size: 10 });
   }
   const bytes = Buffer.from(await document.save({ useObjectStreams: false }));
-  const [, , pages] = streamPdfPages(bytes, null, () => {}, { sourceEncoding: "unicode" });
+  const [, , pages] = streamPdfPages(bytes, () => {}, { sourceEncoding: "unicode" });
   try {
     const text = pages.next().value.text;
     assert.ok(text.indexOf("Left table row number 1") < text.indexOf("Right table row number 1"), text);
@@ -946,7 +945,7 @@ test("unsupported preserved content filters retry through qpdf without losing te
     fs.writeFileSync(input, bytes);
     fs.mkdirSync(work);
     await runQpdfFile(input, prepared, ["--object-streams=disable", "--stream-data=preserve"]);
-    const [, , pages] = streamPdfPages(prepared, null, () => {}, { diskPages: true });
+    const [, , pages] = streamPdfPages(prepared, () => {}, { diskPages: true });
     try { assert.throws(() => pages.next(), (error) => error.code === "PDF_CONTENT_DECODE_REQUIRED"); }
     finally { pages.return(); }
     const result = await runPdfStream({ inPath: input, outPath: path.join(dir, "out.txt"), workDir: work, includeText: true });
@@ -1000,7 +999,7 @@ test("page spool and work directory are removed on early return and malformed in
     fs.mkdirSync(pagesDir);
     fs.writeFileSync(input, await makePdf());
     await runQpdfFile(input, prepared, ["--object-streams=disable", "--stream-data=preserve"]);
-    const [, , pages] = streamPdfPages(prepared, null, () => {}, { diskPages: true, scratchDir: pagesDir });
+    const [, , pages] = streamPdfPages(prepared, () => {}, { diskPages: true, scratchDir: pagesDir });
     const first = pages.next().value;
     assert.equal(fs.existsSync(first.text.path), true);
     pages.return();

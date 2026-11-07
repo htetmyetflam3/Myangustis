@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { correctWorldWord } from "../../../B.Parser/main/parser/text/page-decision.js";
-import { streamPdfPages } from "../../../B.Parser/extend/pipeline.js";
+import { streamPdfPages } from "../../../B.Parser/core/decoding/source-decoding.js";
 
 // The text is from the merged PDF's output; the font dictionaries are a small
 // synthetic way to exercise the existing page-font evidence boundary.
@@ -52,7 +52,7 @@ test("the PDF correction does not alter known or explicitly selected Unicode", (
   assert.equal(page.text, text);
   assert.deepEqual([...page.fontKinds], ["UNICODE"]);
 
-  const [, , selected] = streamPdfPages(pdfWithText("Zawgyi-One", text), null, () => {}, {
+  const [, , selected] = streamPdfPages(pdfWithText("Zawgyi-One", text), () => {}, {
     sourceEncoding: "unicode",
   });
   assert.equal(selected.next().value.text, text);
