@@ -1,11 +1,11 @@
 /*
-(Input chain - the middle module) Third link, between the collector and the next chain (the outside-stream skeleton parser).
+(init/file - prepare-middle, the middle consumer) Third link: consumes the collector's landed file and passes one file to the next chain (the outside-stream skeleton parser).
 This module holds nothing. It takes the landed tmp file from the collector and passes one file downstream: either the same file untouched (clean - no /Encrypt, no /ObjStm: nothing to prepare), or a qpdf-prepared file (encrypted or object-streamed: qpdf decrypts + expands + repairs, working file to file). Detection runs on the file in bounded blocks - no qpdf call and no memory load happens before the decision. A collected tmp that goes through qpdf is deleted once prepared; the prepared file is owned by downstream from that moment.
 */
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { scanPdfFileMarkers } from "./decrypt.js";
+import { scanPdfFileMarkers } from "../pdf/decrypt.js";
 
 // Only PDFs are qpdf's business. Anything else that flows through the
 // chain (DOCX above all) passes through untouched.
@@ -19,8 +19,8 @@ function isPdfFile(file) {
     fs.closeSync(fd);
   }
 }
-import { runQpdfFile } from "./qpdf.js";
-import { copyPdfPrefix, findPdfEnd } from "../pdf/pdf-tail.js";
+import { runQpdfFile } from "../pdf/qpdf.js";
+import { copyPdfPrefix, findPdfEnd } from "../../core/pdf/pdf-tail.js";
 
 // Same qpdf work as preparePdf in core/pdf/pdf-stream.js (the live
 // chain's prepare step): decrypt with empty password, disable object

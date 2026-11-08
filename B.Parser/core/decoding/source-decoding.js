@@ -10,7 +10,7 @@ import path from "node:path";
 
 import { containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts, isUnicodeFont } from "../detect.js";
 import { isLegacyFontName, normaliseFontName } from "../codepage/codepage-names.js";
-import { isEncryptedPdf, hasObjectStreams, scanPdfFileMarkers } from "../io/decrypt.js";
+import { isEncryptedPdf, hasObjectStreams, scanPdfFileMarkers } from "../../init/pdf/decrypt.js";
 import { Rabbit } from "../rabbit.js";
 import { orderText } from "../clean.js";
 import { preserveCharacters } from "./judgement.js";

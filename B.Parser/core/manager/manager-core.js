@@ -9,7 +9,7 @@ import { Worker } from "node:worker_threads";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { dispatch } from "../api/dispatcher.js";
-import { BindInput } from "../api/input-dispatcher.js";
+import { BindInput } from "../../init/bind-input.js";
 import { writeOutput } from "../io/write.js";
 
 const CONVERTER_URL = new URL("../worker/converter.js", import.meta.url);
