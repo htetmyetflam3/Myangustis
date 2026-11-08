@@ -310,7 +310,7 @@ test("file pages preserve lane decisions, commands, image geometry and page deci
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
-test("a page-number checkpoint retains later Zawgyi text on the shared route", async () => {
+test("later Zawgyi text after the prefix boundary is retained on the shared route", async () => {
   let document = await PDFDocument.create();
   document.registerFontkit(fontkit);
   const fontPath = new URL("../../../Junk/fonts/zawgyi one/ZAWGYI-ONE_V3.1.TTF", import.meta.url);
@@ -350,7 +350,7 @@ test("a page-number checkpoint retains later Zawgyi text on the shared route", a
   } finally { pages.return?.(); }
 });
 
-test("a later Zawgyi resource on a legacy page is retained and reported", async () => {
+test("a later Zawgyi resource is retained on the shared route", async () => {
   let document = await PDFDocument.create();
   document.registerFontkit(fontkit);
   const fontPath = new URL("../../../Junk/fonts/zawgyi one/ZAWGYI-ONE_V3.1.TTF", import.meta.url);
@@ -378,10 +378,9 @@ test("a later Zawgyi resource on a legacy page is retained and reported", async 
   const [, , pages] = streamPdfPages(bytes, () => {});
   try {
     const parsed = pages.next().value;
-    assert.equal(parsed.parsingPath, "legacy");
-    assert.equal(parsed.category, "UNKNOWN");
+    assert.equal(parsed.parsingPath, "font-cmap");
+    assert.equal(parsed.category, "UNICODE");
     assert.ok(parsed.text.includes("နဂါးခေါင္းဗ်ပ္ေစာင္း"), parsed.text);
-    assert.ok(parsed.warnings.some((warning) => warning.code === "zawgyi-font-on-legacy-page"));
   } finally { pages.return?.(); }
 });
 
@@ -446,7 +445,7 @@ test("selected keyboard slots are read through Differences without converting an
   const [, , pages] = streamPdfPages(bytes, () => {});
   try {
     const parsed = pages.next().value;
-    assert.equal(parsed.parsingPath, "legacy");
+    assert.equal(parsed.parsingPath, "font-cmap");
     assert.ok(parsed.text.includes("example.com"), parsed.text);
     assert.ok(parsed.text.includes("example.org"), parsed.text);
     assert.ok(parsed.text.includes("bookkeeper"), parsed.text);
@@ -476,7 +475,7 @@ test("legacy keyboard evidence on an unrelated face preserves English headings",
   const [, , pages] = streamPdfPages(bytes, () => {});
   try {
     const parsed = pages.next().value;
-    assert.equal(parsed.parsingPath, "legacy");
+    assert.equal(parsed.parsingPath, "font-cmap");
     assert.ok(parsed.text.includes("INTERVIEW"), parsed.text);
     assert.ok(parsed.text.includes("ဘဝမှာအခက်အခဲ"), parsed.text);
     assert.ok(parsed.text.includes("ဆရာအောင်ကိုဦး"), parsed.text);
@@ -503,7 +502,7 @@ test("an overprinted legacy title does not hide the later body from its keyboard
   const [, , pages] = streamPdfPages(bytes, () => {});
   try {
     const parsed = pages.next().value;
-    assert.equal(parsed.parsingPath, "legacy");
+    assert.equal(parsed.parsingPath, "font-cmap");
     assert.ok(parsed.text.includes("လိပ်ကျဆိုတာ"), parsed.text);
     assert.ok(parsed.text.includes("ပြင်ဦးလွင်နားက"), parsed.text);
   } finally { pages.return?.(); }
