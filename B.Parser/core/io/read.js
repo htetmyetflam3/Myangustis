@@ -4,7 +4,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { ValueError, pyTruthy, pyInt, fromHexStrict } from "../pylib.js";
 import { loadMapJson, mapNameForPath } from "../json-map.js";
-import { MAX_PAGES, OWNER_PARSER_WORKER, resourceLimit } from "../limits/local.js";
+import { OWNER_PARSER_WORKER, resourceLimit } from "../limits/local.js";
 import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../codepage/codepage-registry.js";
 import { containsMyanmar } from "../detect.js";
 import { decodeVisualUnicodeRun } from "../codepage/codepage-visual.js";
@@ -523,65 +523,10 @@ export function pageHasImages(objects, pageNum, pageGen) {
   return false;
 }
 
-export function collectPages(
-  objects,
-  pageNum,
-  gen = 0,
-  state = { visiting: new Set(), seenPages: new Set(), count: 0 },
-) {
-  const key = `${pageNum},${gen}`;
-  if (state.visiting.has(key)) throw new ValueError("Cycle found in PDF page tree");
-  const buf = objectDictionary(objects, key);
-  const dStr = buf === undefined ? "" : buf.toString("latin1");
-  if (/\/Type\s*\/Page(?!s)/.test(dStr)) {
-    if (state.seenPages.has(key)) return [];
-    state.seenPages.add(key);
-    state.count += 1;
-    if (state.count > MAX_PAGES) {
-      throw new ValueError(`PDF exceeds the ${MAX_PAGES} page cap`);
-    }
-    return [[pageNum, gen]];
-  }
-  if (/\/Type\s*\/Pages/.test(dStr)) {
-    state.visiting.add(key);
-    try {
-      const pages = [];
-      const km = /\/Kids\s*\[([\s\S]*?)\]/.exec(dStr);
-      if (km) {
-        const kidsText = km[1];
-        ANY_REF_RE.lastIndex = 0;
-        const refs = [];
-        let r;
-        while ((r = ANY_REF_RE.exec(kidsText)) !== null) refs.push(r[1]);
-        for (const ref of refs) {
-
-          pages.push(...collectPages(objects, pyInt(ref), 0, state));
-        }
-      }
-      return pages;
-    } finally {
-      state.visiting.delete(key);
-    }
-  }
-  return [];
-}
-
-export function findRootPages(objects) {
-  if (objects.rootKey) {
-    const catalog = objectDictionary(objects, objects.rootKey)?.toString("latin1") ?? "";
-    const pages = /\/Pages\s+(\d+)\s+\d+\s+R/.exec(catalog);
-    if (pages) return pyInt(pages[1]);
-  }
-  for (const [key, d] of objects) {
-    const dStr = d.toString("latin1");
-    if (/\/Type\s*\/Catalog/.test(dStr)) {
-      const pm = /\/Pages\s+(\d+)\s+\d+\s+R/.exec(dStr);
-      if (pm) return pyInt(pm[1]);
-    }
-  }
-  return null;
-}
-
+// Page discovery (catalog -> /Pages -> /Kids leaf order) lives in the
+// outside-stream instruction pass: core/pdf/page-instructions.js
+// (decodePdfInstructions). This module only extracts what the
+// instructions point at.
 
 
 
@@ -1025,7 +970,7 @@ function pageGridEvidence(width, height, left = 0) {
 }
 
 export function extractPageLines(objects, pageNum, pageGen, decoding, {
-  usedMyanmarFonts = null, usedFontKinds = null, usedLegacyFonts = null,
+  pageBox = null, usedMyanmarFonts = null, usedFontKinds = null, usedLegacyFonts = null,
   inspectPrefix = null, onPageContent = null, onConfirmedRepair = null, onVisualGlyphRecovery = null,
   scratchDir = null, pieceStore = null,
 } = {}) {
@@ -1053,7 +998,7 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, {
   try {
   pieceStore ??= new PdfPagePieces(path.dirname(spooled.file));
   const { streams, references } = spooled;
-  const [pageW, pageH] = getPageMediabox(objects, pageNum, pageGen);
+  const [pageW, pageH] = pageBox ?? getPageMediabox(objects, pageNum, pageGen);
   pieceStore.begin(doc);
   onPageContent?.(streams, references, loader, spooled);
   const pageLeft = imageCollector.media[0];
