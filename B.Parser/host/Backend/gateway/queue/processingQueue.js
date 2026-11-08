@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import { getLogen } from "../../../_path.js";
 const { emitEvent } = (await getLogen()).siteLog;
 import { createReadStream } from 'node:fs';
+import { rm } from 'node:fs/promises';
 import { queueTriggerRequest } from './managerHandoff.js';
 import path from 'node:path';
 import { BindInput } from '../../../../core/api/input-dispatcher.js';
@@ -317,12 +318,13 @@ export function createProcessingQueue({
       }
       api.managerStarted(formId);
       const handoff = {};
+      let fileObject = null;
       try {
         const record = recordFor(formId);
         // Site flow: the queue reads the file once here and passes the
         // resulting object on the trigger request. Downstream parser code
         // receives the file object instead of reading the same path again.
-        const fileObject = await fileReader({
+        fileObject = await fileReader({
           filePath: savedPath ?? record.inputPath,
           filename: record.originalName ?? file?.originalname ?? intent?.originalName ?? null,
           mimeType: record.inputMimeType ?? file?.mimetype ?? null,
@@ -341,6 +343,9 @@ export function createProcessingQueue({
       } catch (error) {
         error.artifactPath = handoff.manager?.file ?? null;
         throw error;
+      } finally {
+        // A chain-owned prepared/collected tmp dies with the parse.
+        if (fileObject?.collected) await rm(fileObject.path, { force: true }).catch(() => {});
       }
     },
     managerQueued(formId) {

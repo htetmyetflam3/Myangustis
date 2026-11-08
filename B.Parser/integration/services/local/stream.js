@@ -5,6 +5,7 @@ This module is LocalDispatchStream: the caller passes a readable byte stream or 
 // Local entry dispatch stream — delegates routing to the API dispatcher.
 // Caller passes a readable byte stream or object directly; the dispatcher
 // assigns the correct worker thread based on caller type. No temp file, no read-back.
+import fs from "node:fs/promises";
 import { BindInput } from "../../../core/api/input-dispatcher.js";
 import { dispatchLocal } from "../../../core/api/dispatcher.js";
 
@@ -16,13 +17,18 @@ export class LocalDispatchStream {
   async dispatchStream(source, method = "extracting", identity = null) {
     const owner = ownerAccess(identity);
     const object = await BindInput({ object: source });
-    // `method` here names the job (extracting/ocr); the dispatcher takes a
-    // job object plus the default mode. One shape, built here.
-    const jobType = method === "ocr" ? "ocr" : "extracting";
-    return dispatchLocal({
-      object, method: "default", identity,
-      job: { job: jobType, method: "default", owner },
-    });
+    try {
+      // `method` here names the job (extracting/ocr); the dispatcher takes a
+      // job object plus the default mode. One shape, built here.
+      const jobType = method === "ocr" ? "ocr" : "extracting";
+      return await dispatchLocal({
+        object, method: "default", identity,
+        job: { job: jobType, method: "default", owner },
+      });
+    } finally {
+      // A collected tmp is chain-owned: the job is done with it.
+      if (object?.collected) await fs.rm(object.path, { force: true }).catch(() => {});
+    }
   }
 
   async close() {

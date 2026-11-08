@@ -156,38 +156,50 @@ export class Manager {
 
   async dispatch(job, caller = "site", identity = null) {
     let { object } = job;
+    let chainOwned = null;
     if (!object && job.inPath) {
       object = await BindInput({ path: job.inPath });
+      if (object?.collected) chainOwned = object;
     }
     if (!object) {
       throw new TypeError("Manager.dispatch: job needs an object or inPath");
     }
-    return dispatch({
-      object,
-      method: job.method ?? "default",
-      caller,
-      identity,
-      job,
-      key: job.key ?? null,
-      limit: job.limit ?? null,
-      worker: job.worker ?? null,
-      output: job.output ?? job.outputFormat ?? job.outputType ?? null,
-    });
+    try {
+      return await dispatch({
+        object,
+        method: job.method ?? "default",
+        caller,
+        identity,
+        job,
+        key: job.key ?? null,
+        limit: job.limit ?? null,
+        worker: job.worker ?? null,
+        output: job.output ?? job.outputFormat ?? job.outputType ?? null,
+      });
+    } finally {
+      // A collected/prepared tmp is chain-owned: the job is done with it.
+      if (chainOwned) await fs.rm(chainOwned.path, { force: true }).catch(() => {});
+    }
   }
 
   async dispatchStream(source, job = {}) {
     const object = await BindInput({ object: source });
-    return dispatch({
-      object,
-      method: job.method ?? "default",
-      caller: "local",
-      identity: job.identity ?? null,
-      job,
-      key: job.key ?? null,
-      limit: job.limit ?? null,
-      worker: job.worker ?? null,
-      output: job.output ?? job.outputFormat ?? job.outputType ?? null,
-    });
+    try {
+      return await dispatch({
+        object,
+        method: job.method ?? "default",
+        caller: "local",
+        identity: job.identity ?? null,
+        job,
+        key: job.key ?? null,
+        limit: job.limit ?? null,
+        worker: job.worker ?? null,
+        output: job.output ?? job.outputFormat ?? job.outputType ?? null,
+      });
+    } finally {
+      // A collected tmp is chain-owned: the job is done with it.
+      if (object?.collected) await fs.rm(object.path, { force: true }).catch(() => {});
+    }
   }
 
   async renderPlainText(job = {}) {

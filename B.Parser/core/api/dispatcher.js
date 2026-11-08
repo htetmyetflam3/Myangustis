@@ -122,6 +122,10 @@ export async function dispatch({
       ?? (typeof object.path === "string" ? object.path.split(/[\\/]/).pop() : null),
     inPath: normalized.inPath ?? object.path ?? null,
     data: normalized.data ?? object.bytes ?? null,
+    // True when the input door already ran qpdf over the file: the
+    // worker's parse then seeks in the prepared file instead of
+    // preparing a second time.
+    prepared: object.prepared === true,
     caller: who,
     identity,
     owner,

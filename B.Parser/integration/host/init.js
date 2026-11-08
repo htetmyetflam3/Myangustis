@@ -7,6 +7,7 @@ This module creates the converter, PDF and DOCX parsers the site calls, over the
 // resulting object to BindParser ($) through the dispatcher.
 // Public (no identity) and authenticated (identity = authenticatedUser) callers
 // share the same path; identity only affects owner access checks.
+import { rm } from 'node:fs/promises';
 import { BindInput } from '../../core/api/input-dispatcher.js';
 import { dispatchSite } from '../../core/api/dispatcher.js';
 import { pool } from '../../core/manager/manager-core.js';
@@ -57,6 +58,9 @@ export function createConverterParser() {
         });
       } catch (err) {
         throw new Error('Converter manager failed', { cause: err });
+      } finally {
+        // A collected/prepared tmp is chain-owned: the parse is done.
+        if (!trigger.object && object?.collected) await rm(object.path, { force: true }).catch(() => {});
       }
       // The dispatcher returns the parse result: per-page records for txt
       // (pages[].text), or an assembled `text` when a worker provides one.

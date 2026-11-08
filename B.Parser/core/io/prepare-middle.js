@@ -1,11 +1,24 @@
 /*
-(Input chain, new - not wired into the live chain yet) The middle module: third link, between the collector and the next chain (the outside-stream skeleton parser).
-This module holds nothing. It takes the whole bytes from upstream and passes one thing downstream: either the bytes themselves (clean file - no /Encrypt, no /ObjStm: nothing to prepare), or the path of a qpdf-prepared file (encrypted or object-streamed: bytes are written to a tmp file instantly, dropped from memory, and qpdf decrypts + expands + repairs that tmp; the prepared file is then emitted by path so downstream peeks it by offset instead of loading it). The encryption/object-stream checks run on the in-memory bytes - no qpdf call, no disk write happens before the decision.
+(Input chain - the middle module) Third link, between the collector and the next chain (the outside-stream skeleton parser).
+This module holds nothing. It takes the landed tmp file from the collector and passes one file downstream: either the same file untouched (clean - no /Encrypt, no /ObjStm: nothing to prepare), or a qpdf-prepared file (encrypted or object-streamed: qpdf decrypts + expands + repairs, working file to file). Detection runs on the file in bounded blocks - no qpdf call and no memory load happens before the decision. A collected tmp that goes through qpdf is deleted once prepared; the prepared file is owned by downstream from that moment.
 */
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { isEncryptedPdf, hasObjectStreams } from "./decrypt.js";
+import { scanPdfFileMarkers } from "./decrypt.js";
+
+// Only PDFs are qpdf's business. Anything else that flows through the
+// chain (DOCX above all) passes through untouched.
+function isPdfFile(file) {
+  const fd = fs.openSync(file, "r");
+  try {
+    const head = Buffer.alloc(5);
+    fs.readSync(fd, head, 0, 5, 0);
+    return head.toString("latin1") === "%PDF-";
+  } finally {
+    fs.closeSync(fd);
+  }
+}
 import { runQpdfFile } from "./qpdf.js";
 import { copyPdfPrefix, findPdfEnd } from "../pdf/pdf-tail.js";
 
@@ -40,36 +53,39 @@ async function prepareTmp(input, prepared) {
   }
 }
 
-// Consume the collected whole bytes and emit exactly one item:
-//   { prepared: false, kind: "bytes", bytes, encrypted, objectStreams }
-//   { prepared: true,  kind: "file",  path,  encrypted, objectStreams }
-// The "file" path is owned by downstream from that moment (it peeks it
-// by offset and cleans it up); this module retains no reference to the
-// bytes in either branch.
+// Consume the collector's landed file and emit exactly one item:
+//   { prepared: false, kind: "file", path, encrypted, objectStreams }
+//   { prepared: true,  kind: "file", path, encrypted, objectStreams }
+// Either way downstream receives a file to peek by offset; this module
+// retains nothing. A `collected` input tmp is deleted once qpdf has
+// produced the prepared file (or failed trying).
 export async function* prepareMiddle(source, { workDir } = {}) {
   for await (const item of source) {
-    let bytes = Buffer.isBuffer(item) ? item : Buffer.from(item);
-    const encrypted = isEncryptedPdf(bytes);
-    const objectStreams = hasObjectStreams(bytes);
+    const input = typeof item === "string" ? item : item?.path;
+    if (!input) throw new TypeError("prepareMiddle: a landed file is required");
+    if (!isPdfFile(input)) {
+      yield { prepared: false, kind: "file", path: input, encrypted: false, objectStreams: false };
+      return;
+    }
+    const { encrypted, objectStreams } = scanPdfFileMarkers(input);
 
     if (!encrypted && !objectStreams) {
-      // Nothing to prepare: pass the very same bytes downstream.
-      yield { prepared: false, kind: "bytes", bytes, encrypted, objectStreams };
+      // Nothing to prepare: pass the very same file downstream.
+      yield { prepared: false, kind: "file", path: input, encrypted, objectStreams };
       return;
     }
 
-    // Encrypted or object-streamed: write to tmp instantly, drop the
-    // in-memory copy, and let qpdf work on the file.
+    const ownDir = !workDir;
     const directory = workDir ?? fs.mkdtempSync(path.join(os.tmpdir(), "myangustis-prepare-"));
     fs.mkdirSync(directory, { recursive: true });
-    const input = path.join(directory, "input.pdf");
     const prepared = path.join(directory, "prepared.pdf");
-    fs.writeFileSync(input, bytes, { mode: 0o600 });
-    bytes = null; // flush: the bytes now live only in the tmp file
     try {
       await prepareTmp(input, prepared);
+    } catch (error) {
+      if (ownDir) fs.rmSync(directory, { recursive: true, force: true });
+      throw error;
     } finally {
-      fs.rmSync(input, { force: true });
+      if (item?.collected) fs.rmSync(input, { force: true });
     }
     yield { prepared: true, kind: "file", path: prepared, encrypted, objectStreams };
     return;

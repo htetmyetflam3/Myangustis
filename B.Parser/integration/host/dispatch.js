@@ -6,6 +6,7 @@ This module is SiteDispatch: it reads the caller's file into an object and hands
 // Calls BindInput (input-dispatcher) on the caller's side to read the file into an object,
 // then passes { object, method } through the dispatcher which assigns the
 // correct worker thread based on caller type. No temp files, no read-back.
+import fs from "node:fs/promises";
 import { BindInput } from "../../core/api/input-dispatcher.js";
 import { dispatchSite } from "../../core/api/dispatcher.js";
 
@@ -20,10 +21,15 @@ export class SiteDispatch {
     // `method` here names the job (extracting/ocr); the dispatcher takes a
     // job object plus the default mode. One shape, built here.
     const jobType = method === "ocr" ? "ocr" : "extracting";
-    return dispatchSite({
-      object, method: "default", identity,
-      job: { job: jobType, method: "default", owner },
-    });
+    try {
+      return await dispatchSite({
+        object, method: "default", identity,
+        job: { job: jobType, method: "default", owner },
+      });
+    } finally {
+      // A collected/prepared tmp is chain-owned: the job is done with it.
+      if (object?.collected) await fs.rm(object.path, { force: true }).catch(() => {});
+    }
   }
 
   async close() {

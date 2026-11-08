@@ -94,8 +94,12 @@ async function runPdfStreamAttempt(msg, { manual = false, pdfImages = false, gen
       input = path.join(directory, "input.pdf");
       fs.writeFileSync(input, data, { mode: 0o600 });
     }
-    const prepared = path.join(directory, "prepared.pdf");
-    await preparePdf(input, prepared, directory, generalized);
+    // The input door may already have prepared this file (msg.prepared:
+    // qpdf ran over the landed tmp at BindInput). Preparing again would
+    // only rewrite the same bytes; seek in the door's file instead. The
+    // generalized retry always prepares its own way, regardless.
+    const prepared = msg.prepared === true && !generalized ? input : path.join(directory, "prepared.pdf");
+    if (prepared !== input) await preparePdf(input, prepared, directory, generalized);
     // One original-PDF handle for this job. Scan does not know the PDF;
     // after it collects broken lines, repair sends their SVG requests to
     // this cache, which is the part that owns PDF -> SVG export.

@@ -1,11 +1,13 @@
 /*
 (Input chain - sits like Architecture/Engine/init/bridge.js) One door, two functions on a trigger.
-BindInput is the only entry: a trigger comes in { path } (a file the caller owns) or { object } (bytes or a stream already in hand) - never both. A relative trigger path names a file saved by the host, so it is pointed at the host upload dir (<site runtime>/upload/input, per-kind subdir) before reading; an absolute path is an explicit location and is used as given. The trigger then lands in exactly one of two functions: fromPath reads the file through the reader chain (Generator A -> collectA); fromObject passes the incoming object to the same collector. The stage generators sit in core/io/ (file-chunks.js, collect-whole.js) the way the segmentor stages sit in MonoSyllabism/generators/; the composition sits here, one line per chain. Routing and job decisions stay in dispatcher.js - this door only answers "where do the bytes come from", and returns the { path?, size, bytes } object the dispatcher already accepts.
+BindInput is the only entry: a trigger comes in { path } (a file the caller owns) or { object } (bytes or a stream already in hand) - never both. A relative trigger path names a file saved by the host, so it is pointed at the host upload dir (<site runtime>/upload/input, per-kind subdir); an absolute path is an explicit location and is used as given. The trigger then lands in exactly one of two functions: fromPath points at the already-landed file (nothing is read into memory - the whole bytes are never held); fromObject lands a byte stream or loose bytes into a tmp file through the collector (Generator A -> collectA, the incremental tmp writer), and a path-carrying object resolves to its file the same way. Either way the landed file runs past the middle (prepare-middle.js): clean files pass untouched, encrypted/object-streamed PDFs are prepared by qpdf over the tmp, and the parsing chain entry receives the prepared file to seek in - qpdf's output is a tmp file too, never memory. The stage generators sit in core/io/ (file-chunks.js, collect-whole.js) the way the segmentor stages sit in MonoSyllabism/generators/; the composition sits here. Routing and job decisions stay in dispatcher.js - this door only answers "where do the bytes live", and returns { path, size } (plus `filename` when the trigger named one, and `collected: true` when the file is a chain-owned tmp its consumer must delete). The dispatcher payload prefers inPath, so workers read the file themselves.
 */
+import fs from "node:fs";
 import path from "node:path";
 import { PARSER_DIR } from "../../_path.js";
 import { generatorA } from "../io/file-chunks.js";
 import { collectA } from "../io/collect-whole.js";
+import { prepareMiddle } from "../io/prepare-middle.js";
 
 // Where the host saves uploaded files: <site runtime>/upload/input with
 // a per-kind subdir (Backend/file/paths.js: INPUT_DIR, inputDirFor).
@@ -33,22 +35,52 @@ function savedFilePath(name) {
   return resolved;
 }
 
-// Trigger came with a file path: read it through the reader chain.
-// A relative path names a file the host saved, so it is pointed at the
-// host upload dir first (savedFilePath); the object reports the file
-// actually read.
-async function fromPath(name) {
-  const file = savedFilePath(name);
-  for await (const bytes of collectA(generatorA(file))) {
-    return { path: file, size: bytes.length, bytes };
-  }
-  throw new TypeError("BindInput: no bytes read from path");
+// The file-object for an already-landed file: point and measure,
+// never read. Existence and file-ness are proven here.
+function fileObject(file) {
+  const stat = fs.statSync(file);
+  if (!stat.isFile()) throw new Error(`BindInput: not a file: ${file}`);
+  return { path: file, size: stat.size };
 }
 
-// Trigger came with an object: a byte stream passes to the collector
-// untouched, bytes in hand go as one chunk, a path-only object is read
-// through the reader chain.
-async function fromObject(object) {
+// Run landed items past the middle and shape the one object the
+// dispatcher accepts: the prepared (or untouched) file, its size, and
+// whether the chain owns it. `collected` is set when the returned file
+// is a chain tmp - the collected landing, or qpdf's prepared output -
+// and its consumer must delete it; a caller's own file is never marked.
+async function preparedObject(items, { filename = null, collectedItem = false } = {}) {
+  for await (const ready of prepareMiddle(items)) {
+    return {
+      path: ready.path,
+      size: fs.statSync(ready.path).size,
+      prepared: ready.prepared === true,
+      ...((ready.prepared || collectedItem) ? { collected: true } : {}),
+      ...(filename ? { filename } : {}),
+    };
+  }
+  throw new TypeError("BindInput: prepare produced nothing");
+}
+
+// Trigger came with a file path: the bytes already live in that file,
+// so the trigger simply points at it (through savedFilePath) - no
+// collection, no memory - and the middle prepares it if it must.
+async function fromPath(name) {
+  const file = savedFilePath(name);
+  fileObject(file); // prove existence before the middle sees it
+  return preparedObject([{ path: file }]);
+}
+
+// Trigger came with an object. A path-carrying object resolves to its
+// file like fromPath. A byte stream or loose bytes have no home yet,
+// so they land in a tmp through the collector (marked collected: true
+// - the consumer owns its deletion).
+async function fromObject(object, nameHint = null) {
+  const filename = (typeof object?.filename === "string" && object.filename) || nameHint || null;
+  if (typeof object?.path === "string" && object.path && !(object instanceof Uint8Array)) {
+    const file = savedFilePath(object.path);
+    fileObject(file);
+    return preparedObject([{ path: file }], { filename });
+  }
   const source = object?.[Symbol.asyncIterator]
     ? object
     : object instanceof Uint8Array
@@ -57,23 +89,17 @@ async function fromObject(object) {
         ? [object.bytes]
         : object?.data instanceof Uint8Array
           ? [object.data]
-          : typeof object?.path === "string" && object.path
-            ? generatorA(savedFilePath(object.path))
-            : null;
+          : null;
   if (!source) {
     throw new TypeError("BindInput: object must be a byte stream, bytes, or a file path");
   }
-  for await (const bytes of collectA(source)) {
-    return typeof object?.path === "string" && object.path
-      ? { path: savedFilePath(object.path), size: bytes.length, bytes }
-      : { size: bytes.length, bytes };
-  }
-  throw new TypeError("BindInput: no bytes read from object");
+  return preparedObject(collectA(source, { nameHint: filename }), { filename, collectedItem: true });
 }
 
 /**
  * One entry for trigger input. Returns a promise for the input object:
- * { path, size, bytes } when a path is known, { size, bytes } otherwise.
+ * { path, size } - the file the bytes live in, always. `collected: true`
+ * marks a chain-owned tmp the consumer must delete after use.
  */
 export function BindInput(trigger) {
   if (!trigger || typeof trigger !== "object" || Array.isArray(trigger)) {
@@ -86,6 +112,6 @@ export function BindInput(trigger) {
     throw new TypeError("BindInput: supply a file path or an object, not both");
   }
   if (hasPath) return fromPath(path);
-  if (hasObject) return fromObject(trigger.object);
+  if (hasObject) return fromObject(trigger.object, trigger.filename ?? null);
   throw new TypeError("BindInput: trigger must carry a file path or an object");
 }
