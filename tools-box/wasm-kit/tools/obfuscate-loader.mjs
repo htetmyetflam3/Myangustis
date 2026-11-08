@@ -1,10 +1,12 @@
-// FILE: wasm/box/tools/obfuscate-loader.mjs — the loader's obfuscation pass.
-// Owner's contract: the loader rides obfuscated but NOT encrypted — the
+// FILE: wasm/box/tools/obfuscate-loader.mjs — the kit's obfuscation pass.
+// Owner's contract: shipped JS rides obfuscated but NOT encrypted — the
 // bootstrap must run raw once extracted. Obfuscation is honestly disclosed
 // as non-cryptographic: it raises the reading cost, it does not protect the
 // key beyond the split-under-decoy-names trick. Export names are kept
 // (bootModules / decryptToLoad / assembleKey / run) so the host contract
 // stays stable; everything internal gets hex names and packed strings.
+// The same pass obfuscates the in-box loader (pack-box) and every bundle
+// module before it is sealed (build-payload): there is no raw lane.
 import JavaScriptObfuscator from "javascript-obfuscator";
 
 export function obfuscateLoader(src) {

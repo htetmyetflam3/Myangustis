@@ -218,3 +218,7 @@ svgout/*.png
 svgout/*.json
 svgout/known/*.svg
 svgout/known/*.png
+
+# wasm-kit build inputs/intermediates: plain master is sealed-only, never committed
+/tools-box/wasm-kit/master.json
+/tools-box/wasm-kit/payload.bin

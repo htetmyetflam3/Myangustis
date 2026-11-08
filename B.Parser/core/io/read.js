@@ -1,4 +1,4 @@
-import { parseTtfCmap } from "../codepage/ttf-cmap.js";
+import { parseTtfCmap } from "../codepage/cmap.js";
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";

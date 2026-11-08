@@ -4,8 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { englishLikeness } from "../../../B.Parser/core/decoding/decide.js";
-import { choosePageParser } from "../../../B.Parser/core/decoding/decide.js";
+import { englishLikeness } from "../../../B.Parser/core/decoding/judgement.js";
+import { choosePageParser } from "../../../B.Parser/core/decoding/judgement.js";
 import { streamPdfPages } from "../../../B.Parser/core/decoding/source-decoding.js";
 import { prepareVectorLayout } from "../../../B.Parser/extend/codepage-resolve.js";
 import { probePagePrefix } from "../../../B.Parser/core/io/read.js";

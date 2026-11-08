@@ -15,7 +15,7 @@
 // Module.custom_sections(name) and feed the engine in-box.
 import fs from "node:fs";
 import path from "node:path";
-import { obfuscateLoader } from "./obfuscate-loader.js";
+import { obfuscateLoader } from "./obfuscate-loader.mjs";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 const ENGINE = path.join(ROOT, "engine.wasm");
@@ -59,9 +59,9 @@ function customSection(name, data) {
 export function packBox({ enginePath = ENGINE, loaderPath, payloadPath, outPath = OUT } = {}) {
   const engine = fs.readFileSync(enginePath);
   // The section carries the obfuscated loader (owner contract: obfuscated,
-  // NOT encrypted — bootstrap runs raw). LINGA_BOX_RAW=1 packs the source.
-  let loader = bundleLoader(loaderPath);
-  if (!process.env.LINGA_BOX_RAW) loader = Buffer.from(obfuscateLoader(loader.toString("utf8")), "utf8");
+  // NOT encrypted — bootstrap runs raw). There is no raw lane: the loader
+  // always ships obfuscated.
+  const loader = Buffer.from(obfuscateLoader(bundleLoader(loaderPath).toString("utf8")), "utf8");
   const payload = fs.readFileSync(payloadPath);
   const box = Buffer.concat([
     engine,
@@ -83,7 +83,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const payloadPath = path.join(ROOT, "payload.bin");
   for (const p of [loaderPath, payloadPath]) {
     if (!fs.existsSync(p)) {
-      console.error(`missing ${p} - run build-payload.mjs first`);
+      console.error(`missing ${p} - run build-payload.js first`);
       process.exit(1);
     }
   }

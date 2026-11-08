@@ -46,7 +46,7 @@ import { VECTOR_MAP_DIR } from "../../_path.js";
 
 import { TtfFont, glyphContours } from "../codepage/glyf.js";
 import { glyphSignature } from "./repair/svg-contour.js";
-import { parseTtfCmap } from "../codepage/ttf-cmap.js";
+import { parseTtfCmap } from "../codepage/cmap.js";
 import {
   pickEmbeddedFont, hasMyanmarGlyphs, getStream, MAX_PDF_OBJECTS,
   parseToUnicodeStream, extractPageLines,
@@ -57,8 +57,8 @@ import {
   FontResourceLoader, DocumentDecoding, pageFontDecoders, PdfRef,
   detectLegacyLayoutFonts,
 } from "../pdf/pdf-fonts.js";
-import { englishLikeness } from "../decoding/decide.js";
-import { crowdVote, loadWitnesses } from "./repair/svg-outline-vote.js";
+import { englishLikeness } from "../decoding/judgement.js";
+import { crowdVote, loadWitnesses } from "./repair/svg.js";
 import { WININNWA_LEGACY_CODE_PAGE } from "../codepage/codepage-registry.js";
 
 

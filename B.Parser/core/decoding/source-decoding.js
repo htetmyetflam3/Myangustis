@@ -8,11 +8,11 @@ import { containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts } from "../det
 import { isEncryptedPdf, hasObjectStreams, scanPdfFileMarkers } from "../io/decrypt.js";
 import { Rabbit } from "../rabbit.js";
 import { orderText } from "../clean.js";
-import { preserveCharacters } from "./decide.js";
+import { preserveCharacters } from "./judgement.js";
 import { extractDocxParagraphs, validateDocxArchive } from "../docx/docx-extract.js";
 import { extractDocxParagraphsExternal } from "../docx/docx-external.js";
-import { scoreText } from "./decide.js";
-import { choosePageParser } from "./decide.js";
+import { scoreText } from "./judgement.js";
+import { choosePageParser } from "./judgement.js";
 import { countImpossiblePairs } from "../beautify/scan.js";
 import { WININNWA_LEGACY_CODE_PAGE } from "../codepage/codepage-registry.js";
 import { MAX_PAGES, MAX_TEXT_CHARS } from "../limits/local.js";

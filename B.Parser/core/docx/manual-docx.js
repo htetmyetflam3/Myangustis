@@ -1,7 +1,7 @@
 import { PageStoreWriter, pageRecords, textChunks } from "../io/emit.js";
 import { writePageStore } from "../io/write.js";
 import { PosScanner } from "../beautify/scan.js";
-import { normalizeOutputText } from "../decoding/decide.js";
+import { normalizeOutputText } from "../decoding/judgement.js";
 import { getEngineNormalize } from "../../_path.js";
 
 // DOCX extraction already holds paragraph chunks in memory. Merge OCR into

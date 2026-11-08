@@ -16,7 +16,7 @@ import { writePageStore } from "../io/write.js";
 import { PdfTextSink } from "../pdf/pdf-text-sink.js";
 import { PageStoreWriter } from "../io/emit.js";
 import { PosScanner } from "../beautify/scan.js";
-import { normalizeOutputText } from "../decoding/decide.js";
+import { normalizeOutputText } from "../decoding/judgement.js";
 import { getEngineNormalize } from "../../_path.js";
 import {
   MAX_INPUT_BYTES,

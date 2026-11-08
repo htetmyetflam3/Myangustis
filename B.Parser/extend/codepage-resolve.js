@@ -34,7 +34,7 @@ const { emitEvent } = (await getLogen()).coreLog;
 
 
 import { orderText } from "../core/clean.js";
-import { scoreText } from "../core/decoding/decide.js";
+import { scoreText } from "../core/decoding/judgement.js";
 import {
   extractPageLines, getStream, parseToUnicodeStream, MAX_PDF_OBJECTS,
 } from "../core/io/read.js";

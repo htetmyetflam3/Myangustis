@@ -1,10 +1,14 @@
-// step 3: payload = encrypt( pack( base/ entry logic + knowledge ) )
-// External-key design: the AES-256-GCM key is minted/reused in payload.key.txt
-// next to this script (and overridable via PAYLOAD_KEY). It is NEVER written
-// into loader.mjs or into box.wasm. Container: iv(12) || ciphertext || tag(16).
+// step 3: payload = encrypt( pack( obfuscate( base/ bundle ) ) )
+// Owner's design (see tools/pack-box.js): the bundle is obfuscated first,
+// then sealed — the shipped payload never contains readable JS or a
+// readable JSON. External-key design: the AES-256-GCM key is minted/reused
+// in payload.key.txt next to this script (and overridable via PAYLOAD_KEY).
+// It is NEVER written into loader.mjs or into box.wasm.
+// Container: iv(12) || ciphertext || tag(16).
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import { obfuscateLoader } from "./tools/obfuscate-loader.mjs";
 
 const HERE = import.meta.dirname;
 const BASE = path.join(HERE, "base");
@@ -20,27 +24,31 @@ function loadKey() {
   return key;
 }
 
+// The pack is the flat module map the shim resolves ('./normalize.js',
+// './function.js', ...). Sources on disk live under base/ and import each
+// other as './x.js' already, except engine-api.js, which points into
+// './base/' from the kit root and is flattened here.
 export function buildPack() {
+  const master = JSON.parse(fs.readFileSync(KNOWLEDGE, "utf8"));
+  if (master.mapData === undefined) {
+    throw new Error(`missing "mapData" in ${KNOWLEDGE} — decrypt the current master.json.enc first`);
+  }
   const pack = {};
   let inlined = 0;
-  const inlineSection = (_, name) => {
-    const section = JSON.parse(fs.readFileSync(KNOWLEDGE, "utf8"))[name];
-    if (section === undefined) throw new Error(`missing "${name}" in ${KNOWLEDGE}`);
-    inlined++;
-    return `const ${name} = ${JSON.stringify(section)};`;
-  };
-  // disk function.js is served in-box under the name every import expects
-  for (const [disk, key] of [
-    ["function.js", "_function.js"],
-    ["normalize.js", "normalize.js"],
-    ["sourceMap.js", "sourceMap.js"],
-    ["sourceMapper.js", "sourceMapper.js"],
-  ]) {
+  for (const disk of ["function.js", "normalize.js", "sourceMap.js", "sourceMapper.js"]) {
     let src = fs.readFileSync(path.join(BASE, disk), "utf8");
-    // inline the mapData section of master.json where the JSON import was
+    // Host-only helper: support.js lives outside the box (the shim stubs
+    // in-box logging), so its import and init call never ship.
+    src = src.replace(/import\s*\{\s*debugLogInit\s*\}\s*from\s*["']\.\.\/support\.js["'];?/g, "");
+    src = src.replace(/^\s*debugLogInit\(\);\s*$/gm, "");
+    // Inline the mapData section of master.json where the JSON import was:
+    // the sealed bundle carries the data as code, never as a readable file.
     src = src.replace(
-      /import\s+(\w+)\s+from\s+["'][^"']*master\.json["']\s+with\s*\{[^}]*\}\s*;/g,
-      inlineSection,
+      /import\s+mapData\s+from\s+["'][^"']+["']\s+with\s*\{[^}]*\}\s*;/g,
+      () => {
+        inlined++;
+        return `const mapData = ${JSON.stringify(master.mapData)};`;
+      },
     );
     // base/ files are bundle sources, not valid standalone ESM: drop duplicate
     // re-exports of names already declared with `export const`.
@@ -53,10 +61,12 @@ export function buildPack() {
         .filter((n) => !constNames.has(n.split(/\s+as\s+/)[0].trim()));
       return keep.length ? `export { ${keep.join(", ")} };` : "";
     });
-    pack[key] = src;
+    pack[disk] = obfuscateLoader(src);
   }
-  pack["engine-api.js"] = fs.readFileSync(path.join(HERE, "engine-api.mjs"), "utf8");
-  if (!inlined) throw new Error(`no master.json import found in ${BASE}`);
+  let api = fs.readFileSync(path.join(HERE, "engine-api.js"), "utf8");
+  api = api.replace(/(from\s*["'])\.\/base\//g, "$1./");
+  pack["engine-api.js"] = obfuscateLoader(api);
+  if (!inlined) throw new Error(`no mapData import found in ${BASE}/sourceMap.js`);
   return pack;
 }
 

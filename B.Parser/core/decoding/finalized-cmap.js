@@ -4,10 +4,10 @@ import { randomUUID } from "node:crypto";
 import { StringDecoder } from "node:string_decoder";
 import { containsMyanmar } from "../detect.js";
 import { arrangeZawCodeOrder } from "../zawcode-order.js";
-import { correctWorldWord, markOrderAligned, scoreText } from "./decide.js";
+import { correctWorldWord, markOrderAligned, scoreText } from "./judgement.js";
 import { cleanupText, orderText } from "../clean.js";
 import { preserveRegionalRuns } from "../unicode-evidence.js";
-import { preserveCharacters, protectedCharacters } from "./decide.js";
+import { preserveCharacters, protectedCharacters } from "./judgement.js";
 import { createRabbitStream } from "../rabbit.js";
 import { StreamingReplace } from "../stream-replace.js";
 

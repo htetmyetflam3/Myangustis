@@ -9,7 +9,7 @@ import { PosScanner } from "../beautify/scan.js";
 import { PageStoreWriter } from "../io/emit.js";
 import { repairTextWithPos, repairFromPosVerdict } from "../beautify/repair.js";
 import { orderZawCodePages } from "../zawcode-order.js";
-import { normalizeOutputText } from "./decide.js";
+import { normalizeOutputText } from "./judgement.js";
 import { runPdfStream } from "../pdf/pdf-stream.js";
 
 import { MAX_INPUT_BYTES, MAX_INPUT_MB } from "../limits/local.js";

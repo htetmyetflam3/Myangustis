@@ -30,7 +30,7 @@ import {
   orderText, unmixZawCodeMarks, retraceZawCodeMarks, settleZawCodeAhE,
   medialFollows, reorderMarks,
 } from "../clean.js";
-import { scoreText, isIndex } from "../decoding/decide.js";
+import { scoreText, isIndex } from "../decoding/judgement.js";
 import { arrangeZawCodeOrder } from "../zawcode-order.js";
 
 const DATA = loadMapJson("homoglyphs.json");

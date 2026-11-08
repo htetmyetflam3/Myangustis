@@ -34,7 +34,7 @@
 
 import { getEngineData } from "../_path.js";
 import { loadMapJson } from "./json-map.js";
-import { MARK_ORDER as PRIORITY, isIndex } from "./decoding/decide.js";
+import { MARK_ORDER as PRIORITY, isIndex } from "./decoding/judgement.js";
 
 const { readMasterJson } = await getEngineData();
 let masterMapData = null;

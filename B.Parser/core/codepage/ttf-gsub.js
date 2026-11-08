@@ -1,4 +1,4 @@
-import { ttfTables } from "./ttf-cmap.js";
+import { ttfTables } from "./cmap.js";
 
 
 
