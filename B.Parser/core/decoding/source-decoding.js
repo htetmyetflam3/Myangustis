@@ -17,9 +17,10 @@ import { countImpossiblePairs } from "../beautify/scan.js";
 import { WININNWA_LEGACY_CODE_PAGE } from "../codepage/codepage-registry.js";
 import { MAX_PAGES, MAX_TEXT_CHARS } from "../limits/local.js";
 import {
-  MAX_PDF_OBJECTS, findRootPages, collectPages, extractPageLines, probePagePrefix, pageHasImages, extractMetadata,
+  MAX_PDF_OBJECTS, extractPageLines, probePagePrefix, pageHasImages, extractMetadata,
 } from "../io/read.js";
 import { PdfFileObjects, openPdfScannedObjects } from "../pdf/pdf-objects.js";
+import { decodePdfInstructions } from "../pdf/page-instructions.js";
 import { PdfPagePieces } from "../pdf/pdf-pages.js";
 import {
   cleanupUnicodeText as cleanupUnicode, convertFinalizedPageText,
@@ -68,18 +69,21 @@ export function streamPdfPages(source, log = () => {}, {
   const objects = fileBacked ? new PdfFileObjects(source, { maxObjects: MAX_PDF_OBJECTS }) : scanned.objects;
   const closeObjects = () => { if (scanned) scanned.close(); else objects.close(); };
   let metadata;
-  let allPages;
+  let instructionPages;
   try {
     metadata = extractMetadata(objects, fileBacked ? objects.trailer : input);
-    const root = findRootPages(objects);
-    if (root === null || root === undefined) throw new RuntimeError("No page tree found in the PDF.");
-    allPages = collectPages(objects, root);
-    if (allPages.length > MAX_PAGES) throw new RuntimeError(`PDF exceeds the ${MAX_PAGES} page cap`);
+    // Page order, geometry, font chains and content references come from
+    // the outside-stream instruction pass (page-instructions.js): the
+    // document is discovered from dictionaries alone, before any stream
+    // is opened. The instruction walk enforces the page cap itself.
+    const instructions = decodePdfInstructions(objects);
+    if (!instructions.rootPages) throw new RuntimeError("No page tree found in the PDF.");
+    instructionPages = instructions.pages;
   } catch (error) {
     closeObjects();
     throw error;
   }
-  const npages = allPages.length;
+  const npages = instructionPages.length;
   let workDir = scratchDir;
   let ownsScratch = false;
   let pieceStore = null;
@@ -135,7 +139,8 @@ export function streamPdfPages(source, log = () => {}, {
   function* generate() {
     try {
     for (let idx = 0; idx < npages; idx += 1) {
-      const [pnum, pgen] = allPages[idx];
+      const pageInstruction = instructionPages[idx];
+      const [pnum, pgen] = [pageInstruction.num, pageInstruction.gen];
       const fontNames = new Set();
       const fontKinds = new Set();
       const usedLegacyFonts = new Set();
@@ -146,6 +151,7 @@ export function streamPdfPages(source, log = () => {}, {
       let visualGlyphRecovery = false;
       let unresolvedVisualGlyph = false;
       const [extractedLines, w, h, images] = extractPageLines(objects, pnum, pgen, shared, {
+        pageBox: pageInstruction.size,
         scratchDir: workDir,
         pieceStore,
         usedMyanmarFonts: fontNames,

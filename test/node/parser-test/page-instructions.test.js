@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
-import { decodeOutsideStream, renderInstructions } from "../../../B.Parser/core/pdf/page-instructions.js";
+import { decodeOutsideStream, decodePdfInstructions, renderInstructions } from "../../../B.Parser/core/pdf/page-instructions.js";
+import { openPdfScannedObjects } from "../../../B.Parser/core/pdf/pdf-objects.js";
 
 const SAMPLE = path.resolve("B.Parser/host/Frontend/frontend-bootstrap/public/samples/sample.pdf");
 
@@ -31,4 +32,24 @@ test("outside-stream instructions decode the sample without opening streams", ()
   const text = renderInstructions(decoded, { sourceLabel: "sample.pdf" });
   assert.ok(text.includes("PAGE 100 = object"), "instructions cover every page in tree order");
   assert.ok(text.includes("NOT DECODED"), "streams are referenced, never decoded");
+});
+
+// The wired form: the stream parser discovers pages through the same
+// instructions over the objects reader it already opened — no second
+// page-tree walk exists beside this one.
+test("decodePdfInstructions drives page discovery over an opened objects reader", () => {
+  const { objects, close } = openPdfScannedObjects(SAMPLE);
+  try {
+    const decoded = decodePdfInstructions(objects);
+    assert.equal(decoded.pages.length, 100);
+    assert.ok(decoded.rootPages, "page tree root resolved");
+    const first = decoded.pages[0];
+    assert.ok(Number.isInteger(first.num) && Number.isInteger(first.gen), "page carries its object number/generation");
+    assert.ok(Array.isArray(first.size) && first.size[0] > 0 && first.size[1] > 0,
+      "page carries its MediaBox size for extraction geometry");
+    const keys = decoded.pages.map((page) => page.key);
+    assert.equal(new Set(keys).size, keys.length, "each page listed once, in tree order");
+  } finally {
+    close();
+  }
 });

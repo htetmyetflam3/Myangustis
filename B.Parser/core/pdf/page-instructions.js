@@ -1,16 +1,17 @@
 // Outside-stream decoding: read only the parts of a PDF that live
 // OUTSIDE object streams, and translate what is found into per-page
-// instructions. Uses the parser's own file scanner (pdf-objects.js),
-// which walks the raw file for `N G obj` markers. Objects packed inside
-// compressed object streams are invisible to it, and stream bodies are
-// NEVER opened here: stream objects are reported as "not decoded", with
-// only their dictionary (which lives outside the stream) read.
+// instructions. Stream bodies are NEVER opened here: stream objects are
+// reported as references ("not decoded"), with only their dictionary
+// (which lives outside the stream) read.
 //
-// This is the decoding pass for files the full stream parser has not
-// prepared yet — page order, geometry, font chains and content
-// references are all decidable from dictionaries alone, so no content
-// stream (and no 2 KB sample probe) is decoded to get them.
+// This is the parser's page-discovery layer: page order, geometry, font
+// chains and content references are all decidable from dictionaries
+// alone, so no content stream is decoded to learn what a document
+// contains. The stream parser consumes these instructions; it does not
+// walk the page tree itself.
 import { openPdfScannedObjects } from "./pdf-objects.js";
+import { ValueError } from "../pylib.js";
+import { MAX_PAGES } from "../limits/local.js";
 
 const keyOf = (num, gen) => `${num},${gen}`;
 export const refText = (key) => {
@@ -53,148 +54,224 @@ function fieldString(text, name) {
   return m ? decodePdfString(m[1]) : null;
 }
 
-// Decode a PDF (path or bytes) from outside-stream dictionaries only.
-// Returns page instructions in page-tree leaf order; stream bodies are
-// never opened, so every content/font stream is a reference, not bytes.
-export function decodeOutsideStream(source) {
-  const { objects, close } = openPdfScannedObjects(source);
-  try {
-    const dictOf = new Map(); // "num,gen" -> dictionary text (never stream bytes)
-    for (const [key, dict] of objects) {
-      dictOf.set(key, Buffer.from(dict).toString("latin1"));
+// [x0 y0 x1 y1] -> [width, height]; null when absent or degenerate (the
+// caller then falls back to reading the box from the objects itself).
+function boxSize(box) {
+  if (!box) return null;
+  const nums = (box.value.match(/-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/gu) ?? []).map(Number);
+  if (nums.length !== 4 || !nums.every(Number.isFinite)) return null;
+  const [x0, y0, x1, y1] = nums;
+  if (x0 === x1 || y0 === y1) return null;
+  return [Math.abs(x1 - x0), Math.abs(y1 - y0)];
+}
+
+// A page object is not required to declare /Type /Page first — or at
+// all in the first nested dictionary (a transparency /Group carries its
+// own /Type). Leaf classification therefore scans the whole dictionary
+// text for the page type token, exactly as the page-tree walk this pass
+// replaces always did.
+const PAGE_TYPE_RE = /\/Type\s*\/Page(?!s)/u;
+const CATALOG_TYPE_RE = /\/Type\s*\/Catalog/u;
+
+function buildInstructions(objects, { census = false } = {}) {
+  const texts = new Map(); // "num,gen" -> dictionary text (never stream bytes)
+  const dictText = (key) => {
+    if (!texts.has(key)) {
+      const dict = objects.dictionary(key);
+      texts.set(key, dict === undefined ? "" : Buffer.from(dict).toString("latin1"));
     }
-    const entryOf = (key) => objects.entries.get(key);
-    const hasStream = (key) => entryOf(key)?.streamStart !== undefined;
+    return texts.get(key);
+  };
+  const entryOf = (key) => objects.entries.get(key);
+  const hasStream = (key) => {
+    dictText(key);
+    return entryOf(key)?.streamStart !== undefined;
+  };
 
-    // Walk /Parent until an inheritable field (/MediaBox, /Rotate) is defined.
-    function inherited(pageKey, name, pattern) {
-      let key = pageKey;
-      let own = true;
-      while (key) {
-        const text = dictOf.get(key) ?? "";
-        const m = pattern.exec(text);
-        if (m) return { value: m[1] ?? m[0], from: key, own };
-        key = fieldRef(text, "Parent");
-        own = false;
-      }
-      return null;
+  // Walk /Parent until an inheritable field (/MediaBox, /Rotate) is defined.
+  function inherited(pageKey, pattern) {
+    let key = pageKey;
+    let own = true;
+    while (key) {
+      const text = dictText(key);
+      const m = pattern.exec(text);
+      if (m) return { value: m[1] ?? m[0], from: key, own };
+      key = fieldRef(text, "Parent");
+      own = false;
     }
+    return null;
+  }
 
-    function fontSummary(fontKey) {
-      const text = dictOf.get(fontKey) ?? "";
-      const subtype = fieldName(text, "Subtype") ?? "?";
-      const base = fieldName(text, "BaseFont") ?? "?";
-      const parts = [`${subtype} ${base}`];
-      const encodingRef = fieldRef(text, "Encoding");
-      const encodingName = fieldName(text, "Encoding");
-      if (encodingName) parts.push(`encoding ${encodingName}`);
-      else if (encodingRef) parts.push(`encoding -> object ${refText(encodingRef)}`);
-      const toUnicode = fieldRef(text, "ToUnicode");
-      if (toUnicode) parts.push(`ToUnicode -> object ${refText(toUnicode)} (stream, not decoded)`);
-      // Embedded? Follow FontDescriptor directly, or via Type0 descendant.
-      let descriptorKey = fieldRef(text, "FontDescriptor");
-      if (!descriptorKey) {
-        const descendant = fieldRef(text, "DescendantFonts");
-        if (descendant) descriptorKey = fieldRef(dictOf.get(descendant) ?? "", "FontDescriptor");
-      }
-      if (descriptorKey) {
-        const descriptor = dictOf.get(descriptorKey) ?? "";
-        const fileKey = fieldRef(descriptor, "FontFile2") ?? fieldRef(descriptor, "FontFile3") ?? fieldRef(descriptor, "FontFile");
-        parts.push(fileKey
-          ? `embedded font file -> object ${refText(fileKey)} (stream, not decoded)`
-          : "not embedded");
-      }
-      return parts.join(", ");
+  function fontSummary(fontKey) {
+    const text = dictText(fontKey);
+    const subtype = fieldName(text, "Subtype") ?? "?";
+    const base = fieldName(text, "BaseFont") ?? "?";
+    const parts = [`${subtype} ${base}`];
+    const encodingRef = fieldRef(text, "Encoding");
+    const encodingName = fieldName(text, "Encoding");
+    if (encodingName) parts.push(`encoding ${encodingName}`);
+    else if (encodingRef) parts.push(`encoding -> object ${refText(encodingRef)}`);
+    const toUnicode = fieldRef(text, "ToUnicode");
+    if (toUnicode) parts.push(`ToUnicode -> object ${refText(toUnicode)} (stream, not decoded)`);
+    // Embedded? Follow FontDescriptor directly, or via Type0 descendant.
+    let descriptorKey = fieldRef(text, "FontDescriptor");
+    if (!descriptorKey) {
+      const descendant = fieldRef(text, "DescendantFonts");
+      if (descendant) descriptorKey = fieldRef(dictText(descendant), "FontDescriptor");
     }
-
-    function pageFonts(pageKey) {
-      const text = dictOf.get(pageKey) ?? "";
-      const fontAt = text.indexOf("/Font");
-      if (fontAt < 0) {
-        const parent = fieldRef(text, "Parent");
-        return parent ? pageFonts(parent) : [];
-      }
-      const segment = text.slice(fontAt, text.indexOf(">>", fontAt) + 2 || undefined);
-      return [...segment.matchAll(/\/([A-Za-z0-9]+)\s+(\d+)\s+(\d+)\s+R/gu)]
-        .map((m) => ({ name: m[1], key: keyOf(m[2], m[3]), summary: null }));
+    if (descriptorKey) {
+      const descriptor = dictText(descriptorKey);
+      const fileKey = fieldRef(descriptor, "FontFile2") ?? fieldRef(descriptor, "FontFile3") ?? fieldRef(descriptor, "FontFile");
+      parts.push(fileKey
+        ? `embedded font file -> object ${refText(fileKey)} (stream, not decoded)`
+        : "not embedded");
     }
+    return parts.join(", ");
+  }
 
-    const all = [...dictOf.keys()].sort((a, b) => {
-      const [an, ag] = a.split(",").map(Number);
-      const [bn, bg] = b.split(",").map(Number);
-      return an - bn || ag - bg;
-    });
-    const streamKeys = all.filter(hasStream);
-    const catalogKey = all.find((key) => fieldName(dictOf.get(key), "Type") === "Catalog") ?? null;
-    const infoKey = all.find((key) => /\/Creator|\/Author|\/Title/u.test(dictOf.get(key) ?? "")) ?? null;
-    const rootPagesKey = catalogKey ? fieldRef(dictOf.get(catalogKey), "Pages") : null;
+  function pageFonts(pageKey) {
+    const text = dictText(pageKey);
+    const fontAt = text.indexOf("/Font");
+    if (fontAt < 0) {
+      const parent = fieldRef(text, "Parent");
+      return parent ? pageFonts(parent) : [];
+    }
+    const segment = text.slice(fontAt, text.indexOf(">>", fontAt) + 2 || undefined);
+    return [...segment.matchAll(/\/([A-Za-z0-9]+)\s+(\d+)\s+(\d+)\s+R/gu)]
+      .map((m) => ({ name: m[1], key: keyOf(m[2], m[3]), summary: null }));
+  }
 
-    const info = {};
+  const sortedKeys = () => [...objects.entries.keys()].sort((a, b) => {
+    const [an, ag] = a.split(",").map(Number);
+    const [bn, bg] = b.split(",").map(Number);
+    return an - bn || ag - bg;
+  });
+
+  // Catalog: prefer the trailer /Root when it is one (the prepared-file
+  // reader carries it), else the first catalog object that names /Pages.
+  let catalogKey = null;
+  let rootPagesKey = null;
+  const candidates = [];
+  if (objects.rootKey && CATALOG_TYPE_RE.test(dictText(objects.rootKey))) {
+    candidates.push(objects.rootKey);
+  }
+  for (const key of sortedKeys()) {
+    if (key !== objects.rootKey && CATALOG_TYPE_RE.test(dictText(key))) candidates.push(key);
+  }
+  for (const key of candidates) {
+    catalogKey ??= key;
+    rootPagesKey = fieldRef(dictText(key), "Pages");
+    if (rootPagesKey) { catalogKey = key; break; }
+  }
+
+  const info = {};
+  if (census) {
+    const infoKey = sortedKeys().find((key) => /\/Creator|\/Author|\/Title/u.test(dictText(key)));
     if (infoKey) {
-      const infoText = dictOf.get(infoKey);
+      const infoText = dictText(infoKey);
       for (const name of ["Title", "Author", "Creator", "Producer", "CreationDate", "ModDate"]) {
         const value = fieldString(infoText, name);
         if (value) info[name] = value;
       }
     }
+  }
 
-    // Page order = leaf order walking /Kids.
-    const pageOrder = [];
-    (function walk(key) {
-      if (!key) return;
-      const text = dictOf.get(key) ?? "";
-      if (fieldName(text, "Type") === "Page") { pageOrder.push(key); return; }
+  // Page order = leaf order walking /Kids. A page object listed twice is
+  // one page; a page-tree cycle is a corrupt document, not a hang.
+  const pageOrder = [];
+  const seenPages = new Set();
+  const visiting = new Set();
+  (function walk(key) {
+    if (!key) return;
+    const text = dictText(key);
+    if (PAGE_TYPE_RE.test(text)) {
+      if (seenPages.has(key)) return;
+      seenPages.add(key);
+      pageOrder.push(key);
+      if (pageOrder.length > MAX_PAGES) {
+        throw new ValueError(`PDF exceeds the ${MAX_PAGES} page cap`);
+      }
+      return;
+    }
+    if (visiting.has(key)) throw new ValueError("Cycle found in PDF page tree");
+    visiting.add(key);
+    try {
       const kids = /\/Kids\s*\[([^\]]*)\]/u.exec(text)?.[1] ?? "";
       for (const kid of fieldRefs(kids)) walk(kid);
-    })(rootPagesKey);
+    } finally {
+      visiting.delete(key);
+    }
+  })(rootPagesKey);
 
-    const pages = pageOrder.map((pageKey, index) => {
-      const text = dictOf.get(pageKey) ?? "";
-      const box = inherited(pageKey, "MediaBox", /\/MediaBox\s*(\[[^\]]*\])/u);
-      const rotate = inherited(pageKey, "Rotate", /\/Rotate\s+(-?\d+)/u);
-      const fonts = pageFonts(pageKey).map((font) => ({
-        ...font,
-        summary: fontSummary(font.key),
-      }));
-      const contents = fieldRef(text, "Contents");
-      const contentKeys = contents
-        ? [contents]
-        : fieldRefs(/\/Contents\s*\[([^\]]*)\]/u.exec(text)?.[1] ?? "");
-      return {
-        index: index + 1,
-        key: pageKey,
-        mediaBox: box
-          ? { value: box.value.replace(/\s+/gu, " "), own: box.own, from: box.from }
-          : null,
-        rotate: rotate ? { value: rotate.value, own: rotate.own } : null,
-        fonts,
-        contents: contentKeys.map((contentKey) => {
-          const dict = dictOf.get(contentKey) ?? "";
-          return {
-            key: contentKey,
-            length: /\/Length\s+(\d+)/u.exec(dict)?.[1] ?? "?",
-            filter: fieldName(dict, "Filter") ?? "none",
-          };
-        }),
-      };
-    });
-
+  const pages = pageOrder.map((pageKey, index) => {
+    const text = dictText(pageKey);
+    const [num, gen] = pageKey.split(",").map(Number);
+    const box = inherited(pageKey, /\/MediaBox\s*(\[[^\]]*\])/u);
+    const rotate = inherited(pageKey, /\/Rotate\s+(-?\d+)/u);
+    const fonts = pageFonts(pageKey).map((font) => ({
+      ...font,
+      summary: fontSummary(font.key),
+    }));
+    const contentsRef = fieldRef(text, "Contents");
+    const contentKeys = contentsRef
+      ? [contentsRef]
+      : fieldRefs(/\/Contents\s*\[([^\]]*)\]/u.exec(text)?.[1] ?? "");
+    const mediaBox = box
+      ? { value: box.value.replace(/\s+/gu, " "), own: box.own, from: box.from }
+      : null;
     return {
-      objectCount: all.length,
-      streamCount: streamKeys.length,
-      plainCount: all.length - streamKeys.length,
-      catalog: catalogKey,
-      rootPages: rootPagesKey,
-      info,
-      pages,
-      objects: all.map((key) => {
-        const entry = entryOf(key);
+      index: index + 1,
+      key: pageKey,
+      num,
+      gen,
+      mediaBox,
+      size: boxSize(mediaBox),
+      rotate: rotate ? { value: rotate.value, own: rotate.own } : null,
+      fonts,
+      contents: contentKeys.map((contentKey) => {
+        const dict = dictText(contentKey);
         return {
-          key, start: entry.start, end: entry.end, stream: hasStream(key),
-          dict: (dictOf.get(key) ?? "").replace(/\s+/gu, " ").trim(),
+          key: contentKey,
+          length: /\/Length\s+(\d+)/u.exec(dict)?.[1] ?? "?",
+          filter: fieldName(dict, "Filter") ?? "none",
         };
       }),
     };
+  });
+
+  const decoded = { catalog: catalogKey, rootPages: rootPagesKey, info, pages };
+  if (census) {
+    const all = sortedKeys();
+    const streamKeys = all.filter(hasStream);
+    decoded.objectCount = all.length;
+    decoded.streamCount = streamKeys.length;
+    decoded.plainCount = all.length - streamKeys.length;
+    decoded.objects = all.map((key) => {
+      const entry = entryOf(key);
+      return {
+        key, start: entry.start ?? entry.offset ?? 0, end: entry.end,
+        stream: hasStream(key),
+        dict: dictText(key).replace(/\s+/gu, " ").trim(),
+      };
+    });
+  }
+  return decoded;
+}
+
+// Instructions over an objects reader the caller already opened (the
+// live parser's PdfFileObjects / PdfScannedObjects). No census: page
+// discovery needs only the dictionaries on the page-tree path.
+export function decodePdfInstructions(objects) {
+  return buildInstructions(objects);
+}
+
+// Decode a PDF (path or bytes) from outside-stream dictionaries only,
+// with the full object census. Stream bodies are never opened, so every
+// content/font stream is a reference, not bytes.
+export function decodeOutsideStream(source, { maxObjects } = {}) {
+  const { objects, close } = openPdfScannedObjects(source, { maxObjects });
+  try {
+    return buildInstructions(objects, { census: true });
   } finally {
     close();
   }

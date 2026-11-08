@@ -49,9 +49,10 @@ import { glyphSignature } from "./repair/svg-contour.js";
 import { parseTtfCmap } from "../codepage/ttf-cmap.js";
 import {
   pickEmbeddedFont, hasMyanmarGlyphs, getStream, MAX_PDF_OBJECTS,
-  parseToUnicodeStream, extractPageLines, findRootPages, collectPages,
+  parseToUnicodeStream, extractPageLines,
 } from "../io/read.js";
 import { openPdfScannedObjects } from "../pdf/pdf-objects.js";
+import { decodePdfInstructions } from "../pdf/page-instructions.js";
 import {
   FontResourceLoader, DocumentDecoding, pageFontDecoders, PdfRef,
   detectLegacyLayoutFonts,
@@ -410,8 +411,7 @@ export function buildVectorOutlineLayout(source, layouts, {
 
   const probeChars = new Map();
   {
-    const pagesObj = findRootPages(objs);
-    const allPages = pagesObj ? collectPages(objs, pagesObj) : [];
+    const allPages = decodePdfInstructions(objs).pages.map((page) => [page.num, page.gen]);
     if (allPages.length) {
       const doc = new DocumentDecoding("tounicode");
       doc.loader = loader;
