@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { openPdfScannedObjects } from "./pdf/pdf-objects.js";
+import { analysePage, lineSvgFor } from "./beautify/repair/make-line.js";
 
 // One shared original-PDF handle for a job.
 //
@@ -15,10 +16,16 @@ export function createOriginalPdfCache({
   directory = null,
   exportLineSvg: exportLineSvgImpl = null,
   exportPageSvg: exportPageSvgImpl = null,
+  // A pdf2svg-style page export: ({ page, ... }) -> SVG text, or
+  // { svg, lines } with the page's own line metadata in svg-page
+  // coordinates. When supplied, broken-line SVGs are framed from it by
+  // the JS make-line mirror (core/beautify/repair/make-line.js).
+  exportPageSvgText: exportPageSvgTextImpl = null,
 } = {}) {
   let scannedHandle = null;
   let closed = false;
   const pageScenes = new Map();
+  const pageAnalyses = new Map();
   const lineSvgs = new Map();
 
   const notImplemented = (request = null) => {
@@ -71,6 +78,27 @@ export function createOriginalPdfCache({
           preparedPdf: cache.preparedPdf,
           pdf: cache.pdf,
         });
+      } else if (typeof exportPageSvgTextImpl === "function") {
+        const pageKey = String(request.page);
+        if (!pageAnalyses.has(pageKey)) {
+          const exported = await exportPageSvgTextImpl({
+            cache, page: request.page, sourcePdf: cache.sourcePdf,
+            preparedPdf: cache.preparedPdf, pdf: cache.pdf,
+          });
+          const svgText = typeof exported === "string" ? exported : exported?.svg;
+          if (typeof svgText !== "string" || !svgText) throw notImplemented(request);
+          pageAnalyses.set(pageKey, analysePage(svgText, {
+            pageLines: typeof exported === "string" ? null : (exported.lines ?? null),
+          }));
+        }
+        response = {
+          id: key,
+          page: request.page,
+          line: request.line,
+          svg: lineSvgFor(pageAnalyses.get(pageKey), request.line, {
+            label: `page ${request.page} line ${request.line}`,
+          }),
+        };
       } else if (typeof exportPageSvgImpl === "function") {
         const scene = await cache.pageScene(request.page);
         response = scene?.lines?.get?.(request.line)
@@ -104,6 +132,7 @@ export function createOriginalPdfCache({
         preparedBytes: sizeOf(cache.preparedPdf),
         scanned: scannedHandle !== null,
         pageScenes: pageScenes.size,
+        pageAnalyses: pageAnalyses.size,
         lineSvgs: lineSvgs.size,
         closed,
       };

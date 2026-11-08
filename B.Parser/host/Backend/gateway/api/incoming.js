@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createParser } from '../../file/parser.js';
-import { createPdfParser, createDocxParser } from '../../file/praser.js';
+import { createPdfParser, createDocxParser } from '../../../../integration/host/init.js';
 import {
   createPdfAnalysisParser,
   createDocxAnalysisParser,

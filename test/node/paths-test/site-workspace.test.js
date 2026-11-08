@@ -12,15 +12,15 @@ for (const scenario of ['shared', 'missing-root', 'missing-entry', 'broken-entry
   test(`Site workspace and environment: ${scenario}`, t => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'site-path-'));
     t.after(() => fs.rmSync(root, { recursive: true, force: true }));
-    const site = path.join(root, 'F.Site');
+    const site = path.join(root, 'B.Parser/host');
     fs.mkdirSync(path.join(site, 'Backend/file'), { recursive: true });
     fs.mkdirSync(path.join(root, 'B.Parser'), { recursive: true });
     fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}');
     fs.writeFileSync(path.join(root, '.env'), 'SITE_CHAIN=root\nSITE_SHELL=root\n');
     fs.writeFileSync(path.join(site, '.env'), 'SITE_CHAIN=local\nSITE_SHELL=local\n');
-    for (const file of ['F.Site/_path.js', 'F.Site/Backend/file/paths.js',
-      'F.Site/Backend/file/saveOriginfile.js', 'F.Site/Backend/gateway/generator/rawSaver.js',
-      'F.Site/Backend/gateway/generator/responses.js', 'Architecture/Engine/.data/secure.js',
+    for (const file of ['B.Parser/index-path.js', 'B.Parser/host/_path.js', 'B.Parser/host/Backend/file/paths.js',
+      'B.Parser/host/Backend/file/saveOriginfile.js', 'B.Parser/host/Backend/gateway/generator/rawSaver.js',
+      'B.Parser/host/Backend/gateway/generator/responses.js', 'Architecture/Engine/.data/secure.js',
       'Architecture/host/advisory.js']) {
       fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
       fs.copyFileSync(path.join(repo, file), path.join(root, file));
@@ -33,7 +33,7 @@ for (const scenario of ['shared', 'missing-root', 'missing-entry', 'broken-entry
     if (scenario !== 'missing-entry') {
       const entry = scenario === 'broken-entry' ? 'throw new Error("broken entry")' :
         scenario === 'invalid-export' ? 'export const JUNK_DIR = "relative"; export const ENV_RESULT = {sources:[]};' :
-          fs.readFileSync(path.join(repo, 'F.Site/_index.js'), 'utf8');
+          fs.readFileSync(path.join(repo, 'B.Parser/host/_index.js'), 'utf8');
       fs.writeFileSync(path.join(site, '_index.js'), entry);
     }
     const env = { ...process.env, SITE_SHELL: 'shell' };
@@ -85,11 +85,11 @@ for (const scenario of ['shared', 'missing-root', 'missing-entry', 'broken-entry
 test('Site fallback preserves previous output', t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'site-preserve-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
-  const site = path.join(root, 'F.Site');
+  const site = path.join(root, 'B.Parser/host');
   const output = path.join(site, '.output');
   fs.mkdirSync(output, { recursive: true });
   fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}');
-  fs.copyFileSync(path.join(repo, 'F.Site/_path.js'), path.join(site, '_path.js'));
+  fs.copyFileSync(path.join(repo, 'B.Parser/host/_path.js'), path.join(site, '_path.js'));
   fs.writeFileSync(path.join(output, 'keep.txt'), 'previous');
   const env = { ...process.env };
   delete env.PARSER_RUNTIME_DIR;

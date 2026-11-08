@@ -2,8 +2,7 @@ import {
   createPdfParser as createPraserPdfParser,
   createDocxParser as createPraserDocxParser,
   closePraserManager,
-  praserModuleAvailable,
-} from './praser.js';
+} from '../../../integration/host/init.js';
 
 function isAnalysisIntent(intent) {
   return intent?.source === 'analysis'
@@ -34,4 +33,4 @@ export function createDocxAnalysisParser() {
   return createAnalysisParser('DOCX', createPraserDocxParser);
 }
 
-export { closePraserManager, praserModuleAvailable };
+export { closePraserManager };

@@ -127,7 +127,7 @@ Target: `core` imports nothing from `extend/`, `integration/` or `host/`;
 - `B.Parser/main/` still remains, holding only the omitted Python tree and
   `main/parser/{js/make-index-font11.js, jason-map/vector/*.svg}` build
   tooling. Emptying/removing `main/` is a later task.
-- `host/**`, repo-level callers (`F.Site`, `D.Scraper`, `test/`, `tools-box`)
+- `host/**`, repo-level callers (`D.Scraper`, `test/`, `tools-box`)
   still reference the old `main/parser/…` layout in places — out of scope for
   this task; update them task-by-task against `B.Parser/index.js`.
 

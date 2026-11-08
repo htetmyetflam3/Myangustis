@@ -505,8 +505,8 @@ test('the Site key gate alone injects a fresh user ID into the Manager handoff',
   process.env.PARSER_RUNTIME_DIR = path.join(directory, 'site');
   process.env.CURL_ENDPOINT = '/owner-convert';
   process.env.CURL_MAX_MB = '0';
-  const { createCurlRouter } = await import('../../../F.Site/Backend/gateway/api/curl.js');
-  const { closePraserManager, createPdfParser } = await import('../../../F.Site/Backend/file/praser.js');
+  const { createCurlRouter } = await import('../../../B.Parser/host/Backend/gateway/api/curl.js');
+  const { closePraserManager, createPdfParser } = await import('../../../B.Parser/integration/host/init.js');
   const intent = {
     source: 'converter', job: 'extracting', method: 'default', outputFormat: 'txt',
     inputFormat: 'pdf', uploadName: 'two-pages.pdf', userId: trusted.userId,

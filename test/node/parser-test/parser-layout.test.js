@@ -13,7 +13,7 @@ import {
   PARSER_DIR,
   PRASER_JS,
   validatePraserAssets,
-} from "../../../F.Site/Backend/file/paths.js";
+} from "../../../B.Parser/host/Backend/file/paths.js";
 import {
   MAP_DIR,
   DEFAULT_OUTPUT_DIR,

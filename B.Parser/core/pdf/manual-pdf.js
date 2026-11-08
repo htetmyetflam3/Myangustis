@@ -154,7 +154,7 @@ export async function finishManualPdf({
     const written = await writePageStore(outPath, finalPages.store, {
       directory, counts, source, includeText, owner,
     });
-    const posScan = await scanner.finish(written.file);
+    const posScan = await scanner.finish();
     return { ...written, ocrPages, posScan };
   } finally {
     await scanner.close();

@@ -24,7 +24,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, "..", "..", "..");
 const dispatcherScript = path.join(repo, "B.Parser", "integration", "services", "lazy-dispatcher.js");
 const clientScript = path.join(repo, "B.Parser", "integration", "services", "lazy-client.js");
-const samplePdf = path.join(repo, "F.Site", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
+const samplePdf = path.join(repo, "B.Parser/host", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
 const SOCKET_PATH = "/tmp/myangustis-parser.sock";
 
 function qpdfEnv(dir) {

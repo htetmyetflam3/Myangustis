@@ -12,7 +12,7 @@ import { PDFDocument } from 'pdf-lib';
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const CLI = path.join(REPO, 'tools-box/js/pipeline-cli.js');
 const ENGINE_ENTRY = path.join(REPO, 'Architecture/host/index.js');
-const SITE_ENTRY = path.join(REPO, 'F.Site/index.js');
+const SITE_ENTRY = path.join(REPO, 'B.Parser/host/index.js');
 const ENDPOINT = '/UchihaItachiIsMyFavChar';
 const inputText = 'ကောင်းကင် စမ်းသပ်။\nမြန်မာစာ။\n';
 let dir;
@@ -165,8 +165,8 @@ test('local Parser streams a PDF to Manager without public page limits', async (
   assert.match(body, /Hello from page one/);
   assert.match(body, /--- Page 2 ---/);
   assert.match(body, /Hello from page two/);
-  assert.equal(summary.posScan.file, `${out}.unknown.txt`);
-  assert.ok((await fs.stat(summary.posScan.file)).isFile());
+  assert.ok(Array.isArray(summary.posScan.memory));
+  await assert.rejects(fs.stat(`${out}.unknown.txt`), { code: 'ENOENT' });
 });
 
 test('local Parser can produce DOCX and stream it back to text', async () => {
@@ -206,7 +206,7 @@ test('local Engine reads text and yields hash-free Bridge syllables and POS', as
   assert.ok(lines.every(row => typeof row.rawPos === 'string' && typeof row.syllable === 'string'));
 });
 
-test('CLI will not overwrite the input, an existing output, or a Parser sidecar', async () => {
+test('CLI will not overwrite the input or an existing output', async () => {
   const original = await fs.readFile(text);
   const same = await runCli(['engine', 'local', text, '--out', text]);
   assert.notEqual(same.code, 0);
@@ -216,12 +216,12 @@ test('CLI will not overwrite the input, an existing output, or a Parser sidecar'
   const existing = await runCli(['parser', 'local', pdf, '--out', out]);
   assert.notEqual(existing.code, 0);
   assert.equal(await fs.readFile(out, 'utf8'), 'keep existing output');
-  const outputWithSidecar = path.join(dir, 'occupied-sidecar.txt');
-  await fs.writeFile(`${outputWithSidecar}.unknown.txt`, 'keep existing sidecar');
-  const occupiedSidecar = await runCli(['parser', 'local', pdf, '--out', outputWithSidecar]);
-  assert.notEqual(occupiedSidecar.code, 0);
-  assert.equal(await fs.readFile(`${outputWithSidecar}.unknown.txt`, 'utf8'), 'keep existing sidecar');
-  await assert.rejects(fs.stat(outputWithSidecar), { code: 'ENOENT' });
+  const outputWithOldSidecar = path.join(dir, 'old-sidecar.txt');
+  await fs.writeFile(`${outputWithOldSidecar}.unknown.txt`, 'stale scan sidecar');
+  const withOldSidecar = await runCli(['parser', 'local', pdf, '--out', outputWithOldSidecar]);
+  assert.equal(withOldSidecar.code, 0);
+  assert.equal(await fs.readFile(`${outputWithOldSidecar}.unknown.txt`, 'utf8'), 'stale scan sidecar');
+  assert.ok((await fs.stat(outputWithOldSidecar)).isFile());
 });
 
 test('Engine HTTP mode calls the real public positional endpoint with a session', async () => {

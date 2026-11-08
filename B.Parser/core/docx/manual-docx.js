@@ -46,7 +46,7 @@ export async function finishManualDocx({
     const written = await writePageStore(outPath, finalPages.store, {
       directory, counts, source, includeText, owner, layout: false,
     });
-    const posScan = await scanner.finish(written.file);
+    const posScan = await scanner.finish();
     return { ...written, posScan };
   } finally {
     try { await scanner?.close(); } finally { finalPages.close(); }

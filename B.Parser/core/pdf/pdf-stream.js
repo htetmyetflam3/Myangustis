@@ -15,7 +15,8 @@ import { REGISTER_LOG } from "../../_path.js";
 import { normalizePageToFile, pageLayoutLines } from "../decoding/finalized-cmap.js";
 import { scoreText } from "../decoding/decide.js";
 import { markOrderAligned } from "../decoding/decide.js";
-import { mendZawCodeTextWithPos } from "../beautify/repair.js";
+import { mendZawCodeTextWithPos, requestScanLineSvgs } from "../beautify/repair.js";
+import { createOriginalPdfCache } from "../original-pdf-cache.js";
 import { normalize } from "../../../Architecture/Engine/MonoSyllabism/map/loader.js";
 import {
   MAX_INPUT_BYTES, MAX_INPUT_MB, MAX_PAGES, MAX_TEXT_CHARS, OWNER_PARSER_WORKER,
@@ -72,6 +73,7 @@ async function runPdfStreamAttempt(msg, { manual = false, pdfImages = false, gen
   let sink = null;
   let storeWriter = null;
   let scanner = null;
+  let originalPdfCache = null;
   let imageDir = null;
   let keepImages = false;
   const imageFiles = [];
@@ -90,6 +92,12 @@ async function runPdfStreamAttempt(msg, { manual = false, pdfImages = false, gen
     }
     const prepared = path.join(directory, "prepared.pdf");
     await preparePdf(input, prepared, directory, generalized);
+    // One original-PDF handle for this job. Scan does not know the PDF;
+    // after it collects broken lines, repair sends their SVG requests to
+    // this cache, which is the part that owns PDF -> SVG export.
+    originalPdfCache = createOriginalPdfCache({
+      sourcePdf: input, preparedPdf: prepared, directory,
+    });
 
     const source = msg.filename ?? (msg.inPath ? path.basename(msg.inPath) : "");
     const provenance = startRecord(source || msg.inPath || "");
@@ -242,12 +250,21 @@ async function runPdfStreamAttempt(msg, { manual = false, pdfImages = false, gen
       : await writePageStore(msg.outPath, storeWriter.store, {
         directory, counts, source, includeText: msg.includeText === true, owner: OWNER_PARSER_WORKER,
       });
-    const posScan = scanner ? await scanner.finish(written.file) : null;
+    const posScan = scanner ? await scanner.finish() : null;
+    let svg = null;
+    if (posScan?.memory?.length) {
+      const requested = await requestScanLineSvgs(posScan, originalPdfCache, {
+        sourcePdf: source || null,
+      });
+      const { requests, pending, ...rest } = requested;
+      svg = { ...rest, requests: requests.length, pending: pending?.length ?? 0 };
+    }
     appendRecord(provenance, { file: registerPath(REGISTER_LOG) });
     keepImages = imageFiles.length > 0;
-    return { ...common, ...written, ...(posScan ? { posScan } : {}) };
+    return { ...common, ...written, ...(posScan ? { posScan } : {}), ...(svg ? { svg } : {}) };
   } finally {
     await scanner?.close();
+    originalPdfCache?.close();
     sink?.close();
     storeWriter?.close();
     if (imageDir && !keepImages) fs.rmSync(imageDir, { recursive: true, force: true });

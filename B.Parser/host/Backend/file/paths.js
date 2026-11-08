@@ -1,4 +1,4 @@
-import { getEngineData, OUTPUT_FONT_DIR } from "../../../B.Parser/_path.js";
+import { getEngineData, OUTPUT_FONT_DIR } from "../../../_path.js";
 import { SITE_RUNTIME_DIR, SITE_OUTPUT_DIR } from "../../_path.js";
 import path from "node:path";
 import fs from "node:fs";

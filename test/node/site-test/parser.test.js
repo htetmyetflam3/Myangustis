@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createParser } from '../../../F.Site/Backend/file/parser.js';
-import { createPdfAnalysisParser } from '../../../F.Site/Backend/file/pdfanalysis.js';
+import { createParser } from '../../../B.Parser/host/Backend/file/parser.js';
+import { createPdfAnalysisParser } from '../../../B.Parser/host/Backend/file/pdfanalysis.js';
 
 test('file parser keeps pdfanalysis behind analysis intent', async () => {
   const calls = [];
