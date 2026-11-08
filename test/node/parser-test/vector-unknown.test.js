@@ -62,13 +62,20 @@ test("the lane comes from the page's font instructions, not sampled text", () =>
     { parser: "legacy", reason: "legacy-font", fonts: ["W42ArtHouse"] });
   // A replayed legacy face with its own map: still the legacy lane.
   assert.equal(instructionLane({ fonts: [font("EAAAAA+WinInnwa", { toUnicode: true }), font("Helvetica", { subtype: "Type1" })] }, "auto").parser, "legacy");
-  // The legacy face typesets headers while a mapped font carries the text.
-  assert.equal(instructionLane({ fonts: [font("WinYadanapon"), font("Zawgyi-One", { toUnicode: true })] }, "auto").parser, "font-cmap");
+  // The legacy face typesets headers while mapped Latin fonts carry text.
+  assert.equal(instructionLane({ fonts: [font("WinYadanapon"), font("Zawgyi-One", { toUnicode: true }), font("Calibri", { toUnicode: true })] }, "auto").parser, "font-cmap");
   // A CID Unicode face vetoes a legacy-named resource on the same page.
   assert.deepEqual(instructionLane({ fonts: [font("WinResearcher"), font("Myanmar3", { subtype: "Type0", toUnicode: true })] }, "auto"),
     { parser: "font-cmap", reason: "unicode-font" });
   // The modern Unicode font named "Ayar" is not a registered legacy face.
   assert.equal(instructionLane({ fonts: [font("Ayar", { subtype: "Type0", toUnicode: true })] }, "auto").parser, "font-cmap");
+  // A mapped Zawgyi companion does not make a legacy book modern.
+  assert.equal(instructionLane({ fonts: [font("AAPTJA+WinInnwa"), font("Zawgyi-One", { toUnicode: true })] }, "auto").parser, "legacy");
+  // A CID-keyed Zawgyi face is the modern Zawgyi toolchain: font-cmap.
+  assert.deepEqual(instructionLane({ fonts: [font("WinInnwa", { toUnicode: true }), font("Zawgyi-One-WinCharSetFFFF-H", { subtype: "Type0", toUnicode: true })] }, "auto"),
+    { parser: "font-cmap", reason: "cid-zawgyi-font" });
+  // Myanmar-digit CID faces are Unicode faces.
+  assert.equal(instructionLane({ fonts: [font("WinInnwa090", { subtype: "Type1", toUnicode: true }), font("Myanmar2", { subtype: "Type0", toUnicode: true })] }, "auto").reason, "unicode-font");
   // A two-letter base name is not evidence, and no fonts means no lane change.
   assert.equal(instructionLane({ fonts: [font("MS")] }, "auto").parser, "font-cmap");
   assert.deepEqual(instructionLane({ fonts: [] }, "auto"), { parser: "font-cmap", reason: "no-fonts" });
