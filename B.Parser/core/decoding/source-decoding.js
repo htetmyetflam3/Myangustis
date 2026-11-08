@@ -62,17 +62,25 @@ export function instructionLane(pageInstruction, sourceEncoding) {
     return { parser: PDF_PARSING_PATHS.FONT_CMAP, reason: "source-encoding" };
   }
   const fonts = pageInstruction?.fonts ?? [];
-  if (fonts.some((font) => font.subtype === "Type0" && isUnicodeFont(font.baseFont))) {
+  const cidUnicodeFace = fonts.some((font) => font.subtype === "Type0"
+    && (isUnicodeFont(font.baseFont) || /^myanmar[0-9]/u.test(normaliseFontName(font.baseFont))));
+  if (cidUnicodeFace) {
     return { parser: PDF_PARSING_PATHS.FONT_CMAP, reason: "unicode-font" };
+  }
+  // A CID-keyed Zawgyi face is the modern Zawgyi toolchain: the page is
+  // read through its own maps even when a legacy-named resource is present.
+  if (fonts.some((font) => font.subtype === "Type0" && normaliseFontName(font.baseFont).startsWith("zawgyi"))) {
+    return { parser: PDF_PARSING_PATHS.FONT_CMAP, reason: "cid-zawgyi-font" };
   }
   const legacyFonts = fonts.filter((font) => normaliseFontName(font.baseFont).length >= 4
     && isLegacyFontName(font.baseFont));
-  // A legacy-named font that ships no ToUnicode while another font on the
-  // page does is not the page's text carrier (it typesets headers/Latin);
-  // the legacy reading only applies when the legacy font carries its own
-  // map, or no font on the page has one.
+  // A legacy-named font that ships no ToUnicode while a mapped font on
+  // the page does is not the page's text carrier (it typesets
+  // headers/Latin); the legacy reading only applies when the legacy font
+  // carries its own map, or no mapped non-Zawgyi font is present. A
+  // mapped Zawgyi companion does not count: legacy books mix both.
   const legacyApplies = legacyFonts.some((font) => font.toUnicode)
-    || !fonts.some((font) => font.toUnicode);
+    || !fonts.some((font) => font.toUnicode && !normaliseFontName(font.baseFont).startsWith("zawgyi"));
   if (legacyFonts.length > 0 && legacyApplies) {
     return {
       parser: PDF_PARSING_PATHS.LEGACY,
