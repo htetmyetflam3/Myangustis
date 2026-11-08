@@ -1,6 +1,6 @@
 /*
 (PDF 11) PDF branch, position 11 in the chain - called by the orchestrator (PDF 10) before any page text is read.
-This module decodes only what lives outside the PDF's streams - the dictionaries - and reports per-page instructions: page order, size, fonts and content references. Stream bodies are never opened here.
+This module decodes only what lives outside the PDF's streams - the dictionaries - and reports per-page instructions: page order, size, fonts and content references. Stream bodies are never opened here. With pagesOnly it reports only the page tree (count, order, boxes, rotation) - the OCR mode: OCR renders pages and needs no decoding facts.
 */
 // Outside-stream decoding: read only the parts of a PDF that live
 // OUTSIDE object streams, and translate what is found into per-page
@@ -77,7 +77,7 @@ function boxSize(box) {
 const PAGE_TYPE_RE = /\/Type\s*\/Page(?!s)/u;
 const CATALOG_TYPE_RE = /\/Type\s*\/Catalog/u;
 
-function buildInstructions(objects, { census = false } = {}) {
+function buildInstructions(objects, { census = false, pagesOnly = false } = {}) {
   const texts = new Map(); // "num,gen" -> dictionary text (never stream bytes)
   const dictText = (key) => {
     if (!texts.has(key)) {
@@ -267,7 +267,9 @@ function buildInstructions(objects, { census = false } = {}) {
     const [num, gen] = pageKey.split(",").map(Number);
     const box = inherited(pageKey, /\/MediaBox\s*(\[[^\]]*\])/u);
     const rotate = inherited(pageKey, /\/Rotate\s+(-?\d+)/u);
-    const fonts = pageFonts(pageKey).map((font) => ({
+    // OCR (pagesOnly) keeps only the page tree: fonts are decoding
+    // facts an OCR job never uses, so the font pass is skipped whole.
+    const fonts = pagesOnly ? [] : pageFonts(pageKey).map((font) => ({
       ...font,
       ...(font.key ? fontFacts(font.key) : factsOf(font.inline)),
     }));
@@ -286,6 +288,7 @@ function buildInstructions(objects, { census = false } = {}) {
       mediaBox,
       size: boxSize(mediaBox),
       rotate: rotate ? { value: rotate.value, own: rotate.own } : null,
+      ...(pagesOnly ? {} : {
       fonts,
       contents: contentKeys.map((contentKey) => {
         const dict = dictText(contentKey);
@@ -295,11 +298,14 @@ function buildInstructions(objects, { census = false } = {}) {
           filter: fieldName(dict, "Filter") ?? "none",
         };
       }),
+      }),
     };
   });
 
-  const decoded = { catalog: catalogKey, rootPages: rootPagesKey, info, pages };
-  if (census) {
+  const decoded = pagesOnly
+    ? { rootPages: rootPagesKey, pageCount: pages.length, pages }
+    : { catalog: catalogKey, rootPages: rootPagesKey, info, pages };
+  if (census && !pagesOnly) {
     const all = sortedKeys();
     const streamKeys = all.filter(hasStream);
     decoded.objectCount = all.length;
@@ -320,17 +326,17 @@ function buildInstructions(objects, { census = false } = {}) {
 // Instructions over an objects reader the caller already opened (the
 // live parser's PdfFileObjects / PdfScannedObjects). No census: page
 // discovery needs only the dictionaries on the page-tree path.
-export function decodePdfInstructions(objects) {
-  return buildInstructions(objects);
+export function decodePdfInstructions(objects, { pagesOnly = false } = {}) {
+  return buildInstructions(objects, { pagesOnly });
 }
 
 // Decode a PDF (path or bytes) from outside-stream dictionaries only,
 // with the full object census. Stream bodies are never opened, so every
 // content/font stream is a reference, not bytes.
-export function decodeOutsideStream(source, { maxObjects } = {}) {
+export function decodeOutsideStream(source, { maxObjects, pagesOnly = false } = {}) {
   const { objects, close } = openPdfScannedObjects(source, { maxObjects });
   try {
-    return buildInstructions(objects, { census: true });
+    return buildInstructions(objects, { census: !pagesOnly, pagesOnly });
   } finally {
     close();
   }

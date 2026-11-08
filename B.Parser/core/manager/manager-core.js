@@ -9,7 +9,7 @@ import { Worker } from "node:worker_threads";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { dispatch } from "../api/dispatcher.js";
-import { streamReader, streamReaderStream } from "../api/stream-reader.js";
+import { readInputObject } from "../api/input-dispatcher.js";
 import { writeOutput } from "../io/write.js";
 
 const CONVERTER_URL = new URL("../worker/converter.js", import.meta.url);
@@ -157,7 +157,7 @@ export class Manager {
   async dispatch(job, caller = "site", identity = null) {
     let { object } = job;
     if (!object && job.inPath) {
-      object = await streamReader({ path: job.inPath });
+      object = await readInputObject(job.inPath);
     }
     if (!object) {
       throw new TypeError("Manager.dispatch: job needs an object or inPath");
@@ -176,7 +176,7 @@ export class Manager {
   }
 
   async dispatchStream(source, job = {}) {
-    const object = await streamReaderStream(source);
+    const object = await readInputObject(source);
     return dispatch({
       object,
       method: job.method ?? "default",

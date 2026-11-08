@@ -3,10 +3,10 @@
 This module is SiteDispatch: it reads the caller's file into an object and hands { object, method } to the API dispatcher (Support 19) for routing.
 */
 // Site entry dispatch — delegates routing to the API dispatcher.
-// Calls streamReader (B) on the caller's side to read the file into an object,
+// Calls readInputObject (input-dispatcher) on the caller's side to read the file into an object,
 // then passes { object, method } through the dispatcher which assigns the
 // correct worker thread based on caller type. No temp files, no read-back.
-import { streamReader } from "../../core/api/stream-reader.js";
+import { readInputObject } from "../../core/api/input-dispatcher.js";
 import { dispatchSite } from "../../core/api/dispatcher.js";
 
 export class SiteDispatch {
@@ -16,7 +16,7 @@ export class SiteDispatch {
 
   async dispatch(filePath, method = "extracting", identity = null) {
     const owner = ownerAccess(identity);
-    const object = await streamReader({ path: filePath });
+    const object = await readInputObject(filePath);
     // `method` here names the job (extracting/ocr); the dispatcher takes a
     // job object plus the default mode. One shape, built here.
     const jobType = method === "ocr" ? "ocr" : "extracting";

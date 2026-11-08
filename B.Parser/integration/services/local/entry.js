@@ -8,7 +8,6 @@ import os from "node:os";
 import { pipeline } from "node:stream/promises";
 import { createWriteStream } from "node:fs";
 import { dispatchLocal } from "../../../core/api/dispatcher.js";
-import { streamReaderStream } from "../../../core/api/stream-reader.js";
 
 export class LocalDispatchStream {
   constructor({ outputDir } = {}) {

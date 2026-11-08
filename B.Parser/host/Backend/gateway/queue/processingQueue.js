@@ -4,7 +4,25 @@ import { getLogen } from "../../../_path.js";
 const { emitEvent } = (await getLogen()).siteLog;
 import { createReadStream } from 'node:fs';
 import { queueTriggerRequest } from './managerHandoff.js';
-import { readFileForTrigger } from '../../../../integration/host/file-reader.js';
+import path from 'node:path';
+import { readInputObject } from '../../../../core/api/input-dispatcher.js';
+
+// Reads the queued Site file into the trigger's object before dispatch
+// (formerly integration/host/file-reader.js). The read itself goes
+// through the one input door: file path -> Generator A -> collectA.
+async function readFileForTrigger({ filePath, filename = null, mimeType = null, inputFormat = null } = {}) {
+  if (!filePath || typeof filePath !== 'string') {
+    throw new TypeError('readFileForTrigger: file path is required');
+  }
+  const object = await readInputObject(filePath);
+  const resolvedFilename = filename || path.basename(object.path);
+  return {
+    ...object,
+    filename: resolvedFilename,
+    mimeType: mimeType || null,
+    inputFormat: inputFormat || path.extname(resolvedFilename).slice(1).toLowerCase() || null,
+  };
+}
 const now = () => new Date().toISOString();
 async function snapshot(filePath) {
   const hash = crypto.createHash('sha256');

@@ -5,7 +5,7 @@ This module is LocalDispatchStream: the caller passes a readable byte stream or 
 // Local entry dispatch stream — delegates routing to the API dispatcher.
 // Caller passes a readable byte stream or object directly; the dispatcher
 // assigns the correct worker thread based on caller type. No temp file, no read-back.
-import { streamReaderStream } from "../../../core/api/stream-reader.js";
+import { readInputObject } from "../../../core/api/input-dispatcher.js";
 import { dispatchLocal } from "../../../core/api/dispatcher.js";
 
 export class LocalDispatchStream {
@@ -15,7 +15,7 @@ export class LocalDispatchStream {
 
   async dispatchStream(source, method = "extracting", identity = null) {
     const owner = ownerAccess(identity);
-    const object = await streamReaderStream(source);
+    const object = await readInputObject(source);
     // `method` here names the job (extracting/ocr); the dispatcher takes a
     // job object plus the default mode. One shape, built here.
     const jobType = method === "ocr" ? "ocr" : "extracting";
