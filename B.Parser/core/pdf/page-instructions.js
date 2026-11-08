@@ -102,8 +102,24 @@ function buildInstructions(objects, { census = false } = {}) {
     return null;
   }
 
-  function fontSummary(fontKey) {
-    const text = dictText(fontKey);
+  // Slice the balanced << ... >> dictionary starting at index `at`.
+  function dictSlice(text, at) {
+    let depth = 0;
+    for (let i = at; i < text.length - 1; i++) {
+      const pair = text.slice(i, i + 2);
+      if (pair === "<<") { depth++; i++; }
+      else if (pair === ">>") { depth--; i++; if (depth === 0) return text.slice(at, i + 1); }
+    }
+    return text.slice(at);
+  }
+
+  // Structured font facts, decidable from the font dictionary alone. The
+  // summary string is the experiment's text form of the same facts.
+  function fontFacts(fontKey) {
+    return factsOf(dictText(fontKey));
+  }
+
+  function factsOf(text) {
     const subtype = fieldName(text, "Subtype") ?? "?";
     const base = fieldName(text, "BaseFont") ?? "?";
     const parts = [`${subtype} ${base}`];
@@ -111,34 +127,73 @@ function buildInstructions(objects, { census = false } = {}) {
     const encodingName = fieldName(text, "Encoding");
     if (encodingName) parts.push(`encoding ${encodingName}`);
     else if (encodingRef) parts.push(`encoding -> object ${refText(encodingRef)}`);
-    const toUnicode = fieldRef(text, "ToUnicode");
-    if (toUnicode) parts.push(`ToUnicode -> object ${refText(toUnicode)} (stream, not decoded)`);
+    const toUnicodeKey = fieldRef(text, "ToUnicode");
+    if (toUnicodeKey) parts.push(`ToUnicode -> object ${refText(toUnicodeKey)} (stream, not decoded)`);
     // Embedded? Follow FontDescriptor directly, or via Type0 descendant.
     let descriptorKey = fieldRef(text, "FontDescriptor");
     if (!descriptorKey) {
       const descendant = fieldRef(text, "DescendantFonts");
       if (descendant) descriptorKey = fieldRef(dictText(descendant), "FontDescriptor");
     }
+    let embedded = null;
     if (descriptorKey) {
       const descriptor = dictText(descriptorKey);
       const fileKey = fieldRef(descriptor, "FontFile2") ?? fieldRef(descriptor, "FontFile3") ?? fieldRef(descriptor, "FontFile");
+      embedded = Boolean(fileKey);
       parts.push(fileKey
         ? `embedded font file -> object ${refText(fileKey)} (stream, not decoded)`
         : "not embedded");
     }
-    return parts.join(", ");
+    return {
+      summary: parts.join(", "),
+      subtype,
+      baseFont: base,
+      encoding: encodingName ?? (encodingRef ? refText(encodingRef) : null),
+      toUnicode: Boolean(toUnicodeKey),
+      embedded,
+    };
+  }
+
+  // The page fonts, wherever the dictionaries keep them: inline in the page
+  // dictionary, inside an indirect /Resources object, or inherited from a
+  // parent node. The /Font dictionary itself may also be indirect, and a
+  // font entry may be an inline dictionary instead of a reference.
+  function fontEntriesIn(text) {
+    const fontAt = text.indexOf("/Font");
+    if (fontAt < 0) return null;
+    const after = text.slice(fontAt + "/Font".length);
+    const indirect = /^\s*(\d+)\s+(\d+)\s+R/u.exec(after);
+    const segment = indirect
+      ? dictText(keyOf(indirect[1], indirect[2]))
+      : dictSlice(after, after.indexOf("<<"));
+    const entries = [];
+    const entryPattern = /\/([A-Za-z0-9]+)\s+(?:(\d+)\s+(\d+)\s+R|<<)/gu;
+    let m;
+    while ((m = entryPattern.exec(segment)) !== null) {
+      if (m[2] !== undefined) {
+        entries.push({ name: m[1], key: keyOf(m[2], m[3]), summary: null });
+      } else {
+        // Skip past the inline dictionary so its own entries (FontDescriptor,
+        // ToUnicode, ...) are not mistaken for page fonts.
+        const dictAt = m.index + m[0].length - 2;
+        const inline = dictSlice(segment, dictAt);
+        entries.push({ name: m[1], key: null, summary: null, inline });
+        entryPattern.lastIndex = dictAt + inline.length;
+      }
+    }
+    return entries;
   }
 
   function pageFonts(pageKey) {
-    const text = dictText(pageKey);
-    const fontAt = text.indexOf("/Font");
-    if (fontAt < 0) {
-      const parent = fieldRef(text, "Parent");
-      return parent ? pageFonts(parent) : [];
+    const own = fontEntriesIn(dictText(pageKey));
+    if (own) return own;
+    const resources = fieldRef(dictText(pageKey), "Resources");
+    if (resources) {
+      const held = fontEntriesIn(dictText(resources));
+      if (held) return held;
     }
-    const segment = text.slice(fontAt, text.indexOf(">>", fontAt) + 2 || undefined);
-    return [...segment.matchAll(/\/([A-Za-z0-9]+)\s+(\d+)\s+(\d+)\s+R/gu)]
-      .map((m) => ({ name: m[1], key: keyOf(m[2], m[3]), summary: null }));
+    const parent = fieldRef(dictText(pageKey), "Parent");
+    return parent ? pageFonts(parent) : [];
   }
 
   const sortedKeys = () => [...objects.entries.keys()].sort((a, b) => {
@@ -210,7 +265,7 @@ function buildInstructions(objects, { census = false } = {}) {
     const rotate = inherited(pageKey, /\/Rotate\s+(-?\d+)/u);
     const fonts = pageFonts(pageKey).map((font) => ({
       ...font,
-      summary: fontSummary(font.key),
+      ...(font.key ? fontFacts(font.key) : factsOf(font.inline)),
     }));
     const contentsRef = fieldRef(text, "Contents");
     const contentKeys = contentsRef

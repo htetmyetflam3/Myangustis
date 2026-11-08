@@ -4,7 +4,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts } from "../detect.js";
+import { containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts, isUnicodeFont } from "../detect.js";
+import { isLegacyFontName, normaliseFontName } from "../codepage/codepage-names.js";
 import { isEncryptedPdf, hasObjectStreams, scanPdfFileMarkers } from "../io/decrypt.js";
 import { Rabbit } from "../rabbit.js";
 import { orderText } from "../clean.js";
@@ -12,12 +13,11 @@ import { preserveCharacters } from "./judgement.js";
 import { extractDocxParagraphs, validateDocxArchive } from "../docx/docx-extract.js";
 import { extractDocxParagraphsExternal } from "../docx/docx-external.js";
 import { scoreText } from "./judgement.js";
-import { choosePageParser } from "./judgement.js";
 import { countImpossiblePairs } from "../beautify/scan.js";
 import { WININNWA_LEGACY_CODE_PAGE } from "../codepage/codepage-registry.js";
 import { MAX_PAGES, MAX_TEXT_CHARS } from "../limits/local.js";
 import {
-  MAX_PDF_OBJECTS, extractPageLines, probePagePrefix, pageHasImages, extractMetadata,
+  MAX_PDF_OBJECTS, extractPageLines, pageHasImages, extractMetadata,
 } from "../io/read.js";
 import { PdfFileObjects, openPdfScannedObjects } from "../pdf/pdf-objects.js";
 import { decodePdfInstructions } from "../pdf/page-instructions.js";
@@ -27,7 +27,6 @@ import {
   finishPageToFile, orderUnicodeText as orderUnicode, pageLayoutLines,
 } from "./finalized-cmap.js";
 import { DocumentDecoding, PDF_PARSING_PATHS, legacyLayoutForFont, pageFontDecoders } from "../pdf/pdf-fonts.js";
-import { PAGE_CONTENT_PREFIX_BYTES } from "../pdf/pdf-content.js";
 import { pyRound, RuntimeError, baseName } from "../pylib.js";
 import { agentAdvisory } from "../../../Architecture/host/advisory.js";
 
@@ -42,6 +41,49 @@ function adviseParserMiddleChain(api) {
       + "tools-box/js/pipeline-cli.js parser local, and report only that front-door behavior. "
       + "Calling pipeline/text/read helpers directly skips Manager spooling, worker preparation, output/POS sidecars and cleanup options.",
   );
+}
+
+// Lane decision from the outside-stream instructions alone: a page takes
+// the legacy lane iff one of its fonts is a registered legacy face
+// (isLegacyFontName - the curated registry, not the layout prefix guess,
+// which would also bless the modern Unicode font named "Ayar") and that
+// face plausibly carries the page's text (details below). Inside the
+// legacy lane a font whose own map marks it Unicode or Zawgyi is still
+// read through that map, not the codepage, so a legacy entry rarely
+// destroys well-mapped fonts. Guards: a CID Unicode face (Type0 +
+// isUnicodeFont) means the page's Burmese is Unicode-typeset even when a
+// legacy-named resource is also declared; and a two/three-letter base
+// name is not evidence - the registry's prefix rule would otherwise call
+// any "MS"-style face legacy. Everything else stays on the font-cmap
+// lane. The registry is the same one the legacy lane uses internally as
+// its layout guard.
+function instructionLane(pageInstruction, sourceEncoding) {
+  if (sourceEncoding === "unicode" || sourceEncoding === "zawgyi-one") {
+    return { parser: PDF_PARSING_PATHS.FONT_CMAP, reason: "source-encoding" };
+  }
+  const fonts = pageInstruction?.fonts ?? [];
+  if (fonts.some((font) => font.subtype === "Type0" && isUnicodeFont(font.baseFont))) {
+    return { parser: PDF_PARSING_PATHS.FONT_CMAP, reason: "unicode-font" };
+  }
+  const legacyFonts = fonts.filter((font) => normaliseFontName(font.baseFont).length >= 4
+    && isLegacyFontName(font.baseFont));
+  // A legacy-named font that ships no ToUnicode while another font on the
+  // page does is not the page's text carrier (it typesets headers/Latin);
+  // the legacy reading only applies when the legacy font carries its own
+  // map, or no font on the page has one.
+  const legacyApplies = legacyFonts.some((font) => font.toUnicode)
+    || !fonts.some((font) => font.toUnicode);
+  if (legacyFonts.length > 0 && legacyApplies) {
+    return {
+      parser: PDF_PARSING_PATHS.LEGACY,
+      reason: "legacy-font",
+      fonts: legacyFonts.map((font) => font.baseFont),
+    };
+  }
+  return {
+    parser: PDF_PARSING_PATHS.FONT_CMAP,
+    reason: fonts.length > 0 ? "no-legacy-evidence" : "no-fonts",
+  };
 }
 
 export function streamPdfPages(source, log = () => {}, {
@@ -141,6 +183,7 @@ export function streamPdfPages(source, log = () => {}, {
     for (let idx = 0; idx < npages; idx += 1) {
       const pageInstruction = instructionPages[idx];
       const [pnum, pgen] = [pageInstruction.num, pageInstruction.gen];
+      const laneChoice = instructionLane(pageInstruction, sourceEncoding);
       const fontNames = new Set();
       const fontKinds = new Set();
       const usedLegacyFonts = new Set();
@@ -157,28 +200,24 @@ export function streamPdfPages(source, log = () => {}, {
         usedMyanmarFonts: fontNames,
         usedFontKinds: fontKinds,
         usedLegacyFonts,
-        inspectPrefix: (prefix, sharedFonts, loader, mediaBox) => {
+        inspectPrefix: (prefix, sharedFonts, loader) => {
           if (legacy.loader !== loader) {
             legacy.loader = loader;
             legacy.resetFontCache();
           }
-          // Probe both existing parsers on the same bounded page prefix. No
-          // confirmed byte pair is used as a route-selection shortcut.
+          // The lane is decided by the outside-stream instructions for
+          // this page (see instructionLane above); no sample of the
+          // page's shown text is decoded to choose it.
           legacy.legacyFontNames = null;
           legacy.legacyResources = null;
-          const legacyFonts = pageFontDecoders(loader, pnum, pgen, legacy);
-          const probe = probePagePrefix(prefix, sharedFonts, legacyFonts, { mediaBox });
-          const choice = choosePageParser(probe, { sourceEncoding });
-          parsingPath = choice.parser;
+          parsingPath = laneChoice.parser;
           checkpoint = {
-            bytes: prefix.length,
-            reason: choice.reason,
-            ...(choice.english !== undefined ? { english: choice.english } : {}),
-            hasShownText: probe.hasShownText,
-            hasText: Boolean(probe.shared.replace(/\u200b/gu, "").trim() || probe.legacy.replace(/\u200b/gu, "").trim()),
+            reason: laneChoice.reason,
+            ...(laneChoice.fonts ? { fonts: laneChoice.fonts } : {}),
           };
           onPagePrefix?.(idx, prefix, parsingPath, checkpoint);
           if (parsingPath !== PDF_PARSING_PATHS.LEGACY) return shared;
+          const legacyFonts = pageFontDecoders(loader, pnum, pgen, legacy);
 
           // Inside the legacy lane the font name is only a layout guard:
           // profile-matched resources, name-guarded legacy faces, and any
@@ -242,11 +281,6 @@ export function streamPdfPages(source, log = () => {}, {
         } finally { finishedPage.text.close(); }
       }
       const warnings = [];
-      if (checkpoint && !checkpoint.hasText && checkpoint.bytes === PAGE_CONTENT_PREFIX_BYTES && originalHasText) {
-        const code = checkpoint.hasShownText ? "checkpoint-text-undecodable" : "text-after-checkpoint";
-        warnings.push({ code, page: idx + 1, checkpointBytes: PAGE_CONTENT_PREFIX_BYTES });
-        log(`[!] Page ${idx + 1}: no decodable text in the ${PAGE_CONTENT_PREFIX_BYTES}-byte checkpoint; page text was retained`);
-      }
       if (visualGlyphRecovery) {
         warnings.push({ code: "unicode-glyph-recovery-needs-review", page: idx + 1 });
       }
