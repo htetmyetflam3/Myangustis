@@ -1,22 +1,6 @@
 import { ValueError } from "../pylib.js";
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function readU16PythonSlice(buf, a) {
   let start = a < 0 ? buf.length + a : a;
   let stop = a + 2;

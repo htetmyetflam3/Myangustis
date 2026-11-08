@@ -2,11 +2,9 @@
 
 # do not edit the lines below
 *master.json.cache*
-*site.db
 *env*
 *lock*
 *downloads*
-*lock*
 *uvx*
 *__pycache__*
 /__pycache__/
@@ -184,7 +182,6 @@ vite.config.ts.timestamp-*
 
 # Site runtime uploads and generated workspace data (not tracked font assets).
 /Junk/Site/
-/F.Site/upload/
 
 # Local generated kit files; Engine runtime keys remain tracked.
 /tools-box/kit/master/master.key.txt
