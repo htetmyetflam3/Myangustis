@@ -3,11 +3,11 @@
 This module creates the converter, PDF and DOCX parsers the site calls, over the shared Manager pool, and closes that pool on shutdown.
 */
 // Site entry point (unshared)
-// Caller reads the file on their side via readInputObject (input-dispatcher) and passes the
+// Caller reads the file on their side via BindInput (input-dispatcher) and passes the
 // resulting object to BindParser ($) through the dispatcher.
 // Public (no identity) and authenticated (identity = authenticatedUser) callers
 // share the same path; identity only affects owner access checks.
-import { readInputObject } from '../../core/api/input-dispatcher.js';
+import { BindInput } from '../../core/api/input-dispatcher.js';
 import { dispatchSite } from '../../core/api/dispatcher.js';
 import { pool } from '../../core/manager/manager-core.js';
 
@@ -42,7 +42,7 @@ export function createConverterParser() {
       // For queued Site requests, the queue's file reader has already read
       // the file and placed it on the trigger. Only read it here when this
       // parser is called without that queue-provided object.
-      const object = trigger.object ?? await readInputObject(filePath);
+      const object = trigger.object ?? await BindInput({ path: filePath });
       let reply;
       try {
         reply = await dispatchSite({
