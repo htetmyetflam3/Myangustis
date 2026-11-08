@@ -179,57 +179,6 @@ function isUnicodeBase(ch) {
     || cp === 0x1029 || cp === 0x102a || cp === 0x103f || cp === 0x104e;
 }
 
-export function choosePageParser(probe, { sourceEncoding = "auto" } = {}) {
-  if (sourceEncoding === "unicode" || sourceEncoding === "zawgyi-one") {
-    return { parser: "font-cmap", reason: "source-encoding" };
-  }
-  const text = String(probe?.shared ?? "").replace(/\u200b/gu, "");
-  if (!text.trim()) return { parser: "font-cmap", reason: "no-checkpoint-text" };
-  // Burmese guard: English-likeness alone must never decide a Burmese
-  // page. Both lanes can return Burmese-looking text for a Burmese PDF,
-  // so when either checkpoint reading contains Myanmar, mm-score over
-  // the two readings — not the Latin check — picks the lane.
-  const legacyText = String(probe?.legacy ?? "").replace(/\u200b/gu, "");
-  const sharedMyanmar = containsMyanmar(text);
-  const legacyMyanmar = containsMyanmar(legacyText);
-  if (sharedMyanmar && !legacyMyanmar) {
-    return { parser: "font-cmap", reason: "myanmar" };
-  }
-  if (!sharedMyanmar && legacyMyanmar) {
-    // The font-cmap reading is Latin/junk while the legacy reading is
-    // Burmese: the page's codes are legacy slots, not Latin text.
-    return { parser: "legacy", reason: "myanmar-legacy" };
-  }
-  if (sharedMyanmar && legacyMyanmar) {
-    const sharedScore = scoreText(text);
-    const legacyScore = scoreText(legacyText);
-    // Legacy wins only on clear mm-score evidence; a Burmese page whose
-    // font-cmap reading already scores well stays on the font-cmap lane.
-    if (legacyScore.marks >= 8 && legacyScore.score - sharedScore.score >= 0.05) {
-      return { parser: "legacy", reason: "myanmar-legacy-score" };
-    }
-    return { parser: "font-cmap", reason: "myanmar" };
-  }
-  if (onlyPageNumbers(text)) return { parser: "font-cmap", reason: "page-number-only" };
-  if (probe?.alphaFooterOnly) return { parser: "font-cmap", reason: "page-letter-only" };
-  if (onlyNonBodyHeader(text)) return { parser: "font-cmap", reason: "non-body-header" };
-  if (LATIN_LIKE.test(text)) {
-    const result = englishLikeness(text);
-    // The two lanes: actual English stays on the font-cmap lane; an
-    // English *violation* (Latin that does not read as English) sends the
-    // page to the legacy lane. An inconclusive check (verdict: null) over
-    // Latin bytes stays legacy-suspect, as before.
-    if (result.verdict === "english") {
-      return { parser: "font-cmap", reason: "english", english: result.verdict };
-    }
-    if (result.verdict === "not-english") {
-      return { parser: "legacy", reason: "not-english", english: result.verdict };
-    }
-    return { parser: "legacy", reason: "english-inconclusive", english: result.verdict };
-  }
-  return { parser: "font-cmap", reason: "other-script" };
-}
-
 // Unicode 16, table 16-4: the modern Burmese syllable order used to judge
 // whether a page's mark order is already aligned. Characters on the same
 // row share a priority. This is deliberately separate from MARK_ORDER
