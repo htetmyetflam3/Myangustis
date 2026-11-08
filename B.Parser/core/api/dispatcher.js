@@ -1,3 +1,7 @@
+/*
+(Support 19) Shared support, no chain position - caller routing and job normalization.
+This module decides which worker a job goes to based on the caller, and normalizes job, method, source encoding and output before the Manager pool (Support 23) submits it.
+*/
 // Dispatcher — caller routing and job normalization.
 // Decides which worker thread to use based on caller type (site/local).
 // Manager pool is only a worker lifecycle helper; all routing logic lives here.

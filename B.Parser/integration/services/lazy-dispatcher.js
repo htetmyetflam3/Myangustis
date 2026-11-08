@@ -1,3 +1,7 @@
+/*
+(Support 11) Shared support, no chain position - the on-demand dispatcher server.
+This module listens on a Unix socket, starts only when a caller requests it, validates the six trigger parameters, routes the job, and exits after an idle timeout.
+*/
 // Lazy on-demand dispatcher server.
 // Listens on a Unix socket. Starts only when a caller requests it.
 // Auto-exits after idle timeout so no process sits around wasting memory.

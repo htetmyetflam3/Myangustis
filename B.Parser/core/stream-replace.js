@@ -1,3 +1,7 @@
+/*
+(PDF 25) PDF branch, position 25 in the chain - text helper for chunked conversion in the finishing step (PDF 19).
+This module applies replacement rules to text that arrives in chunks, keeping enough lookahead so matches across chunk boundaries are not lost.
+*/
 // The Rabbit rules use local Myanmar patterns. Keep enough following text for
 // their lookaheads and retain any match that reaches the unfinished boundary.
 // This preserves non-overlapping global replacement across chunk boundaries.

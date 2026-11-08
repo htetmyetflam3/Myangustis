@@ -1,3 +1,7 @@
+/*
+(PDF 15) PDF branch, position 15 in the chain - helper of the extraction (PDF 13).
+This module is the PDF tokenizer: it reads a prepared file and turns names, numbers, strings, arrays and dictionaries into values the object loader can resolve.
+*/
 import fs from "node:fs";
 import { PdfFloat, PdfHexBytes, PdfKeyword, PdfName } from "./pdf-fonts.js";
 

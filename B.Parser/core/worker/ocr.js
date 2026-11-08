@@ -1,3 +1,7 @@
+/*
+(OCR 1) OCR branch, position 1 in the chain - the OCR worker thread where an OCR job starts.
+This module runs inside a worker thread spawned by the Manager pool and passes each OCR message to the OCR operations (OCR 2).
+*/
 import { parentPort } from "node:worker_threads";
 import { handleOcrMessage } from "../ocr/ocr-ops.js";
 import { withOutputType } from "./output-type.js";

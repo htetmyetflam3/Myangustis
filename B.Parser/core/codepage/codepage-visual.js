@@ -1,3 +1,7 @@
+/*
+(Support 33) Shared support, no chain position - visual Unicode glyph matching.
+This module matches a font's glyphs against visual-Unicode evidence to decode fonts whose text is stored as visual-order glyph runs.
+*/
 import { createHash } from "node:crypto";
 import evidence from "../jason-map/visual-unicode-glyph-evidence.json" with { type: "json" };
 import { ttfTables } from "./cmap.js";

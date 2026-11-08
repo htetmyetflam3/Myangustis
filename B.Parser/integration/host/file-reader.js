@@ -1,3 +1,7 @@
+/*
+(Support 7) Shared support, no chain position - file reader for queued site requests.
+This module turns a queued upload file into the object shape the trigger and dispatcher accept, delegating the actual read to the one stream reader (Support 20).
+*/
 import path from "node:path";
 import { streamReader } from "../../core/api/stream-reader.js";
 

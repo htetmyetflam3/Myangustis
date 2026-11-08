@@ -1,3 +1,7 @@
+/*
+(PDF 30) PDF branch, position 30 in the chain - spool helper between finishing (PDF 19) and output (PDF 31).
+This module writes and reads the on-disk page store: page records and layout lines are spooled to files and streamed back when output is built.
+*/
 import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline";

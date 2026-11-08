@@ -1,3 +1,7 @@
+/*
+(Support 4) Shared support, no chain position - path constants for the whole B.Parser tree.
+This module resolves the component, core and repository roots and provides the engine-data and logging accessors other modules import.
+*/
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";

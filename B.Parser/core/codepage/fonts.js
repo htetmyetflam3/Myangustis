@@ -1,3 +1,7 @@
+/*
+(Support 37) Shared support, no chain position - the output font registry.
+This module lists the Burmese fonts available for writing output documents (PDF 32) and classifies text lines into font roles.
+*/
 import path from "node:path";
 import fs from "node:fs";
 import { OUTPUT_FONT_DIR } from "../../_path.js";

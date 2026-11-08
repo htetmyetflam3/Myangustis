@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+/*
+(Repair 12) Repair branch, position 12 in the chain - a build-time tool, not part of a live parse.
+This module builds the expanded font-11 Burmese+Pali index SVG used as a glyph reference. Identical twin of B.Parser/main/parser/js/build-svg.js.
+*/
 /**
  * Build one expanded font-11 Burmese+Pali index SVG (build-time HarfBuzz shaping).
  * JS mirror of B.Parser/main/Python/make-index-font11.py.

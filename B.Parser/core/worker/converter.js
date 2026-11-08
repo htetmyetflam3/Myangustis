@@ -1,3 +1,7 @@
+/*
+(PDF 1) PDF branch, position 1 in the chain - the converter worker thread where a PDF job starts.
+This module runs inside a worker thread spawned by the Manager pool. It receives the job object, works out whether the input is PDF or DOCX, and hands PDF work to the converter-side PDF entry (PDF 3).
+*/
 import { parentPort } from "node:worker_threads";
 import { runFromPdf } from "../decoding/from-pdf.js";
 import { runFromDocx } from "../decoding/from-docx.js";

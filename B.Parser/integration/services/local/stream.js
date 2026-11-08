@@ -1,3 +1,7 @@
+/*
+(Support 13) Shared support, no chain position - the local dispatch entry (stream variant).
+This module is LocalDispatchStream: the caller passes a readable byte stream or object directly, and the API dispatcher (Support 19) assigns the worker. No temp file, no read-back.
+*/
 // Local entry dispatch stream — delegates routing to the API dispatcher.
 // Caller passes a readable byte stream or object directly; the dispatcher
 // assigns the correct worker thread based on caller type. No temp file, no read-back.

@@ -1,3 +1,7 @@
+/*
+(Support 6) Shared support, no chain position - the site's dispatch door.
+This module is SiteDispatch: it reads the caller's file into an object and hands { object, method } to the API dispatcher (Support 19) for routing.
+*/
 // Site entry dispatch — delegates routing to the API dispatcher.
 // Calls streamReader (B) on the caller's side to read the file into an object,
 // then passes { object, method } through the dispatcher which assigns the

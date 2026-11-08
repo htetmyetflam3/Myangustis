@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+/*
+(Support 14) Shared support, no chain position - a command-line bridge into the parser.
+This program takes parse requests from the command line, runs them through the Manager, and prints the results as JSON for outside callers.
+*/
 
 
 

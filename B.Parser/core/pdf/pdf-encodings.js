@@ -1,3 +1,7 @@
+/*
+(PDF 17) PDF branch, position 17 in the chain - data tables for the font decoders (PDF 16).
+This module holds the built-in PDF encoding tables (WinAnsi, MacRoman, standard encoding) and the glyph-name to Unicode map.
+*/
 
 export const WIN_ANSI_ENCODING = new Map([
   [32, ' '], [33, '!'], [34, '"'], [35, '#'],

@@ -1,3 +1,7 @@
+/*
+(Repair 1) Repair branch, position 1 in the chain - the first repair step after Parser output is written.
+This module scans finished text for broken spans (impossible Myanmar pairs and similar damage) using the Engine's POS verdicts, and reports the broken lines with their page references.
+*/
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

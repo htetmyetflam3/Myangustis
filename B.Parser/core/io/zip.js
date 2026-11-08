@@ -1,3 +1,7 @@
+/*
+(DOCX 1) DOCX branch, position 1 in the chain - a DOCX file is a zip, so this is the first read.
+This module reads and writes zip archives safely: central directory, entry extraction with size limits, and a streaming zip writer.
+*/
 import fs from "node:fs";
 import zlib from "node:zlib";
 import { Readable } from "node:stream";

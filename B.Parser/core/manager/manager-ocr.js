@@ -1,3 +1,7 @@
+/*
+(OCR 4) OCR branch, position 4 in the chain - the Manager side of OCR, beside the worker pool (Support 22).
+This module holds the Manager's OCR lane helpers: worker bookkeeping and owner-access checks for OCR jobs.
+*/
 import fs from "node:fs/promises";
 import path from "node:path";
 import { writeOutput } from "../io/write.js";

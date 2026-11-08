@@ -1,3 +1,7 @@
+/*
+(Support 40) Shared support, no chain position - caller policy.
+This module defines the known callers and, for each caller, how encoding verdicts (legacy path, vector layout path) are decided.
+*/
 
 
 

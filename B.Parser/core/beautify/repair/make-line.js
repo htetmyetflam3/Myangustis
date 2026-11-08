@@ -1,3 +1,7 @@
+/*
+(Repair 6) Repair branch, position 6 in the chain - builds the line picture a repair decision is made from.
+This module turns one exported page into line SVGs: it groups glyphs into lines with the four-rule line frame. It is the JS twin of the Python make_line.py and must produce identical bytes.
+*/
 // JS twin of B.Parser/main/Python/make_line.py — same input, same bytes.
 //
 // Standalone: does not call Python. The Python side does not call this

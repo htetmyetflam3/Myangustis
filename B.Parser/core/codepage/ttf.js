@@ -1,3 +1,7 @@
+/*
+(Support 30) Shared support, no chain position - a small TrueType font reader.
+This module loads a TTF file, exposes its tables and cmap, and answers glyph lookups for the font tools.
+*/
 import fs from "node:fs";
 import { parseTtfCmap } from "./cmap.js";
 

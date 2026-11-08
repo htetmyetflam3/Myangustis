@@ -1,3 +1,7 @@
+/*
+(Repair 5) Repair branch, position 5 in the chain - raster helper of the vector matching (Repair 4).
+This module rasterises glyph contours to bitmaps, binarises them, and traces bitmaps back to point clouds for shape comparison.
+*/
 
 
 

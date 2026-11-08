@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+/*
+(Support 17) Shared support, no chain position - the entry Python calls.
+This program is how Python invokes the JavaScript Manager: it reads one request and dispatches it. It is not a separate parser.
+*/
 // Python invokes the JavaScript Manager; it is not a separate parser.
 import fs from "node:fs/promises";
 import { Manager } from "../core/manager/manager-core.js";

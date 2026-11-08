@@ -1,3 +1,7 @@
+/*
+(Support 42) Shared support, no chain position - document-level code-page choice.
+This module chooses a document's code page from all its pages and prepares the vector layout when a document needs outline-based resolution.
+*/
 import { getLogen } from "../_path.js";
 const { emitEvent } = (await getLogen()).coreLog;
 

@@ -1,3 +1,7 @@
+/*
+(Repair 7) Repair branch, position 7 in the chain - the line-frame scanner inside the line builder (Repair 6).
+This module scans a page's glyph positions and decides the text lines (the four-rule frame: rules, baseline, pitch). It is the JS twin of the Python scan_frame.py.
+*/
 // JS twin of B.Parser/main/Python/scan_frame.py — same API, same bytes.
 //
 // The parser exists in two languages by design, so this module does not

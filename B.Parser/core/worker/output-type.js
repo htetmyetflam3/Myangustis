@@ -1,3 +1,7 @@
+/*
+(PDF 2) PDF branch, position 2 in the chain - helper of the worker entry (PDF 1), also used by the OCR worker.
+This module normalizes the requested output type (pdf, docx or txt) on worker jobs so every later stage sees one clean value.
+*/
 import path from "node:path";
 
 export const OUTPUT_TYPES = new Set(["pdf", "docx", "txt"]);

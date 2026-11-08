@@ -1,3 +1,7 @@
+/*
+(PDF 8) PDF branch, position 8 in the chain - after the byte checks (PDF 7).
+This module runs the external qpdf program to prepare a PDF for the parser: decrypt it and rewrite it without object streams, into a working file.
+*/
 import fs from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";

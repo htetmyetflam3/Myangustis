@@ -1,3 +1,7 @@
+/*
+(Support 44) Shared support, no chain position - an identical older copy of the OCR worker (OCR 1).
+This file is byte-identical to core/worker/ocr.js and is not imported by the live chain; the Manager pool spawns the OCR 1 copy.
+*/
 import { parentPort } from "node:worker_threads";
 import { handleOcrMessage } from "../ocr/ocr-ops.js";
 import { withOutputType } from "./output-type.js";

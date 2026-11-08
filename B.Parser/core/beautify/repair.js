@@ -1,3 +1,7 @@
+/*
+(Repair 2) Repair branch, position 2 in the chain - after the scan (Repair 1).
+This module drives the repair stage: broken lines become line-SVG requests to the original-PDF cache (PDF 37), and the returned vector decisions are applied to the text.
+*/
 // Repair is a separate stage after Parser output is written.
 //
 // repairFirstStage wraps scan.js. Scan owns the hash-free BindEngine POS

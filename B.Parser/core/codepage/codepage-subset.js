@@ -1,3 +1,7 @@
+/*
+(Support 34) Shared support, no chain position - known subset-font profiles.
+This module holds per-resource profiles of specific subsetted legacy fonts and builds the bridge that decodes them; a program hash alone is never trusted.
+*/
 import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "./codepage-registry.js";
 
 // These are the original simple-font resources, not keyboard layouts or

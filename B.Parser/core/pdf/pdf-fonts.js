@@ -1,3 +1,7 @@
+/*
+(PDF 16) PDF branch, position 16 in the chain - called by the extraction (PDF 13) for every page font.
+This module builds the font decoders: ToUnicode maps, embedded TrueType cmaps, standard encodings, and the legacy code-page lanes (WinInnwa/Ayar) for fonts that carry no Unicode map of their own.
+*/
 import { createHash } from "node:crypto";
 import { pyChr } from "../pylib.js";
 import { BASE_ENCODINGS, GLYPH_NAME_TO_UNICODE } from "./pdf-encodings.js";

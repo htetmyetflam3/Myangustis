@@ -1,3 +1,7 @@
+/*
+(Support 41) Shared support, no chain position - scraper source classification.
+This module classifies a scraper source (what kind of input it is) before the scraper entry dispatches it.
+*/
 
 
 

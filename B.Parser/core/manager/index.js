@@ -1,3 +1,7 @@
+/*
+(Support 21) Shared support, no chain position - the Manager barrel file.
+This module re-exports the Manager (Support 22), the output writers and the log helpers so importers have one place to import from.
+*/
 
 
 

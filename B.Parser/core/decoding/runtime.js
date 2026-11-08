@@ -1,3 +1,7 @@
+/*
+(PDF 5) PDF branch, position 5 in the chain - after the runner is created (PDF 4), before the PDF stream runs (PDF 6). Shared with the DOCX branch.
+This module is the source runner: it loads the input bytes, runs the PDF or DOCX stream, collects the finished pages, and writes the output.
+*/
 import { getEngineNormalize, getLogen } from "../../_path.js";
 const { installPassiveLog } = (await getLogen()).siteLog;
 import fs from "node:fs";

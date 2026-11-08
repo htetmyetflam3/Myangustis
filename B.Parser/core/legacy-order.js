@@ -1,3 +1,7 @@
+/*
+(PDF 22) PDF branch, position 22 in the chain - text helper used when legacy-lane text is finished (PDF 19).
+This module reorders the leading visual-order slots of legacy-encoded (WinInnwa/Ayar) text into logical Unicode order.
+*/
 import inventory from "./jason-map/burmese-inventory.json" with { type: "json" };
 
 const LEGACY_BASES = new Set([...inventory.consonants, "၎"]);

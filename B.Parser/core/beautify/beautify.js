@@ -1,3 +1,7 @@
+/*
+(Repair 3) Repair branch, position 3 in the chain - text fixing used inside the repair stage (Repair 2).
+This module beautifies tokens: it splits glued numbers and fixes homoglyph mistakes using the master word data.
+*/
 
 
 

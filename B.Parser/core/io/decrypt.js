@@ -1,3 +1,7 @@
+/*
+(PDF 7) PDF branch, position 7 in the chain - the first check on the raw input bytes, before preparation.
+This module only looks for marker bytes in the PDF: it reports whether the file is encrypted (/Encrypt) or uses object streams (/ObjStm), without loading the file into the parser.
+*/
 import fs from "node:fs";
 
 const ENCRYPT_MARK = Buffer.from("/Encrypt");

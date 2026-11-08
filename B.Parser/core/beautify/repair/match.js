@@ -1,3 +1,7 @@
+/*
+(Repair 10) Repair branch, position 10 in the chain - shape-matching helper of the repair votes (Repair 8, Repair 11).
+This module compares glyph shapes as raster masks and distance fields, and tells whether two font faces are aliases of each other.
+*/
 
 
 

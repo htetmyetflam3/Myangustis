@@ -1,3 +1,7 @@
+/*
+(OCR 3) OCR branch, position 3 in the chain - called by the OCR operations (OCR 2).
+This module wraps the OCR engine: availability checks, initialization, per-image and per-PDF-page recognition, and image-page detection.
+*/
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";

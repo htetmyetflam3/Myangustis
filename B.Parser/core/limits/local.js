@@ -1,3 +1,7 @@
+/*
+(Support 23) Shared support, no chain position - the local caller's limit profile.
+This module defines the size, page and text caps for trusted local stream callers, read from environment variables with hard maximums.
+*/
 // Local limits (local caller — stream-based)
 // Split from shared 03-limits.js — local caller has looser caps because the
 // caller already holds the stream/object and the parser never touches the

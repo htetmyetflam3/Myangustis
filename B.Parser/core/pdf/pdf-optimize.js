@@ -1,3 +1,7 @@
+/*
+(PDF 34) PDF branch, position 34 in the chain - last step on written PDF output (PDF 32).
+This module runs qpdf over a written output PDF to optimize it when optimization is enabled.
+*/
 
 
 

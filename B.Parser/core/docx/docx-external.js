@@ -1,3 +1,7 @@
+/*
+(DOCX 3) DOCX branch, position 3 in the chain - the fallback beside the main extractor (DOCX 2).
+This module extracts DOCX paragraphs through the external mammoth library when the built-in extractor is not used.
+*/
 
 
 

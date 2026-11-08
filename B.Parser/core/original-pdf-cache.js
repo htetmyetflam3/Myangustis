@@ -1,3 +1,7 @@
+/*
+(PDF 37) PDF branch, position 37 in the chain - the bridge from parsing to the repair stage (Repair 1).
+This module keeps one shared handle on the job's prepared PDF, so later stages (repair's line-SVG requests) read the same file instead of loading the PDF again.
+*/
 import fs from "node:fs";
 import { openPdfScannedObjects } from "./pdf/pdf-objects.js";
 import { analysePage, lineSvgFor } from "./beautify/repair/make-line.js";

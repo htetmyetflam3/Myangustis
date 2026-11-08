@@ -1,3 +1,7 @@
+/*
+(PDF 36) PDF branch, position 36 in the chain - page renderer used when a page must be looked at as an image.
+This module renders PDF pages (or regions of them) to PNG using a canvas, for image-page handling and the repair stage.
+*/
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

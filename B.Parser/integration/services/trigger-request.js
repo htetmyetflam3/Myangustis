@@ -1,3 +1,7 @@
+/*
+(Support 16) Shared support, no chain position - the trigger contract in one place.
+This module defines which callers exist (public, owner, scraper), which worker profile and limits each caller gets, and the keys and outputs a trigger request may carry.
+*/
 export const TRIGGER_CALLERS = Object.freeze({
   PUBLIC: "public",
   OWNER: "owner",

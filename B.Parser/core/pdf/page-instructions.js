@@ -1,3 +1,7 @@
+/*
+(PDF 11) PDF branch, position 11 in the chain - called by the orchestrator (PDF 10) before any page text is read.
+This module decodes only what lives outside the PDF's streams - the dictionaries - and reports per-page instructions: page order, size, fonts and content references. Stream bodies are never opened here.
+*/
 // Outside-stream decoding: read only the parts of a PDF that live
 // OUTSIDE object streams, and translate what is found into per-page
 // instructions. Stream bodies are NEVER opened here: stream objects are

@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+/*
+(Support 15) Shared support, no chain position - the scraper's command-line entry.
+This program reads a scraper job from the command line and dispatches it through the Manager as the scraper caller.
+*/
 
 
 

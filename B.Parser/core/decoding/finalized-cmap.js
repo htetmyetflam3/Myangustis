@@ -1,3 +1,7 @@
+/*
+(PDF 19) PDF branch, position 19 in the chain - after the extraction (PDF 13), before records are made (PDF 10).
+This module finishes one page's text: it orders the marks, converts Zawgyi text, cleans Unicode text (PDF 20 to 26), and writes the finished page to its text file.
+*/
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";

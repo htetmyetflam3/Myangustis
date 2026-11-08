@@ -1,3 +1,7 @@
+/*
+(Support 25) Shared support, no chain position - provenance records.
+This module starts and appends per-job provenance records: what was parsed, from where, and which decisions were taken.
+*/
 
 
 

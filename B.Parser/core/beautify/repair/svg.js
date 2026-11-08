@@ -1,3 +1,7 @@
+/*
+(Repair 8) Repair branch, position 8 in the chain - decides a font's code page from its outlines.
+This module compares an embedded font's glyph outlines against a reference font to vote on which legacy code page the font uses - no rendering, no OCR.
+*/
 /**
  * FILE: Parsed/parser/codepage/outline-vote.mjs
  *

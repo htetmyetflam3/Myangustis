@@ -1,3 +1,7 @@
+/*
+(Support 27) Shared support, no chain position - the legacy font-name registry.
+This module holds the curated set of known legacy font names and answers: is this font name a registered legacy face, and what is its normalized form.
+*/
 export const LEGACY_FONT_NAMES = new Set([
   "anonymouspro",
   "anonymousprobold",

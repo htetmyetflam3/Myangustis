@@ -1,3 +1,7 @@
+/*
+(PDF 6) PDF branch, position 6 in the chain - after the source runner (PDF 5).
+This module runs one PDF job end to end: it prepares the file (decrypt and object-stream checks, PDF 7 to 9), streams every page (PDF 10), assembles the page records, and builds the final result.
+*/
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

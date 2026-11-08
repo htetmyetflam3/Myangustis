@@ -1,3 +1,7 @@
+/*
+(Repair 9) Repair branch, position 9 in the chain - contour helper of the outline vote (Repair 8).
+This module turns glyph contours into signatures and matches them against an index of known glyph shapes.
+*/
 
 
 

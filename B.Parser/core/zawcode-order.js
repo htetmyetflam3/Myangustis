@@ -1,3 +1,7 @@
+/*
+(PDF 21) PDF branch, position 21 in the chain - text helper of the finishing step (PDF 19).
+This module arranges ZawCode/Zawgyi mark order into Unicode order for a page's text.
+*/
 import { getMasterMapData } from "./clean.js";
 
 const E = "\u1031";

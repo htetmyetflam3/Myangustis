@@ -1,3 +1,7 @@
+/*
+(PDF 14) PDF branch, position 14 in the chain - helper of the extraction (PDF 13).
+This module decodes a page's content streams exactly once and spools the bytes to a scratch file, so parsing never decompresses the same stream twice.
+*/
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

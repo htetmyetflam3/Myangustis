@@ -1,3 +1,7 @@
+/*
+(Support 36) Shared support, no chain position - pooled keyboard and font evidence.
+This module serves candidate evidence for repair: beautify candidates for a font's bytes, and physical-key candidates for typed text. Evidence only - it makes no repair decisions.
+*/
 import { loadMapJson } from "../json-map.js";
 import { normaliseFontName } from "./codepage-names.js";
 

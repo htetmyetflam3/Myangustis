@@ -1,3 +1,7 @@
+/*
+(PDF 10) PDF branch, position 10 in the chain - after the file is prepared (PDF 6 to 9), before output is written (PDF 31).
+This module is the page-by-page orchestrator: it discovers the pages, decides each page's decoding lane from the page instructions (PDF 11), extracts the text (PDF 13), finishes each page (PDF 19), and turns pages into final records.
+*/
 import { renderPdfPagePng } from "../pdf/pdf-render.js";
 import { note } from "../provenance.js";
 import fs from "node:fs";

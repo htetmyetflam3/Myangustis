@@ -1,3 +1,7 @@
+/*
+(PDF 12) PDF branch, position 12 in the chain - helper used by the instructions (PDF 11) and the extraction (PDF 13).
+This module scans a prepared PDF file and indexes its indirect objects (number, generation, offset, dictionary), so other stages can jump straight to any object.
+*/
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

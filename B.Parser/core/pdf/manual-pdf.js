@@ -1,3 +1,7 @@
+/*
+(PDF 35) PDF branch, position 35 in the chain - the manual-method finisher, beside the default stream (PDF 6).
+This module finishes a manual PDF job: it merges OCR results into the extracted pages and writes the page store for output.
+*/
 import fs from "node:fs";
 import path from "node:path";
 import { copyTextFile } from "./pdf-text-sink.js";

@@ -1,3 +1,7 @@
+/*
+(PDF 33) PDF branch, position 33 in the chain - low-level helper of the renderer (PDF 32).
+This module is the small PDF writer used to build the output PDF file object by object.
+*/
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";

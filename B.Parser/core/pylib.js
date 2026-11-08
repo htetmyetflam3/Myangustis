@@ -1,3 +1,7 @@
+/*
+(Support 24) Shared support, no chain position - small Python-style helpers.
+This module provides truthiness, rounding, byte and integer helpers with Python semantics, kept from the parser's Python lineage, plus the shared ValueError type.
+*/
 
 
 export function pyTruthy(x) {

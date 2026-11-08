@@ -1,3 +1,7 @@
+/*
+(Support 28) Shared support, no chain position - the legacy code pages themselves.
+This module holds the Ayar and WinInnwa code-page tables (byte to Unicode maps) the legacy font lane (PDF 16) decodes with.
+*/
 
 export const AYAR_LEGACY_CODE_PAGE = new Map([
   [32, ' '], [33, '\u100b'], [34, '\u104b'], [35, '\u100d'],

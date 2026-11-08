@@ -1,3 +1,7 @@
+/*
+(Repair 11) Repair branch, position 11 in the chain - region voter inside the repair stage (Repair 2).
+This module matches a page region (pixels or a rendered PDF region) to vector glyphs and repairs the region's text from the vote.
+*/
 
 
 

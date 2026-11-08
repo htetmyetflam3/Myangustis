@@ -1,3 +1,7 @@
+/*
+(PDF 28) PDF branch, position 28 in the chain - judgement helpers for the finishing step (PDF 19).
+This module scores and checks decoded text: Myanmar mark-order alignment, English likeness, and small text corrections used to judge whether a reading is sound.
+*/
 import { containsMyanmar } from "../detect.js";
 
 const LATIN_LIKE = /^[\x20-\xff\p{Script=Latin}\p{Number}\p{Punctuation}\p{Symbol}\s]+$/u;

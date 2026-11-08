@@ -1,3 +1,7 @@
+/*
+(PDF 9) PDF branch, position 9 in the chain - helper of the preparation step (PDF 8).
+This module finds the true end of a PDF (the last startxref/EOF pair) in bounded reverse reads, and copies a clean prefix of the file when the tail is damaged or padded.
+*/
 import fs from "node:fs";
 
 const BLOCK_SIZE = 64 * 1024;

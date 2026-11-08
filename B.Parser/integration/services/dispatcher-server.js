@@ -1,3 +1,7 @@
+/*
+(Support 9) Shared support, no chain position - a long-running dispatcher service.
+This module is the always-on service entry: Site and Python callers connect over HTTP/JSON, and requests are routed to the site or local dispatch without the service reading files itself.
+*/
 // Alive dispatcher service entry point.
 // Runs as a long-running systemd service that Site and Python callers connect to.
 // Accepts JSON on stdin/stdout: { caller: "site"|"local", object, method, identity? }

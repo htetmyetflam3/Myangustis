@@ -1,3 +1,7 @@
+/*
+(PDF 29) PDF branch, position 29 in the chain - writing helper of the stream runner (PDF 6).
+This module is the text sink: it appends finished page text to the job's output text file within the job's size limits.
+*/
 import fs from "node:fs";
 import path from "node:path";
 import { MAX_TEXT_CHARS } from "../limits/local.js";

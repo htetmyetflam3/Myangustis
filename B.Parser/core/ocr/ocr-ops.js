@@ -1,3 +1,7 @@
+/*
+(OCR 2) OCR branch, position 2 in the chain - after the OCR worker entry (OCR 1).
+This module handles OCR job messages: it loads the bytes, runs OCR over PDF pages or image files (OCR 3), and writes the recognized text out.
+*/
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";

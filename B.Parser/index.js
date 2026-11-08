@@ -1,3 +1,7 @@
+/*
+(Support 1) Shared support, no chain position - the public front door of B.Parser.
+This module only wires the parts together and re-exports them (Manager, site dispatch, local dispatch). It contains no parsing logic.
+*/
 // B.Parser public front door — the single integration point.
 // Sketch layout (see SEPARATION.md): core / host / extend / integration.
 // This file only wires the parts together; it contains no parsing logic.

@@ -1,3 +1,7 @@
+/*
+(Support 18) Shared support, no chain position - the single parser API shape.
+This module is BindParser: it accepts only a request object { object, method, caller?, identity? } - no file paths, no temp files - and validates it for the dispatcher.
+*/
 // $ — BindParser: single parser API (engine bridge pattern)
 // Accepts ONLY: { object, method, caller?, identity? }
 // No file paths, no temp files, no caller-specific logic.

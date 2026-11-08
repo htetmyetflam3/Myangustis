@@ -1,3 +1,7 @@
+/*
+(Support 45) Shared support, no chain position - an identical older copy of the output-type helper (PDF 2).
+This file is byte-identical to core/worker/output-type.js and is not imported by the live chain.
+*/
 import path from "node:path";
 
 export const OUTPUT_TYPES = new Set(["pdf", "docx", "txt"]);

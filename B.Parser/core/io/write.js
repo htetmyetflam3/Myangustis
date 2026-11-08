@@ -1,3 +1,7 @@
+/*
+(PDF 31) PDF branch, position 31 in the chain - after all pages are finished (PDF 19).
+This module writes the final output: it takes the finished pages and produces the requested txt, docx or pdf file (PDF 32).
+*/
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";

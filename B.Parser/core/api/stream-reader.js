@@ -1,3 +1,7 @@
+/*
+(Support 20) Shared support, no chain position - the caller-side file reader.
+This module reads a file or stream on the caller's side into the object the parser API accepts. The dispatcher never calls it; callers do.
+*/
 // B — Stream reader (caller-side utility)
 // Caller reads the file/stream on their side and passes the resulting object
 // into BindParser. This module is NOT called by the dispatcher.

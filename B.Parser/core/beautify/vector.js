@@ -1,3 +1,7 @@
+/*
+(Repair 4) Repair branch, position 4 in the chain - vector side of the repair stage (Repair 2).
+This module builds vector repair layouts: it votes on glyphs from font witnesses and produces the outline layout used to judge broken lines.
+*/
 import { getLogen } from "../../_path.js";
 const { emitEvent } = (await getLogen()).coreLog;
 

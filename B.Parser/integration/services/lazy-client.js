@@ -1,3 +1,7 @@
+/*
+(Support 10) Shared support, no chain position - client of the lazy dispatcher (Support 11).
+This module sends one JSON request to the dispatcher's Unix socket and prints the answer. The six trigger parameters are forwarded exactly as given.
+*/
 // Lazy dispatcher client — sends a JSON request to the Unix socket server.
 // Usage:
 //   node lazy-client.js '{"job":"ocr","caller":"public","limit":1,"worker":"publicworker","key":"ocr","output":"txt","object":{...},"method":"default"}'

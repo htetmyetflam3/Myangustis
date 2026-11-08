@@ -1,3 +1,7 @@
+/*
+(PDF 20) PDF branch, position 20 in the chain - text helper of the finishing step (PDF 19).
+This module cleans finished Unicode Myanmar text (imposters, mark order, glued forms) and loads the master map data the cleanup rules use.
+*/
 
 
 

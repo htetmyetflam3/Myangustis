@@ -1,3 +1,7 @@
+/*
+(PDF 27) PDF branch, position 27 in the chain - storage helper of the finishing and output steps (PDF 19, PDF 31).
+This module is the page-piece store: it keeps each page's extracted text pieces on disk and serves them back page by page without holding a whole book in memory.
+*/
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";

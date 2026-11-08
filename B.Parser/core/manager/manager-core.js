@@ -1,3 +1,7 @@
+/*
+(Support 22) Shared support, no chain position - the worker pool and Manager.
+This module creates worker threads (converter and OCR), submits payloads to them, and terminates them. All routing logic lives in the API dispatcher (Support 19).
+*/
 // Manager — thin worker pool + dispatch wrapper.
 // Job/method normalization and caller-based routing live in ../api/dispatcher.js.
 // This module only creates workers, submits payloads, and terminates workers.

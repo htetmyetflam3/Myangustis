@@ -1,3 +1,7 @@
+/*
+(DOCX 2) DOCX branch, position 2 in the chain - after the zip is opened (DOCX 1).
+This module extracts the paragraphs of a DOCX document from its document.xml, in order, with the same Myanmar checks the PDF branch uses.
+*/
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";

@@ -1,3 +1,7 @@
+/*
+(Support 26) Shared support, no chain position - JSON map loading.
+This module loads and caches the JSON map files (word and glyph data) that cleanup and repair read, and maps file paths to map names.
+*/
 import fs from 'node:fs';
 import path from 'node:path';
 import { MAP_DIR } from '../_path.js';

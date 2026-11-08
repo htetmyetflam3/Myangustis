@@ -1,3 +1,7 @@
+/*
+(Support 5) Shared support, no chain position - the site-side parser factory.
+This module creates the converter, PDF and DOCX parsers the site calls, over the shared Manager pool, and closes that pool on shutdown.
+*/
 // Site entry point (unshared)
 // Caller reads the file on their side via streamReader (B) and passes the
 // resulting object to BindParser ($) through the dispatcher.

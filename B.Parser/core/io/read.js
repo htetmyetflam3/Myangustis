@@ -1,3 +1,7 @@
+/*
+(PDF 13) PDF branch, position 13 in the chain - after the instructions (PDF 11), before the page text is finished (PDF 19).
+This module extracts one page's text lines: it spools the content (PDF 14), runs the font decoders (PDF 16) over the shown strings, tracks positions, and collects the page's images.
+*/
 import { parseTtfCmap } from "../codepage/cmap.js";
 import fs from "node:fs";
 import path from "node:path";

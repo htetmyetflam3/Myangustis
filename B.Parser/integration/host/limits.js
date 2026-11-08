@@ -1,3 +1,7 @@
+/*
+(Support 8) Shared support, no chain position - the site caller's limit profile.
+This module defines the size and page caps for public and authenticated site callers, read from environment variables with hard maximums.
+*/
 // Site limits (public + authenticated callers)
 // Split from shared 03-limits.js — site caller has its own caps.
 // Public (no identity) and authenticated (identity = authenticatedUser)

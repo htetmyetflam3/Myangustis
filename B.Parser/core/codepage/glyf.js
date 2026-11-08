@@ -1,3 +1,7 @@
+/*
+(Support 31) Shared support, no chain position - glyph outline extraction.
+This module reads glyph contours out of a TrueType font and samples them into point clouds for shape comparison in the repair branch.
+*/
 
 
 

@@ -1,3 +1,7 @@
+/*
+(PDF 32) PDF branch, position 32 in the chain - called by the output writer (PDF 31) for pdf and docx output.
+This module renders finished text back into a document: it lays out paragraphs and writes an output PDF or DOCX with proper Burmese fonts.
+*/
 import {
   ANONYMOUS_PRO_FILES,
   BURMESE_FONTS,

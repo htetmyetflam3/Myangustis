@@ -1,3 +1,7 @@
+/*
+(Support 43) Shared support, no chain position - an identical older copy of the converter worker (PDF 1).
+This file is byte-identical to core/worker/converter.js and is not imported by the live chain; the Manager pool spawns the PDF 1 copy.
+*/
 import { parentPort } from "node:worker_threads";
 import { runFromPdf } from "../decoding/from-pdf.js";
 import { runFromDocx } from "../decoding/from-docx.js";

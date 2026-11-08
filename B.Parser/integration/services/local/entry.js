@@ -1,3 +1,7 @@
+/*
+(Support 12) Shared support, no chain position - the local dispatch entry (file-backed variant).
+This module is LocalDispatchStream: it accepts a local file path or stream and delegates routing to the API dispatcher (Support 19).
+*/
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";

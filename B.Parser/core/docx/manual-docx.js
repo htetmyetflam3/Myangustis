@@ -1,3 +1,7 @@
+/*
+(DOCX 6) DOCX branch, position 6 in the chain - the manual-method finisher, beside the default extraction (DOCX 2).
+This module finishes a manual DOCX job: it merges OCR results into the extracted paragraph chunks before output is written.
+*/
 import { PageStoreWriter, pageRecords, textChunks } from "../io/emit.js";
 import { writePageStore } from "../io/write.js";
 import { PosScanner } from "../beautify/scan.js";
