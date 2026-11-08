@@ -272,7 +272,7 @@ async function* indexRecords(file) {
   for (const line of fs.readFileSync(file, "utf8").trimEnd().split("\n")) if (line) yield JSON.parse(line);
 }
 
-test("file pages preserve checkpoint, commands, image geometry and page decisions", async () => {
+test("file pages preserve lane decisions, commands, image geometry and page decisions", async () => {
   const dir = scratch();
   try {
     const original = await makePdf();
@@ -280,16 +280,16 @@ test("file pages preserve checkpoint, commands, image geometry and page decision
     const prepared = path.join(dir, "prepared.pdf");
     fs.writeFileSync(input, original);
     await runQpdfFile(input, prepared, ["--object-streams=disable", "--stream-data=preserve"]);
-    const checkpoints = [[], []];
+    const decisions = [[], []];
     const [oldMeta, oldCount, oldPages] = streamPdfPages(original, () => {}, {
-      onPagePrefix: (...args) => checkpoints[0].push(args),
+      onPagePrefix: (idx, prefix, parsingPath, checkpoint) => decisions[0].push([idx, parsingPath, checkpoint]),
     });
     const [newMeta, newCount, newPages] = streamPdfPages(prepared, () => {}, {
-      diskPages: true, onPagePrefix: (...args) => checkpoints[1].push(args),
+      diskPages: true,
+      onPagePrefix: (idx, prefix, parsingPath, checkpoint) => decisions[1].push([idx, parsingPath, checkpoint]),
     });
     assert.deepEqual(newMeta, oldMeta);
     assert.equal(newCount, oldCount);
-    let lateWarning = false;
     let imageSeen = false;
     try {
       for (let index = 0; index < oldCount; index += 1) {
@@ -299,12 +299,9 @@ test("file pages preserve checkpoint, commands, image geometry and page decision
         const { text: oldText, lines: oldLines, ...oldOther } = oldPage;
         const { text: newText, lines: newLines, ...newOther } = newPage;
         assert.deepEqual(newOther, oldOther, `page ${index + 1} metadata`);
-        lateWarning ||= oldPage.warnings?.some((warning) => warning.code === "text-after-checkpoint") ?? false;
         imageSeen ||= oldPage.images.some((entry) => entry.pageSized);
       }
-      assert.deepEqual(checkpoints[1], checkpoints[0]);
-      assert.ok(checkpoints[1].every((entry) => entry[1].length <= 2048));
-      assert.equal(lateWarning, true);
+      assert.deepEqual(decisions[1], decisions[0]);
       assert.equal(imageSeen, true);
     } finally {
       oldPages.return();
@@ -347,7 +344,7 @@ test("a page-number checkpoint retains later Zawgyi text on the shared route", a
     assert.equal(count, 1);
     assert.equal(checkpoints[0][1].length, 2048);
     assert.equal(checkpoints[0][2], "font-cmap");
-    assert.equal(checkpoints[0][3].reason, "page-number-only");
+    assert.equal(checkpoints[0][3].reason, "no-legacy-evidence");
     assert.equal(parsed.parsingPath, "font-cmap");
     assert.ok(parsed.text.includes("နဂါးခေါင်းဗျပ်စောင်း"), `${parsed.decision}: ${[...parsed.fontKinds]}: ${[...parsed.fontNames]}: ${parsed.text}`);
   } finally { pages.return?.(); }

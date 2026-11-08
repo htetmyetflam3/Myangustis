@@ -57,7 +57,7 @@ function adviseParserMiddleChain(api) {
 // any "MS"-style face legacy. Everything else stays on the font-cmap
 // lane. The registry is the same one the legacy lane uses internally as
 // its layout guard.
-function instructionLane(pageInstruction, sourceEncoding) {
+export function instructionLane(pageInstruction, sourceEncoding) {
   if (sourceEncoding === "unicode" || sourceEncoding === "zawgyi-one") {
     return { parser: PDF_PARSING_PATHS.FONT_CMAP, reason: "source-encoding" };
   }
