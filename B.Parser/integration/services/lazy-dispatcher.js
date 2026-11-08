@@ -1,10 +1,12 @@
 /*
 (Support 11) Shared support, no chain position - the on-demand dispatcher server.
-This module listens on a Unix socket, starts only when a caller requests it, validates the six trigger parameters, routes the job, and exits after an idle timeout.
+This module is the Unix-socket dispatcher. Under systemd socket activation (myangustis-parser.socket) no parser process exists until a connection arrives: systemd owns the socket, starts this service, and this process exits after an idle timeout. Started directly (or by lazy-parser.sh) it binds the socket itself. It validates the six trigger parameters and routes the job.
 */
-// Lazy on-demand dispatcher server.
-// Listens on a Unix socket. Starts only when a caller requests it.
-// Auto-exits after idle timeout so no process sits around wasting memory.
+// Lazy on-demand dispatcher server (Unix socket).
+// Production wake-up is systemd socket activation: systemd holds the
+// socket, this process is started per activation and auto-exits after
+// the idle timeout, so no parser process sits around wasting memory.
+// Direct start (lazy-parser.sh) still works: it binds the path itself.
 //
 // Usage:
 //   node lazy-dispatcher.js      # start server (runs until idle timeout)
@@ -20,7 +22,7 @@ import fs from "node:fs";
 import { normalizeTriggerRequest } from "./trigger-request.js";
 
 const SOCKET_PATH = "/tmp/myangustis-parser.sock";
-const IDLE_TIMEOUT_MS = 300000;   // 5 minutes — auto-exit if no requests
+const IDLE_TIMEOUT_MS = Number(process.env.PARSER_IDLE_MS ?? 300000); // 5 min default — auto-exit if no requests
 const REQUEST_TIMEOUT_MS = 60000; // 60 seconds — max time per request
 
 let routines = null;
@@ -119,13 +121,33 @@ const server = createServer((socket) => {
   socket.on("error", () => { /* socket already closed */ });
 });
 
-// Clean up old socket before binding
-try { fs.unlinkSync(SOCKET_PATH); } catch {}
+// Two ways to get the listening socket:
+//  1. systemd socket activation (the production socket path): systemd
+//     owns SOCKET_PATH and hands the already-listening socket to this
+//     process on fd 3 (LISTEN_FDS/LISTEN_PID). No parser process exists
+//     until a connection arrives; after the idle timeout this process
+//     exits and the next connection makes systemd start a fresh one.
+//  2. Direct start (node lazy-dispatcher.js, or lazy-parser.sh): bind
+//     the socket path ourselves, exactly as before.
+// Under activation the socket file belongs to systemd — never unlink it.
+const systemdActivated =
+  Number(process.env.LISTEN_FDS ?? 0) >= 1 &&
+  Number(process.env.LISTEN_PID ?? 0) === process.pid;
 
-server.listen(SOCKET_PATH, () => {
-  process.stdout.write(`Lazy dispatcher listening on ${SOCKET_PATH}\n`);
-  resetIdleTimer();
-});
+if (systemdActivated) {
+  server.listen({ fd: 3 }, () => {
+    process.stdout.write(`Lazy dispatcher socket-activated by systemd on ${SOCKET_PATH}\n`);
+    resetIdleTimer();
+  });
+} else {
+  // Clean up old socket before binding
+  try { fs.unlinkSync(SOCKET_PATH); } catch {}
+
+  server.listen(SOCKET_PATH, () => {
+    process.stdout.write(`Lazy dispatcher listening on ${SOCKET_PATH}\n`);
+    resetIdleTimer();
+  });
+}
 
 process.on("SIGINT", () => { server.close(); process.exit(0); });
 process.on("SIGTERM", () => { server.close(); process.exit(0); });

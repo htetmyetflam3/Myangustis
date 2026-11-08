@@ -30,6 +30,7 @@
     "format": "prettier --write .",
     "dev": "npm run dev -w B.Parser/host",
     "dev:engine": "nodemon Architecture/Engine/index.js",
+    "dev:parser": "bash B.Parser/integration/services/dev-dispatcher.sh",
     "api": "node tools-box/js/api-server.js",
     "start": "npm run start -w B.Parser/host",
     "start:host": "node Architecture/host/index.js",

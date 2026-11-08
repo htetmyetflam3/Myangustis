@@ -87,6 +87,11 @@ Kept in place; only their `../main/core/…` imports were repointed to `../core/
 - `parser-dispatcher.service` / `.socket` — systemd units; `ExecStart` updated
   to `integration/services/dispatcher-server.js` (was a stale
   `main/parser/js/shared/28-dispatcher-server.js`)
+- `myangustis-parser.socket` / `.service` — systemd socket activation for
+  the Unix socket: systemd owns `/tmp/myangustis-parser.sock`, starts
+  `lazy-dispatcher.js` (fd 3) on connection, dispatcher idle-exits.
+  Enable only the `.socket`. `dev-dispatcher.sh` is the dev twin
+  (`systemd-socket-activate` re-arm loop; root script `dev:parser`)
 - `local/stream.js`, `local/init.js`, `local/entry.js` — local-caller dispatch
   streams (was `core/local/`, `core/init/entry.js`). Three near-duplicate
   `LocalDispatchStream` implementations — dedupe is a later task.
