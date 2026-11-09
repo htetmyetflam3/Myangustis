@@ -1,5 +1,5 @@
 /*
-(init/helper) textLines: yield lines from text chunks.
+(output/helper) textLines: yield lines from text chunks.
 Split a chunk stream into lines without joining it whole first -
 a line is yielded as soon as its newline arrives, the partial
 tail is carried across chunk boundaries. Shared by the output

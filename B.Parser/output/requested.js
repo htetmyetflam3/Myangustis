@@ -1,5 +1,8 @@
 /*
-(output) The output file creation door - last link of the chain.
+(output/requested) The requested file creator - last link of the chain.
+This door wraps the two document writers (pdf/write.js renders a
+PDF, docx/write.js renders a DOCX) and the plain txt write below:
+it creates whichever file was requested.
 Finished pages come in (text, plus layout lines when the source
 had them); the requested file comes out. The conversion IS the
 dispatch: the target format is chosen by the output name, the
@@ -13,7 +16,8 @@ stage's limit home; owner jobs are uncapped there already.
 */
 import fs from "node:fs";
 import path from "node:path";
-import { writePdf, writeDocxLayout, writeDocxPlain } from "../core/io/compose.js";
+import { writePdf } from "./pdf/write.js";
+import { writeDocxLayout, writeDocxPlain } from "./docx/write.js";
 import { normalizeOutputType } from "../core/type/output.js";
 import { MAX_PAGES, MAX_TEXT_CHARS } from "../init/helper/limit.js";
 
@@ -39,7 +43,7 @@ export async function writeOutputFile(pages, outPath, {
   source = "", sourceKind = null, counts = {}, log = () => {},
 } = {}) {
   if (!outPath || typeof outPath !== "string") {
-    throw new TypeError("writeOutputFile: output path is required");
+    throw new TypeError("requested: output path is required");
   }
   let out = outPath;
   let ext = path.extname(out).toLowerCase().replace(/^\./, "");

@@ -1,127 +1,22 @@
 /*
-(PDF 32) PDF branch, position 32 in the chain - called by the output writer (PDF 31) for pdf and docx output.
-This module renders finished text back into a document: it lays out paragraphs and writes an output PDF or DOCX with proper Burmese fonts.
+(output/docx) The DOCX output module: render finished pages into a DOCX file.
+Two entries: writeDocxLayout takes pages with layout lines
+[x, y, size, text] (what a PDF source offers) and positions each
+paragraph; writeDocxPlain takes raw text (what a DOCX source
+offers). Both stream word/document.xml into the zip as they go -
+member bytes are generated, not held. Shared helpers in ../helper/.
 */
-import {
-  ANONYMOUS_PRO_FILES,
-  BURMESE_FONTS,
-  DEFAULT_BURMESE_KEY,
-  FONT_ROLES,
-  classifyTextRole,
-  isFile,
-  registerPdfFonts,
-  applyPdfRole,
-} from "../codepage/fonts.js";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
-import { OUTPUT_FONT_DIR } from "../../_path.js";
+import { BURMESE_FONTS, DEFAULT_BURMESE_KEY } from "../../core/codepage/fonts.js";
+import { ZipStreamWriter } from "../../core/io/zip.js";
+import { pyRound } from "../../init/helper/pylib.js";
+import { textLines } from "../helper/text-lines.js";
 
 const BURMESE_DOCX_NAME = BURMESE_FONTS[DEFAULT_BURMESE_KEY].docx;
-import { PdfWriter } from "../../pdf/pdf-writer.js";
-import { writeOptimizedPdf } from "../../pdf/pdf-optimize.js";
-import { ZipStreamWriter } from "./zip.js";
-import { pyRound, RuntimeError } from "../../init/helper/pylib.js";
-import { textLines } from "../../init/helper/text-lines.js";
 
 export function esc(s) {
-  
   return String(s).replaceAll("&", "&amp;").replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 }
-
-
-export function pdfLineHeight(pdf, role) {
-  const cfg = FONT_ROLES[role];
-  return pdf.fontSizePt * cfg.line_spacing / pdf.k;
-}
-
-
-
-
-
-export async function writePdf(outPath, texts, metadata, pdfPath, npages, log = () => {}, workDir = null) {
-  const engReg = ANONYMOUS_PRO_FILES[""];
-  if (!engReg || !isFile(engReg)) {
-    throw new RuntimeError(
-      `Anonymous Pro font not found in ${OUTPUT_FONT_DIR} (required for PDF output).`,
-    );
-  }
-
-  const directory = fs.mkdtempSync(workDir
-    ? path.join(workDir, "pdf-output-") : path.join(os.tmpdir(), "linga-pdf-output-"));
-  let pdf;
-  try {
-  pdf = new PdfWriter(directory);
-  pdf.setFooter((self) => {
-    self.setY(-15);
-    applyPdfRole(self, "page_number");
-    self.cell(0, pdfLineHeight(self, "page_number"), String(self.pageNo), { align: "C" });
-  });
-  pdf.setAutoPageBreak(true, 20);
-  registerPdfFonts(pdf);
-
-  const left = 18;
-  const top = 18;
-
-  const renderHeader = () => {
-    pdf.setXY(left, top);
-    applyPdfRole(pdf, "title");
-    pdf.cell(0, pdfLineHeight(pdf, "title"), `Source: ${pdfPath}`, { newX: "LMARGIN", newY: "NEXT" });
-    applyPdfRole(pdf, "meta");
-    const metaItems = [["Pages", npages], ...Object.entries(metadata || {})];
-    for (const [k, v] of metaItems) {
-      pdf.cell(0, pdfLineHeight(pdf, "meta"), `${k}: ${v}`, { newX: "LMARGIN", newY: "NEXT" });
-    }
-    pdf.ln(5);
-  };
-
-  let idx = 0;
-  for await (const txt of texts) {
-    pdf.addPage();
-    pdf.setXY(left, top);
-    if (idx === 0) {
-      renderHeader();
-      pdf.ln(3);
-    }
-    let prevBlank = true;
-    const chunks = typeof txt?.textChunks === "function" ? txt.textChunks() : [String(txt ?? "")];
-    for (const line of textLines(chunks)) {
-      const role = classifyTextRole(line, prevBlank);
-      if (role === "blank") {
-        pdf.ln(pdfLineHeight(pdf, "paragraph") * 0.5);
-        prevBlank = true;
-        continue;
-      }
-      applyPdfRole(pdf, role);
-      pdf.cell(0, pdfLineHeight(pdf, role), line, {
-        newX: "LMARGIN", newY: "NEXT", align: FONT_ROLES[role].align,
-      });
-      prevBlank = false;
-    }
-    idx += 1;
-  }
-
-  const firstPass = path.join(directory, "first-pass.pdf");
-  await pdf.output(firstPass);
-  await writeOptimizedPdf(outPath, firstPass, log);
-  return outPath;
-  } finally {
-    pdf?.close();
-    fs.rmSync(directory, { recursive: true, force: true });
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
 
 const TWIPS = 20; 
 const LH = 1.2;   
