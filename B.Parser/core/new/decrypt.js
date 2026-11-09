@@ -47,6 +47,6 @@ export async function decryptPdf(file, workDir = null) {
   const dir = workDir ?? fs.mkdtempSync(path.join(os.tmpdir(), "myangustis-decrypt-"));
   fs.mkdirSync(dir, { recursive: true });
   const prepared = path.join(dir, "decrypted.pdf");
-  await runQpdfFile(file, prepared, ["--decrypt", "--object-streams=disable"]);
+  await runQpdfFile(file, prepared, ["--decrypt", "--object-streams=disable", "--qdf"]);
   return { path: prepared, prepared: true, ...state, size: fs.statSync(prepared).size };
 }

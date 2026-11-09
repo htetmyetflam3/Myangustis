@@ -34,7 +34,7 @@ export async function InitInput(trigger = {}, caller = "owner") {
   if (!["site", "owner", "service"].includes(who)) {
     throw new TypeError("InitInput: caller must be site, owner or service");
   }
-  const { path: filePath = null, object = null, filename = null } = trigger ?? {};
+  const { path: filePath = null, object = null, filename = null, job = null } = trigger ?? {};
   if ((filePath === null) === (object === null)) {
     throw new TypeError("InitInput: give exactly one of { path } or { object }");
   }
@@ -53,8 +53,8 @@ export async function InitInput(trigger = {}, caller = "owner") {
 
   // file reader for the disk side; no file reader for service objects
   const { metadata, object: packed } = filePath !== null
-    ? await packInput(generatorA(filePath), { filename: filename ?? filePath, origin: "disk", caller: who })
-    : await packInput(byteChunks(object), { filename, origin: "external", caller: who });
+    ? await packInput(generatorA(filePath), { filename: filename ?? filePath, origin: "disk", caller: who, job })
+    : await packInput(byteChunks(object), { filename, origin: "external", caller: who, job });
 
   if (metadata.kind === "pdf") return preparePdf(metadata, packed);
   if (metadata.kind === "docx") return prepareDocx(metadata, packed);

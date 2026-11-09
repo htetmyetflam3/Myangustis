@@ -10,7 +10,7 @@ if anything ever needs to act on metadata alone, it happens here.
 import { validateDocx } from "./validator.js";
 import { validateImage } from "./ocr.js";
 
-export async function packInput(source, { filename = null, origin = "external", caller = "owner" } = {}) {
+export async function packInput(source, { filename = null, origin = "external", caller = "owner", job = null } = {}) {
   const iterator = source[Symbol.asyncIterator]();
   const head = [];
   let headBytes = 0;
@@ -39,6 +39,7 @@ export async function packInput(source, { filename = null, origin = "external", 
     caller,
     ...(origin === "disk" && filename ? { sourcePath: filename } : {}),
     ...(imageKind ? { imageKind } : {}),
+    ...(job ? { job } : {}),
   };
   return { metadata, object: object() };
 }
