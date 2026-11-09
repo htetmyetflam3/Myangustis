@@ -13,7 +13,7 @@ import { cleanupText, orderText } from "../clean.js";
 import { preserveRegionalRuns } from "../unicode-evidence.js";
 import { preserveCharacters, protectedCharacters } from "./judgement.js";
 import { createRabbitStream } from "../rabbit.js";
-import { StreamingReplace } from "../stream-replace.js";
+import { StreamingReplace } from "../../helper/stream-replace.js";
 
 const READ_SIZE = 64 * 1024;
 
