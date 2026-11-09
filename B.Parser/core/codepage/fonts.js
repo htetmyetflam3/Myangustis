@@ -5,7 +5,7 @@ This module lists the Burmese fonts available for writing output documents (PDF 
 import path from "node:path";
 import fs from "node:fs";
 import { OUTPUT_FONT_DIR } from "../../_path.js";
-import { pyLen } from "../pylib.js";
+import { pyLen } from "../../init/helper/pylib.js";
 
 export const ANONYMOUS_PRO_FILES = {
   "": path.join(OUTPUT_FONT_DIR, "AnonymousPro-Regular.ttf"),

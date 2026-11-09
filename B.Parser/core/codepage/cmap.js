@@ -2,7 +2,7 @@
 (Support 29) Shared support, no chain position - TrueType cmap parsing.
 This module reads a TrueType font's tables and parses its cmap, the map from character codes to glyphs that embedded-font decoding relies on.
 */
-import { ValueError } from "../pylib.js";
+import { ValueError } from "../../init/helper/pylib.js";
 
 
 function readU16PythonSlice(buf, a) {

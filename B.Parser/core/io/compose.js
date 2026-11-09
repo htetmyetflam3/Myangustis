@@ -18,11 +18,11 @@ import path from "node:path";
 import { OUTPUT_FONT_DIR } from "../../_path.js";
 
 const BURMESE_DOCX_NAME = BURMESE_FONTS[DEFAULT_BURMESE_KEY].docx;
-import { PdfWriter } from "../pdf/pdf-writer.js";
-import { writeOptimizedPdf } from "../pdf/pdf-optimize.js";
+import { PdfWriter } from "../../pdf/pdf-writer.js";
+import { writeOptimizedPdf } from "../../pdf/pdf-optimize.js";
 import { ZipStreamWriter } from "./zip.js";
-import { pyRound, RuntimeError } from "../pylib.js";
-import { textLines } from "../decoding/finalized-cmap.js";
+import { pyRound, RuntimeError } from "../../init/helper/pylib.js";
+import { textLines } from "../../init/helper/text-lines.js";
 
 export function esc(s) {
   
