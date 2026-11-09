@@ -8,7 +8,7 @@ member bytes are generated, not held. Shared helpers in ../helper/.
 */
 import { BURMESE_FONTS, DEFAULT_BURMESE_KEY } from "../../core/codepage/fonts.js";
 import { ZipStreamWriter } from "../../core/io/zip.js";
-import { pyRound } from "../../init/helper/pylib.js";
+import { pyRound } from "../../core/helper/pylib.js";
 import { textLines } from "../helper/text-lines.js";
 
 const BURMESE_DOCX_NAME = BURMESE_FONTS[DEFAULT_BURMESE_KEY].docx;

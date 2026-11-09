@@ -6,7 +6,7 @@ hard maximums; owner workers (parserOwner stamped by the Manager)
 are uncapped, everyone else gets the numbers below.
 */
 import { isMainThread, workerData } from "node:worker_threads";
-import { ValueError } from "./pylib.js";
+import { ValueError } from "../../core/helper/pylib.js";
 
 export const OWNER_PARSER_WORKER = !isMainThread && workerData?.parserOwner === true;
 

@@ -16,7 +16,7 @@ import path from "node:path";
 import { OUTPUT_FONT_DIR } from "../../_path.js";
 import { PdfWriter } from "../../pdf/pdf-writer.js";
 import { writeOptimizedPdf } from "../../pdf/pdf-optimize.js";
-import { RuntimeError } from "../../init/helper/pylib.js";
+import { RuntimeError } from "../../core/helper/pylib.js";
 import { textLines } from "../helper/text-lines.js";
 
 export function pdfLineHeight(pdf, role) {
