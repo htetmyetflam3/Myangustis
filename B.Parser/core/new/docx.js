@@ -1,22 +1,27 @@
 /*
 (new/docx) The DOCX lane - one function, two composed steps:
-Same shape as the PDF lane, minus decryption (a DOCX has none): the
-bytes are collected whole (the package check needs the central
-directory at the end anyway), validated, then written to a tmp file.
+  1) collect.js  - write tmp (streamed, chunk by chunk, cap while
+                   writing; nothing is held in memory)
+  2) validator   - judge the landed file from its central directory
+                   by offset; an invalid package's tmp is destroyed
+DOCX has no decryption. Judging the landed file instead of held
+bytes is what lets this lane stream end to end; the bomb defense is
+unchanged - declared sizes are judged before anything downstream
+decompresses a single member. init.js imports only this function.
 */
-import { collectA, collectBytes } from "./collect.js";
-import { validateDocx } from "./validator.js";
+import fs from "node:fs";
+import { collectA } from "./collect.js";
+import { validateDocxFile } from "./validator.js";
 
 export async function prepareDocx(metadata, object) {
-  // 1) validator - collect whole first (the package check needs the
-  //    central directory at the end), judge before anything is landed
-  const bytes = await collectBytes(object);
-  if (!validateDocx(bytes).valid) {
+  // 1) collect.js = write tmp
+  let landed = null;
+  for await (const item of collectA(object)) landed = item;
+  if (!landed) throw new TypeError("prepareDocx: empty input");
+  // 2) validator - judge the package on disk, destroy it if it fails
+  if (!validateDocxFile(landed.path).valid) {
+    fs.rmSync(landed.path, { force: true });
     throw new TypeError("prepareDocx: PK header but not a valid DOCX package");
   }
-  // 2) collect.js = write tmp
-  let landed = null;
-  async function* once() { yield bytes; }
-  for await (const item of collectA(once())) landed = item;
   return { kind: "docx", path: landed.path, size: landed.size, collected: true, metadata };
 }

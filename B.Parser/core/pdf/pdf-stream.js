@@ -6,7 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { collectPdfResult, markPdfImagePages, processPageRecord, streamPdfPages } from "../decoding/source-decoding.js";
-import { runQpdfFile } from "../../init/pdf/qpdf.js";
+import { runQpdfFile } from "../new/decrypt.js";
 import { copyPdfPrefix, findPdfEnd } from "./pdf-tail.js";
 import { renderPdfPagePng } from "./pdf-render.js";
 import { PdfTextSink } from "./pdf-text-sink.js";

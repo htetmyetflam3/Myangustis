@@ -2,12 +2,11 @@
 (new/pdf) The PDF lane - one function, three composed steps:
   1) validator   - the header state (on the disk file upfront, when
                    the call carried one)
-  2) collect.js  - write tmp
+  2) collect.js  - write tmp (streamed; nothing held in memory)
   3) decrypt     - qpdf writes the decrypted tmp; clean files pass
                    through untouched, no qpdf run, no copy
 init.js imports only this function from here; the steps live inside.
 */
-import fs from "node:fs";
 import { validatePdf } from "./validator.js";
 import { collectA } from "./collect.js";
 import { decryptPdf } from "./decrypt.js";
@@ -28,7 +27,7 @@ export async function preparePdf(metadata, object) {
     kind: "pdf",
     path: out.path,
     prepared: out.prepared,
-    size: out.size ?? fs.statSync(out.path).size,
+    size: out.prepared ? out.size : landed.size,
     collected: true,
     metadata,
   };
