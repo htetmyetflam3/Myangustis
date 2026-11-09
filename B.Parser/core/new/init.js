@@ -1,14 +1,5 @@
 /*
-(new/init) The door of the input stage, up to decryption - one function.
-InitInput intercepts the payload, peeks at the first bytes, and branches:
-  PDF   -> land in tmp -> validatePdf -> decryptPdf (qpdf tmp, if needed)
-  DOCX  -> validateDocx -> passDocx (the object itself, no tmp)
-  image -> land in tmp -> passOcr (the file, for the OCR worker)
-  other -> land in tmp, passed on as a plain file
-The landing (incremental tmp write, capped from limit.js) lives here so
-this tree stands alone; nothing past decryption lives here - the
-parsing chain takes it from the returned object
-({ kind, path | bytes, size, prepared }).
+
 */
 import fs from "node:fs";
 import os from "node:os";

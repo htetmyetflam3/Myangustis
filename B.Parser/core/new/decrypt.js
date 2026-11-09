@@ -1,0 +1,15 @@
+// --- function 2: decrypt -------------------------------------------------
+// qpdf over the landed tmp file; qpdf's decrypted output is a tmp file
+// too, handed downstream to seek in. A clean file passes untouched -
+// no qpdf run, no copy.
+export async function decryptPdf(file, workDir = null) {
+  const state = validatePdf(file);
+  if (!state.encrypted && !state.objectStreams) {
+    return { path: file, prepared: false, ...state };
+  }
+  const dir = workDir ?? fs.mkdtempSync(path.join(os.tmpdir(), "myangustis-decrypt-"));
+  fs.mkdirSync(dir, { recursive: true });
+  const prepared = path.join(dir, "decrypted.pdf");
+  await runQpdfFile(file, prepared, ["--decrypt", "--object-streams=disable"]);
+  return { path: prepared, prepared: true, ...state, size: fs.statSync(prepared).size };
+}
