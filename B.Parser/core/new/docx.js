@@ -1,14 +1,19 @@
 /*
-(new/docx) The DOCX side of the input stage, up to decryption.
-DOCX has no decryption stage - it is a zip, read whole by its runner -
-passDocx hands the DOCX on as the object. Validation lives upfront
-in validator.js (validateDocx); this file only passes.
+(new/docx) The DOCX lane: validator -> collect -> write tmp.
+Same shape as the PDF lane, minus decryption (a DOCX has none): the
+bytes are collected whole (the package check needs the central
+directory at the end anyway), validated, then written to a tmp file.
 */
-// --- function 2: pass ------------------------------------------------------
-// Hand the DOCX on as the object itself: { bytes, size }, plus the
-// trigger's filename when it named one. No tmp file - its runner reads
-// the whole archive in memory anyway.
-export function passDocx(bytes, filename = null) {
-  const buf = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-  return { bytes: buf, size: buf.length, ...(filename ? { filename } : {}) };
+import { collectA, collectBytes } from "./collect.js";
+import { validateDocx } from "./validator.js";
+
+export async function prepareDocx(metadata, object) {
+  const bytes = await collectBytes(object);
+  if (!validateDocx(bytes).valid) {
+    throw new TypeError("prepareDocx: PK header but not a valid DOCX package");
+  }
+  let landed = null;
+  async function* once() { yield bytes; }
+  for await (const item of collectA(once())) landed = item;
+  return { kind: "docx", path: landed.path, size: landed.size, collected: true, metadata };
 }

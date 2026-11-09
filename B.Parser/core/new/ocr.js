@@ -18,9 +18,21 @@ export function validateImage(head) {
   return null;
 }
 
-// --- function 2: pass ------------------------------------------------------
-// The image already landed as a tmp file at the door; the OCR lane is
-// handed the file, never a re-encoded copy (OCR never encodes).
-export function passOcr(file, imageKind, size = null) {
-  return { kind: "ocr", path: file, imageKind, ...(size !== null ? { size } : {}) };
+// --- the lane --------------------------------------------------------------
+// collect writes the tmp file; the OCR worker is handed the file,
+// never a re-encoded copy (OCR never encodes).
+import { collectA } from "./collect.js";
+
+export async function prepareOcr(metadata, object) {
+  let landed = null;
+  for await (const item of collectA(object)) landed = item;
+  if (!landed) throw new TypeError("prepareOcr: empty input");
+  return {
+    kind: "ocr",
+    path: landed.path,
+    imageKind: metadata.imageKind ?? null,
+    size: landed.size,
+    collected: true,
+    metadata,
+  };
 }
