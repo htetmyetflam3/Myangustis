@@ -10,8 +10,8 @@ unchanged - declared sizes are judged before anything downstream
 decompresses a single member. init.js imports only this function.
 */
 import fs from "node:fs";
-import { collectA } from "./collect.js";
-import { validateDocxFile } from "./validator.js";
+import { collectA } from "../init/helper/collect.js";
+import { validateDocxFile } from "../init/helper/validator.js";
 
 export async function prepareDocx(metadata, object) {
   // 1) collect.js = write tmp

@@ -11,8 +11,8 @@
                    the images is stripped, only image bytes remain.
 init.js imports only this function from here; the steps live inside.
 */
-import { validatePdf } from "./validator.js";
-import { collectA } from "./collect.js";
+import { validatePdf } from "../init/helper/validator.js";
+import { collectA } from "../init/helper/collect.js";
 import { decryptPdf } from "./decrypt.js";
 import { splitPdf, stripPdfImages } from "./split.js";
 

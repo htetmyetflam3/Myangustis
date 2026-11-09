@@ -20,7 +20,7 @@ enable ONLY the socket, never the service.
 import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { InitInput } from "./init.js";
+import { InitInput } from "../init.js";
 
 export const SOCKET_PATH = process.env.PARSER_SOCKET_PATH || "/tmp/myangustis-new-parser.sock";
 const IDLE_MS = Number(process.env.PARSER_IDLE_MS ?? 300_000);

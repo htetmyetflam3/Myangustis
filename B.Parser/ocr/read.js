@@ -21,7 +21,7 @@ export function validateImage(head) {
 // --- the lane --------------------------------------------------------------
 // collect writes the tmp file; the OCR worker is handed the file,
 // never a re-encoded copy (OCR never encodes).
-import { collectA } from "./collect.js";
+import { collectA } from "../init/helper/collect.js";
 
 export async function prepareOcr(metadata, object) {
   let landed = null;

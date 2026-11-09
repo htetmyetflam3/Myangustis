@@ -16,7 +16,7 @@ After=network.target
 [Service]
 Type=exec
 WorkingDirectory=/home/user/Myangustis/B.Parser
-ExecStart=/usr/local/bin/node /home/user/Myangustis/B.Parser/core/new/service.js
+ExecStart=/usr/local/bin/node /home/user/Myangustis/B.Parser/init/depency/service.js
 Restart=on-failure
 RestartSec=2
 StandardOutput=journal
