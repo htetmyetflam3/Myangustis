@@ -9,7 +9,6 @@ import os from "node:os";
 import path from "node:path";
 
 import { containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts } from "../detect.js";
-import { isEncryptedPdf, hasObjectStreams, scanPdfFileMarkers } from "../../init/pdf/decrypt.js";
 import { Rabbit } from "../rabbit.js";
 import { orderText } from "../clean.js";
 import { preserveCharacters, instructionLane } from "./praised/judgement.js";
@@ -22,6 +21,7 @@ import { WININNWA_LEGACY_CODE_PAGE } from "../codepage/codepage-registry.js";
 import { MAX_PAGES, MAX_TEXT_CHARS } from "../limits/local.js";
 import {
   MAX_PDF_OBJECTS, extractPageLines, pageHasImages, extractMetadata,
+  isEncryptedPdf, hasObjectStreams, scanPdfFileMarkers,
 } from "../io/read.js";
 import { PdfFileObjects, openPdfScannedObjects } from "../pdf/pdf-objects.js";
 import { decodePdfInstructions } from "../pdf/page-instructions.js";

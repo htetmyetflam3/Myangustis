@@ -13,6 +13,16 @@ const CD_SIG = 0x02014b50;
 const LOCAL_SIG = 0x04034b50;
 const ZIP64_EOCD_LOC_SIG = 0x07064b50;
 
+// File-header verdict from the first bytes (the same magics the
+// converter worker sniffs): "%PDF-" a PDF, PK a zip container - a DOCX,
+// anything else other. Moved here from init/docx/docx-object.js so the
+// header check sits with the read modules, upfront.
+export function kindFromHead(head) {
+  if (head.length >= 5 && head.subarray(0, 5).toString("latin1") === "%PDF-") return "pdf";
+  if (head.length >= 2 && head[0] === 0x50 && head[1] === 0x4b) return "docx";
+  return "other";
+}
+
 export class BadZipFile extends Error {
   constructor(msg) { super(msg); this.name = "BadZipFile"; }
 }

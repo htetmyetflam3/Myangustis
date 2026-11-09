@@ -24,6 +24,48 @@ import { PageImageCollector } from "../pdf/pdf-image-coverage.js";
 
 
 export const MAX_STREAM_MB = resourceLimit("PRASER_MAX_STREAM_MB", 128, 512);
+
+// --- File-header validation (upfront, before any page is read) -----------
+// Moved here from init/pdf/decrypt.js: these only look for marker bytes in
+// the raw file - whether it is encrypted (/Encrypt) or uses object streams
+// (/ObjStm) - without loading the file into the parser.
+const ENCRYPT_MARK = Buffer.from("/Encrypt");
+const OBJSTM_MARK = Buffer.from("/ObjStm");
+
+export function isEncryptedPdf(bytes) {
+  const buf = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
+  return buf.includes(ENCRYPT_MARK);
+}
+
+export function hasObjectStreams(bytes) {
+  const buf = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
+  return buf.includes(OBJSTM_MARK);
+}
+
+// Match the byte-based checks without loading a path-backed PDF into memory.
+export function scanPdfFileMarkers(source) {
+  const fd = fs.openSync(source, "r");
+  const block = Buffer.allocUnsafe(64 * 1024);
+  let tail = Buffer.alloc(0);
+  let encrypted = false;
+  let objectStreams = false;
+  let position = 0;
+  try {
+    while (true) {
+      const count = fs.readSync(fd, block, 0, block.length, position);
+      if (!count) break;
+      position += count;
+      const bytes = tail.length ? Buffer.concat([tail, block.subarray(0, count)]) : block.subarray(0, count);
+      encrypted ||= bytes.includes(ENCRYPT_MARK);
+      objectStreams ||= bytes.includes(OBJSTM_MARK);
+      if (encrypted && objectStreams) break;
+      tail = Buffer.from(bytes.subarray(Math.max(0, bytes.length - Math.max(ENCRYPT_MARK.length, OBJSTM_MARK.length) + 1)));
+    }
+    return { encrypted, objectStreams };
+  } finally {
+    fs.closeSync(fd);
+  }
+}
 export const MAX_PDF_OBJECTS = resourceLimit("PRASER_MAX_OBJECTS", 250_000, 10_000_000);
 
 

@@ -8,7 +8,8 @@ import { PARSER_DIR } from "../_path.js";
 import { generatorA } from "./file/file-chunks.js";
 import { collectA } from "./file/collect-whole.js";
 import { prepareMiddle } from "./file/prepare-middle.js";
-import { kindFromHead, passObject } from "./docx/docx-object.js";
+import { passObject } from "./docx/docx-object.js";
+import { kindFromHead } from "../core/io/zip.js";
 
 // Where the host saves uploaded files: <site runtime>/upload/input with
 // a per-kind subdir (Backend/file/paths.js: INPUT_DIR, inputDirFor).

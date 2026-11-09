@@ -5,7 +5,6 @@ This module holds nothing. It takes the landed tmp file from the collector and p
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { scanPdfFileMarkers } from "../pdf/decrypt.js";
 
 // Only PDFs are qpdf's business. Anything else that flows through the
 // chain (DOCX above all) passes through untouched.
@@ -67,6 +66,9 @@ export async function* prepareMiddle(source, { workDir } = {}) {
       yield { prepared: false, kind: "file", path: input, encrypted: false, objectStreams: false };
       return;
     }
+    // The header validators live with the read modules (core/io/read.js);
+    // pulled in here, at the decision point, so the door stays light.
+    const { scanPdfFileMarkers } = await import("../../core/io/read.js");
     const { encrypted, objectStreams } = scanPdfFileMarkers(input);
 
     if (!encrypted && !objectStreams) {
