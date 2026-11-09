@@ -52,7 +52,6 @@ export async function preparePdf(metadata, object) {
     kind: "pdf",
     container: split.containerPath,
     content: split.contentPath,
-    index: split.index,
     ...base,
   };
 }

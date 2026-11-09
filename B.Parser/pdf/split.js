@@ -128,7 +128,9 @@ export async function splitPdf(file) {
     "",
   ];
   fs.writeFileSync(containerPath, head.join("\n") + objects.join("\n\n") + "\n", { mode: 0o600 });
-  return { containerPath, contentPath, index };
+  // The table lives only in container.txt - it is NOT also returned
+  // in memory. Whoever needs an address reads the file's head lines.
+  return { containerPath, contentPath };
 }
 
 // The OCR exit for a PDF job: strip everything around the images
