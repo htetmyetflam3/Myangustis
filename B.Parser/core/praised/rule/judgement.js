@@ -12,7 +12,7 @@ Nothing here writes files or rewrites text; consumers act on what it answers.
 */
 import { containsMyanmar, isUnicodeFont } from "./detect.js";
 import { isLegacyFontName, normaliseFontName } from "../decoding/method/codepage-names.js";
-import { PDF_PARSING_PATHS } from "../decoding/pdf/font/pdf-fonts.js";
+import { PDF_PARSING_PATHS } from "../decoding/pdf/font/decoder.js";
 
 const LATIN_LIKE = /^[\x20-\xff\p{Script=Latin}\p{Number}\p{Punctuation}\p{Symbol}\s]+$/u;
 const PAGE_NUMBER = /^(?:[0-9]{1,4}|(?:page\s*[|:#-]?\s*[0-9]{1,4}\s*)+)$/iu;

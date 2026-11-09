@@ -12,11 +12,13 @@ import { OWNER_PARSER_WORKER, resourceLimit } from "../../init/helper/limit.js";
 import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "./decoding/method/codepage-registry.js";
 import { containsMyanmar } from "./rule/detect.js";
 import { decodeVisualUnicodeRun } from "./decoding/method/codepage-visual.js";
+import { Lexer, PdfName, PdfHexBytes, isNumeric, toNumber } from "./decoding/pdf/font/values.js";
 import {
-  Lexer, PdfName, PdfHexBytes, isNumeric, toNumber,
-  asDocumentDecoding, DocumentDecoding, FontResourceLoader, LegacyAyarMap, UnsetFontDecoder,
+  asDocumentDecoding, DocumentDecoding, UnsetFontDecoder,
   pageFontDecoders, PDF_PARSING_PATHS,
-} from "./decoding/pdf/font/pdf-fonts.js";
+} from "./decoding/pdf/font/decoder.js";
+import { FontResourceLoader } from "./decoding/pdf/font/ttf/ttf.js";
+import { LegacyAyarMap } from "./decoding/pdf/font/ttf/fallback.js";
 import { spoolPageContent } from "./decoding/pdf/layout/pdf-content.js";
 import { PdfFileLexer } from "./decoding/pdf/pdf-lexer.js";
 import { PdfPagePieces } from "./decoding/pdf/layout/pdf-pages.js";
@@ -577,7 +579,9 @@ export function pageHasImages(objects, pageNum, pageGen) {
 
 
 
-export { IDENTITY, CmapIdentityMap, LegacyAyarMap, mapCode } from "./decoding/pdf/font/pdf-fonts.js";
+export { IDENTITY, PDF_PARSING_PATHS } from "./decoding/pdf/font/decoder.js";
+export { CmapIdentityMap, LegacyAyarMap } from "./decoding/pdf/font/ttf/fallback.js";
+export { mapCode } from "./decoding/pdf/font/cmap/cmap.js";
 
 
 

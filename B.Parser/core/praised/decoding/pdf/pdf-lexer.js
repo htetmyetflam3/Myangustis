@@ -3,7 +3,7 @@
 This module is the PDF tokenizer: it reads a prepared file and turns names, numbers, strings, arrays and dictionaries into values the object loader can resolve.
 */
 import fs from "node:fs";
-import { PdfFloat, PdfHexBytes, PdfKeyword, PdfName } from "./pdf-fonts.js";
+import { PdfFloat, PdfHexBytes, PdfKeyword, PdfName } from "./font/values.js";
 
 const BUFFER_SIZE = 64 * 1024;
 const ESCAPES = new Map([

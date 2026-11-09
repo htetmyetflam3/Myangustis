@@ -13,7 +13,7 @@ import { PdfTextSink } from "./pdf-text-sink.js";
 import { writePageStore } from "../io/write.js";
 import { PageStoreWriter } from "../io/emit.js";
 import { PosScanner } from "../beautify/scan.js";
-import { PDF_PARSING_PATHS } from "./pdf-fonts.js";
+import { PDF_PARSING_PATHS } from "./font/decoder.js";
 import { startRecord, note, appendRecord, registerPath } from "../provenance.js";
 import { REGISTER_LOG } from "../../_path.js";
 import { normalizePageToFile, pageLayoutLines } from "../decoding/finalized-cmap.js";
