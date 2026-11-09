@@ -8,7 +8,7 @@ import { randomUUID } from "node:crypto";
 import { StringDecoder } from "node:string_decoder";
 import { containsMyanmar } from "../detect.js";
 import { arrangeZawCodeOrder } from "../zawcode-order.js";
-import { correctWorldWord, markOrderAligned, scoreText } from "./judgement.js";
+import { correctWorldWord, judgePageLines, selectPageDecision } from "./judgement.js";
 import { cleanupText, orderText } from "../clean.js";
 import { preserveRegionalRuns } from "../unicode-evidence.js";
 import { preserveCharacters, protectedCharacters } from "./judgement.js";
@@ -211,55 +211,12 @@ export function convertFinalizedPageText(text, page = {}, applyCleanup = true) {
 export function finishPageToFile(store, {
   directory, parsingPath, sourceEncoding = "auto", fontKinds = new Set(),
 } = {}) {
-  let originalHasText = false;
-  let hasMyanmar = false;
-  let aligned = true;
-  let candidateChanged = false;
-  let candidateAligned = true;
-  let count = 0;
-  // mm-score evidence over the decoded output itself: how the page reads
-  // as emitted by the cmap parse, versus how it reads after the ZawCode
-  // slot swap. This — never a PDF font name — decides the module below.
-  let rawScoreTotal = 0;
-  let rawMarks = 0;
-  let candidateScoreTotal = 0;
-  let candidateMarks = 0;
-  for (const [, , , text] of store.lines()) {
-    count += 1;
-    const inspected = String(text ?? "").replace(/\u200b/gu, "");
-    originalHasText ||= Boolean(inspected.trim());
-    hasMyanmar ||= containsMyanmar(inspected);
-    aligned &&= markOrderAligned(inspected);
-    const candidate = arrangeZawCodeOrder(inspected);
-    candidateChanged ||= candidate !== inspected;
-    candidateAligned &&= markOrderAligned(candidate);
-    if (inspected) {
-      // Mm-score judges the readings exactly as emitted — no reordering
-      // first, or a crossed page would score as if already fixed.
-      const rawReading = scoreText(inspected);
-      rawScoreTotal += rawReading.score * rawReading.marks;
-      rawMarks += rawReading.marks;
-      const candidateReading = scoreText(candidate);
-      candidateScoreTotal += candidateReading.score * candidateReading.marks;
-      candidateMarks += candidateReading.marks;
-    }
+  function* pageTexts() {
+    for (const [, , , text] of store.lines()) yield text;
   }
-  const rawScore = rawMarks ? rawScoreTotal / rawMarks : 0;
-  const candidateScore = candidateMarks ? candidateScoreTotal / candidateMarks : 0;
-  // The cmap lane parsed the page as Zawgyi-One by default and emitted it;
-  // the finish now checks that output exactly three ways:
-  //   1. it fits the ZawCode swap rule (swap changes the slots, leaves the
-  //      page aligned, and mm-score strictly improves) -> ZawCode swap;
-  //   2. it does not fit, but its mark order is violated -> Rabbit;
-  //   3. its mark order is aligned and no swap fits -> nothing but the
-  //      Normalize that runs behind every finish in the stream.
-  const zawcodeFit = candidateChanged && candidateAligned && candidateScore > rawScore;
-  let decision;
-  if (parsingPath === "legacy") decision = "legacy";
-  else if (!hasMyanmar) decision = "aligned";
-  else if (zawcodeFit) decision = "zawcode";
-  else if (!aligned) decision = "rabbit";
-  else decision = "aligned";
+  const judgment = judgePageLines(pageTexts(), arrangeZawCodeOrder);
+  const { originalHasText, count } = judgment;
+  let decision = selectPageDecision(judgment, parsingPath);
   const worldEvidence = sourceEncoding !== "unicode" && decision === "rabbit";
 
   const id = randomUUID();

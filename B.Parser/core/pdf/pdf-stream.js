@@ -17,8 +17,8 @@ import { PDF_PARSING_PATHS } from "./pdf-fonts.js";
 import { startRecord, note, appendRecord, registerPath } from "../provenance.js";
 import { REGISTER_LOG } from "../../_path.js";
 import { normalizePageToFile, pageLayoutLines } from "../decoding/finalized-cmap.js";
-import { scoreText } from "../decoding/judgement.js";
-import { markOrderAligned } from "../decoding/judgement.js";
+import { scoreText } from "../decoding/praised/judgement.js";
+import { markOrderAligned, isUnicodeLaneDecision } from "../decoding/praised/judgement.js";
 import { mendZawCodeTextWithPos, requestScanLineSvgs } from "../beautify/repair.js";
 import { createOriginalPdfCache } from "../original-pdf-cache.js";
 import { normalize } from "../../../Architecture/Engine/MonoSyllabism/map/loader.js";
@@ -50,8 +50,6 @@ async function preparePdf(input, prepared, directory, generalized) {
   }
 }
 
-const UNICODE_LANE_DECISIONS = new Set(["aligned", "zawcode", "unaligned-unicode"]);
-
 // First circle / parsing finish: lane module -> parser -> myanmar-score ->
 // beautify -> WASM normalize. A correct-scored Unicode page passes through
 // beautify untouched. Only a
@@ -62,7 +60,7 @@ const UNICODE_LANE_DECISIONS = new Set(["aligned", "zawcode", "unaligned-unicode
 async function beautifyParsedPage(parsedText, page, applyCleanup) {
   if (!applyCleanup || !parsedText) return parsedText;
   if (page.parsingPath === PDF_PARSING_PATHS.LEGACY) return parsedText;
-  if (!UNICODE_LANE_DECISIONS.has(page.decision) && page.category !== "UNICODE") return parsedText;
+  if (!isUnicodeLaneDecision(page.decision, page.category)) return parsedText;
   const score = scoreText(parsedText);
   if (!score.marks || (markOrderAligned(parsedText) && score.score >= 0.99)) return parsedText;
   if (score.score < 0.95) return parsedText;

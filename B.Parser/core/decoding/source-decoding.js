@@ -8,15 +8,15 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts, isUnicodeFont } from "../detect.js";
-import { isLegacyFontName, normaliseFontName } from "../codepage/codepage-names.js";
+import { containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts } from "../detect.js";
 import { isEncryptedPdf, hasObjectStreams, scanPdfFileMarkers } from "../../init/pdf/decrypt.js";
 import { Rabbit } from "../rabbit.js";
 import { orderText } from "../clean.js";
-import { preserveCharacters } from "./judgement.js";
+import { preserveCharacters, instructionLane } from "./praised/judgement.js";
+export { instructionLane };
 import { extractDocxParagraphs, validateDocxArchive } from "../docx/docx-extract.js";
 import { extractDocxParagraphsExternal } from "../docx/docx-external.js";
-import { scoreText } from "./judgement.js";
+import { scoreText } from "./praised/judgement.js";
 import { countImpossiblePairs } from "../beautify/scan.js";
 import { WININNWA_LEGACY_CODE_PAGE } from "../codepage/codepage-registry.js";
 import { MAX_PAGES, MAX_TEXT_CHARS } from "../limits/local.js";
@@ -29,7 +29,7 @@ import { PdfPagePieces } from "../pdf/pdf-pages.js";
 import {
   cleanupUnicodeText as cleanupUnicode, convertFinalizedPageText,
   finishPageToFile, orderUnicodeText as orderUnicode, pageLayoutLines,
-} from "./finalized-cmap.js";
+} from "./praised/finalized-cmap.js";
 import { DocumentDecoding, PDF_PARSING_PATHS, legacyLayoutForFont, pageFontDecoders } from "../pdf/pdf-fonts.js";
 import { pyRound, RuntimeError, baseName } from "../pylib.js";
 import { agentAdvisory } from "../../../Architecture/host/advisory.js";
@@ -45,57 +45,6 @@ function adviseParserMiddleChain(api) {
       + "tools-box/js/pipeline-cli.js parser local, and report only that front-door behavior. "
       + "Calling pipeline/text/read helpers directly skips Manager spooling, worker preparation, output/POS sidecars and cleanup options.",
   );
-}
-
-// Lane decision from the outside-stream instructions alone: a page takes
-// the legacy lane iff one of its fonts is a registered legacy face
-// (isLegacyFontName - the curated registry, not the layout prefix guess,
-// which would also bless the modern Unicode font named "Ayar") and that
-// face plausibly carries the page's text (details below). Inside the
-// legacy lane a font whose own map marks it Unicode or Zawgyi is still
-// read through that map, not the codepage, so a legacy entry rarely
-// destroys well-mapped fonts. Guards: a CID Unicode face (Type0 +
-// isUnicodeFont) means the page's Burmese is Unicode-typeset even when a
-// legacy-named resource is also declared; and a two/three-letter base
-// name is not evidence - the registry's prefix rule would otherwise call
-// any "MS"-style face legacy. Everything else stays on the font-cmap
-// lane. The registry is the same one the legacy lane uses internally as
-// its layout guard.
-export function instructionLane(pageInstruction, sourceEncoding) {
-  if (sourceEncoding === "unicode" || sourceEncoding === "zawgyi-one") {
-    return { parser: PDF_PARSING_PATHS.FONT_CMAP, reason: "source-encoding" };
-  }
-  const fonts = pageInstruction?.fonts ?? [];
-  const cidUnicodeFace = fonts.some((font) => font.subtype === "Type0"
-    && (isUnicodeFont(font.baseFont) || /^myanmar[0-9]/u.test(normaliseFontName(font.baseFont))));
-  if (cidUnicodeFace) {
-    return { parser: PDF_PARSING_PATHS.FONT_CMAP, reason: "unicode-font" };
-  }
-  // A CID-keyed Zawgyi face is the modern Zawgyi toolchain: the page is
-  // read through its own maps even when a legacy-named resource is present.
-  if (fonts.some((font) => font.subtype === "Type0" && normaliseFontName(font.baseFont).startsWith("zawgyi"))) {
-    return { parser: PDF_PARSING_PATHS.FONT_CMAP, reason: "cid-zawgyi-font" };
-  }
-  const legacyFonts = fonts.filter((font) => normaliseFontName(font.baseFont).length >= 4
-    && isLegacyFontName(font.baseFont));
-  // A legacy-named font that ships no ToUnicode while a mapped font on
-  // the page does is not the page's text carrier (it typesets
-  // headers/Latin); the legacy reading only applies when the legacy font
-  // carries its own map, or no mapped non-Zawgyi font is present. A
-  // mapped Zawgyi companion does not count: legacy books mix both.
-  const legacyApplies = legacyFonts.some((font) => font.toUnicode)
-    || !fonts.some((font) => font.toUnicode && !normaliseFontName(font.baseFont).startsWith("zawgyi"));
-  if (legacyFonts.length > 0 && legacyApplies) {
-    return {
-      parser: PDF_PARSING_PATHS.LEGACY,
-      reason: "legacy-font",
-      fonts: legacyFonts.map((font) => font.baseFont),
-    };
-  }
-  return {
-    parser: PDF_PARSING_PATHS.FONT_CMAP,
-    reason: fonts.length > 0 ? "no-legacy-evidence" : "no-fonts",
-  };
 }
 
 export function streamPdfPages(source, log = () => {}, {
