@@ -2,25 +2,25 @@
 (PDF 13) PDF branch, position 13 in the chain - after the instructions (PDF 11), before the page text is finished (PDF 19).
 This module extracts one page's text lines: it spools the content (PDF 14), runs the font decoders (PDF 16) over the shown strings, tracks positions, and collects the page's images.
 */
-import { parseTtfCmap } from "../codepage/cmap.js";
+import { parseTtfCmap } from "./decoding/method/cmap.js";
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
-import { ValueError, pyTruthy, pyInt, fromHexStrict } from "../pylib.js";
+import { ValueError, pyTruthy, pyInt, fromHexStrict } from "../helper/pylib.js";
 import { loadMapJson, mapNameForPath } from "../json-map.js";
-import { OWNER_PARSER_WORKER, resourceLimit } from "../limits/local.js";
-import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../codepage/codepage-registry.js";
-import { containsMyanmar } from "../detect.js";
-import { decodeVisualUnicodeRun } from "../codepage/codepage-visual.js";
+import { OWNER_PARSER_WORKER, resourceLimit } from "../../init/helper/limit.js";
+import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "./decoding/method/codepage-registry.js";
+import { containsMyanmar } from "./rule/detect.js";
+import { decodeVisualUnicodeRun } from "./decoding/method/codepage-visual.js";
 import {
   Lexer, PdfName, PdfHexBytes, isNumeric, toNumber,
   asDocumentDecoding, DocumentDecoding, FontResourceLoader, LegacyAyarMap, UnsetFontDecoder,
   pageFontDecoders, PDF_PARSING_PATHS,
-} from "../pdf/pdf-fonts.js";
-import { spoolPageContent } from "../pdf/pdf-content.js";
-import { PdfFileLexer } from "../pdf/pdf-lexer.js";
-import { PdfPagePieces } from "../pdf/pdf-pages.js";
-import { PageImageCollector } from "../pdf/pdf-image-coverage.js";
+} from "./decoding/pdf/font/pdf-fonts.js";
+import { spoolPageContent } from "./decoding/pdf/layout/pdf-content.js";
+import { PdfFileLexer } from "./decoding/pdf/pdf-lexer.js";
+import { PdfPagePieces } from "./decoding/pdf/layout/pdf-pages.js";
+import { PageImageCollector } from "./decoding/pdf/layout/pdf-image-coverage.js";
 
 
 export const MAX_STREAM_MB = resourceLimit("PRASER_MAX_STREAM_MB", 128, 512);
@@ -577,7 +577,7 @@ export function pageHasImages(objects, pageNum, pageGen) {
 
 
 
-export { IDENTITY, CmapIdentityMap, LegacyAyarMap, mapCode } from "../pdf/pdf-fonts.js";
+export { IDENTITY, CmapIdentityMap, LegacyAyarMap, mapCode } from "./decoding/pdf/font/pdf-fonts.js";
 
 
 

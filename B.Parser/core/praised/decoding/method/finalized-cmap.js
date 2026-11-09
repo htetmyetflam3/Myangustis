@@ -9,7 +9,7 @@ import { StringDecoder } from "node:string_decoder";
 import { containsMyanmar } from "../detect.js";
 import { arrangeZawCodeOrder } from "../zawcode-order.js";
 import { correctWorldWord, judgePageLines, selectPageDecision } from "./judgement.js";
-import { cleanupText, orderText } from "../clean.js";
+import { cleanupText, orderText } from "../../rule/clean.js";
 import { preserveRegionalRuns } from "../unicode-evidence.js";
 import { preserveCharacters, protectedCharacters } from "./judgement.js";
 import { createRabbitStream } from "../rabbit.js";

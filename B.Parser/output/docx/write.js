@@ -6,8 +6,8 @@ paragraph; writeDocxPlain takes raw text (what a DOCX source
 offers). Both stream word/document.xml into the zip as they go -
 member bytes are generated, not held. Shared helpers in ../helper/.
 */
-import { BURMESE_FONTS, DEFAULT_BURMESE_KEY } from "../../core/codepage/fonts.js";
-import { ZipStreamWriter } from "../../core/io/zip.js";
+import { BURMESE_FONTS, DEFAULT_BURMESE_KEY } from "../../core/praised/decoding/method/fonts.js";
+import { ZipStreamWriter } from "../../core/praised/decoding/docx/zip.js";
 import { pyRound } from "../../core/helper/pylib.js";
 import { textLines } from "../helper/text-lines.js";
 

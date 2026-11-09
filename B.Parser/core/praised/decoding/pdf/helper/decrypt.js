@@ -9,7 +9,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { validatePdf } from "../../init/helper/validator.js";
+import { validatePdf } from "../../../../../init/helper/validator.js";
 
 const QPDF_BIN = process.env.PRASER_QPDF_BIN || "qpdf";
 

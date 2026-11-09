@@ -3,14 +3,14 @@
 This module builds the font decoders: ToUnicode maps, embedded TrueType cmaps, standard encodings, and the legacy code-page lanes (WinInnwa/Ayar) for fonts that carry no Unicode map of their own.
 */
 import { createHash } from "node:crypto";
-import { pyChr } from "../pylib.js";
+import { pyChr } from "../../../../helper/pylib.js";
 import { BASE_ENCODINGS, GLYPH_NAME_TO_UNICODE } from "./pdf-encodings.js";
-import { isLegacyFontName, isUnresolvedLegacyFont, normaliseFontName } from "../codepage/codepage-names.js";
-import { lookupLegacyCode, AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE, WININNWA_UNRESOLVED_SLOTS } from "../codepage/codepage-registry.js";
-import { confirmedRunAt } from "../codepage/codepage-confirmed.js";
-import { subsetFontBridge } from "../codepage/codepage-subset.js";
-import { parseTtfGsubReverse, parseTtfVariantSlots } from "../codepage/ttf-gsub.js";
-import { hasVisualUnicodeConflicts, matchVisualUnicodeGlyphs } from "../codepage/codepage-visual.js";
+import { isLegacyFontName, isUnresolvedLegacyFont, normaliseFontName } from "../../method/codepage-names.js";
+import { lookupLegacyCode, AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE, WININNWA_UNRESOLVED_SLOTS } from "../../method/codepage-registry.js";
+import { confirmedRunAt } from "../../method/codepage-confirmed.js";
+import { subsetFontBridge } from "../../method/codepage-subset.js";
+import { parseTtfGsubReverse, parseTtfVariantSlots } from "../../method/ttf-gsub.js";
+import { hasVisualUnicodeConflicts, matchVisualUnicodeGlyphs } from "../../method/codepage-visual.js";
 
 
 

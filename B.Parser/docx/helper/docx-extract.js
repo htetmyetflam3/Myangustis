@@ -5,10 +5,10 @@ This module extracts the paragraphs of a DOCX document from its document.xml, in
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { readCentralDirectory, readEntry } from "../../core/io/zip.js";
+import { readCentralDirectory, readEntry } from "../../core/praised/decoding/docx/zip.js";
 import { ValueError } from "../../core/helper/pylib.js";
 import { OWNER_PARSER_WORKER, resourceLimit } from "../../init/helper/limit.js";
-import { containsMyanmar } from "../../core/decoding/runtime/detect.js";
+import { containsMyanmar } from "../../core/praised/rule/detect.js";
 
 
 

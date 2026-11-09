@@ -9,13 +9,13 @@ Shared helpers live in ../helper/.
 import {
   ANONYMOUS_PRO_FILES, FONT_ROLES, classifyTextRole, isFile,
   registerPdfFonts, applyPdfRole,
-} from "../../core/codepage/fonts.js";
+} from "../../core/praised/decoding/method/fonts.js";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { OUTPUT_FONT_DIR } from "../../_path.js";
-import { PdfWriter } from "../../pdf/pdf-writer.js";
-import { writeOptimizedPdf } from "../../pdf/pdf-optimize.js";
+import { PdfWriter } from "../../core/praised/decoding/pdf/pdf-writer.js";
+import { writeOptimizedPdf } from "../../core/praised/decoding/pdf/pdf-optimize.js";
 import { RuntimeError } from "../../core/helper/pylib.js";
 import { textLines } from "../helper/text-lines.js";
 

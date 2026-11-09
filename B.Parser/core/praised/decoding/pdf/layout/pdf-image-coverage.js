@@ -2,7 +2,7 @@
 (PDF 18) PDF branch, position 18 in the chain - helper of the extraction (PDF 13).
 This module works out whether an image placed on a page covers nearly the whole page, which is how scanned/image pages are told apart from digital text pages.
 */
-import { PdfName, PdfRef, isNumeric, toNumber } from "./pdf-fonts.js";
+import { PdfName, PdfRef, isNumeric, toNumber } from "../font/pdf-fonts.js";
 
 // Both dimensions must cover at least 95% of the MediaBox. Pixel dimensions
 // alone say nothing about how large an image was placed on a PDF page.

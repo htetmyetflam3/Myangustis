@@ -13,7 +13,7 @@ import fs from "node:fs";
 import { MAX_INPUT_BYTES, MAX_INPUT_MB } from "./helper/limit.js";
 import { generatorA } from "./helper/file-reader.js";
 import { packInput } from "./helper/metadata.js";
-import { preparePdf } from "../pdf/pdf.js";
+import { preparePdf } from "../core/praised/decoding/pdf/pdf.js";
 import { prepareDocx } from "../docx/read.js";
 import { prepareOcr } from "../ocr/read.js";
 

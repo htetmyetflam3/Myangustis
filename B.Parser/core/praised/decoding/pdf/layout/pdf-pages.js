@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { randomUUID } from "node:crypto";
-import { countImpossiblePairs } from "../beautify/scan.js";
+import { countImpossiblePairs } from "../../../../beautify/scan.js";
 
 const require = createRequire(import.meta.url);
 
