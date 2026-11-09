@@ -1,17 +1,17 @@
 /*
 (new/init) The door of the input stage, up to decryption - one function.
-Identical flow on both sides:
-  from disk     -> file-reader reads it -> [metadata, object]
-  from external -> the object itself    -> [metadata, object]
-then the metadata names the lane:
-  pdf   -> preparePdf   (validator -> collect tmp -> qpdf decrypt tmp)
-  docx  -> prepareDocx  (validator -> collect tmp)
-  image -> prepareOcr   (collect tmp, for the OCR worker)
-  other -> collect tmp, passed on as a plain file
+It imports only the lane functions (pdf/docx/ocr) at top level; all
+wiring lives inside them. InitInput intercepts the call by caller:
+  site    -> limit, then file reader (site calls carry a file on disk)
+  owner   -> limit, then file reader for a path, direct object either way
+  service -> limit, no file reader (service calls carry the object)
+Either side is packed into [metadata, object] (metadata.js); the
+metadata names the file, and the matching lane function takes both.
 Nothing past decryption lives here.
 */
+import fs from "node:fs";
+import { MAX_INPUT_BYTES, MAX_INPUT_MB } from "./limit.js";
 import { generatorA } from "./file-reader.js";
-import { collectA } from "./collect.js";
 import { packInput } from "./metadata.js";
 import { preparePdf } from "./pdf.js";
 import { prepareDocx } from "./docx.js";
@@ -29,22 +29,35 @@ async function* byteChunks(object) {
   throw new TypeError("InitInput: object must be bytes or a readable byte stream");
 }
 
-export async function InitInput(trigger = {}) {
+export async function InitInput(trigger = {}, caller = "owner") {
+  const who = String(caller ?? "owner").toLowerCase();
+  if (!["site", "owner", "service"].includes(who)) {
+    throw new TypeError("InitInput: caller must be site, owner or service");
+  }
   const { path: filePath = null, object = null, filename = null } = trigger ?? {};
   if ((filePath === null) === (object === null)) {
     throw new TypeError("InitInput: give exactly one of { path } or { object }");
   }
 
-  const { metadata, object: packed } = filePath
-    ? await packInput(generatorA(filePath), { filename: filename ?? filePath, origin: "disk" })
-    : await packInput(byteChunks(object), { filename, origin: "external" });
+  // limit first - before any reading happens on either side
+  if (filePath !== null) {
+    if (who === "service") throw new TypeError("InitInput: service calls carry the object, not a file path");
+    const { size } = fs.statSync(filePath);
+    if (size > MAX_INPUT_BYTES) throw new Error("Parser input exceeds the " + MAX_INPUT_MB + " MB cap");
+  } else {
+    if (who === "site") throw new TypeError("InitInput: site calls carry a file on disk, not an object");
+    if (object instanceof Uint8Array && object.byteLength > MAX_INPUT_BYTES) {
+      throw new Error("Parser input exceeds the " + MAX_INPUT_MB + " MB cap");
+    }
+  }
+
+  // file reader for the disk side; no file reader for service objects
+  const { metadata, object: packed } = filePath !== null
+    ? await packInput(generatorA(filePath), { filename: filename ?? filePath, origin: "disk", caller: who })
+    : await packInput(byteChunks(object), { filename, origin: "external", caller: who });
 
   if (metadata.kind === "pdf") return preparePdf(metadata, packed);
   if (metadata.kind === "docx") return prepareDocx(metadata, packed);
   if (metadata.kind === "ocr") return prepareOcr(metadata, packed);
-
-  let landed = null;
-  for await (const item of collectA(packed)) landed = item;
-  if (!landed) throw new TypeError("InitInput: empty input");
-  return { kind: "other", path: landed.path, size: landed.size, collected: true, metadata };
+  return { kind: "other", metadata, object: packed };
 }
