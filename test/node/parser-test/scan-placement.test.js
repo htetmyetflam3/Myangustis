@@ -14,7 +14,7 @@ process.env.PRASER_REGISTER = "0";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");
-const SAMPLE = path.join(REPO, "F.Site", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
+const SAMPLE = path.join(REPO, "B.Parser/host", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
 
 const { createSourceRunner } = await import("../../../B.Parser/main/parser/worker/runtime.js");
 const runSource = createSourceRunner({ kind: "pdf", method: "default" });

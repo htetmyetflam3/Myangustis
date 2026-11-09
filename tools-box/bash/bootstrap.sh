@@ -448,7 +448,7 @@ do_setup() {
   # restating the list here (restating it is how a layout rename silently
   # strands a writer in a directory nobody creates).
   if "$NODE_BIN" --input-type=module -e '
-    const { ensurePraserDirs } = await import("./F.Site/Backend/file/paths.js");
+    const { ensurePraserDirs } = await import("./B.Parser/host/Backend/file/paths.js");
     const { ensureWorkspace } = await import("./Architecture/Engine/_path.js");
     ensurePraserDirs();
     ensureWorkspace();

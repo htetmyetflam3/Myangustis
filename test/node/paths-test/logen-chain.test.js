@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import * as root from '../../../index-path.js';
 import * as engine from '../../../Architecture/Engine/_path.js';
 import * as parser from '../../../B.Parser/_path.js';
-import * as site from '../../../F.Site/_path.js';
+import * as site from '../../../B.Parser/host/_path.js';
 import * as tools from '../../../tools-box/_path.js';
 import * as proofreading from '../../../C.Proofreading/index.js';
 import { BindEngine } from '../../../Architecture/_index.js';
@@ -28,7 +28,7 @@ test('component path chains reach the same root logging module and event bus', a
   assert.strictEqual(proofreading.BindEngine, BindEngine);
   assert.equal(typeof proofreading.tagProofreading, 'function');
   for (const old of ['Bridge/logen', 'Architecture/Engine/bridge/logen.js',
-    'F.Site/site_logen/engine.js', 'Bridge/proofreading-tagger.js']) {
+    'B.Parser/host/site_logen/engine.js', 'Bridge/proofreading-tagger.js']) {
     assert.equal(fs.existsSync(path.join(repo, old)), false, old);
   }
 });

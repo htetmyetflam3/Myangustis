@@ -31,7 +31,8 @@ Examples (start the HTTP servers separately):
 
 Local Parser uses Manager.dispatchStream and prints its result as JSON. The
 output defaults to a unique file in the Parser output directory; its path and
-any unknown-POS sidecar appear in the result. --out selects a new output file.
+any broken POS-scan contexts appear in the result's scan memory. --out
+selects a new output file.
 Local Engine reads the whole UTF-8 text file because BindEngine takes a string;
 it calls the Bridge without a caller hash. Syllables are text lines; POS is JSON
 Lines with syllable and rawPos fields.
@@ -109,16 +110,14 @@ async function inputFile(file, type) {
   return ext;
 }
 
-async function ensureNewFile(file, parserSidecar = false) {
-  for (const target of parserSidecar ? [file, `${file}.unknown.txt`] : [file]) {
-    try {
-      await fs.lstat(target);
-    } catch (error) {
-      if (error.code === 'ENOENT') continue;
-      throw error;
-    }
-    throw new Error('Output or its Parser sidecar already exists; choose a new --out path.');
+async function ensureNewFile(file) {
+  try {
+    await fs.lstat(file);
+  } catch (error) {
+    if (error.code === 'ENOENT') return;
+    throw error;
   }
+  throw new Error('Output already exists; choose a new --out path.');
 }
 
 function outputFormat(options) {
@@ -235,7 +234,7 @@ async function localParser(source, options) {
   const manager = new Manager({ quiet: options.quiet === true });
   const output = chosenOutput || path.join(manager.outputDir, `${crypto.randomUUID()}.${format}`);
   try {
-    await ensureNewFile(output, true);
+    await ensureNewFile(output);
     const job = {
       filename: path.basename(source),
       output: format,

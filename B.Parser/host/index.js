@@ -35,7 +35,7 @@ import {
   createEngineDispatcher,
 } from "./Backend/gateway/generator/engine.js";
 import { createProcessingQueue } from "./Backend/gateway/queue/processingQueue.js";
-import { closePraserManager } from "./Backend/file/praser.js";
+import { closePraserManager } from "../integration/host/init.js";
 import {
   DB_FILE,
   FRONTEND_DIR,

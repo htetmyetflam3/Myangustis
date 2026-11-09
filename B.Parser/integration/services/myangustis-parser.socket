@@ -1,0 +1,22 @@
+# Myangustis Parser — Unix socket with TRUE wake-on-request.
+#
+# systemd owns this socket. NO parser process exists while idle:
+# the first connection on the socket makes systemd start
+# myangustis-parser.service; the dispatcher exits itself after its
+# idle timeout, and the next connection starts a fresh one.
+#
+# Enable ONLY this socket (never enable the .service — an enabled
+# service would run all day, which is exactly what this avoids):
+#   systemctl enable --now myangustis-parser.socket
+#
+# The path matches SOCKET_PATH in lazy-dispatcher.js and lazy-client.js.
+
+[Unit]
+Description=Myangustis Parser Unix socket (wake-on-request)
+
+[Socket]
+ListenStream=/tmp/myangustis-parser.sock
+Accept=no
+
+[Install]
+WantedBy=sockets.target

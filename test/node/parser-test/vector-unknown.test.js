@@ -4,19 +4,17 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { englishLikeness } from "../../../B.Parser/main/parser/text/myanmar-score.js";
-import { choosePageParser } from "../../../B.Parser/main/parser/text/page-decision.js";
-import { loadDetector, streamPdfPages } from "../../../B.Parser/extend/pipeline.js";
-import { prepareVectorLayout } from "../../../B.Parser/main/parser/codepage/resolve.js";
-import { probePagePrefix } from "../../../B.Parser/main/parser/read/pdf-extract.js";
+import { englishLikeness } from "../../../B.Parser/core/decoding/judgement.js";
+import { streamPdfPages, instructionLane } from "../../../B.Parser/core/decoding/source-decoding.js";
+import { prepareVectorLayout } from "../../../B.Parser/extend/codepage-resolve.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const SAMPLE = path.join(HERE, "..", "..", "..", "F.Site", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
+const SAMPLE = path.join(HERE, "..", "..", "..", "B.Parser/host", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
 
 
 async function decodeFirstPage(bytes) {
   const logs = [];
-  const [, , iterator] = streamPdfPages(bytes, loadDetector(), (l) => logs.push(String(l)));
+  const [, , iterator] = streamPdfPages(bytes, (l) => logs.push(String(l)));
   try {
     const first = iterator.next().value;
     assert.ok(first, "first page must decode");
@@ -54,41 +52,33 @@ test("the one-sided English check separates Latin faces from layout junk", () =>
   assert.equal(englishLikeness("•").verdict, null);
 });
 
-test("checkpoint text returns to the font saved before q", () => {
-  const fonts = new Map([
-    ["A", { decode: (text) => `A${text}` }],
-    ["B", { decode: (text) => `B${text}` }],
-  ]);
-  const prefix = Buffer.from("BT /A 12 Tf (x) Tj ET q BT /B 18 Tf (y) Tj ET Q BT (z) Tj ET", "latin1");
-  const probe = probePagePrefix(prefix, fonts, fonts);
-  assert.equal(probe.sharedByFont.get("A"), "AxAz");
-  assert.equal(probe.sharedByFont.get("B"), "By");
-});
-
-test("page numbers do not turn an inconclusive checkpoint into a legacy page", () => {
-  for (const sample of ["1", "2024", "Page-1", "Page | 12", "Page 19Page 18", "  5 \n 6  "]) {
-    assert.deepEqual(choosePageParser({ shared: sample }), {
-      parser: "zawgyi-one", reason: "page-number-only",
-    }, sample);
-  }
-  assert.equal(choosePageParser({ shared: "12345" }).parser, "legacy");
-  assert.equal(choosePageParser({ shared: "4/\n5/\n6/\n7/" }).parser, "legacy");
-  assert.equal(choosePageParser({ shared: "jrefrmo'gtwGJ (1)? tcef; (1)trSmpmjrefrmo'gukd" }).parser, "legacy");
-  assert.equal(choosePageParser({ shared: "2" }, { sourceEncoding: "unicode" }).reason, "source-encoding");
-});
-
-test("isolated page headers are not treated as legacy body text", () => {
-  for (const sample of [
-    "example.com 3 | Page 129", "Page | 15 https://example.com Life Keyboard",
-    "example.com t t y y p p i i n n g g", "June 9,\n2011", "Typing\n-\nlucky82\n22“",
-  ]) {
-    assert.deepEqual(choosePageParser({ shared: sample }), {
-      parser: "zawgyi-one", reason: "non-body-header",
-    }, sample);
-  }
-  assert.equal(choosePageParser({ shared: "example.com 4/5" }).parser, "legacy");
-  assert.equal(choosePageParser({ shared: "example.com tcsdefudk tusKd;&Sd&Sd pDrHtkyfcsKyfenf;" }).parser, "legacy");
-  assert.equal(choosePageParser({ shared: "example.com 12345" }).parser, "legacy");
+test("the lane comes from the page's font instructions, not sampled text", () => {
+  const font = (baseFont, { subtype = "TrueType", toUnicode = false } = {}) =>
+    ({ subtype, baseFont, toUnicode });
+  // An explicit source encoding always stays on the font-cmap lane.
+  assert.equal(instructionLane({ fonts: [font("WinInnwa")] }, "unicode").reason, "source-encoding");
+  // A registered legacy face carrying the page: legacy lane.
+  assert.deepEqual(instructionLane({ fonts: [font("W42ArtHouse")] }, "auto"),
+    { parser: "legacy", reason: "legacy-font", fonts: ["W42ArtHouse"] });
+  // A replayed legacy face with its own map: still the legacy lane.
+  assert.equal(instructionLane({ fonts: [font("EAAAAA+WinInnwa", { toUnicode: true }), font("Helvetica", { subtype: "Type1" })] }, "auto").parser, "legacy");
+  // The legacy face typesets headers while mapped Latin fonts carry text.
+  assert.equal(instructionLane({ fonts: [font("WinYadanapon"), font("Zawgyi-One", { toUnicode: true }), font("Calibri", { toUnicode: true })] }, "auto").parser, "font-cmap");
+  // A CID Unicode face vetoes a legacy-named resource on the same page.
+  assert.deepEqual(instructionLane({ fonts: [font("WinResearcher"), font("Myanmar3", { subtype: "Type0", toUnicode: true })] }, "auto"),
+    { parser: "font-cmap", reason: "unicode-font" });
+  // The modern Unicode font named "Ayar" is not a registered legacy face.
+  assert.equal(instructionLane({ fonts: [font("Ayar", { subtype: "Type0", toUnicode: true })] }, "auto").parser, "font-cmap");
+  // A mapped Zawgyi companion does not make a legacy book modern.
+  assert.equal(instructionLane({ fonts: [font("AAPTJA+WinInnwa"), font("Zawgyi-One", { toUnicode: true })] }, "auto").parser, "legacy");
+  // A CID-keyed Zawgyi face is the modern Zawgyi toolchain: font-cmap.
+  assert.deepEqual(instructionLane({ fonts: [font("WinInnwa", { toUnicode: true }), font("Zawgyi-One-WinCharSetFFFF-H", { subtype: "Type0", toUnicode: true })] }, "auto"),
+    { parser: "font-cmap", reason: "cid-zawgyi-font" });
+  // Myanmar-digit CID faces are Unicode faces.
+  assert.equal(instructionLane({ fonts: [font("WinInnwa090", { subtype: "Type1", toUnicode: true }), font("Myanmar2", { subtype: "Type0", toUnicode: true })] }, "auto").reason, "unicode-font");
+  // A two-letter base name is not evidence, and no fonts means no lane change.
+  assert.equal(instructionLane({ fonts: [font("MS")] }, "auto").parser, "font-cmap");
+  assert.deepEqual(instructionLane({ fonts: [] }, "auto"), { parser: "font-cmap", reason: "no-fonts" });
 });
 
 test("a clean Zawgyi-Type0 document is never vector-mapped", async () => {

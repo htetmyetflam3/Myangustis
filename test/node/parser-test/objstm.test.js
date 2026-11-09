@@ -69,9 +69,9 @@ test("object streams are detected on disk and prepared through file-backed qpdf"
 });
 
 test("the sync extraction path names object streams instead of failing silently", async () => {
-  const { streamPdfPages } = await import("../../../B.Parser/extend/pipeline.js");
+  const { streamPdfPages } = await import("../../../B.Parser/core/decoding/source-decoding.js");
   assert.throws(
-    () => streamPdfPages(OBJSTM_PDF, null, () => {}),
+    () => streamPdfPages(OBJSTM_PDF, () => {}),
     /object streams \(\/ObjStm\)/,
   );
 });

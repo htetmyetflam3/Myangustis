@@ -13,7 +13,7 @@ import {
   PARSER_DIR,
   PRASER_JS,
   validatePraserAssets,
-} from "../../../F.Site/Backend/file/paths.js";
+} from "../../../B.Parser/host/Backend/file/paths.js";
 import {
   MAP_DIR,
   DEFAULT_OUTPUT_DIR,
@@ -23,7 +23,6 @@ import {
   findLatinFont,
   findMyanmarFont,
 } from "../../../B.Parser/_path.js";
-import { loadDetector } from "../../../B.Parser/extend/pipeline.js";
 import { ruleCount } from "../../../B.Parser/main/parser/text/rabbit.js";
 import { loadSidecarMap } from "../../../B.Parser/main/parser/read/pdf-extract.js";
 import { Manager } from "../../../B.Parser/main/parser/manager.js";
@@ -70,8 +69,6 @@ test("parser maps and models resolve outside the executable module directory", (
   assert.equal(path.basename(MAP_DIR), "jason-map");
   assert.equal(path.basename(MODEL_DIR), "model");
   assert.equal(OCR_MODEL_DIR, MODEL_DIR);
-  assert.deepEqual(loadDetector().detect("က", { sourceEncoding: "unicode" }), ["UNICODE", 0]);
-  assert.deepEqual(loadDetector().detect("က", { sourceEncoding: "zawgyi-one" }), ["ZAWGYI", 1]);
   assert.ok(isFile(path.join(OCR_MODEL_DIR, "mya.traineddata")));
   assert.ok(ruleCount() > 100);
   assert.ok(loadSidecarMap().size > 0);

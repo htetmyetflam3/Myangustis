@@ -1,0 +1,29 @@
+# Myangustis Parser — socket-activated dispatcher service.
+#
+# Started ONLY by myangustis-parser.socket when a connection arrives
+# on /tmp/myangustis-parser.sock; systemd hands this process the
+# already-listening socket on fd 3 (see lazy-dispatcher.js). The
+# dispatcher exits itself after PARSER_IDLE_MS (default 5 minutes)
+# with no requests, so nothing parser-shaped runs while idle.
+#
+# Do NOT enable this service: an enabled service runs all day.
+# Enable only the socket:
+#   systemctl enable --now myangustis-parser.socket
+#
+# Tune the idle window with:  Environment=PARSER_IDLE_MS=300000
+
+[Unit]
+Description=Myangustis Parser socket dispatcher (woken by myangustis-parser.socket)
+After=network.target
+
+[Service]
+Type=exec
+WorkingDirectory=/home/user/Myangustis/B.Parser
+ExecStart=/usr/local/bin/node /home/user/Myangustis/B.Parser/integration/services/lazy-dispatcher.js
+Restart=on-failure
+RestartSec=2
+User=root
+StandardOutput=journal
+StandardError=journal
+KillSignal=SIGINT
+TimeoutStopSec=10
