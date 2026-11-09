@@ -5,8 +5,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { MAX_INPUT_BYTES, MAX_INPUT_MB } from "./limit.js";
-import { validatePdf, decryptPdf } from "./pdf.js";
-import { validateDocx, passDocx } from "./docx.js";
+import { decryptPdf } from "./decrypt.js";
+import { validateDocx } from "./validator.js";
+import { passDocx } from "./docx.js";
 import { validateImage, passOcr } from "./ocr.js";
 
 async function* byteSource(trigger) {

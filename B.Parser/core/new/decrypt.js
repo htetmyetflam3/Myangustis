@@ -1,7 +1,14 @@
-// --- function 2: decrypt -------------------------------------------------
-// qpdf over the landed tmp file; qpdf's decrypted output is a tmp file
-// too, handed downstream to seek in. A clean file passes untouched -
-// no qpdf run, no copy.
+/*
+(new/decrypt) The decryption step of the input stage.
+qpdf over the landed tmp file; qpdf's decrypted output is a tmp file
+too, handed downstream to seek in. A clean file passes untouched.
+*/
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { runQpdfFile } from "../../init/pdf/qpdf.js";
+import { validatePdf } from "./validator.js";
+
 export async function decryptPdf(file, workDir = null) {
   const state = validatePdf(file);
   if (!state.encrypted && !state.objectStreams) {

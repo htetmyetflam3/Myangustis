@@ -5,7 +5,7 @@ For PDF, holding the whole input in memory bought nothing - every downstream sta
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { MAX_INPUT_BYTES, MAX_INPUT_MB } from "../../core/limits/local.js";
+import { MAX_INPUT_BYTES, MAX_INPUT_MB } from "./limit.js";
 
 let sequence = 0;
 
