@@ -8,9 +8,9 @@ pages, then create the requested output file. It routes and
 carries; decoding methods belong to the branches and judgement,
 file shapes belong to the output writers.
 */
-import { streamPdfPages, collectPdfResult } from "./pdf/source.js";
+import { streamPdfPages, collectPdfResult } from "./runtime/source.js";
 import { processDocxBytes, processDocxForMethod } from "./docx/source.js";
-import { buildFinalPages } from "./finish.js";
+import { buildFinalPages } from "./runtime/finish.js";
 import { writeOutputFile } from "./requested.js";
 
 export { writeOutputFile };

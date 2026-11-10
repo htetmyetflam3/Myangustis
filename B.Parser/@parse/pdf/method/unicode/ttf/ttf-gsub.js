@@ -2,7 +2,7 @@
 (Support 32) Shared support, no chain position - TrueType GSUB parsing.
 This module parses a font's GSUB table for reverse-chaining and variant-slot information used to understand legacy font glyph substitution.
 */
-import { ttfTables } from "./cmap.js";
+import { ttfTables } from "./ttf-cmap.js";
 
 
 

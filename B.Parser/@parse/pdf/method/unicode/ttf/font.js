@@ -3,7 +3,7 @@
 This module loads a TTF file, exposes its tables and cmap, and answers glyph lookups for the font tools.
 */
 import fs from "node:fs";
-import { parseTtfCmap } from "./cmap.js";
+import { parseTtfCmap } from "./ttf-cmap.js";
 
 function readTableDirectory(data) {
   const numTables = data.readUInt16BE(4);

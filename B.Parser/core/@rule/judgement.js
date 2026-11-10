@@ -11,8 +11,8 @@ This single module holds the four pieces that choose a PDF page's lane, kept apa
 Nothing here writes files or rewrites text; consumers act on what it answers.
 */
 import { containsMyanmar, isUnicodeFont } from "./detect.js";
-import { isLegacyFontName, normaliseFontName } from "../../@parse/pdf/font/legacy/codepage-names.js";
-import { PDF_PARSING_PATHS } from "../../@parse/pdf/font/decoder.js";
+import { isLegacyFontName, normaliseFontName } from "../../@parse/pdf/method/legacy/codepage-names.js";
+import { PDF_PARSING_PATHS } from "../../@parse/pdf/method/decoder.js";
 
 const LATIN_LIKE = /^[\x20-\xff\p{Script=Latin}\p{Number}\p{Punctuation}\p{Symbol}\s]+$/u;
 const PAGE_NUMBER = /^(?:[0-9]{1,4}|(?:page\s*[|:#-]?\s*[0-9]{1,4}\s*)+)$/iu;

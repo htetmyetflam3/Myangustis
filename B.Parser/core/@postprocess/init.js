@@ -7,7 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
 import { bindEngine as engineBind, MAX_LINE_BYTES } from "../../extend/bind-engine.js";
-import { textLines } from "../../@parse/finalized-cmap.js";
+import { textLines } from "../../@parse/runtime/finalized-cmap.js";
 import { INDEX_BASES, MARKS as MM_MARKS } from "../decoding/judgement.js";
 
 // Do not read the Engine master or build a dictionary matcher to validate

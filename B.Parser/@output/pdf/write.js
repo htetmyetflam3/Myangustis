@@ -14,8 +14,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { OUTPUT_FONT_DIR } from "../../_path.js";
-import { PdfWriter } from "../../@parse/pdf/pdf-writer.js";
-import { writeOptimizedPdf } from "../../@parse/pdf/optimize.js";
+import { PdfWriter } from "../../@parse/runtime/pdf-writer.js";
+import { writeOptimizedPdf } from "../../@parse/runtime/optimize.js";
 import { RuntimeError } from "../../core/@helper/pylib.js";
 import { textLines } from "../helper/text-lines.js";
 

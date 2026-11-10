@@ -9,19 +9,19 @@ and orderText's own home (the old clean.js) is judgement-side
 territory to restore.
 */
 import fs from "node:fs";
-import { containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts } from "../rule/detect.js";
-import { Rabbit } from "../rule/rabbit.js";
-import { orderText } from "../rule/clean.js";
-import { preserveCharacters, instructionLane, scoreText } from "../rule/judgement.js";
+import { containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts } from "../../core/@rule/detect.js";
+import { Rabbit } from "../../core/@rule/rabbit.js";
+import { orderText } from "../../core/@postprocess/beautify/clean.js";
+import { preserveCharacters, instructionLane, scoreText } from "../../core/@rule/judgement.js";
 export { instructionLane };
-import { countImpossiblePairs } from "../../beautify/scan.js";
-import { WININNWA_LEGACY_CODE_PAGE } from "./pdf/font/legacy/codepage-registry.js";
+import { countImpossiblePairs } from "../../core/@postprocess/init.js";
+import { WININNWA_LEGACY_CODE_PAGE } from "../pdf/method/legacy/codepage-registry.js";
 import {
   cleanupUnicodeText as cleanupUnicode, convertFinalizedPageText,
   finishPageToFile, orderUnicodeText as orderUnicode, pageLayoutLines,
 } from "./finalized-cmap.js";
-import { legacyLayoutForFont } from "./pdf/font/legacy/codepage-names.js";
-import { agentAdvisory } from "../../../../Architecture/host/advisory.js";
+import { legacyLayoutForFont } from "../pdf/method/legacy/codepage-names.js";
+import { agentAdvisory } from "../../../Architecture/host/advisory.js";
 
 const PARSER_CHAIN_DOOR = "ParserManager";
 

@@ -8,12 +8,12 @@ rule as the PDF branch: separation only, judgement decides.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { extractDocxParagraphs, validateDocxArchive } from "../../../../docx/helper/docx-extract.js";
-import { extractDocxParagraphsExternal } from "../../../../docx/helper/docx-external.js";
-import { processPageRecord, collectChanges, adviseParserMiddleChain } from "../finish.js";
-import { containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts } from "../../rule/detect.js";
-import { MAX_PAGES, MAX_TEXT_CHARS } from "../../../../init/helper/limit.js";
-import { RuntimeError } from "../../../helper/pylib.js";
+import { extractDocxParagraphs, validateDocxArchive } from "../../@init/docx/helper/docx-extract.js";
+import { extractDocxParagraphsExternal } from "../../@init/docx/helper/docx-external.js";
+import { processPageRecord, collectChanges, adviseParserMiddleChain } from "../runtime/finish.js";
+import { containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts } from "../../core/@rule/detect.js";
+import { MAX_PAGES, MAX_TEXT_CHARS } from "../../@entry/helper/limit.js";
+import { RuntimeError } from "../../core/@helper/pylib.js";
 
 export const DOCX_CHUNK_PARAGRAPHS = 80;
 

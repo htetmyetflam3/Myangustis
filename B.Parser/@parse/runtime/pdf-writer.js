@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
 import { pipeline } from "node:stream/promises";
-import { TtfFont } from "./font/unicode/ttf/ttf.js";
+import { TtfFont } from "../pdf/method/unicode/ttf/font.js";
 
 function writeAll(fd, bytes) {
   let offset = 0;

@@ -12,20 +12,20 @@ the method a page is decoded by.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { renderPdfPagePng } from "./pdf-render.js";
-import { note } from "../../../provenance.js";
-import { MAX_TEXT_CHARS } from "../../../../init/helper/limit.js";
+import { renderPdfPagePng } from "./render.js";
+import { note } from "../../core/@helper/provenance.js";
+import { MAX_TEXT_CHARS } from "../../@entry/helper/limit.js";
 import {
   MAX_PDF_OBJECTS, extractPageLines, pageHasImages, extractMetadata,
   isEncryptedPdf, hasObjectStreams, scanPdfFileMarkers,
-} from "../../decoding.js";
-import { PdfFileObjects, openPdfScannedObjects } from "./pdf-objects.js";
-import { decodePdfInstructions } from "./layout/page-instructions.js";
-import { PdfPagePieces } from "./layout/pdf-pages.js";
-import { DocumentDecoding, PDF_PARSING_PATHS, pageFontDecoders } from "./font/decoder.js";
-import { legacyLayoutForFont } from "./font/legacy/codepage-names.js";
-import { cleanupFor, collectChanges, adviseParserMiddleChain } from "../finish.js";
-import { RuntimeError } from "../../../helper/pylib.js";
+} from "../pdf/method/pdfencoding/decoding.js";
+import { PdfFileObjects, openPdfScannedObjects } from "./objects.js";
+import { decodePdfInstructions } from "../pdf/instructions.js";
+import { PdfPagePieces } from "../pdf/pages/pages.js";
+import { DocumentDecoding, PDF_PARSING_PATHS, pageFontDecoders } from "../pdf/method/decoder.js";
+import { legacyLayoutForFont } from "../pdf/method/legacy/codepage-names.js";
+import { cleanupFor, collectChanges, adviseParserMiddleChain } from "./finish.js";
+import { RuntimeError } from "../../core/@helper/pylib.js";
 
 export function streamPdfPages(source, log = () => {}, {
   provenance = null, sourceEncoding = "auto", onPageContent = null, onPagePrefix = null, scratchDir = null,

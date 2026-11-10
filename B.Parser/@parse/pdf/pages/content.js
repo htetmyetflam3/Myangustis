@@ -6,7 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { Unzlib } from "fflate";
-import { PdfName, PdfRef } from "../font/values.js";
+import { PdfName, PdfRef } from "../method/values.js";
 
 export const PAGE_CONTENT_PREFIX_BYTES = 2048;
 

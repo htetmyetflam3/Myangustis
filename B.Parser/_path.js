@@ -44,7 +44,7 @@ export async function getEngineNormalize() {
 export const RUNTIME_ROOT = resolved.shared ? path.join(BASE_DIR, "Parser") : COMPONENT_ROOT;
 const FONT_ROOT = path.join(BASE_DIR, "fonts");
 
-export const MAP_DIR = path.join(COMPONENT_ROOT, "@parse", "method", "@jason-map");
+export const MAP_DIR = path.join(COMPONENT_ROOT, "@jason-map");
 export const VECTOR_MAP_DIR = path.join(MAP_DIR, "vector");
 export const MODEL_DIR = path.join(COMPONENT_ROOT, "@parse", "ocr", "model");
 export const OCR_MODEL_DIR = MODEL_DIR;
