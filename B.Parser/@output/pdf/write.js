@@ -9,7 +9,7 @@ Shared helpers live in ../helper/.
 import {
   ANONYMOUS_PRO_FILES, FONT_ROLES, classifyTextRole, isFile,
   registerPdfFonts, applyPdfRole,
-} from "../../@parse/method/fonts.js";
+} from "../helper/output-fonts.js";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

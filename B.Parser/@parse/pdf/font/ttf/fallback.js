@@ -1,10 +1,10 @@
 /*
 (praised/decoding/pdf/font/ttf) fallback: the last-resort lanes when neither /ToUnicode nor an embedded cmap answers - raw-byte profiles and the legacy code pages (WinInnwa/Ayar layout maps, legacy font detection). Judgement decides a page belongs here; this branch only decodes.
 */
-import { isLegacyFontName, isUnresolvedLegacyFont, normaliseFontName } from "../../../method/codepage-names.js";
+import { isLegacyFontName, isUnresolvedLegacyFont, normaliseFontName } from "../../../method/legacy/codepage-names.js";
 import { CmapIdentityMap } from "../cmap/cmap.js";
 export { CmapIdentityMap };
-import { lookupLegacyCode, AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE, WININNWA_UNRESOLVED_SLOTS } from "../../../method/codepage-registry.js";
+import { lookupLegacyCode, AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE, WININNWA_UNRESOLVED_SLOTS } from "../../../method/legacy/codepage-registry.js";
 
 // Decode an explicitly supplied single-byte profile without /ToUnicode.
 // Its direct entries can be table-seeded; review candidates require opt-in.

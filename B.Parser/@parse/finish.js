@@ -15,11 +15,11 @@ import { orderText } from "../rule/clean.js";
 import { preserveCharacters, instructionLane, scoreText } from "../rule/judgement.js";
 export { instructionLane };
 import { countImpossiblePairs } from "../../beautify/scan.js";
-import { WININNWA_LEGACY_CODE_PAGE } from "./method/codepage-registry.js";
+import { WININNWA_LEGACY_CODE_PAGE } from "./method/legacy/codepage-registry.js";
 import {
   cleanupUnicodeText as cleanupUnicode, convertFinalizedPageText,
   finishPageToFile, orderUnicodeText as orderUnicode, pageLayoutLines,
-} from "./method/finalized-cmap.js";
+} from "./finalized-cmap.js";
 import { legacyLayoutForFont } from "./pdf/font/ttf/fallback.js";
 import { agentAdvisory } from "../../../../Architecture/host/advisory.js";
 

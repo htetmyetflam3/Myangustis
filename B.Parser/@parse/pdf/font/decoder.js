@@ -7,11 +7,11 @@ import { CMapEncoding, buildSimpleEncoding, parseCmapStream, mapCode, IDENTITY, 
 import { FontResourceLoader } from "./ttf/ttf.js";
 export { IDENTITY };
 import { LegacyAyarMap } from "./ttf/fallback.js";
-import { isLegacyFontName, isUnresolvedLegacyFont, normaliseFontName } from "../../method/codepage-names.js";
-import { lookupLegacyCode } from "../../method/codepage-registry.js";
-import { confirmedRunAt } from "../../method/codepage-confirmed.js";
-import { subsetFontBridge } from "../../method/codepage-subset.js";
-import { hasVisualUnicodeConflicts, matchVisualUnicodeGlyphs } from "../../method/codepage-visual.js";
+import { isLegacyFontName, isUnresolvedLegacyFont, normaliseFontName } from "../../method/legacy/codepage-names.js";
+import { lookupLegacyCode } from "../../method/legacy/codepage-registry.js";
+import { confirmedRunAt } from "../../method/legacy/codepage-confirmed.js";
+import { subsetFontBridge } from "../../method/legacy/codepage-subset.js";
+import { hasVisualUnicodeConflicts, matchVisualUnicodeGlyphs } from "../../method/legacy/codepage-visual.js";
 
 
 // These are parsing routes, not encoding verdicts. The shared route
