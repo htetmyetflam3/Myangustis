@@ -43,7 +43,12 @@ const orderZawgyi = (text) => orderText(Rabbit.zg2uni(text));
 import { markedTextToMarkup, pageToMarkup, textToMarkup } from "./markup.js";
 
 export function cleanupFor(cat, text) {
-  return cat === "UNICODE" ? cleanupUnicode(text) : null;
+  // clean.js is the follow-up to every beautify rule layer: a ZAWGYI
+  // category only reaches here after its text was converted and
+  // ordered (orderZawgyi / the page spool), so it takes the same
+  // cleanup follow-up as UNICODE. Cleanup never runs on unordered
+  // text - every call site hands this an ordered reading.
+  return cat === "UNICODE" || cat === "ZAWGYI" ? cleanupUnicode(text) : null;
 }
 
 

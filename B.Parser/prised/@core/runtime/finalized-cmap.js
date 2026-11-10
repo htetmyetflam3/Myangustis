@@ -173,16 +173,24 @@ const FINAL_UNICODE_DECISIONS = new Set([
 // pass; this step then puts the Parser's syllable-slot order last. Unicode
 // lanes get that ordering (and cleanup when requested); retained/unknown
 // lanes are left as supplied with their warnings. Rabbit pages are already
-// converted by finishPageToFile(), so they only need the same ordering here.
+// converted by finishPageToFile(); like every rule-applied layer they get
+// clean.js as follow-up here - ordering, then cleanup.
 export function convertFinalizedPageText(text, page = {}, applyCleanup = true) {
   const raw = String(text ?? "");
   const decision = page?.decision;
-  if (decision === "rabbit") return orderUnicodeText(raw);
+  // Every beautify rule layer gets clean.js as its follow-up here,
+  // then the page is finished: the Rabbit conversion and the ZawCode
+  // swap both land on ordering first, then cleanup - no rule-applied
+  // layer is exempt, and cleanup never runs on unordered text.
+  if (decision === "rabbit") {
+    const ordered = orderUnicodeText(raw);
+    return applyCleanup ? cleanupUnicodeText(ordered) : ordered;
+  }
   const unicodeLane = FINAL_UNICODE_DECISIONS.has(decision)
     || (!decision && page?.category === "UNICODE");
   if (!unicodeLane) return raw;
   const ordered = orderUnicodeText(raw);
-  return applyCleanup && decision !== "zawcode" ? cleanupUnicodeText(ordered) : ordered;
+  return applyCleanup ? cleanupUnicodeText(ordered) : ordered;
 }
 
 // Decide once for the entire page, but make the decision in passes over the
