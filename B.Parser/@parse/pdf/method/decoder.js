@@ -39,7 +39,6 @@ export class DocumentDecoding {
     this.map = kind === "identity" ? IDENTITY : (mapping || new Map());
     this.keyKind = kind === "cmap" || kind === "font" ? "gid" : "code";
     this.trustFontToUnicode = kind === "tounicode" || kind === "none" || kind === "font";
-    this.legacyTextFix = kind === "legacy";
     this.legacyCodePage = legacyCodePage;
     this.legacyFontNames = legacyFontNames ? new Set(legacyFontNames) : null;
     this.legacyResources = null;
@@ -181,9 +180,6 @@ export class FontDecoder {
     return null;
   }
 
-  get needsLegacyTextFix() {
-    return this.doc.legacyTextFix && !this._unicodeCidInLegacyDocument && this._isSelectedLegacyFont;
-  }
 
   _toUnicodeForCode(map, code, width) {
     if (!map) return undefined;

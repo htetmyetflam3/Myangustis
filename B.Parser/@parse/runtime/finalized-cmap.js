@@ -243,8 +243,9 @@ export function finishPageToFile(store, {
         write(correctWorldWord(transform(text), worldEvidence));
       }
     };
-    // Legacy pages call nothing behind the layout parse: the WinInnwa or
-    // Ayar output is written exactly as decoded.
+    // Legacy pages are written as decoded, then given the one shared
+    // ordering (orderUnicodeText) every lane gets at page finish. There
+    // is no legacy-specific reorder rule: extraction only decodes.
     const writePlain = () => {
       let first = true;
       for (const [, , , text] of store.lines()) {
@@ -255,7 +256,12 @@ export function finishPageToFile(store, {
     };
 
     if (decision === "legacy") {
-      writePlain();
+      let first = true;
+      for (const [, , , text] of store.lines()) {
+        if (!first) write("\n");
+        first = false;
+        write(orderUnicodeText(text));
+      }
     } else if (decision === "rabbit") {
       const before = fs.openSync(beforeFile, "wx", 0o600);
       const after = fs.openSync(afterFile, "wx", 0o600);

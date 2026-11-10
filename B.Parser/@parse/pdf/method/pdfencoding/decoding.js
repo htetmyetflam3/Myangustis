@@ -9,7 +9,6 @@ import zlib from "node:zlib";
 import { ValueError, pyTruthy, pyInt, fromHexStrict } from "../../../../core/@helper/pylib.js";
 import { loadMapJson, mapNameForPath } from "../../../runtime/json-map.js";
 import { OWNER_PARSER_WORKER, resourceLimit } from "../../../../@entry/helper/limit.js";
-import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../legacy/codepage-registry.js";
 import { containsMyanmar } from "../../../../core/@rule/detect.js";
 import { decodeVisualUnicodeRun } from "../legacy/codepage-visual.js";
 import { Lexer, PdfName, PdfHexBytes, isNumeric, toNumber } from "../values.js";
@@ -619,62 +618,6 @@ const DEP_MARKS = new Set(Array.from(
 ).map((c) => c.codePointAt(0)));
 
 
-export function fixDigitConsonantConfusion(text) {
-  const letterOrMark = (ch) => {
-    if (!ch) return false;
-    const cp = ch.codePointAt(0);
-    return (cp >= 0x1000 && cp <= 0x1021) || cp === 0x1025 || cp === 0x1027
-      || cp === 0x1039 || DEP_MARKS.has(cp);
-  };
-  const isDigit = (ch) => {
-    if (!ch) return false;
-    const cp = ch.codePointAt(0);
-    return cp >= 0x1040 && cp <= 0x1049;
-  };
-  const isBase = (ch) => {
-    if (!ch) return false;
-    const cp = ch.codePointAt(0);
-    return cp >= 0x1000 && cp <= 0x1021;
-  };
-  let out = Array.from(text);
-  const n = out.length;
-  for (let i = 0; i < n; i += 1) {
-    const after = i + 1 < n ? out[i + 1] : "";
-    const before = i > 0 ? out[i - 1] : "";
-    if (out[i] === "\u1040") {
-
-      if (DEP_MARKS.has((after || "").codePointAt(0)) || (letterOrMark(before) && letterOrMark(after))) {
-        out[i] = "\u101d";
-      } else if (!isDigit(before) && !letterOrMark(before) && isBase(after)) {
-
-        out[i] = "\u101d";
-      }
-    }
-  }
-  text = out.join("");
-
-
-
-
-
-  for (let pass = 0; pass < 3; pass += 1) {
-    const chars = Array.from(text);
-    let changed = false;
-    for (let i = 0; i < chars.length; i += 1) {
-      if (chars[i] !== "\u101b") continue;
-      const before = i > 0 ? chars[i - 1] : "";
-      const after = i + 1 < chars.length ? chars[i + 1] : "";
-      if ((isDigit(before) || isDigit(after))
-          && (!letterOrMark(after) || isDigit(after) || after === "\u101b")) {
-        chars[i] = "\u1047";
-        changed = true;
-      }
-    }
-    text = chars.join("");
-    if (!changed) break;
-  }
-  return text;
-}
 
 
 export function collapseOverprint(text) {
@@ -690,47 +633,6 @@ export function collapseOverprint(text) {
 }
 
 
-export function legacyAyarToUnicode(text, { applyAaVowelRule = true } = {}) {
-  // Combined kinzi/vowel glyphs may be followed by medials in legacy order.
-  // Preserve the vowel, placing the medials before it for Unicode.
-  text = text.replace(/([က-အ])(င်္)([ိီံ])([ျြွှ]+)/gu, "$1$2$4$3");
-  // Handle ordinary and compound pre-base slots in one pass. A second pass
-  // could steal the preceding syllable's ေ when another cluster follows.
-  text = text.replace(
-    /((?:ေ?ြ[ွှ]+)|[ေြ]+)([က-အ၀၇၈])(င်္)?((?:္[က-အ])*)/gu,
-    (_m, vowel, base, kinzi, stacked) => {
-      const preposed = vowel.startsWith("ေြ") && /[ွှ]/u.test(vowel)
-        ? `${vowel.slice(1)}ေ` : vowel;
-      return (kinzi || "") + base + (stacked || "") + preposed;
-    },
-  );
-
-
-
-
-
-
-  text = text.replace(
-    /([က-အ][ါ-ှ]*)(င်္)(?![က-အ])/g,
-    "$2$1",
-  );
-  // Pair medials with the base before ေ, including a combined ya/wa/ha.
-  text = text.replace(/([က-အ၀၇၈])ေ([ျြ]?)([ွှ]+)/gu, "$1$2$3ေ");
-  text = text.replace(/([က-အ၀၇၈])(ေ)([ျြ])/g, "$1$3$2");
-  text = text.replace(/([က-အ])([က-အ])(င်္)/g, "$1$3$2");
-
-
-  text = text.replace(/ဦး/g, "ဦး");
-
-
-
-
-
-  text = fixDigitConsonantConfusion(text);
-  // In these legacy layouts, ya/ra uses ာ rather than ါ. Do this after
-  // visual-order conversion and leave all other marks in their original order.
-  return applyAaVowelRule ? text.replace(/([က-အ][ျြ][ျြွှ]*ေ?)ါ/g, "$1ာ") : text;
-}
 
 
 
@@ -878,12 +780,6 @@ function joinOrderedLine(ordered, doc, onVisualGlyphRecovery = null) {
     return transformed.join("");
   }
   if (doc.zawcodeOrder) return joinDraftRuns(ordered, doc.zawcodeOrder);
-  if (doc.legacyTextFix) {
-    const page = doc.legacyCodePage;
-    const applyAaVowelRule = (page == null && doc.map instanceof LegacyAyarMap)
-      || page === AYAR_LEGACY_CODE_PAGE || page === WININNWA_LEGACY_CODE_PAGE;
-    return joinDraftRuns(ordered, (text) => legacyAyarToUnicode(text, { applyAaVowelRule }));
-  }
   return ordered.map(([, , text]) => text).join("");
 }
 
@@ -1007,7 +903,7 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, {
         // Repeated glyphs in one text run may be intentional (including
         // U+102F U+102F); do not collapse them without separate evidence.
         pieceStore.add([blockXy[1], blockXy[0], blockSize ?? 12, text,
-          doc.kind === "font" || doc.zawcodeOrder || doc.legacyTextFix ? blockRuns : null]);
+          doc.kind === "font" || doc.zawcodeOrder ? blockRuns : null]);
       }
       blockTexts = [];
       blockRuns = [];
@@ -1043,7 +939,6 @@ export function extractPageLines(objects, pageNum, pageGen, decoding, {
       blockTexts.push(text);
       if (doc.kind === "font") blockRuns.push([decoder, text, confirmedText, decoder.visualUnicodeGlyphs ? raw : null]);
       else if (doc.zawcodeOrder) blockRuns.push([decoder.zawcodeGlyphs != null, text, confirmedText]);
-      else if (doc.legacyTextFix) blockRuns.push([decoder.needsLegacyTextFix, text, confirmedText]);
     };
     const flushConfirmedRun = () => {
       if (pendingDecoder) {

@@ -110,7 +110,7 @@ export function streamPdfPages(source, log = () => {}, {
     sharedFontKinds.set(font, kind);
     return kind;
   };
-  legacy.fontKind = (font) => font.needsLegacyTextFix ? "UNICODE" : shared.fontKind(font);
+  legacy.fontKind = shared.fontKind;
 
   let activeText = null;
   const close = () => {
