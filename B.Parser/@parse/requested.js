@@ -16,10 +16,10 @@ stage's limit home; owner jobs are uncapped there already.
 */
 import fs from "node:fs";
 import path from "node:path";
-import { writePdf } from "./pdf/write.js";
-import { writeDocxLayout, writeDocxPlain } from "./docx/write.js";
-import { normalizeOutputType } from "../core/type/output.js";
-import { MAX_PAGES, MAX_TEXT_CHARS } from "../init/helper/limit.js";
+import { writePdf } from "../@output/pdf/write.js";
+import { writeDocxLayout, writeDocxPlain } from "../@output/docx/write.js";
+import { normalizeOutputType } from "../@output/helper/output-type.js";
+import { MAX_PAGES, MAX_TEXT_CHARS } from "../@entry/helper/limit.js";
 
 const MIME_TYPES = {
   pdf: "application/pdf",

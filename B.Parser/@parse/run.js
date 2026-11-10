@@ -11,7 +11,7 @@ file shapes belong to the output writers.
 import { streamPdfPages, collectPdfResult } from "./pdf/source.js";
 import { processDocxBytes, processDocxForMethod } from "./docx/source.js";
 import { buildFinalPages } from "./finish.js";
-import { writeOutputFile } from "../../../output/requested.js";
+import { writeOutputFile } from "./requested.js";
 
 export { writeOutputFile };
 

@@ -9,14 +9,14 @@ Shared helpers live in ../helper/.
 import {
   ANONYMOUS_PRO_FILES, FONT_ROLES, classifyTextRole, isFile,
   registerPdfFonts, applyPdfRole,
-} from "../../core/praised/decoding/method/fonts.js";
+} from "../../@parse/method/fonts.js";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { OUTPUT_FONT_DIR } from "../../_path.js";
-import { PdfWriter } from "../../core/praised/decoding/pdf/pdf-writer.js";
-import { writeOptimizedPdf } from "../../core/praised/decoding/pdf/pdf-optimize.js";
-import { RuntimeError } from "../../core/helper/pylib.js";
+import { PdfWriter } from "../../@parse/pdf/pdf-writer.js";
+import { writeOptimizedPdf } from "../../@parse/pdf/optimize.js";
+import { RuntimeError } from "../../core/@helper/pylib.js";
 import { textLines } from "../helper/text-lines.js";
 
 export function pdfLineHeight(pdf, role) {

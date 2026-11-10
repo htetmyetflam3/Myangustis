@@ -13,9 +13,9 @@ import fs from "node:fs";
 import { MAX_INPUT_BYTES, MAX_INPUT_MB } from "./helper/limit.js";
 import { generatorA } from "./helper/file-reader.js";
 import { packInput } from "./helper/metadata.js";
-import { preparePdf } from "../core/praised/decoding/pdf/pdf.js";
-import { prepareDocx } from "../docx/read.js";
-import { prepareOcr } from "../ocr/read.js";
+import { preparePdf } from "../@init/pdf/pdf.js";
+import { prepareDocx } from "../@init/docx/read.js";
+import { prepareOcr } from "../@parse/ocr/read.js";
 
 async function* byteChunks(object) {
   if (object instanceof Uint8Array) {

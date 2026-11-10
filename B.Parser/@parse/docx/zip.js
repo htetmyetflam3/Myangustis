@@ -5,7 +5,7 @@ This module reads and writes zip archives safely: central directory, entry extra
 import fs from "node:fs";
 import zlib from "node:zlib";
 import { Readable } from "node:stream";
-import { resourceLimit } from "../../../../init/helper/limit.js";
+import { resourceLimit } from "../../@entry/helper/limit.js";
 
 const MAX_ZIP_ENTRIES = resourceLimit("PRASER_MAX_DOCX_ENTRIES", 4096, 20000);
 const EOCD_SIG = 0x06054b50;
