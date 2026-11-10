@@ -3,6 +3,7 @@
 */
 import { parseTtfGsubReverse, parseTtfVariantSlots } from "./ttf/ttf-gsub.js";
 import { PdfRef, parseObject } from "../values.js";
+import { usableToUnicode } from "./cmap/cmap.js";
 
 export class ResourceCache extends Map {
   constructor(limit) { super(); this.limit = limit; }
