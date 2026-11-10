@@ -68,7 +68,10 @@ export function arrangeZawCodeOrder(text) {
         continue;
       }
       if (current === E && isEngineBase(next) && after === AA) {
-        out.push(next, AA, E);
+        // ာ / ါ can never stand in front of ေ: the swap puts the
+        // base, then ေ, then ာ (base + ေ + ာ), never base + ာ + ေ.
+        // (ြ / ျ CAN stand in front of ေ - see the ြ rules above.)
+        out.push(next, E, after);
         i += 3;
         continue;
       }
