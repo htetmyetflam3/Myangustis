@@ -4,8 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { matchImageToVector, repairTextRegionWithVector } from "../../../B.Parser/main/parser/codepage/vote.js";
-import { loadVectorIndex, matchRasterMask, vectorSheetFiles } from "../../../B.Parser/main/parser/shape/match.js";
+import { matchImageToVector, repairTextRegionWithVector } from "../../../B.Parser/core/@postprocess/repair/vote.js";
+import { loadVectorIndex, matchRasterMask, vectorSheetFiles } from "../../../B.Parser/core/@postprocess/repair/match.js";
 
 
 
@@ -20,21 +20,23 @@ test("the default SVG map is shaped and includes legacy layout components", () =
   assert.ok(files.length >= 1);
   assert.ok(files.every((file) => fs.readFileSync(file, "utf8").includes('data-shaped="harfbuzz"')));
   const loaded = vectorIndex();
-  assert.ok(loaded.entries.length >= 2500);
-  assert.equal(loaded.byText.get("္ဒ")?.codepoints, "U+1039 U+1012");
+  // The surviving sheet is the font-11 Burmese+Pali index: 2460 entries.
+  // (The lost PYIDAUNGSU sheets held ~2598 and the bare fragment below.)
+  assert.ok(loaded.entries.length >= 2400);
+  assert.equal(loaded.byText.get("တ္ထ")?.codepoints, "U+1010 U+1039 U+1011");
   assert.equal(loaded.byText.get("ကြုံ")?.codepoints, "U+1000 U+103C U+102F U+1036");
 });
 
 test("SVG matching abstains/ranks by labelled code point, without opening a font", () => {
   const loaded = vectorIndex();
-  const stack = loaded.byText.get("္ဒ");
+  const stack = loaded.byText.get("တ္ထ");
   const match = matchRasterMask(stack.mask, stack.size, stack.size, {
     index: loaded,
-    candidates: ["ဲ", "္ဒ"],
+    candidates: ["ဲ", "တ္ထ"],
   });
   assert.equal(match.accepted, true);
-  assert.equal(match.text, "္ဒ");
-  assert.equal(match.codepoints, "U+1039 U+1012");
+  assert.equal(match.text, "တ္ထ");
+  assert.equal(match.codepoints, "U+1010 U+1039 U+1011");
 });
 
 
@@ -82,8 +84,8 @@ test("the OCR dropped-mark site is a raster-to-SVG U+1036 recovery", async (t) =
 
 
 test("a claim is refused when the witness crowd cannot place the pair", async () => {
-  const { matchRasterMask, getDefaultVectorIndex, isCrossFontAlias } = await import("../../../B.Parser/main/parser/shape/match.js");
-  const alias = JSON.parse(fs.readFileSync(new URL("../../../B.Parser/main/parser/jason-map/vector/shape-alias.json", import.meta.url), "utf8"));
+  const { matchRasterMask, getDefaultVectorIndex, isCrossFontAlias } = await import("../../../B.Parser/core/@postprocess/repair/match.js");
+  const alias = JSON.parse(fs.readFileSync(new URL("../../../B.Parser/core/@postprocess/repair/shape-alias.json", import.meta.url), "utf8"));
   assert.ok(alias.pairs.length > 0, "the generator produced a veto list");
   assert.ok(alias.pairs.every(([a, b]) => a !== b));
 
