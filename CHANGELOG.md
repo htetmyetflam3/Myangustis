@@ -215,7 +215,9 @@
 ## [2.0.0] - 2026-11-5 anoter layout planning after agent messup 
 - another screw up on dir as they keep messing up my layout
 - another shit entry as  i feel too annoyed on restructuring layout blueprint
-- this changes do nothing but fuck up on myself by doing annyoing reloaction once u reach resding the line look the repo structure this repo each service can go web on A,B,C top dir without root seprately .but if ur working inside project and if u can see root dir  if u dont want to see another ugly  changelog like this **DO NOT EVER screw me up by placing output file randomly**## [Unreleased] - 2026-11-07 — Parser finish rules and part-PDF quality test
+- this changes do nothing but fuck up on myself by doing annyoing reloaction once u reach resding the line look the repo structure this repo each service can go web on A,B,C top dir without root seprately .but if ur working inside project and if u can see root dir  if u dont want to see another ugly  changelog like this **DO NOT EVER screw me up by placing output file randomly**
+
+## [Unreleased] - 2026-11-07 — Parser finish rules and part-PDF quality test
 ### Added
 - Trash-branch part PDFs (`pdf-parts/part-1..9.pdf`, 5,098 pages of merged broken books) adopted as the parser quality test.
 - Legacy lane takes the ZawCode swapping rule on a slot match and is flagged `zawcode` (mm-grammar 445/445, BGMLC 41/41 and 84/86); every beautify rule layer now gets `clean.js` (order, then cleanup) as follow-up at page finish.
