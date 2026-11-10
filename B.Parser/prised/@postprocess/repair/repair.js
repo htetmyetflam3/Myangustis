@@ -19,6 +19,7 @@ import {
 import {
   beautifyText, beautifyFromScanVerdict, mendZawCodeText, zawCodeGuard,
 } from "../beautify/beautify.js";
+import { orderText } from "../beautify/clean.js";
 
 // Raw-font evidence is available to a repair caller that retained provenance.
 // These lookups return candidates only; they never alter text automatically.
@@ -288,7 +289,13 @@ export async function repairFirstStage(input = {}) {
     if (!record.text.trim()) continue;
     scannedLines += 1;
 
-    const pos = await scanLineWithPos(record.text, { bindEngine });
+    // clean.js runs on every path before the scan: whatever lane wrote
+    // this record (unicode, zawgyi, legacy WinInnwa/Ayar, docx, ocr),
+    // its text passes through clean.js here, at the scan's single
+    // intake. The spans below index into this cleaned text, so the
+    // broken record stores it too.
+    const text = orderText(record.text);
+    const pos = await scanLineWithPos(text, { bindEngine });
     const posUnknownTokens = pos.tokens
       .filter((token) => token.kind === "unknown" && MYANMAR_CHAR.test(token.word))
       .map((token) => token.word);
@@ -296,9 +303,9 @@ export async function repairFirstStage(input = {}) {
     // broken spans. This keeps foreign text and punctuation that the Engine
     // segments as "unknown" out of the SVG request list.
     const spans = posUnknownTokens.length
-      ? await scanBrokenSpansWithPos(record.text, { bindEngine })
-      : scanBrokenSpans(record.text);
-    const lineSpans = normaliseSpans(record.text, spans);
+      ? await scanBrokenSpansWithPos(text, { bindEngine })
+      : scanBrokenSpans(text);
+    const lineSpans = normaliseSpans(text, spans);
     if (!lineSpans.length) continue;
     const unknownTokens = lineSpans
       .filter((span) => span.rules.includes("unknown"))
@@ -310,7 +317,7 @@ export async function repairFirstStage(input = {}) {
       page: record.page,
       line: record.line,
       sequence: record.sequence,
-      text: record.text,
+      text,
       spans: lineSpans,
       unknownTokens,
       contexts: posUnknownContexts(pos.tokens),
