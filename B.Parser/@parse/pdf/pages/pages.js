@@ -46,7 +46,7 @@ export class PdfPagePieces {
         CREATE INDEX unique_x ON unique_pieces(x);
         CREATE INDEX unique_yx ON unique_pieces(y DESC, x ASC, slot ASC);
         CREATE TABLE line_anchors (id INTEGER PRIMARY KEY, y REAL);
-        CREATE TABLE lines (id INTEGER PRIMARY KEY, x REAL, y REAL, size REAL, text TEXT);
+        CREATE TABLE lines (id INTEGER PRIMARY KEY, x REAL, y REAL, size REAL, text TEXT, font TEXT);
         CREATE TABLE final_lines (id INTEGER PRIMARY KEY, x REAL, y REAL, size REAL, text TEXT);
       `);
       this.insertPiece = this.db.prepare("INSERT INTO pieces(y,x,size,text,runs) VALUES(?,?,?,?,?)");
@@ -61,8 +61,8 @@ export class PdfPagePieces {
       this.insertAnchor = this.db.prepare("INSERT INTO line_anchors(id,y) VALUES(?,?)");
       this.assignLine = this.db.prepare("UPDATE unique_pieces SET line=?,ord=? WHERE slot=?");
       this.ordered = this.db.prepare("SELECT p.line,a.y AS baseline,p.x,p.size,p.text,p.runs FROM unique_pieces p JOIN line_anchors a ON a.id=p.line ORDER BY p.line,p.x,p.ord");
-      this.insertLine = this.db.prepare("INSERT INTO lines(id,x,y,size,text) VALUES(?,?,?,?,?)");
-      this.readLines = this.db.prepare("SELECT id,x,y,size,text FROM lines ORDER BY id");
+      this.insertLine = this.db.prepare("INSERT INTO lines(id,x,y,size,text,font) VALUES(?,?,?,?,?,?)");
+      this.readLines = this.db.prepare("SELECT id,x,y,size,text,font FROM lines ORDER BY id");
       this.insertFinal = this.db.prepare("INSERT INTO final_lines(id,x,y,size,text) VALUES(?,?,?,?,?)");
       this.readFinal = this.db.prepare("SELECT id,x,y,size,text FROM final_lines ORDER BY id");
       this.active = false;
@@ -193,7 +193,23 @@ export class PdfPagePieces {
     const flush = () => {
       if (!current) return;
       const text = joinRuns(ordered, this.doc);
-      this.insertLine.run(current.id, current.x, current.y, current.size, text);
+      // The line's dominant font (by run text length) rides along so the
+      // markup stage can see bold/italic after coordinates are dropped.
+      const fontWeights = new Map();
+      for (const [, , , runs] of ordered) {
+        if (!Array.isArray(runs)) continue;
+        for (const run of runs) {
+          const name = run?.[0]?.baseFont;
+          if (typeof name === "string" && name) {
+            fontWeights.set(name, (fontWeights.get(name) ?? 0) + String(run[1] ?? "").length);
+          }
+        }
+      }
+      let font = null;
+      for (const [name, weight] of fontWeights) {
+        if (font === null || weight > fontWeights.get(font)) font = name;
+      }
+      this.insertLine.run(current.id, current.x, current.y, current.size, text, font);
       ordered = [];
     };
     for (const piece of this.ordered.iterate()) {
@@ -210,7 +226,7 @@ export class PdfPagePieces {
   }
 
   *lines() {
-    for (const row of this.readLines.iterate()) yield [row.x, row.y, row.size, row.text];
+    for (const row of this.readLines.iterate()) yield [row.x, row.y, row.size, row.text, row.font ?? undefined];
   }
 
   clearFinal() { this.db.exec("DELETE FROM final_lines"); }

@@ -39,6 +39,8 @@ export function adviseParserMiddleChain(api) {
 
 const orderZawgyi = (text) => preserveCharacters(text, (part) => orderText(Rabbit.zg2uni(part)));
 
+import { pageToMarkup, textToMarkup } from "./markup.js";
+
 export function cleanupFor(cat, text) {
   return cat === "UNICODE" ? cleanupUnicode(text) : null;
 }
@@ -217,30 +219,19 @@ export function collectChanges(reports) {
 
 export function buildFinalPages(job, applyCleanup) {
   adviseParserMiddleChain("buildFinalPages");
+  // The parsed result: one marked-up string per page. Coordinates are
+  // consumed here (line/paragraph breaks, headings) and dropped - no
+  // page record leaving parse carries lines or page dimensions.
   const out = [];
   const len = Math.min(job.pages.length, job.reports.length);
   for (let i = 0; i < len; i += 1) {
-    const pg = job.pages[i];
-    const rep = job.reports[i];
-    if (!("lines" in pg)) {
-      out.push({
-        text: applyCleanup && rep.clean !== null && rep.clean !== undefined ? rep.clean : pg.text,
-      });
-      continue;
-    }
-    if (applyCleanup && rep.clean !== null && rep.clean !== undefined) {
-      out.push({
-        text: rep.clean,
-        lines: pg.lines.map(([x, y, s, t]) => [x, y, s, cleanupUnicode(t)]),
-        wh: pg.wh,
-        hasImg: pg.hasImg,
-        images: pg.images,
-        parsingPath: pg.parsingPath,
-      });
-    } else {
-      out.push({ text: pg.text, lines: pg.lines, wh: pg.wh, hasImg: pg.hasImg,
-        images: pg.images, parsingPath: pg.parsingPath });
-    }
+    const pg = job.pages[i] ?? {};
+    const rep = job.reports[i] ?? {};
+    const cleaned = applyCleanup && rep.clean != null;
+    const text = cleaned ? rep.clean : (pg.text ?? rep.base ?? "");
+    out.push(!cleaned && Array.isArray(pg.lines) && pg.lines.length
+      ? pageToMarkup({ ...pg, text })
+      : textToMarkup(text));
   }
   return out;
 }

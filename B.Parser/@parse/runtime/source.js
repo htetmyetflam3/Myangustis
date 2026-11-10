@@ -24,8 +24,10 @@ import { decodePdfInstructions } from "../pdf/instructions.js";
 import { PdfPagePieces } from "../pdf/pages/pages.js";
 import { DocumentDecoding, PDF_PARSING_PATHS, pageFontDecoders } from "../pdf/method/decoder.js";
 import { legacyLayoutForFont } from "../pdf/method/legacy/codepage-names.js";
-import { cleanupFor, collectChanges, adviseParserMiddleChain } from "./finish.js";
+import { WININNWA_LEGACY_CODE_PAGE } from "../pdf/method/legacy/codepage-registry.js";
+import { cleanupFor, collectChanges, adviseParserMiddleChain, instructionLane } from "./finish.js";
 import { RuntimeError } from "../../core/@helper/pylib.js";
+import { finishPageToFile, pageLayoutLines } from "./finalized-cmap.js";
 
 export function streamPdfPages(source, log = () => {}, {
   provenance = null, sourceEncoding = "auto", onPageContent = null, onPagePrefix = null, scratchDir = null,

@@ -17,7 +17,8 @@ stage's limit home; owner jobs are uncapped there already.
 import fs from "node:fs";
 import path from "node:path";
 import { writePdf } from "../@output/pdf/write.js";
-import { writeDocxLayout, writeDocxPlain } from "../@output/docx/write.js";
+import { writeDocxMarkup } from "../@output/docx/write.js";
+import { stripMarkup } from "../@output/helper/markup.js";
 import { normalizeOutputType } from "../@output/helper/output-type.js";
 import { MAX_PAGES, MAX_TEXT_CHARS } from "../@entry/helper/limit.js";
 
@@ -62,15 +63,11 @@ export async function writeOutputFile(pages, outPath, {
 
   if (to === "txt") {
     let body = header(source, norm, counts);
-    norm.forEach((p, i) => { body += `--- Page ${i + 1} ---\n${p.text ?? ""}\n\n`; });
+    norm.forEach((p, i) => { body += `--- Page ${i + 1} ---\n${stripMarkup(p.text ?? "")}\n\n`; });
     fs.writeFileSync(out, body, "utf8");
   } else if (to === "docx") {
-    // PDF-sourced pages carry layout lines; DOCX-sourced carry text.
-    if (norm.some((p) => Array.isArray(p.lines))) {
-      await writeDocxLayout(out, norm, source);
-    } else {
-      await writeDocxPlain(out, norm.map((p) => p.text ?? "").join("\n\n"));
-    }
+    // Pages are marked-up strings; the writer renders the markup.
+    await writeDocxMarkup(out, norm.map((p) => p.text ?? ""));
   } else {
     await writePdf(out, norm.map((p) => p.text ?? ""), {}, source, norm.length, log);
   }

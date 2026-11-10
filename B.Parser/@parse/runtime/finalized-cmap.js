@@ -101,8 +101,8 @@ export function* pageLayoutLines(store, text, sourceLineCount) {
   if (convertedLineCount === sourceLineCount) {
     const converted = textLines(text.chunks());
     try {
-      for (const [x, y, size] of store.lines()) {
-        yield [x, y, size, converted.next().value];
+      for (const [x, y, size, , font] of store.lines()) {
+        yield [x, y, size, converted.next().value, font];
       }
     } finally { converted.return?.(); }
     return;

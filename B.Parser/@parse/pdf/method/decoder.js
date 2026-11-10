@@ -4,7 +4,7 @@
 import { createHash } from "node:crypto";
 import { pyChr } from "../../../core/@helper/pylib.js";
 import { CMapEncoding, buildSimpleEncoding, parseCmapStream, mapCode, IDENTITY, CmapIdentityMap } from "./unicode/cmap/cmap.js";
-import { FontResourceLoader } from "./unicode/ttf.js";
+import { FontResourceLoader, ResourceCache } from "./unicode/ttf.js";
 export { IDENTITY };
 import { LegacyAyarMap } from "./legacy/fallback.js";
 import { isUnresolvedLegacyFont, legacyLayoutForFont, normaliseFontName } from "./legacy/codepage-names.js";
@@ -12,6 +12,7 @@ import { lookupLegacyCode, WININNWA_LEGACY_CODE_PAGE, WININNWA_UNRESOLVED_SLOTS 
 import { confirmedRunAt } from "./legacy/codepage-confirmed.js";
 import { subsetFontBridge } from "./legacy/codepage-subset.js";
 import { hasVisualUnicodeConflicts, matchVisualUnicodeGlyphs } from "./legacy/codepage-visual.js";
+import { PdfName, PdfRef } from "./values.js";
 
 
 // These are parsing routes, not encoding verdicts. The shared route
@@ -31,22 +32,6 @@ export const PDF_PARSING_PATHS = Object.freeze({
 // flagged (known: false) so the cleaning stage can route it to the
 // additional module that will be specified for unknown legacy faces.
 
-class ResourceCache extends Map {
-  constructor(limit) { super(); this.limit = limit; }
-  get(key) {
-    if (!this.has(key)) return undefined;
-    const value = super.get(key);
-    super.delete(key);
-    super.set(key, value);
-    return value;
-  }
-  set(key, value) {
-    if (this.has(key)) super.delete(key);
-    super.set(key, value);
-    if (this.size > this.limit) super.delete(this.keys().next().value);
-    return this;
-  }
-}
 
 export class DocumentDecoding {
   constructor(kind, mapping = null, legacyCodePage = null, { legacyFontNames = null, vectorRepair = null } = {}) {

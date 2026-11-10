@@ -1,39 +1,34 @@
 /*
-(praised/decoding) run: the composer - next module after the split.
-Imports the two decoding branches (pdf/source, docx/source), the
-shared finishing (finish.js), and the output writing
-(output/requested.js, the door over pdf/write + docx/write).
-One function per kind: decode the landed input into finished
-pages, then create the requested output file. It routes and
-carries; decoding methods belong to the branches and judgement,
-file shapes belong to the output writers.
+(parse) run: the parsing door at the top of @parse. Imports the two
+decoding branches (pdf runtime/source, docx/source) and the shared
+finishing (runtime/finish.js), and returns the parsed result:
+one marked-up string per page, plus counts and reports.
+
+Parsing ends here. Output writing is NOT called from parse: the
+caller takes this result and hands it to requested.js (the output
+wrapper) whenever - and however parallel - it chooses.
 */
 import { streamPdfPages, collectPdfResult } from "./runtime/source.js";
-import { processDocxBytes, processDocxForMethod } from "./docx/source.js";
+import { processDocxBytes } from "./docx/source.js";
 import { buildFinalPages } from "./runtime/finish.js";
-import { writeOutputFile } from "./requested.js";
 
-export { writeOutputFile };
-
-// The whole middle in one call: decode by kind, lift the final
-// pages, and create the requested output file (the conversion is
-// the output door's dispatch: pdf->docx, docx->pdf, ->txt).
-export async function runDecoding({ kind, source, filename = null, outPath, log = () => {} } = {}) {
-  if (!outPath) throw new TypeError("runDecoding: outPath is required");
+export async function parseDecoding({ kind, source, filename = null, log = () => {} } = {}) {
   let job;
   if (kind === "pdf") {
     const reports = [];
-    let npages = 0;
-    for await (const rep of streamPdfPages(source, log, {})) { reports.push(rep); npages += 1; }
+    const [, npages, pageIter] = streamPdfPages(source, log, {});
+    for await (const rep of pageIter) reports.push(rep);
     job = collectPdfResult(reports, npages, filename ?? "upload.pdf");
   } else if (kind === "docx") {
     job = await processDocxBytes(source, filename ?? "upload.docx", log, {});
   } else {
-    throw new TypeError("runDecoding: kind must be pdf or docx");
+    throw new TypeError("parseDecoding: kind must be pdf or docx");
   }
-  const pages = buildFinalPages(job, true);
-  const written = await writeOutputFile(pages, outPath, {
-    source: filename ?? "", sourceKind: kind, counts: job.counts ?? {}, log,
-  });
-  return { job, written };
+  return {
+    kind,
+    filename: job.filename ?? filename,
+    pages: buildFinalPages(job, true),
+    counts: job.counts ?? {},
+    reports: job.reports ?? [],
+  };
 }

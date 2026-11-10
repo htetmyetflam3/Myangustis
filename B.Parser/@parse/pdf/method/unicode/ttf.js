@@ -4,6 +4,24 @@
 import { parseTtfGsubReverse, parseTtfVariantSlots } from "./ttf/ttf-gsub.js";
 import { PdfRef, parseObject } from "../values.js";
 
+export class ResourceCache extends Map {
+  constructor(limit) { super(); this.limit = limit; }
+  get(key) {
+    if (!this.has(key)) return undefined;
+    const value = super.get(key);
+    super.delete(key);
+    super.set(key, value);
+    return value;
+  }
+  set(key, value) {
+    if (this.has(key)) super.delete(key);
+    super.set(key, value);
+    if (this.size > this.limit) super.delete(this.keys().next().value);
+    return this;
+  }
+}
+
+
 const MAX_SHAPING_DEPTH = 8;
 
 

@@ -17,7 +17,7 @@ import { OUTPUT_FONT_DIR } from "../../_path.js";
 import { PdfWriter } from "../../@parse/runtime/pdf-writer.js";
 import { writeOptimizedPdf } from "../../@parse/runtime/optimize.js";
 import { RuntimeError } from "../../core/@helper/pylib.js";
-import { textLines } from "../helper/text-lines.js";
+import { parseMarkup } from "../helper/markup.js";
 
 export function pdfLineHeight(pdf, role) {
   const cfg = FONT_ROLES[role];
@@ -68,20 +68,24 @@ export async function writePdf(outPath, texts, metadata, pdfPath, npages, log = 
       renderHeader();
       pdf.ln(3);
     }
-    let prevBlank = true;
-    const chunks = typeof txt?.textChunks === "function" ? txt.textChunks() : [String(txt ?? "")];
-    for (const line of textLines(chunks)) {
-      const role = classifyTextRole(line, prevBlank);
-      if (role === "blank") {
-        pdf.ln(pdfLineHeight(pdf, "paragraph") * 0.5);
-        prevBlank = true;
-        continue;
+    // Marked-up page string: headings and paragraph breaks come from
+    // the markup; bold/italic apply per line (a line wholly wrapped in
+    // <b>/<i> takes that role - mixed runs take the paragraph role).
+    for (const block of parseMarkup(txt)) {
+      for (const runs of block.lines) {
+        const line = runs.map((run) => run.text).join("");
+        if (!line.trim()) continue;
+        const role = block.tag === "h1" ? "title"
+          : block.tag === "h2" ? "heading"
+          : runs.length && runs.every((run) => run.bold) ? "bold"
+          : runs.length && runs.every((run) => run.italic) ? "italic"
+          : "paragraph";
+        applyPdfRole(pdf, role);
+        pdf.cell(0, pdfLineHeight(pdf, role), line, {
+          newX: "LMARGIN", newY: "NEXT", align: FONT_ROLES[role].align,
+        });
       }
-      applyPdfRole(pdf, role);
-      pdf.cell(0, pdfLineHeight(pdf, role), line, {
-        newX: "LMARGIN", newY: "NEXT", align: FONT_ROLES[role].align,
-      });
-      prevBlank = false;
+      pdf.ln(pdfLineHeight(pdf, "paragraph") * 0.5);
     }
     idx += 1;
   }
