@@ -23,6 +23,7 @@ import { PdfFileObjects, openPdfScannedObjects } from "./pdf-objects.js";
 import { decodePdfInstructions } from "./layout/page-instructions.js";
 import { PdfPagePieces } from "./layout/pdf-pages.js";
 import { DocumentDecoding, PDF_PARSING_PATHS, pageFontDecoders } from "./font/decoder.js";
+import { legacyLayoutForFont } from "../method/legacy/codepage-names.js";
 import { cleanupFor, collectChanges, adviseParserMiddleChain } from "../finish.js";
 import { RuntimeError } from "../../../helper/pylib.js";
 

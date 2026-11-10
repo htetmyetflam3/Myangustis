@@ -7,8 +7,8 @@ import { CMapEncoding, buildSimpleEncoding, parseCmapStream, mapCode, IDENTITY, 
 import { FontResourceLoader } from "./ttf/ttf.js";
 export { IDENTITY };
 import { LegacyAyarMap } from "./ttf/fallback.js";
-import { isLegacyFontName, isUnresolvedLegacyFont, normaliseFontName } from "../../method/legacy/codepage-names.js";
-import { lookupLegacyCode } from "../../method/legacy/codepage-registry.js";
+import { isUnresolvedLegacyFont, legacyLayoutForFont, normaliseFontName } from "../../method/legacy/codepage-names.js";
+import { lookupLegacyCode, WININNWA_LEGACY_CODE_PAGE, WININNWA_UNRESOLVED_SLOTS } from "../../method/legacy/codepage-registry.js";
 import { confirmedRunAt } from "../../method/legacy/codepage-confirmed.js";
 import { subsetFontBridge } from "../../method/legacy/codepage-subset.js";
 import { hasVisualUnicodeConflicts, matchVisualUnicodeGlyphs } from "../../method/legacy/codepage-visual.js";
@@ -214,10 +214,9 @@ export class FontDecoder {
     if (!this._isSelectedLegacyFont) return null;
     // The selected layout belongs to the character slots, not the visual
     // font family. A page-selected simple resource can use the same layout
-    // under another face; unselected resources do not inherit it.
-    const pageSelected = this.doc.kind === "legacy"
-      && (this.doc.legacyResources !== null || this.doc.legacyFontNames !== null);
-    if (!this.toUnicode && !isLegacyFontName(this.baseFont) && !pageSelected) return null;
+    // under another face; unselected resources do not inherit it. The lane
+    // was already selected above this decoder: no font-name check here may
+    // refuse the parse - selection is the only guard.
     if (!this.toUnicode && !this.encodingHasDifferences) {
       if (page === WININNWA_LEGACY_CODE_PAGE && WININNWA_UNRESOLVED_SLOTS.has(code)) {
         return String.fromCodePoint(code);

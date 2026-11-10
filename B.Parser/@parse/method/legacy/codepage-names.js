@@ -1,8 +1,23 @@
 /*
 (Support 27) Shared support, no chain position - the legacy font-name registry.
-This module holds the curated set of known legacy font names and answers: is this font name a registered legacy face, and what is its normalized form.
+This module holds the curated sets of known legacy font names, split by
+family, and answers: is this font name a registered legacy face, which
+family (Ayar or WinInnwa) does it belong to, and what layout does that
+family parse with. Name evidence only - it converts no bytes.
 */
-export const LEGACY_FONT_NAMES = new Set([
+import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "./codepage-registry.js";
+export const WININNWA_FONT_NAMES = new Set([
+  "wininnwa",
+  "wininnwa070",
+  "wininnwa070a",
+  "wininnwa080",
+  "wininnwa080a",
+  "wininnwa090",
+  "wininnwa090a",
+  "wininnwabold",
+]);
+
+export const AYAR_FONT_NAMES = new Set([
   "anonymouspro",
   "anonymousprobold",
   "anonymousprobolditalic",
@@ -209,14 +224,6 @@ export const LEGACY_FONT_NAMES = new Set([
   "winhaka",
   "wininnlay",
   "wininnlaya",
-  "wininnwa",
-  "wininnwa070",
-  "wininnwa070a",
-  "wininnwa080",
-  "wininnwa080a",
-  "wininnwa090",
-  "wininnwa090a",
-  "wininnwabold",
   "winkalaw",
   "winphaan",
   "winphaana",
@@ -243,6 +250,10 @@ export const LEGACY_FONT_NAMES = new Set([
   "yadanabon",
 ]);
 
+// One registry, two families: the name gate distinguishes Ayar faces
+// from WinInnwa faces; the union stays for plain legacy-or-not checks.
+export const LEGACY_FONT_NAMES = new Set([...WININNWA_FONT_NAMES, ...AYAR_FONT_NAMES]);
+
 export function normaliseFontName(baseFont) {
   return String(baseFont || "")
     .replace(/#([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
@@ -266,4 +277,33 @@ export function isLegacyFontName(baseFont) {
     if (known.length >= 6 && (n.startsWith(known) || known.startsWith(n))) return true;
   }
   return false;
+}
+
+function matchesFamily(set, n) {
+  if (set.has(n)) return true;
+  for (const known of set) {
+    if (known.length >= 6 && (n.startsWith(known) || known.startsWith(n))) return true;
+  }
+  return false;
+}
+
+// The name gate's second decision, inside the legacy lane: which family
+// a face belongs to. Null means the name says nothing - not Ayar, not
+// WinInnwa - and no layout is known for it.
+export function legacyFontFamily(baseFont) {
+  const n = normaliseFontName(baseFont);
+  if (!n) return null;
+  if (n.startsWith("wininnwa") || matchesFamily(WININNWA_FONT_NAMES, n)) return "wininnwa";
+  if (/^(?:ayar|arlarwade|amyanmar)/u.test(n) || matchesFamily(AYAR_FONT_NAMES, n)) return "ayar";
+  return null;
+}
+
+// Layout choice for the legacy lane, decided here at the name gate:
+// known family faces parse with their family's code page; an unknown
+// face stays on WinInnwa and is flagged known:false for cleaning.
+export function legacyLayoutForFont(baseFont) {
+  const family = legacyFontFamily(baseFont);
+  if (family === "wininnwa") return { layout: "wininnwa", codePage: WININNWA_LEGACY_CODE_PAGE, known: true };
+  if (family === "ayar") return { layout: "ayar", codePage: AYAR_LEGACY_CODE_PAGE, known: true };
+  return { layout: "wininnwa", codePage: WININNWA_LEGACY_CODE_PAGE, known: false };
 }

@@ -1,10 +1,9 @@
 /*
 (praised/decoding/pdf/font/ttf) fallback: the last-resort lanes when neither /ToUnicode nor an embedded cmap answers - raw-byte profiles and the legacy code pages (WinInnwa/Ayar layout maps, legacy font detection). Judgement decides a page belongs here; this branch only decodes.
 */
-import { isLegacyFontName, isUnresolvedLegacyFont, normaliseFontName } from "../../../method/legacy/codepage-names.js";
+import { isLegacyFontName, isUnresolvedLegacyFont } from "../../../method/legacy/codepage-names.js";
 import { CmapIdentityMap } from "../cmap/cmap.js";
 export { CmapIdentityMap };
-import { lookupLegacyCode, AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE, WININNWA_UNRESOLVED_SLOTS } from "../../../method/legacy/codepage-registry.js";
 
 // Decode an explicitly supplied single-byte profile without /ToUnicode.
 // Its direct entries can be table-seeded; review candidates require opt-in.
@@ -111,17 +110,6 @@ export function encodeRawByteSlots(slots, profile, { byteChoices = {}, includeRe
     output.push(hex);
   }
   return Uint8Array.from(output, (hex) => Number.parseInt(hex, 16));
-}
-
-export function legacyLayoutForFont(baseFont) {
-  const name = normaliseFontName(baseFont);
-  if (name.startsWith("wininnwa")) {
-    return { layout: "wininnwa", codePage: WININNWA_LEGACY_CODE_PAGE, known: true };
-  }
-  if (/^(?:ayar|arlarwade|amyanmar)/u.test(name) || isLegacyFontName(baseFont)) {
-    return { layout: "ayar", codePage: AYAR_LEGACY_CODE_PAGE, known: true };
-  }
-  return { layout: "wininnwa", codePage: WININNWA_LEGACY_CODE_PAGE, known: false };
 }
 
 

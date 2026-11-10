@@ -20,7 +20,7 @@ import {
   cleanupUnicodeText as cleanupUnicode, convertFinalizedPageText,
   finishPageToFile, orderUnicodeText as orderUnicode, pageLayoutLines,
 } from "./finalized-cmap.js";
-import { legacyLayoutForFont } from "./pdf/font/ttf/fallback.js";
+import { legacyLayoutForFont } from "./method/legacy/codepage-names.js";
 import { agentAdvisory } from "../../../../Architecture/host/advisory.js";
 
 const PARSER_CHAIN_DOOR = "ParserManager";
