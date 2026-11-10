@@ -3,10 +3,10 @@
 */
 import { createHash } from "node:crypto";
 import { pyChr } from "../../../core/@helper/pylib.js";
-import { CMapEncoding, buildSimpleEncoding, parseCmapStream, mapCode, IDENTITY, CmapIdentityMap } from "./cmap/cmap.js";
-import { FontResourceLoader } from "./ttf/ttf.js";
+import { CMapEncoding, buildSimpleEncoding, parseCmapStream, mapCode, IDENTITY, CmapIdentityMap } from "./unicode/cmap/cmap.js";
+import { FontResourceLoader } from "./unicode/ttf.js";
 export { IDENTITY };
-import { LegacyAyarMap } from "./ttf/fallback.js";
+import { LegacyAyarMap } from "./legacy/fallback.js";
 import { isUnresolvedLegacyFont, legacyLayoutForFont, normaliseFontName } from "../../method/legacy/codepage-names.js";
 import { lookupLegacyCode, WININNWA_LEGACY_CODE_PAGE, WININNWA_UNRESOLVED_SLOTS } from "../../method/legacy/codepage-registry.js";
 import { confirmedRunAt } from "../../method/legacy/codepage-confirmed.js";

@@ -2,8 +2,8 @@
 (praised/decoding/pdf/font/cmap) cmap branch: decode by the font's own maps - glyph names, simple encodings, /ToUnicode CMaps (CMapEncoding, parseCmapStream), and code mapping helpers. Standard encoding tables live in encodings.js beside it.
 */
 import { BASE_ENCODINGS, GLYPH_NAME_TO_UNICODE } from "./encodings.js";
-import { PdfName } from "../values.js";
-import { pyChr } from "../../../../core/@helper/pylib.js";
+import { PdfName } from "../../values.js";
+import { pyChr } from "../../../../../core/@helper/pylib.js";
 
 // Marker for the identity code->unicode lane (no map needed).
 export const IDENTITY = Symbol("IDENTITY");

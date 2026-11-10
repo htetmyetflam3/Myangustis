@@ -17,8 +17,8 @@ import {
   asDocumentDecoding, DocumentDecoding, UnsetFontDecoder,
   pageFontDecoders, PDF_PARSING_PATHS,
 } from "./decoding/pdf/font/decoder.js";
-import { FontResourceLoader } from "./decoding/pdf/font/ttf/ttf.js";
-import { LegacyAyarMap } from "./decoding/pdf/font/ttf/fallback.js";
+import { FontResourceLoader } from "./font/unicode/ttf.js";
+import { LegacyAyarMap } from "./font/legacy/fallback.js";
 import { spoolPageContent } from "./decoding/pdf/layout/pdf-content.js";
 import { PdfFileLexer } from "./decoding/pdf/pdf-lexer.js";
 import { PdfPagePieces } from "./decoding/pdf/layout/pdf-pages.js";
@@ -580,8 +580,8 @@ export function pageHasImages(objects, pageNum, pageGen) {
 
 
 export { IDENTITY, PDF_PARSING_PATHS } from "./decoding/pdf/font/decoder.js";
-export { CmapIdentityMap, LegacyAyarMap } from "./decoding/pdf/font/ttf/fallback.js";
-export { mapCode } from "./decoding/pdf/font/cmap/cmap.js";
+export { CmapIdentityMap, LegacyAyarMap } from "./font/legacy/fallback.js";
+export { mapCode } from "./font/unicode/cmap/cmap.js";
 
 
 
