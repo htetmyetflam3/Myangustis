@@ -35,7 +35,9 @@ function isEngineBase(ch) {
 export function arrangeZawCodeOrder(text) {
   if (typeof text !== "string") throw new TypeError("Expected text");
   // The caller applies this result only in the ZawCode lane; comparisons use a copy.
-  const chars = Array.from(String(text ?? "").replace(/\u200b/gu, ""));
+  // No character is stripped here: zero-width characters ride
+  // through the swap untouched, wherever they fall.
+  const chars = Array.from(String(text ?? ""));
   const out = [];
 
   for (let i = 0; i < chars.length;) {

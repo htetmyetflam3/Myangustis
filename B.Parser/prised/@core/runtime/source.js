@@ -307,8 +307,6 @@ export function streamPdfPages(source, log = () => {}, {
         warnings.push({ code: "unicode-order-needs-review", page: idx + 1 });
       } else if (finished.decision === "unaligned-unknown") {
         warnings.push({ code: "encoding-order-needs-review", page: idx + 1 });
-      } else if (finished.decision === "unaligned-zawgyi") {
-        warnings.push({ code: "conversion-characters-need-review", page: idx + 1 });
       }
       shared._pageFonts.delete(`${pnum},${pgen}`);
       legacy._pageFonts.delete(`${pnum},${pgen}`);

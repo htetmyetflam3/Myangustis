@@ -12,7 +12,7 @@ import fs from "node:fs";
 import { containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts } from "../../@rule/detect.js";
 import { Rabbit } from "../../@rule/rabbit.js";
 import { orderText } from "../../@postprocess/beautify/clean.js";
-import { preserveCharacters, instructionLane } from "../../@rule/judgement.js";
+import { instructionLane } from "../../@rule/judgement.js";
 import { scoreText } from "../../@rule/mm-score.js";
 export { instructionLane };
 import { countImpossiblePairs } from "../../@postprocess/init.js";
@@ -38,7 +38,7 @@ export function adviseParserMiddleChain(api) {
 }
 
 
-const orderZawgyi = (text) => preserveCharacters(text, (part) => orderText(Rabbit.zg2uni(part)));
+const orderZawgyi = (text) => orderText(Rabbit.zg2uni(text));
 
 import { markedTextToMarkup, pageToMarkup, textToMarkup } from "./markup.js";
 

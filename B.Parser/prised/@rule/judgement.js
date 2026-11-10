@@ -99,7 +99,7 @@ export function judgePageLines(lines, swapCandidate) {
   let candidateMarks = 0;
   for (const text of lines) {
     count += 1;
-    const inspected = String(text ?? "").replace(/\u200b/gu, "");
+    const inspected = String(text ?? "");
     originalHasText ||= Boolean(inspected.trim());
     hasMyanmar ||= containsMyanmar(inspected);
     aligned &&= markOrderAligned(inspected);
@@ -247,68 +247,13 @@ export function isUnicodeLaneDecision(decision, category) {
 
 // ===========================================================================
 // TEXT KEEPING (not lane machinery)
-// Inherited from the deleted normalize.js: zero-width/format-character
-// preservation and the line-by-line Engine-normalize plumbing. These stay
-// in this file only because this module already held them; they judge
-// nothing and select nothing.
+// Inherited from the deleted normalize.js: the line-by-line
+// Engine-normalize plumbing. It judges nothing and selects nothing.
+// There is no protected/preserved character set: characters the
+// chain does not itself handle flow through transforms naturally.
 // ===========================================================================
 
 // --- normalize.js functions (moved here; normalize.js deleted) ---
-
-const FORMAT_CHARACTER = /^\p{Cf}$/u;
-const WHITESPACE = /^\s$/u;
-const ZERO_WIDTH_SPACE = "\u200b";
-
-function needsProtection(ch) {
-  if (ch === ZERO_WIDTH_SPACE) return false;
-  return WHITESPACE.test(ch) || FORMAT_CHARACTER.test(ch);
-}
-
-function isFormatCharacter(ch) {
-  return ch !== ZERO_WIDTH_SPACE && (ch === "\u034f" || FORMAT_CHARACTER.test(ch));
-}
-
-export function protectedCharacters(value) {
-  let out = "";
-  for (const ch of String(value ?? "")) {
-    if (needsProtection(ch)) out += ch;
-  }
-  return out;
-}
-
-export function preserveCharacters(text, transform) {
-  const input = String(text ?? "");
-  if (typeof transform !== "function") throw new TypeError("Expected a text transformation");
-  let hasProtected = false;
-  for (const ch of input) {
-    if (isFormatCharacter(ch)) { hasProtected = true; break; }
-  }
-  if (!hasProtected) return transform(input);
-
-  let prefix = "\ue000";
-  while (input.includes(prefix)) prefix += "\ue000";
-  const suffix = "\ue001";
-  const preserved = [];
-  let masked = "";
-  for (const ch of input) {
-    if (isFormatCharacter(ch)) {
-      masked += `${prefix}${preserved.length}${suffix}`;
-      preserved.push(ch);
-    } else masked += ch;
-  }
-
-  const transformed = transform(masked);
-  const pattern = new RegExp(`${prefix}([0-9]+)${suffix}`, "gu");
-  let restored = 0;
-  const result = transformed.replace(pattern, (token, index) => {
-    const value = preserved[Number(index)];
-    if (value === undefined) return token;
-    restored += 1;
-    return value;
-  });
-  if (restored !== preserved.length) throw new Error("Text transformation could not preserve zero-width characters");
-  return result;
-}
 
 export function* normalizePageLines(text, normalize) {
   if (typeof normalize !== "function") throw new TypeError("Expected Engine normalize function");

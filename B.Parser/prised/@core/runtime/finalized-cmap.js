@@ -11,7 +11,6 @@ import { arrangeZawCodeOrder } from "../../@postprocess/beautify/zawcode-order.j
 import { correctWorldWord, judgePageLines, selectPageDecision } from "../../@rule/judgement.js";
 import { cleanupText, orderText } from "../../@postprocess/beautify/clean.js";
 import { preserveRegionalRuns } from "../../@rule/unicode-evidence.js";
-import { preserveCharacters, protectedCharacters } from "../../@rule/judgement.js";
 import { Rabbit, createRabbitStream } from "../../@rule/rabbit.js";
 import { StreamingReplace } from "../../@helper/stream-replace.js";
 
@@ -26,22 +25,6 @@ function writeAll(fd, text) {
     if (!count) throw new Error("Could not write the PDF text spool");
     offset += count;
   }
-}
-
-function identicalFiles(left, right) {
-  if (fs.statSync(left).size !== fs.statSync(right).size) return false;
-  const a = fs.openSync(left, "r");
-  const b = fs.openSync(right, "r");
-  const x = Buffer.allocUnsafe(READ_SIZE);
-  const y = Buffer.allocUnsafe(READ_SIZE);
-  try {
-    while (true) {
-      const nx = fs.readSync(a, x, 0, x.length, null);
-      const ny = fs.readSync(b, y, 0, y.length, null);
-      if (nx !== ny || !x.subarray(0, nx).equals(y.subarray(0, ny))) return false;
-      if (!nx) return true;
-    }
-  } finally { fs.closeSync(a); fs.closeSync(b); }
 }
 
 // Split exactly like String#split("\n"), without holding an entire page.
@@ -176,12 +159,8 @@ export function normalizePageToFile(chunks, { directory, normalize } = {}) {
   }
 }
 
-export const orderUnicodeText = (text) => preserveRegionalRuns(
-  text, (part) => preserveCharacters(part, orderText),
-);
-export const cleanupUnicodeText = (text) => preserveRegionalRuns(
-  text, (part) => preserveCharacters(part, cleanupText),
-);
+export const orderUnicodeText = (text) => preserveRegionalRuns(text, orderText);
+export const cleanupUnicodeText = (text) => preserveRegionalRuns(text, cleanupText);
 
 const FINAL_UNICODE_DECISIONS = new Set([
   "aligned", "zawcode", "unaligned-unicode",
@@ -227,8 +206,6 @@ export function finishPageToFile(store, {
 
   const id = randomUUID();
   const file = path.join(directory, `page-text-${id}.txt`);
-  const beforeFile = path.join(directory, `protected-before-${id}.txt`);
-  const afterFile = path.join(directory, `protected-after-${id}.txt`);
   let fd = null;
   let chars = 0;
   let bytes = 0;
@@ -269,35 +246,23 @@ export function finishPageToFile(store, {
         write(orderUnicodeText(text));
       }
     } else if (decision === "rabbit") {
-      const before = fs.openSync(beforeFile, "wx", 0o600);
-      const after = fs.openSync(afterFile, "wx", 0o600);
-      try {
-        const world = worldEvidence ? new StreamingReplace(/က(?:မၻာ|မ်ဘာ)/u, "ကမ္ဘာ") : null;
-        const output = (text) => {
-          writeAll(after, protectedCharacters(text));
-          const transformed = world ? world.push(text) : text;
-          write(transformed);
-        };
-        const rabbit = createRabbitStream(output, { preserveSpaces: true });
-        let first = true;
-        for (const [, , , text] of store.lines()) {
-          const chunk = first ? text : `\n${text}`;
-          first = false;
-          writeAll(before, protectedCharacters(chunk));
-          rabbit.push(chunk);
-        }
-        rabbit.push("", true);
-        if (world) write(world.push("", true));
-      } finally { fs.closeSync(before); fs.closeSync(after); }
-      if (!identicalFiles(beforeFile, afterFile)) {
-        decision = "unaligned-zawgyi";
-        fs.closeSync(fd);
-        fd = fs.openSync(file, "w", 0o600);
-        chars = 0;
-        bytes = 0;
-        outputHasMyanmar = false;
-        writeOriginal();
+      // The conversion writes straight out. Nothing is receipted or
+      // rolled back: characters the converter does not handle flow
+      // through it naturally.
+      const world = worldEvidence ? new StreamingReplace(/က(?:မၻာ|မ်ဘာ)/u, "ကမ္ဘာ") : null;
+      const output = (text) => {
+        const transformed = world ? world.push(text) : text;
+        write(transformed);
+      };
+      const rabbit = createRabbitStream(output, { preserveSpaces: true });
+      let first = true;
+      for (const [, , , text] of store.lines()) {
+        const chunk = first ? text : `\n${text}`;
+        first = false;
+        rabbit.push(chunk);
       }
+      rabbit.push("", true);
+      if (world) write(world.push("", true));
     } else if (decision === "zawcode") {
       writeOriginal({ transform: arrangeZawCodeOrder });
     } else {
@@ -306,14 +271,11 @@ export function finishPageToFile(store, {
     fs.closeSync(fd);
     fd = null;
     const category = !outputHasMyanmar ? "UNKNOWN"
-      : decision === "rabbit" || decision === "unaligned-zawgyi" ? "ZAWGYI" : "UNICODE";
+      : decision === "rabbit" ? "ZAWGYI" : "UNICODE";
     return { text: new PageTextFile(file, chars, bytes), decision, category, originalHasText, lineCount: count };
   } catch (error) {
     if (fd !== null) fs.closeSync(fd);
     fs.rmSync(file, { force: true });
     throw error;
-  } finally {
-    fs.rmSync(beforeFile, { force: true });
-    fs.rmSync(afterFile, { force: true });
   }
 }
