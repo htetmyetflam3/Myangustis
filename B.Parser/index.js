@@ -1,24 +1,25 @@
 /*
-(Support 1) Shared support, no chain position - the public front door of B.Parser.
-This module only wires the parts together and re-exports them (Manager, site dispatch, local dispatch). It contains no parsing logic.
+The public front door of B.Parser. Wiring only - no parsing logic.
+
+For almost everything, use the one function:
+
+  import { convert } from "./index.js";        // or from "B.Parser"
+  await convert("in.pdf", "out.docx");
+  await convert("in.docx", "out.txt");
+  await convert({ bytes, filename: "in.pdf" }, "out.pdf");
+
+convert() runs the whole chain (take in -> prepare -> parse -> write
+the requested file) and returns { file, from, to, pages, counts }.
+
+The three stages are also exported individually for callers that
+need to compose them themselves (e.g. parse many files, write later):
+  InitInput        stage 1: take a file in and prepare it
+  parseDecoding    stage 2: prepared file -> marked-up page strings
+  writeOutputFile  stage 3: page strings -> .pdf / .docx / .txt file
+
+See MAP.md for the one-page map of this whole directory.
 */
-// B.Parser public front door — the single integration point.
-// Sketch layout (see SEPARATION.md): core / host / extend / integration.
-// This file only wires the parts together; it contains no parsing logic.
-//
-//   core/        pure parsing logic (pdf/docx/text/codepage/io/util/ocr/manager)
-//   host/        site host, unchanged (Backend + Frontend)
-//   extend/      extended functions intended for other services (pipeline, classify, ...)
-//   integration/ caller glue: host/ (site) and services/ (scraper, socket, local, ...)
-//
-// NOTE (sketch): the old core/entry.js also re-exported `closeParserManager`
-// and `parserModuleAvailable` from init/init.js, but those symbols do not
-// exist there — the broken re-exports were dropped, no logic was deleted.
-export {
-  createConverterParser,
-  createPdfParser,
-  createDocxParser,
-} from "./integration/host/init.js";
-export { SiteDispatch } from "./integration/host/dispatch.js";
-export { LocalDispatchStream } from "./integration/services/local/stream.js";
-export { Manager } from "./core/manager/index.js";
+export { convert } from "./convert.js";
+export { InitInput } from "./@entry/init.js";
+export { parseDecoding } from "./@parse/run.js";
+export { writeOutputFile } from "./@parse/requested.js";
