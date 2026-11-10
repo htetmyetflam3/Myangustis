@@ -1,5 +1,5 @@
 /*
-(praised/decoding/docx) source: the DOCX decoding branch.
+(prised/decoding/docx) source: the DOCX decoding branch.
 Extracts the paragraphs (docx-extract, or the external
 runner), chunks them for the shared page-record finishing
 (finish.js), and builds the job the composer writes out. Same

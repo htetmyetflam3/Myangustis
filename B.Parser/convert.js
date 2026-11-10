@@ -15,19 +15,19 @@ only wires them - it contains no parsing logic of its own):
                                          land it as a temp file, prepare
                                          it (qpdf for PDF, unzip-check
                                          for DOCX)
-  2. parseDecoding  (praised/@core/run.js)      read the prepared file and
+  2. parseDecoding  (prised/@core/run.js)      read the prepared file and
                                          return one marked-up string
                                          per page (headings, bold,
                                          italic, paragraph breaks)
-  3. writeOutputFile(praised/@core/requested.js) render those pages to the
+  3. writeOutputFile(prised/@core/requested.js) render those pages to the
                                          requested .pdf / .docx / .txt
 
 OCR inputs are prepared by stage 1 but not yet converted here; they
 fail loudly instead of silently producing nothing.
 */
 import { InitInput } from "./@entry/init.js";
-import { parseDecoding } from "./praised/@core/run.js";
-import { writeOutputFile } from "./praised/@core/requested.js";
+import { parseDecoding } from "./prised/@core/run.js";
+import { writeOutputFile } from "./prised/@core/requested.js";
 
 // One conversion at a time through this door: callers queue, a second
 // conversion never runs beside the first (single-worker guard).

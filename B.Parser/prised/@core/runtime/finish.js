@@ -1,10 +1,10 @@
 /*
-(praised/decoding) finish: the shared page-record finishing.
+(prised/decoding) finish: the shared page-record finishing.
 Both decoding branches land here: a decoded page record (from the
 PDF branch) or a paragraph chunk (from the DOCX branch) is scored,
 cleaned and ordered into its final form. The two branches are
 separations only - neither re-checks the other; which method a
-page takes is decided by judgement (praised/rule/judgement.js),
+page takes is decided by judgement (prised/rule/judgement.js),
 and orderText's own home (the old clean.js) is judgement-side
 territory to restore.
 */
@@ -29,7 +29,7 @@ export function adviseParserMiddleChain(api) {
   if (process.env.MYANGUSTIS_CHAIN_DOOR === PARSER_CHAIN_DOOR) return;
   agentAdvisory(
     "parser-middle-chain",
-    `[Parser agent advisor] STOP: B.Parser/praised/@core/runtime/finish.js:${api}() is a middle-chain API, not the Parser chain door. `
+    `[Parser agent advisor] STOP: B.Parser/prised/@core/runtime/finish.js:${api}() is a middle-chain API, not the Parser chain door. `
       + "Start from B.Parser/index.js (Manager.dispatchStream/Manager.dispatch) or "
       + "tools-box/js/pipeline-cli.js parser local, and report only that front-door behavior. "
       + "Calling pipeline/text/read helpers directly skips Manager spooling, worker preparation, output/POS sidecars and cleanup options.",

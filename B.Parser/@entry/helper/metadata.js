@@ -8,7 +8,7 @@ it. The lanes downstream read the metadata to know what they hold;
 if anything ever needs to act on metadata alone, it happens here.
 */
 import { validateDocx } from "./validator.js";
-import { validateImage } from "../../praised/@core/ocr/read.js";
+import { validateImage } from "../../prised/@core/ocr/read.js";
 
 export async function packInput(source, { filename = null, origin = "external", caller = "owner", job = null } = {}) {
   const iterator = source[Symbol.asyncIterator]();

@@ -1,5 +1,5 @@
 /*
-(praised/decoding/pdf) source: the PDF decoding branch.
+(prised/decoding/pdf) source: the PDF decoding branch.
 Discovers the pages of a prepared PDF, decides each page's lane
 from the page instructions, extracts and finishes the text
 (finish.js), and collects the result. The branch's two separations

@@ -12,7 +12,7 @@ const COMPONENT_ROOT = path.dirname(fileURLToPath(import.meta.url));
 // break; they no longer point at the old main/parser tree.
 export const PARSER_DIR = COMPONENT_ROOT;
 export const PARSED_ROOT = COMPONENT_ROOT;
-export const CORE_DIR = path.join(COMPONENT_ROOT, "praised");
+export const CORE_DIR = path.join(COMPONENT_ROOT, "prised");
 export const REPO_ROOT = path.dirname(COMPONENT_ROOT);
 
 async function resolveBaseDir() {
@@ -46,7 +46,7 @@ const FONT_ROOT = path.join(BASE_DIR, "fonts");
 
 export const MAP_DIR = path.join(COMPONENT_ROOT, "@jason-map");
 export const VECTOR_MAP_DIR = path.join(MAP_DIR, "vector");
-export const MODEL_DIR = path.join(COMPONENT_ROOT, "praised", "@core", "ocr", "model");
+export const MODEL_DIR = path.join(COMPONENT_ROOT, "prised", "@core", "ocr", "model");
 export const OCR_MODEL_DIR = MODEL_DIR;
 
 export const FONT_DIR = path.join(FONT_ROOT, "Unicode");

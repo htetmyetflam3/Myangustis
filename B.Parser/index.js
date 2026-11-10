@@ -21,5 +21,5 @@ See MAP.md for the one-page map of this whole directory.
 */
 export { convert } from "./convert.js";
 export { InitInput } from "./@entry/init.js";
-export { parseDecoding } from "./praised/@core/run.js";
-export { writeOutputFile } from "./praised/@core/requested.js";
+export { parseDecoding } from "./prised/@core/run.js";
+export { writeOutputFile } from "./prised/@core/requested.js";

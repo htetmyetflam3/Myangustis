@@ -14,9 +14,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { OUTPUT_FONT_DIR } from "../../_path.js";
-import { PdfWriter } from "../../praised/@core/runtime/pdf-writer.js";
-import { writeOptimizedPdf } from "../../praised/@core/runtime/optimize.js";
-import { RuntimeError } from "../../praised/@helper/pylib.js";
+import { PdfWriter } from "../../prised/@core/runtime/pdf-writer.js";
+import { writeOptimizedPdf } from "../../prised/@core/runtime/optimize.js";
+import { RuntimeError } from "../../prised/@helper/pylib.js";
 import { parseMarkup } from "../helper/markup.js";
 
 export function pdfLineHeight(pdf, role) {

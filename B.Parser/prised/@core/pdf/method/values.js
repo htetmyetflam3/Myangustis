@@ -1,5 +1,5 @@
 /*
-(praised/decoding/pdf/font) values: the PDF value types and object lexer the font branches share (PdfName, PdfRef, Lexer, parseObject). Not a decoding lane - the vocabulary both lanes speak.
+(prised/decoding/pdf/font) values: the PDF value types and object lexer the font branches share (PdfName, PdfRef, Lexer, parseObject). Not a decoding lane - the vocabulary both lanes speak.
 */
 export class PdfName {
   constructor(v) { this.v = v; }
