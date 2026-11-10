@@ -3,8 +3,12 @@ Beautify branch - the ZawCode rules. When judgement's evidence says a
 page is ZawCode (the swapping rule matches more than one slot), beautify
 calls these rules: the swapping rule itself (arrangeZawCodeOrder,
 orderZawCodePages) and the ZawCode mend rules below it (zawCodeGuard,
-mendZawCodeText, beautifyFromScanVerdict). These rules rewrite text;
-deciding stays in @rule/judgement.js.
+mendZawCodeText). These rules rewrite text; deciding stays in
+@rule/judgement.js. One entry here belongs to the REPAIR stage, not
+to beautify, and is named for it: repairFromScanVerdict applies the
+mend rules to pages the repair stage's scan (Engine output) flagged.
+Do not rename it back to beautify - beautify is the parsing chain,
+repair is a later runtime stage.
 */
 import {
   getMasterMapData, orderText, unmixZawCodeMarks, retraceZawCodeMarks,
@@ -451,7 +455,7 @@ export function mendZawCodeText(text, words, standalone = [], { skipTokens = nul
 
 
 
-export function beautifyFromScanVerdict(pages, report, words, {
+export function repairFromScanVerdict(pages, report, words, {
   path = null, standalone = [], preserveZawCodeOrder = false,
 } = {}) {
   if (path !== "zawcode" || !report || !words || !words.size) return pages;

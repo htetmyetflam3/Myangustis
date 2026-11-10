@@ -18,12 +18,12 @@ import {
 } from "../init.js";
 import { beautifyText } from "../beautify/beautify.js";
 import {
-  beautifyFromScanVerdict, mendZawCodeText, zawCodeGuard,
+  repairFromScanVerdict, mendZawCodeText, zawCodeGuard,
 } from "../beautify/zawcode-order.js";
 
 // Raw-font evidence is available to a repair caller that retained provenance.
 // These lookups return candidates only; they never alter text automatically.
-export { pdfBeautifyCandidates, physicalKeyCandidates, evidenceForOutput } from "../../@core/pdf/method/legacy/codepage-pooled.js";
+export { pdfRepairCandidates, physicalKeyCandidates, evidenceForOutput } from "../../@core/pdf/method/legacy/codepage-pooled.js";
 
 const MM_RUN = /[\u1000-\u1049\u105a-\u109f]+/gu;
 
@@ -88,7 +88,7 @@ export async function repairTextWithPos(text, { bindEngine = null } = {}) {
 export async function repairFromPosVerdict(pages, {
   path = null, preserveZawCodeOrder = false, bindEngine = null,
 } = {}) {
-  return withPosVerdicts((verdicts) => beautifyFromScanVerdict(pages, {}, verdicts, {
+  return withPosVerdicts((verdicts) => repairFromScanVerdict(pages, {}, verdicts, {
     path, preserveZawCodeOrder,
   }), bindEngine);
 }
