@@ -1,7 +1,7 @@
 /*
 (praised/decoding/pdf/font/ttf) ttf branch: decode through the embedded TrueType program itself - GSUB shaping resolution, variant slots, and the FontResourceLoader that pulls embedded font streams. This is the fallback when the font carries no usable /ToUnicode.
 */
-import { parseTtfGsubReverse, parseTtfVariantSlots } from "../../../method/ttf/ttf-gsub.js";
+import { parseTtfGsubReverse, parseTtfVariantSlots } from "./ttf/ttf-gsub.js";
 import { PdfRef, parseObject } from "../values.js";
 
 const MAX_SHAPING_DEPTH = 8;

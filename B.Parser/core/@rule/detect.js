@@ -2,7 +2,7 @@
 (PDF 24) PDF branch, position 24 in the chain - small shared helper of the lane decision and finishing (PDF 10, PDF 19).
 This module answers simple questions about text and font names: does this text contain Myanmar, is this font a Zawgyi-One face or a known Unicode face.
 */
-import { normaliseFontName } from "../../@parse/method/legacy/codepage-names.js";
+import { normaliseFontName } from "../../@parse/pdf/font/legacy/codepage-names.js";
 
 const MYANMAR = /[\u1000-\u109F\uA9E0-\uA9FF\uAA60-\uAA7F]/u;
 

@@ -1,7 +1,7 @@
 /*
 (praised/decoding/pdf/font/ttf) fallback: the last-resort lanes when neither /ToUnicode nor an embedded cmap answers - raw-byte profiles and the legacy code pages (WinInnwa/Ayar layout maps, legacy font detection). Judgement decides a page belongs here; this branch only decodes.
 */
-import { isLegacyFontName, isUnresolvedLegacyFont } from "../../../method/legacy/codepage-names.js";
+import { isLegacyFontName, isUnresolvedLegacyFont } from "./codepage-names.js";
 import { CmapIdentityMap } from "../unicode/cmap/cmap.js";
 export { CmapIdentityMap };
 

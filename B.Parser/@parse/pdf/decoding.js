@@ -2,16 +2,16 @@
 (PDF 13) PDF branch, position 13 in the chain - after the instructions (PDF 11), before the page text is finished (PDF 19).
 This module extracts one page's text lines: it spools the content (PDF 14), runs the font decoders (PDF 16) over the shown strings, tracks positions, and collects the page's images.
 */
-import { parseTtfCmap } from "../method/ttf/cmap.js";
+import { parseTtfCmap } from "./font/unicode/ttf/cmap.js";
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
 import { ValueError, pyTruthy, pyInt, fromHexStrict } from "../helper/pylib.js";
 import { loadMapJson, mapNameForPath } from "../json-map.js";
 import { OWNER_PARSER_WORKER, resourceLimit } from "../../init/helper/limit.js";
-import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../method/legacy/codepage-registry.js";
+import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "./font/legacy/codepage-registry.js";
 import { containsMyanmar } from "./rule/detect.js";
-import { decodeVisualUnicodeRun } from "../method/legacy/codepage-visual.js";
+import { decodeVisualUnicodeRun } from "./font/legacy/codepage-visual.js";
 import { Lexer, PdfName, PdfHexBytes, isNumeric, toNumber } from "./decoding/pdf/font/values.js";
 import {
   asDocumentDecoding, DocumentDecoding, UnsetFontDecoder,

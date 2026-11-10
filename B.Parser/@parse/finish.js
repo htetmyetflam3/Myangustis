@@ -15,12 +15,12 @@ import { orderText } from "../rule/clean.js";
 import { preserveCharacters, instructionLane, scoreText } from "../rule/judgement.js";
 export { instructionLane };
 import { countImpossiblePairs } from "../../beautify/scan.js";
-import { WININNWA_LEGACY_CODE_PAGE } from "./method/legacy/codepage-registry.js";
+import { WININNWA_LEGACY_CODE_PAGE } from "./pdf/font/legacy/codepage-registry.js";
 import {
   cleanupUnicodeText as cleanupUnicode, convertFinalizedPageText,
   finishPageToFile, orderUnicodeText as orderUnicode, pageLayoutLines,
 } from "./finalized-cmap.js";
-import { legacyLayoutForFont } from "./method/legacy/codepage-names.js";
+import { legacyLayoutForFont } from "./pdf/font/legacy/codepage-names.js";
 import { agentAdvisory } from "../../../../Architecture/host/advisory.js";
 
 const PARSER_CHAIN_DOOR = "ParserManager";
