@@ -159,24 +159,27 @@ export function judgePageLines(lines, swapCandidate) {
 const ZAWCODE_MIN_SLOTS = 6;
 
 // The cmap lane parsed the page as Zawgyi-One by default and emitted it;
-// the finish checks that output against the beautify rules. These are
-// parser behaviour, the same for every book - never tuned per book:
-//   1. ZawCode codepage: the ZawCode swapping rule (from beautify) is
-//      offered as a candidate, and matching more than one slot (see
-//      ZAWCODE_MIN_SLOTS) is the ZawCode call - the page then takes
-//      the ZawCode beautify rules. This test is never offered on a
-//      Zawgyi codepage page (the caller says so): Zawgyi visual order
-//      shares the same slots, and a Zawgyi page must not be rerouted
-//      here.
+// the legacy lane decoded its page from a legacy codepage (WinInnwa,
+// Ayar faces). Both emit visual-order text, so the finish checks either
+// output against the beautify rules. These are parser behaviour, the
+// same for every book - never tuned per book:
+//   1. ZawCode: the ZawCode swapping rule (from beautify) is offered
+//      as a candidate in BOTH lanes, and matching more than one slot
+//      (see ZAWCODE_MIN_SLOTS) is the ZawCode call - the page is
+//      flagged zawcode and takes the ZawCode beautify rules, legacy
+//      pages included. A legacy page that does not match the slots
+//      stays legacy. This test is never offered on a Zawgyi codepage
+//      page (the caller says so): Zawgyi visual order shares the
+//      same slots, and a Zawgyi page must not be rerouted here.
 //   2. Mark order violated -> Rabbit. The mark-order rule alone makes
 //      this call; no score margin second-guesses it.
 //   3. It neither violates mark order nor falls into the ZawCode
 //      rules -> it passes through: nothing but the Normalize that
 //      runs behind every finish in the stream.
 export function selectPageDecision(judgment, parsingPath, { zawgyiCodepage = false } = {}) {
-  if (parsingPath === "legacy") return "legacy";
-  if (!judgment.hasMyanmar) return "aligned";
+  if (!judgment.hasMyanmar) return parsingPath === "legacy" ? "legacy" : "aligned";
   if (!zawgyiCodepage && judgment.candidateSlots >= ZAWCODE_MIN_SLOTS) return "zawcode";
+  if (parsingPath === "legacy") return "legacy";
   if (!judgment.aligned) return "rabbit";
   return "aligned";
 }
