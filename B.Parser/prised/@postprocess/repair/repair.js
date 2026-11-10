@@ -16,9 +16,10 @@ import readline from "node:readline";
 import {
   scanBrokenSpans, scanLineWithPos, tagPosLine, parseTaggedLine,
 } from "../init.js";
+import { beautifyText } from "../beautify/beautify.js";
 import {
-  beautifyText, beautifyFromScanVerdict, mendZawCodeText, zawCodeGuard,
-} from "../beautify/beautify.js";
+  beautifyFromScanVerdict, mendZawCodeText, zawCodeGuard,
+} from "../beautify/zawcode-order.js";
 
 // Raw-font evidence is available to a repair caller that retained provenance.
 // These lookups return candidates only; they never alter text automatically.
