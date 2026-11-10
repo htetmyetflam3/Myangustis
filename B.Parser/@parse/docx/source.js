@@ -88,9 +88,11 @@ function buildDocxJob(paragraphs, filename, log, sourceEncoding = "auto", fontNa
 }
 
 
-export function processDocxBytes(data, filename = "upload.docx", log = () => {}, { imageDir = null, sourceEncoding = "auto" } = {}) {
+export async function processDocxBytes(data, filename = "upload.docx", log = () => {}, { imageDir = null, sourceEncoding = "auto" } = {}) {
   adviseParserMiddleChain("processDocxBytes");
-  const bytes = Buffer.isBuffer(data) ? data : Buffer.from(data);
+  // A string is the landed temp file the input stage prepared: this
+  // branch reads its own input here, never at the door.
+  const bytes = typeof data === "string" ? await fs.promises.readFile(data) : (Buffer.isBuffer(data) ? data : Buffer.from(data));
   const fontNamesByParagraph = [];
   const imageFiles = imageDir ? [] : null;
   const paragraphs = extractDocxParagraphs(bytes, { imageDir, imageFiles, fontNamesByParagraph });

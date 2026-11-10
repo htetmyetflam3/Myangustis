@@ -28,14 +28,10 @@ async function ocrImageOnlyPdfPages(job, source, log) {
     if (pg.hasImg && String(pg.text ?? "").trim().length < 8) targets.push(i);
   });
   if (!targets.length) return;
-  let bytes = source;
-  if (typeof source === "string") {
-    try { bytes = fs.readFileSync(source); } catch { return; }
-  }
   const { ocrPdfPage } = await loadOcr();
   for (const i of targets) {
     try {
-      const text = await ocrPdfPage(bytes, i + 1, { log });
+      const text = await ocrPdfPage(source, i + 1, { log });
       if (text && text.trim()) {
         job.pages[i].text = text;
         log(`    Page ${i + 1}: OCR supplied the text (image-only page)`);
@@ -55,7 +51,7 @@ async function ocrDocxImages(job, log) {
   const replacements = new Map();
   for (const file of files) {
     try {
-      const text = await ocrImage(fs.readFileSync(file.path), { log });
+      const text = await ocrImage(await fs.promises.readFile(file.path), { log });
       replacements.set(file.marker, (text ?? "").trim());
     } catch (error) {
       log(`    DOCX image ${file.id}: OCR skipped (${error.message})`);
@@ -93,7 +89,7 @@ export async function parseDecoding({ kind, source, filename = null, log = () =>
     }
   } else if (kind === "ocr") {
     // A bare image file: the whole input is one page of OCR text.
-    const bytes = typeof source === "string" ? fs.readFileSync(source) : Buffer.from(source);
+    const bytes = typeof source === "string" ? await fs.promises.readFile(source) : Buffer.from(source);
     const { ocrImage } = await loadOcr();
     const text = await ocrImage(bytes, { log });
     job = {

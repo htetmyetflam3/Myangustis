@@ -25,7 +25,6 @@ only wires them - it contains no parsing logic of its own):
 OCR inputs are prepared by stage 1 but not yet converted here; they
 fail loudly instead of silently producing nothing.
 */
-import fs from "node:fs";
 import { InitInput } from "./@entry/init.js";
 import { parseDecoding } from "./@parse/run.js";
 import { writeOutputFile } from "./@parse/requested.js";
@@ -74,9 +73,7 @@ async function convertSerialised(input, outputPath, { caller = "owner", log = ()
   } else if (prepared.kind === "ocr") {
     parsed = await parseDecoding({ kind: "ocr", source: prepared.path, filename, log });
   } else if (prepared.kind === "docx") {
-    // The DOCX branch's existing API takes the package bytes; the
-    // prepared temp file from stage 1 is read back here, once.
-    parsed = await parseDecoding({ kind: "docx", source: fs.readFileSync(prepared.path), filename, log });
+    parsed = await parseDecoding({ kind: "docx", source: prepared.path, filename, log });
   } else {
     throw new Error(`convert: "${prepared.kind}" input is prepared but conversion is not wired for it yet`);
   }
