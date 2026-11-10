@@ -116,6 +116,18 @@ export class PdfFileObjects {
       }
       const root = /\/Root\s+(\d+)\s+(\d+)\s+R/u.exec(this.trailer);
       if (root) this.rootKey = `${Number(root[1])},${Number(root[2])}`;
+      // A broken cross-reference table can list objects the file does
+      // not contain at all (in-use entries pointing at offset 0, where
+      // the %PDF header sits). Only trust an entry that actually
+      // points at its own object header; a phantom entry is not an
+      // object this file has, and asking for it later must miss
+      // cleanly instead of dying on the header check.
+      for (const [key, entry] of this.entries) {
+        const [num, gen] = key.split(",").map(Number);
+        const head = readAt(this.fd, entry.offset, Math.min(128, entry.end - entry.offset)).toString("latin1");
+        const header = /^\s*(\d+)\s+(\d+)\s+obj\b/u.exec(head);
+        if (!header || Number(header[1]) !== num || Number(header[2]) !== gen) this.entries.delete(key);
+      }
       const ordered = [...this.entries.values()].sort((a, b) => a.offset - b.offset);
       for (let index = 0; index + 1 < ordered.length; index += 1) ordered[index].end = ordered[index + 1].offset;
     } catch (error) {
