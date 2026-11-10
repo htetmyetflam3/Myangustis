@@ -507,6 +507,10 @@ export class PosScanner {
   }
 }
 
+// The NEXT chain's scan (repair stage): Engine POS output only - see
+// the warning at scanText above and the repair.js header. This scan
+// hunts word{F} unknowns in tagged output; it is layout-blind and
+// must never be given lane, font or encoding work.
 export async function scanTextWithPos(text, { page = null, directory, bindEngine } = {}) {
   const scanner = new PosScanner({ directory, bindEngine });
   try {

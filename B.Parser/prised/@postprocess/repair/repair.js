@@ -11,6 +11,22 @@ This module drives the repair stage: broken lines become line-SVG requests to th
 // SVG request for the original-PDF cache. The cache response then enters
 // actualRepair, where the vector decisions are applied. Nothing here feeds
 // back into Parser's first circle.
+//
+// THE SCANS - DO NOT FLATTEN THEM (that is how this design gets lost).
+// There are two different phases both loosely called "scan":
+//   1. the beautify step's string scan INSIDE parsing (scanText /
+//      scanBrokenSpans in init.js): a sliding-window walk over raw
+//      characters, used by the beautify rules. It is beautify's own
+//      check, not a stage.
+//   2. THIS stage's scan (scanLineWithPos / scanTextWithPos /
+//      PosScanner): runs on Engine (BindEngine POS) output only and
+//      hunts the tokens the Engine tags unknown - word{F}. It is
+//      layout-blind: it does not know or care whether a line came
+//      from a cmap, a TTF, a legacy codepage or OCR.
+// Misuse warnings: never decide a lane, a font or an encoding from
+// this stage (that was judgement's job, once, upstream); never feed
+// raw PDF/cmap text into the POS scan as if it were Engine output;
+// never fold phase 1 into phase 2 to "save a pass".
 import fs from "node:fs";
 import readline from "node:readline";
 import {

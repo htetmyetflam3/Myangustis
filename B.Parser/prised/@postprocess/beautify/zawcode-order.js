@@ -34,6 +34,15 @@ function isEngineBase(ch) {
   return engineBases.has(ch);
 }
 
+// The eight slot patterns below are the whole swapping rule; they
+// are tried in the order written, first match wins. Order inside a
+// syllable is law: ာ / ါ can never stand in front of ေ, while
+// ြ / ျ can (see the ာ rule below). Zero-width space is removed HERE,
+// when swapping positions - in this rule only; no other stage
+// controls zero-width (Rabbit's own table counts it, the Unicode
+// path handles it as it naturally does). A slot match is evidence
+// for judgement's ZawCode call (more than one slot - see
+// judgement.js); this function by itself detects nothing.
 // Index each line once. Position 0 is the unchanged character immediately
 // before a pattern (or a virtual boundary at the start of a line).
 export function arrangeZawCodeOrder(text) {

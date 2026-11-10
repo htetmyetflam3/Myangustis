@@ -195,6 +195,12 @@ export function convertFinalizedPageText(text, page = {}, applyCleanup = true) {
 
 // Decide once for the entire page, but make the decision in passes over the
 // disk-backed lines. No Rabbit rule is applied to a partially repaired page.
+// Misuse warnings: the lane is decided ONCE here (judgement upstream of
+// it); a decoder must not refuse or reroute a page by font name - the
+// font evidence has already spoken. Beautify rules applied here are
+// always followed by clean.js (see convertFinalizedPageText above),
+// and cleanup is never applied to not-yet-ordered text. Do not add a
+// blanket second ordering pass behind this finish.
 export function finishPageToFile(store, {
   directory, parsingPath, sourceEncoding = "auto", fontKinds = new Set(),
   fontNames = new Set(),

@@ -176,6 +176,14 @@ const ZAWCODE_MIN_SLOTS = 6;
 //   3. It neither violates mark order nor falls into the ZawCode
 //      rules -> it passes through: nothing but the Normalize that
 //      runs behind every finish in the stream.
+// Misuse warnings for this whole decision layer: judgement SELECTS
+// the lane and nothing else - it knows English/ASCII evidence and
+// Myanmar mark evidence, and it rewrites no text. mm-score is only
+// the evidence walker beautify's calls rest on; it decides nothing
+// alone. Do not apply conversion rules here, do not re-decide the
+// lane downstream (beautify, clean and repair all trust this call),
+// and do not tune these rules per book - a book-specific handling
+// is an instruction, not parser behaviour.
 export function selectPageDecision(judgment, parsingPath, { zawgyiCodepage = false } = {}) {
   if (!judgment.hasMyanmar) return parsingPath === "legacy" ? "legacy" : "aligned";
   if (!zawgyiCodepage && judgment.candidateSlots >= ZAWCODE_MIN_SLOTS) return "zawcode";
