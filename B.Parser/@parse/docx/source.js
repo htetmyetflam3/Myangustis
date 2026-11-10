@@ -70,7 +70,7 @@ function buildDocxJob(paragraphs, filename, log, sourceEncoding = "auto", fontNa
       : cat === "UNICODE" ? (fontUnicode ? chunk : orderUnicode(chunk)) : chunk;
     const clean = cleanupFor(cat, base);
     reports.push({ page: idx + 1, category: cat, prob: Number.isFinite(prob) ? prob : 0, base, clean });
-    pages.push({ text: base });
+    pages.push({ text: base, marked: true });
     counts[cat] = (counts[cat] ?? 0) + 1;
     log(`    Chunk ${idx + 1}: ${cat}`);
   });

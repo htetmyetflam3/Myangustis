@@ -320,7 +320,18 @@ export function collectParagraphs(xml, { resolveImage = null, fontNamesByParagra
         paragraphFonts.push(ctx.fonts);
         openParagraphs.push(ctx);
       }
-      if (ev.uri === W_URI && ev.local === "r") openRuns.push({ fonts: null });
+      if (ev.uri === W_URI && ev.local === "r") openRuns.push({ fonts: null, bold: false, italic: false });
+      if (openRuns.length && ev.uri === W_URI
+        && (ev.local === "b" || ev.local === "bCs" || ev.local === "i" || ev.local === "iCs")) {
+        // Run properties: <w:b/> inside the run's rPr marks the run bold
+        // (bCs/iCs are the complex-script twins Word sets for Myanmar).
+        // An explicit w:val of false/0/off turns the mark back off.
+        const val = ev.attrs.find(([name]) => name === "w:val")?.[1];
+        const off = typeof val === "string" && /^(?:false|0|off|none)$/iu.test(val);
+        const run = openRuns[openRuns.length - 1];
+        if (ev.local === "b" || ev.local === "bCs") run.bold = !off;
+        else run.italic = !off;
+      }
       if (ev.uri === W_URI && ev.local === "rFonts" && openRuns.length) {
         // Only direct run declarations are evidence. Style inheritance and
         // theme fonts are deliberately left unknown.
@@ -349,8 +360,14 @@ export function collectParagraphs(xml, { resolveImage = null, fontNamesByParagra
       const top = elStack[elStack.length - 1];
       if (top && !top.textTaken && top.uri === W_URI && top.local === "t" && openParagraphs.length) {
         top.textTaken = true;
+        // Emit the parser's inline marks with the run: <b>/<i> around the
+        // run's text. The finishing stage escapes the text, not the marks.
+        const runFlags = openRuns[openRuns.length - 1];
+        let marked = ev.value;
+        if (runFlags?.italic) marked = `<i>${marked}</i>`;
+        if (runFlags?.bold) marked = `<b>${marked}</b>`;
         for (const ctx of openParagraphs) {
-          ctx.parts.push(ev.value);
+          ctx.parts.push(marked);
           if (fontNamesByParagraph && containsMyanmar(ev.value)) {
             const fonts = openRuns[openRuns.length - 1]?.fonts;
             for (const name of fonts?.length ? fonts : [""]) ctx.fonts.add(name);

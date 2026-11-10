@@ -51,6 +51,8 @@ export async function convert(input, outputPath, { caller = "owner", log = () =>
   let parsed;
   if (prepared.kind === "pdf") {
     parsed = await parseDecoding({ kind: "pdf", source: prepared.path, filename, log });
+  } else if (prepared.kind === "ocr") {
+    parsed = await parseDecoding({ kind: "ocr", source: prepared.path, filename, log });
   } else if (prepared.kind === "docx") {
     // The DOCX branch's existing API takes the package bytes; the
     // prepared temp file from stage 1 is read back here, once.

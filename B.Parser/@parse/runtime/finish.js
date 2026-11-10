@@ -39,7 +39,7 @@ export function adviseParserMiddleChain(api) {
 
 const orderZawgyi = (text) => preserveCharacters(text, (part) => orderText(Rabbit.zg2uni(part)));
 
-import { pageToMarkup, textToMarkup } from "./markup.js";
+import { markedTextToMarkup, pageToMarkup, textToMarkup } from "./markup.js";
 
 export function cleanupFor(cat, text) {
   return cat === "UNICODE" ? cleanupUnicode(text) : null;
@@ -231,7 +231,7 @@ export function buildFinalPages(job, applyCleanup) {
     const text = cleaned ? rep.clean : (pg.text ?? rep.base ?? "");
     out.push(!cleaned && Array.isArray(pg.lines) && pg.lines.length
       ? pageToMarkup({ ...pg, text })
-      : textToMarkup(text));
+      : pg.marked ? markedTextToMarkup(text) : textToMarkup(text));
   }
   return out;
 }

@@ -84,8 +84,11 @@ export async function initOcr({ langs = DEFAULT_LANGS, log = () => {} } = {}) {
         logger: () => {},
 
 
-        workerPath: path.join(path.dirname(fileURLToPath(import.meta.url)), "ocr-no-relaxedsimd.cjs"),
       };
+      // Optional local worker shim (pins the no-relaxed-SIMD core on hosts
+      // that need it). When it is absent, tesseract uses its bundled worker.
+      const workerShim = path.join(path.dirname(fileURLToPath(import.meta.url)), "ocr-no-relaxedsimd.cjs");
+      if (fs.existsSync(workerShim)) options.workerPath = workerShim;
       if (found) {
         options.langPath = found.path;
         options.gzip = found.gzip;

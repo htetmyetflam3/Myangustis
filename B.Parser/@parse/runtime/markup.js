@@ -62,6 +62,21 @@ export function textToMarkup(text) {
     .join("\n\n");
 }
 
+// Plain text that already carries inline marks (DOCX runs): escape the
+// text but keep the <b>/<i> tags, mirroring textToMarkup's breaks.
+const MARK_TAGS = new Set(["<b>", "</b>", "<i>", "</i>"]);
+export function markedTextToMarkup(text) {
+  const escapeParts = (line) => line
+    .split(/(<\/?[bi]>)/gu)
+    .map((part) => (MARK_TAGS.has(part) ? part : escapeMarkupText(part)))
+    .join("");
+  return String(text ?? "")
+    .split(/\n{2,}/u)
+    .map((para) => para.split("\n").map((l) => escapeParts(l.trim())).join("\n"))
+    .filter((para) => para !== "")
+    .join("\n\n");
+}
+
 export function pageToMarkup(page) {
   if (typeof page === "string") return textToMarkup(page);
   if (Array.isArray(page?.lines) && page.lines.length) {
