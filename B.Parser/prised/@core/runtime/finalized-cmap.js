@@ -220,8 +220,7 @@ export function finishPageToFile(store, {
   // slots cannot reroute a Zawgyi page into the ZawCode lane.
   const zawgyiCodepage = hasOnlyZawgyiFonts(fontNames);
   const judgment = judgePageLines(pageTexts(),
-    zawgyiCodepage ? (line) => line : arrangeZawCodeOrder,
-    (line) => orderText(Rabbit.zg2uni(line)));
+    zawgyiCodepage ? (line) => line : arrangeZawCodeOrder);
   const { originalHasText, count } = judgment;
   let decision = selectPageDecision(judgment, parsingPath, { zawgyiCodepage });
   const worldEvidence = sourceEncoding !== "unicode" && decision === "rabbit";

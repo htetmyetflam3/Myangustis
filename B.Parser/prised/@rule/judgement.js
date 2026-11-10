@@ -83,24 +83,19 @@ export function correctWorldWord(text, zawgyiEvidence = false) {
 
 // mm-score evidence over the decoded output itself: how the page reads
 // as emitted by the cmap parse, versus how it reads after the ZawCode
-// slot swap, versus how it reads after the Rabbit conversion. The
-// candidates are handed in by the caller (the finisher owns the
-// ZawCode order function and the Rabbit converter); this module never
-// imports them.
-export function judgePageLines(lines, swapCandidate, rabbitCandidate = (text) => text) {
+// slot swap. The swap candidate is handed in by the caller (the finisher
+// owns the ZawCode order function); this module never imports it.
+export function judgePageLines(lines, swapCandidate) {
   let originalHasText = false;
   let hasMyanmar = false;
   let aligned = true;
   let candidateChanged = false;
   let candidateAligned = true;
-  let rabbitChanged = false;
   let count = 0;
   let rawScoreTotal = 0;
   let rawMarks = 0;
   let candidateScoreTotal = 0;
   let candidateMarks = 0;
-  let rabbitScoreTotal = 0;
-  let rabbitMarks = 0;
   for (const text of lines) {
     count += 1;
     const inspected = String(text ?? "").replace(/\u200b/gu, "");
@@ -110,8 +105,6 @@ export function judgePageLines(lines, swapCandidate, rabbitCandidate = (text) =>
     const candidate = swapCandidate(inspected);
     candidateChanged ||= candidate !== inspected;
     candidateAligned &&= markOrderAligned(candidate);
-    const rabbitReading = rabbitCandidate(inspected);
-    rabbitChanged ||= rabbitReading !== inspected;
     if (inspected) {
       // Mm-score judges the readings exactly as emitted - no reordering
       // first, or a crossed page would score as if already fixed.
@@ -121,9 +114,6 @@ export function judgePageLines(lines, swapCandidate, rabbitCandidate = (text) =>
       const candidateReading = scoreText(candidate);
       candidateScoreTotal += candidateReading.score * candidateReading.marks;
       candidateMarks += candidateReading.marks;
-      const convertedReading = scoreText(rabbitReading);
-      rabbitScoreTotal += convertedReading.score * convertedReading.marks;
-      rabbitMarks += convertedReading.marks;
     }
   }
   return {
@@ -132,12 +122,9 @@ export function judgePageLines(lines, swapCandidate, rabbitCandidate = (text) =>
     aligned,
     candidateChanged,
     candidateAligned,
-    rabbitChanged,
     count,
-    rawMarks,
     rawScore: rawMarks ? rawScoreTotal / rawMarks : 0,
     candidateScore: candidateMarks ? candidateScoreTotal / candidateMarks : 0,
-    rabbitScore: rabbitMarks ? rabbitScoreTotal / rabbitMarks : 0,
   };
 }
 
@@ -150,31 +137,23 @@ export function judgePageLines(lines, swapCandidate, rabbitCandidate = (text) =>
 // ===========================================================================
 
 // The cmap lane parsed the page as Zawgyi-One by default and emitted it;
-// the finish checks that output against the beautify rules:
+// the finish checks that output against the beautify rules. These are
+// parser behaviour, the same for every book - never tuned per book:
 //   1. ZawCode codepage: the ZawCode swapping rule (from beautify) is
 //      offered as a candidate, and matching even one slot is the
 //      ZawCode call - the page then takes the ZawCode beautify rules.
 //      This test is never offered on a Zawgyi codepage page (the
 //      caller says so): Zawgyi visual order shares the same slots,
 //      and a Zawgyi page must not be rerouted here.
-//   2. Mark order violated -> Rabbit. On a Zawgyi codepage page the
-//      violation alone is enough. On any other page the Rabbit
-//      reading must actually win (beat the raw reading by 0.03 on at
-//      least 50 marks); a violated page the conversion cannot
-//      improve is Unicode in bad order, not Zawgyi: it is ordered
-//      and cleaned, never converted.
+//   2. Mark order violated -> Rabbit. The mark-order rule alone makes
+//      this call; no score margin second-guesses it.
 //   3. Its mark order is aligned and no swap fits -> nothing but the
 //      Normalize that runs behind every finish in the stream.
 export function selectPageDecision(judgment, parsingPath, { zawgyiCodepage = false } = {}) {
-  const zawcodeFit = !zawgyiCodepage && judgment.candidateChanged;
-  const rabbitFit = zawgyiCodepage
-    ? !judgment.aligned
-    : judgment.rabbitChanged && judgment.rawMarks >= 50
-      && judgment.rabbitScore - judgment.rawScore >= 0.03;
   if (parsingPath === "legacy") return "legacy";
   if (!judgment.hasMyanmar) return "aligned";
-  if (zawcodeFit) return "zawcode";
-  if (!judgment.aligned) return rabbitFit ? "rabbit" : "unaligned-unicode";
+  if (!zawgyiCodepage && judgment.candidateChanged) return "zawcode";
+  if (!judgment.aligned) return "rabbit";
   return "aligned";
 }
 
