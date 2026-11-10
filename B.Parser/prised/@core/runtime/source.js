@@ -30,6 +30,7 @@ import { DocumentDecoding, PDF_PARSING_PATHS, pageFontDecoders } from "../pdf/me
 import { legacyFontFamily, legacyLayoutForFont } from "../pdf/method/legacy/codepage-names.js";
 import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../pdf/method/legacy/codepage-registry.js";
 import { cleanupFor, collectChanges, adviseParserMiddleChain, instructionLane } from "./finish.js";
+import { containsMyanmar } from "../../@rule/detect.js";
 import { RuntimeError } from "../../@helper/pylib.js";
 import { finishPageToFile, pageLayoutLines } from "./finalized-cmap.js";
 
