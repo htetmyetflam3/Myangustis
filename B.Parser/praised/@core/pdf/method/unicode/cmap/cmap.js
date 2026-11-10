@@ -3,7 +3,7 @@
 */
 import { BASE_ENCODINGS, GLYPH_NAME_TO_UNICODE } from "../../pdfencoding/encodings.js";
 import { PdfName } from "../../values.js";
-import { pyChr } from "../../../../../core/@helper/pylib.js";
+import { pyChr } from "../../../../../@helper/pylib.js";
 
 // Marker for the identity code->unicode lane (no map needed).
 export const IDENTITY = Symbol("IDENTITY");

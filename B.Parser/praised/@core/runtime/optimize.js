@@ -10,7 +10,7 @@ This module runs qpdf over a written output PDF to optimize it when optimization
 
 
 import fs from "node:fs";
-import { runQpdfFile } from "../../@init/pdf/helper/decrypt.js";
+import { runQpdfFile } from "../../../@init/pdf/helper/decrypt.js";
 
 const OPTIMIZE_OFF = new Set(["0", "off", "false", "no"]);
 

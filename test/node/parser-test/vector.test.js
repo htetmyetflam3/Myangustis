@@ -4,8 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { matchImageToVector, repairTextRegionWithVector } from "../../../B.Parser/core/@postprocess/repair/vote.js";
-import { loadVectorIndex, matchRasterMask, vectorSheetFiles } from "../../../B.Parser/core/@postprocess/repair/match.js";
+import { matchImageToVector, repairTextRegionWithVector } from "../../../B.Parser/praised/@postprocess/repair/vote.js";
+import { loadVectorIndex, matchRasterMask, vectorSheetFiles } from "../../../B.Parser/praised/@postprocess/repair/match.js";
 
 
 
@@ -84,8 +84,8 @@ test("the OCR dropped-mark site is a raster-to-SVG U+1036 recovery", async (t) =
 
 
 test("a claim is refused when the witness crowd cannot place the pair", async () => {
-  const { matchRasterMask, getDefaultVectorIndex, isCrossFontAlias } = await import("../../../B.Parser/core/@postprocess/repair/match.js");
-  const alias = JSON.parse(fs.readFileSync(new URL("../../../B.Parser/core/@postprocess/repair/shape-alias.json", import.meta.url), "utf8"));
+  const { matchRasterMask, getDefaultVectorIndex, isCrossFontAlias } = await import("../../../B.Parser/praised/@postprocess/repair/match.js");
+  const alias = JSON.parse(fs.readFileSync(new URL("../../../B.Parser/praised/@postprocess/repair/shape-alias.json", import.meta.url), "utf8"));
   assert.ok(alias.pairs.length > 0, "the generator produced a veto list");
   assert.ok(alias.pairs.every(([a, b]) => a !== b));
 

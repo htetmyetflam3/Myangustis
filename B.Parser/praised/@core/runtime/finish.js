@@ -9,19 +9,19 @@ and orderText's own home (the old clean.js) is judgement-side
 territory to restore.
 */
 import fs from "node:fs";
-import { containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts } from "../../core/@rule/detect.js";
-import { Rabbit } from "../../core/@rule/rabbit.js";
-import { orderText } from "../../core/@postprocess/beautify/clean.js";
-import { preserveCharacters, instructionLane, scoreText } from "../../core/@rule/judgement.js";
+import { containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts } from "../../@rule/detect.js";
+import { Rabbit } from "../../@rule/rabbit.js";
+import { orderText } from "../../@postprocess/beautify/clean.js";
+import { preserveCharacters, instructionLane, scoreText } from "../../@rule/judgement.js";
 export { instructionLane };
-import { countImpossiblePairs } from "../../core/@postprocess/init.js";
+import { countImpossiblePairs } from "../../@postprocess/init.js";
 import { WININNWA_LEGACY_CODE_PAGE } from "../pdf/method/legacy/codepage-registry.js";
 import {
   cleanupUnicodeText as cleanupUnicode, convertFinalizedPageText,
   finishPageToFile, orderUnicodeText as orderUnicode, pageLayoutLines,
 } from "./finalized-cmap.js";
 import { legacyLayoutForFont } from "../pdf/method/legacy/codepage-names.js";
-import { agentAdvisory } from "../../../Architecture/host/advisory.js";
+import { agentAdvisory } from "../../../../Architecture/host/advisory.js";
 
 const PARSER_CHAIN_DOOR = "ParserManager";
 
@@ -29,7 +29,7 @@ export function adviseParserMiddleChain(api) {
   if (process.env.MYANGUSTIS_CHAIN_DOOR === PARSER_CHAIN_DOOR) return;
   agentAdvisory(
     "parser-middle-chain",
-    `[Parser agent advisor] STOP: B.Parser/core/praised/decoding/finish.js:${api}() is a middle-chain API, not the Parser chain door. `
+    `[Parser agent advisor] STOP: B.Parser/praised/@core/runtime/finish.js:${api}() is a middle-chain API, not the Parser chain door. `
       + "Start from B.Parser/index.js (Manager.dispatchStream/Manager.dispatch) or "
       + "tools-box/js/pipeline-cli.js parser local, and report only that front-door behavior. "
       + "Calling pipeline/text/read helpers directly skips Manager spooling, worker preparation, output/POS sidecars and cleanup options.",

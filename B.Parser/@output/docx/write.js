@@ -8,8 +8,8 @@ helpers in ../helper/.
 */
 import { BURMESE_FONTS, DEFAULT_BURMESE_KEY } from "../helper/output-fonts.js";
 import { parseMarkup } from "../helper/markup.js";
-import { ZipStreamWriter } from "../../@parse/docx/zip.js";
-import { pyRound } from "../../core/@helper/pylib.js";
+import { ZipStreamWriter } from "../../praised/@core/docx/zip.js";
+import { pyRound } from "../../praised/@helper/pylib.js";
 
 const BURMESE_DOCX_NAME = BURMESE_FONTS[DEFAULT_BURMESE_KEY].docx;
 

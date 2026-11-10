@@ -14,8 +14,8 @@ This module decodes only what lives outside the PDF's streams - the dictionaries
 // contains. The stream parser consumes these instructions; it does not
 // walk the page tree itself.
 import { openPdfScannedObjects } from "../runtime/objects.js";
-import { ValueError } from "../../core/@helper/pylib.js";
-import { MAX_PAGES } from "../../@entry/helper/limit.js";
+import { ValueError } from "../../@helper/pylib.js";
+import { MAX_PAGES } from "../../../@entry/helper/limit.js";
 
 const keyOf = (num, gen) => `${num},${gen}`;
 export const refText = (key) => {

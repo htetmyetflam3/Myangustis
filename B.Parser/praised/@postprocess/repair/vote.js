@@ -8,7 +8,7 @@ import {
   decodeImageRgba,
   openPdf,
   renderPageCanvas,
-} from "../../../@parse/runtime/render.js";
+} from "../../@core/runtime/render.js";
 import { binarise } from "./raster.js";
 import { matchRasterMask } from "./match.js";
 

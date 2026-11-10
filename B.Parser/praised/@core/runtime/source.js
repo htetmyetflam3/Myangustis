@@ -13,8 +13,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { renderPdfPagePng } from "./render.js";
-import { note } from "../../core/@helper/provenance.js";
-import { MAX_TEXT_CHARS } from "../../@entry/helper/limit.js";
+import { note } from "../../@helper/provenance.js";
+import { MAX_TEXT_CHARS } from "../../../@entry/helper/limit.js";
 import {
   MAX_PDF_OBJECTS, extractPageLines, pageHasImages, extractMetadata,
   getStream, parseToUnicodeStream,
@@ -30,7 +30,7 @@ import { DocumentDecoding, PDF_PARSING_PATHS, pageFontDecoders } from "../pdf/me
 import { legacyFontFamily, legacyLayoutForFont } from "../pdf/method/legacy/codepage-names.js";
 import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../pdf/method/legacy/codepage-registry.js";
 import { cleanupFor, collectChanges, adviseParserMiddleChain, instructionLane } from "./finish.js";
-import { RuntimeError } from "../../core/@helper/pylib.js";
+import { RuntimeError } from "../../@helper/pylib.js";
 import { finishPageToFile, pageLayoutLines } from "./finalized-cmap.js";
 
 // The stem verdict: computed once, from the instruction pass alone,

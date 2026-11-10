@@ -6,10 +6,10 @@ import { parseTtfCmap } from "../unicode/ttf/ttf-cmap.js";
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
-import { ValueError, pyTruthy, pyInt, fromHexStrict } from "../../../../core/@helper/pylib.js";
+import { ValueError, pyTruthy, pyInt, fromHexStrict } from "../../../../@helper/pylib.js";
 import { loadMapJson, mapNameForPath } from "../../../runtime/json-map.js";
-import { OWNER_PARSER_WORKER, resourceLimit } from "../../../../@entry/helper/limit.js";
-import { containsMyanmar } from "../../../../core/@rule/detect.js";
+import { OWNER_PARSER_WORKER, resourceLimit } from "../../../../../@entry/helper/limit.js";
+import { containsMyanmar } from "../../../../@rule/detect.js";
 import { decodeVisualUnicodeRun } from "../legacy/codepage-visual.js";
 import { Lexer, PdfName, PdfHexBytes, isNumeric, toNumber } from "../values.js";
 import {

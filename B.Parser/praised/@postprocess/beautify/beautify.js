@@ -28,7 +28,7 @@ This module beautifies tokens: it splits glued numbers and fixes homoglyph mista
 
 
 
-import { loadMapJson } from "../../../@parse/runtime/json-map.js";
+import { loadMapJson } from "../../@core/runtime/json-map.js";
 import { scanText, scanBrokenSpans } from "../init.js";
 import {
   orderText, unmixZawCodeMarks, retraceZawCodeMarks, settleZawCodeAhE,

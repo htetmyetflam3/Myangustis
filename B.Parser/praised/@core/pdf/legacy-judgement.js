@@ -16,8 +16,8 @@ only above the quality floor. The vector-layout and logging parts of
 the original are not restored - they belonged to the old extend house.
 */
 
-import { scoreText } from "../../core/@rule/judgement.js";
-import { orderText } from "../../core/@postprocess/beautify/clean.js";
+import { scoreText } from "../../@rule/judgement.js";
+import { orderText } from "../../@postprocess/beautify/clean.js";
 import { LEGACY_CODE_PAGES } from "./method/legacy/codepage-registry.js";
 
 export const LEGACY_QUALITY_FLOOR = 0.85;
