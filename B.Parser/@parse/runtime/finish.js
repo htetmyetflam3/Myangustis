@@ -25,7 +25,7 @@ import { agentAdvisory } from "../../../Architecture/host/advisory.js";
 
 const PARSER_CHAIN_DOOR = "ParserManager";
 
-function adviseParserMiddleChain(api) {
+export function adviseParserMiddleChain(api) {
   if (process.env.MYANGUSTIS_CHAIN_DOOR === PARSER_CHAIN_DOOR) return;
   agentAdvisory(
     "parser-middle-chain",

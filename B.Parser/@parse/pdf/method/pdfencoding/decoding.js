@@ -6,23 +6,23 @@ import { parseTtfCmap } from "../unicode/ttf/ttf-cmap.js";
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
-import { ValueError, pyTruthy, pyInt, fromHexStrict } from "../helper/pylib.js";
-import { loadMapJson, mapNameForPath } from "../json-map.js";
-import { OWNER_PARSER_WORKER, resourceLimit } from "../../init/helper/limit.js";
+import { ValueError, pyTruthy, pyInt, fromHexStrict } from "../../../../core/@helper/pylib.js";
+import { loadMapJson, mapNameForPath } from "../../../runtime/json-map.js";
+import { OWNER_PARSER_WORKER, resourceLimit } from "../../../../@entry/helper/limit.js";
 import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../legacy/codepage-registry.js";
-import { containsMyanmar } from "./rule/detect.js";
+import { containsMyanmar } from "../../../../core/@rule/detect.js";
 import { decodeVisualUnicodeRun } from "../legacy/codepage-visual.js";
-import { Lexer, PdfName, PdfHexBytes, isNumeric, toNumber } from "./decoding/pdf/font/values.js";
+import { Lexer, PdfName, PdfHexBytes, isNumeric, toNumber } from "../values.js";
 import {
   asDocumentDecoding, DocumentDecoding, UnsetFontDecoder,
   pageFontDecoders, PDF_PARSING_PATHS,
-} from "./decoding/pdf/font/decoder.js";
+} from "../decoder.js";
 import { FontResourceLoader } from "../unicode/ttf.js";
 import { LegacyAyarMap } from "../legacy/fallback.js";
-import { spoolPageContent } from "./decoding/pdf/layout/pdf-content.js";
-import { PdfFileLexer } from "./decoding/pdf/pdf-lexer.js";
-import { PdfPagePieces } from "./decoding/pdf/layout/pdf-pages.js";
-import { PageImageCollector } from "./decoding/pdf/layout/pdf-image-coverage.js";
+import { spoolPageContent } from "../../pages/content.js";
+import { PdfFileLexer } from "../../../runtime/lexer.js";
+import { PdfPagePieces } from "../../pages/pages.js";
+import { PageImageCollector } from "../../pages/image.js";
 
 
 export const MAX_STREAM_MB = resourceLimit("PRASER_MAX_STREAM_MB", 128, 512);
@@ -579,7 +579,7 @@ export function pageHasImages(objects, pageNum, pageGen) {
 
 
 
-export { IDENTITY, PDF_PARSING_PATHS } from "./decoding/pdf/font/decoder.js";
+export { IDENTITY, PDF_PARSING_PATHS } from "../decoder.js";
 export { CmapIdentityMap, LegacyAyarMap } from "../legacy/fallback.js";
 export { mapCode } from "../unicode/cmap/cmap.js";
 

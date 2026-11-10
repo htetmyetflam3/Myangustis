@@ -28,14 +28,14 @@ This module beautifies tokens: it splits glued numbers and fixes homoglyph mista
 
 
 
-import { loadMapJson } from "../json-map.js";
-import { scanText, scanBrokenSpans } from "./scan.js";
+import { loadMapJson } from "../../../@parse/runtime/json-map.js";
+import { scanText, scanBrokenSpans } from "../init.js";
 import {
   orderText, unmixZawCodeMarks, retraceZawCodeMarks, settleZawCodeAhE,
   medialFollows, reorderMarks,
-} from "../clean.js";
-import { scoreText, isIndex } from "../decoding/judgement.js";
-import { arrangeZawCodeOrder } from "../zawcode-order.js";
+} from "./clean.js";
+import { scoreText, isIndex } from "../../@rule/judgement.js";
+import { arrangeZawCodeOrder } from "../../@rule/zawcode-order.js";
 
 const DATA = loadMapJson("homoglyphs.json");
 

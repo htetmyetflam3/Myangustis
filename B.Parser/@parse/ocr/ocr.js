@@ -7,13 +7,13 @@ import path from "node:path";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
 import { OCR_MODEL_DIR } from "../../_path.js";
-import { MAX_OCR_PIXELS } from "../limits/local.js";
+import { MAX_OCR_PIXELS } from "../../@entry/helper/limit.js";
 import {
   pageHasRasterImage,
   pdfPageCount as countPdfPages,
   renderPdfPagePng,
   renderPdfRegionPng,
-} from "../pdf/pdf-render.js";
+} from "../runtime/render.js";
 
 const OCR_CACHE_DIR = path.join(os.tmpdir(), "linga-ocr");
 const BUNDLED_OCR_MODEL_DIR = OCR_MODEL_DIR;
@@ -64,7 +64,7 @@ function findLangPath(langs) {
 export async function ocrAvailable() {
   try {
     await import("tesseract.js");
-    await import("../pdf/pdf-render.js");
+    await import("../runtime/render.js");
     return true;
   } catch {
     return false;
