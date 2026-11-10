@@ -35,9 +35,11 @@ function isEngineBase(ch) {
 export function arrangeZawCodeOrder(text) {
   if (typeof text !== "string") throw new TypeError("Expected text");
   // The caller applies this result only in the ZawCode lane; comparisons use a copy.
-  // No character is stripped here: zero-width characters ride
-  // through the swap untouched, wherever they fall.
-  const chars = Array.from(String(text ?? ""));
+  // Zero-width space is removed when swapping positions - in this
+  // rule only. Everywhere else zero-width is not controlled: the
+  // Unicode path passes it through, and Rabbit's own rule table
+  // counts it (rule 2 of zg2uni removes it while converting).
+  const chars = Array.from(String(text ?? "").replace(/\u200b/gu, ""));
   const out = [];
 
   for (let i = 0; i < chars.length;) {
