@@ -8,7 +8,7 @@ import path from "node:path";
 import { ValueError, pyInt, pyStripBytes } from "../../core/@helper/pylib.js";
 
 const READ_SIZE = 64 * 1024;
-const STREAM_MARKER = Buffer.from("\nstream\n", "latin1");
+const STREAM_MARKER = Buffer.from("\nstream", "latin1");
 const END_OBJECT = Buffer.from("endobj", "latin1");
 
 function readAt(fd, offset, length) {
@@ -146,7 +146,12 @@ export class PdfFileObjects {
       const header = /^\s*\d+\s+\d+\s+obj\b/u.exec(current.toString("latin1", 0, Math.min(current.length, 128)));
       if (!header) throw new Error(`Invalid PDF object header for ${key}`);
       if (marker !== -1) {
-        entry.streamStart = entry.offset + marker + STREAM_MARKER.length;
+        // The stream keyword ends with CRLF, LF, or CR (PDF 7.3.8.1);
+        // real files use all three, CRLF most often.
+        let dataStart = marker + STREAM_MARKER.length;
+        if (current[dataStart] === 0x0d) dataStart += 1;
+        if (current[dataStart] === 0x0a) dataStart += 1;
+        entry.streamStart = entry.offset + dataStart;
         return pyStripBytes(current.subarray(header[0].length, marker));
       }
       if (position >= entry.end) {

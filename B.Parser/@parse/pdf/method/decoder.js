@@ -4,7 +4,7 @@
 import { createHash } from "node:crypto";
 import { pyChr } from "../../../core/@helper/pylib.js";
 import { CMapEncoding, buildSimpleEncoding, parseCmapStream, mapCode, IDENTITY, CmapIdentityMap } from "./unicode/cmap/cmap.js";
-import { FontResourceLoader, ResourceCache } from "./unicode/ttf.js";
+import { FontResourceLoader, ResourceCache, SPACE_CODES } from "./unicode/ttf.js";
 export { IDENTITY };
 import { LegacyAyarMap } from "./legacy/fallback.js";
 import { isUnresolvedLegacyFont, legacyLayoutForFont, normaliseFontName } from "./legacy/codepage-names.js";
