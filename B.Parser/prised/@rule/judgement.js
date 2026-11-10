@@ -91,6 +91,7 @@ export function judgePageLines(lines, swapCandidate) {
   let aligned = true;
   let candidateChanged = false;
   let candidateAligned = true;
+  let candidateSlots = 0;
   let count = 0;
   let rawScoreTotal = 0;
   let rawMarks = 0;
@@ -104,6 +105,16 @@ export function judgePageLines(lines, swapCandidate) {
     aligned &&= markOrderAligned(inspected);
     const candidate = swapCandidate(inspected);
     candidateChanged ||= candidate !== inspected;
+    if (candidate !== inspected) {
+      // Slots the swapping rule touched on this line, counted as the
+      // character positions it rearranged (one slot touches at most
+      // five). The ZawCode call needs more than one slot - see
+      // ZAWCODE_MIN_SLOTS in PIECE 4.
+      const before = [...inspected];
+      const after = [...candidate];
+      const n = Math.max(before.length, after.length);
+      for (let i = 0; i < n; i += 1) if (before[i] !== after[i]) candidateSlots += 1;
+    }
     candidateAligned &&= markOrderAligned(candidate);
     if (inspected) {
       // Mm-score judges the readings exactly as emitted - no reordering
@@ -122,6 +133,7 @@ export function judgePageLines(lines, swapCandidate) {
     aligned,
     candidateChanged,
     candidateAligned,
+    candidateSlots,
     count,
     rawScore: rawMarks ? rawScoreTotal / rawMarks : 0,
     candidateScore: candidateMarks ? candidateScoreTotal / candidateMarks : 0,
@@ -139,20 +151,32 @@ export function judgePageLines(lines, swapCandidate) {
 // The cmap lane parsed the page as Zawgyi-One by default and emitted it;
 // the finish checks that output against the beautify rules. These are
 // parser behaviour, the same for every book - never tuned per book:
+// One swapped slot is not enough for the ZawCode call: Zawgyi shares
+// some of the same characters, so a single slot can collide with a
+// Zawgyi (or stray) reading. The call needs more than one slot's
+// worth of matches on the page (one slot touches at most five
+// character positions).
+const ZAWCODE_MIN_SLOTS = 6;
+
+// The cmap lane parsed the page as Zawgyi-One by default and emitted it;
+// the finish checks that output against the beautify rules. These are
+// parser behaviour, the same for every book - never tuned per book:
 //   1. ZawCode codepage: the ZawCode swapping rule (from beautify) is
-//      offered as a candidate, and matching even one slot is the
-//      ZawCode call - the page then takes the ZawCode beautify rules.
-//      This test is never offered on a Zawgyi codepage page (the
-//      caller says so): Zawgyi visual order shares the same slots,
-//      and a Zawgyi page must not be rerouted here.
+//      offered as a candidate, and matching more than one slot (see
+//      ZAWCODE_MIN_SLOTS) is the ZawCode call - the page then takes
+//      the ZawCode beautify rules. This test is never offered on a
+//      Zawgyi codepage page (the caller says so): Zawgyi visual order
+//      shares the same slots, and a Zawgyi page must not be rerouted
+//      here.
 //   2. Mark order violated -> Rabbit. The mark-order rule alone makes
 //      this call; no score margin second-guesses it.
-//   3. Its mark order is aligned and no swap fits -> nothing but the
-//      Normalize that runs behind every finish in the stream.
+//   3. It neither violates mark order nor falls into the ZawCode
+//      rules -> it passes through: nothing but the Normalize that
+//      runs behind every finish in the stream.
 export function selectPageDecision(judgment, parsingPath, { zawgyiCodepage = false } = {}) {
   if (parsingPath === "legacy") return "legacy";
   if (!judgment.hasMyanmar) return "aligned";
-  if (!zawgyiCodepage && judgment.candidateChanged) return "zawcode";
+  if (!zawgyiCodepage && judgment.candidateSlots >= ZAWCODE_MIN_SLOTS) return "zawcode";
   if (!judgment.aligned) return "rabbit";
   return "aligned";
 }

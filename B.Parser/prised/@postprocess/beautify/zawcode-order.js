@@ -1,6 +1,6 @@
 /*
 Beautify branch - the ZawCode rules. When judgement's evidence says a
-page is ZawCode (the swapping rule matches even one slot), beautify
+page is ZawCode (the swapping rule matches more than one slot), beautify
 calls these rules: the swapping rule itself (arrangeZawCodeOrder,
 orderZawCodePages) and the ZawCode mend rules below it (zawCodeGuard,
 mendZawCodeText, beautifyFromScanVerdict). These rules rewrite text;
