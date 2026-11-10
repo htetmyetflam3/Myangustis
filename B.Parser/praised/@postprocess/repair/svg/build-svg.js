@@ -452,7 +452,7 @@ async function main() {
   const args = process.argv.slice(2);
   let fontPath = resolve("Junk/fonts/Unicode/PYIDAUNGSU-2.5.2_REGULAR.TTF");
   let dbPath = resolve("tools-box/js/scripts.db");
-  let outPath = resolve("B.Parser/main/parser/jason-map/vector/index-font11-burmese-pali.svg");
+  let outPath = resolve("B.Parser/praised/@postprocess/repair/svg/index.svg");
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--font") fontPath = resolve(args[++i]);
