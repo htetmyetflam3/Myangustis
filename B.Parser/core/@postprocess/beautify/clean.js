@@ -37,8 +37,8 @@ This module cleans finished Unicode Myanmar text (imposters, mark order, glued f
 
 
 import { getEngineData } from "../../../_path.js";
-import { loadMapJson } from "../../json-map.js";
-import { MARK_ORDER as PRIORITY, isIndex } from "./judgement.js";
+import { loadMapJson } from "../../../@parse/method/json-map.js";
+import { MARK_ORDER as PRIORITY, isIndex } from "../../@rule/judgement.js";
 
 const { readMasterJson } = await getEngineData();
 let masterMapData = null;

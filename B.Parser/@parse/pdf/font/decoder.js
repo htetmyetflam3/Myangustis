@@ -2,7 +2,7 @@
 (praised/decoding/pdf/font) decoder: FontDecoder and its builders - the integrator of the font branches. Tries the font's own cmap first (cmap/), falls back to the embedded TTF and legacy lanes (ttf/). It composes the branches; it is not a third re-check - judgement owns method choice above it.
 */
 import { createHash } from "node:crypto";
-import { pyChr } from "../../../../helper/pylib.js";
+import { pyChr } from "../../../core/@helper/pylib.js";
 import { CMapEncoding, buildSimpleEncoding, parseCmapStream, mapCode, IDENTITY, CmapIdentityMap } from "./cmap/cmap.js";
 import { FontResourceLoader } from "./ttf/ttf.js";
 export { IDENTITY };
