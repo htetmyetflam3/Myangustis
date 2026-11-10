@@ -1,6 +1,6 @@
 /*
 (praised/decoding/docx) source: the DOCX decoding branch.
-Extracts the paragraphs (helper/docx-extract, or the external
+Extracts the paragraphs (docx-extract, or the external
 runner), chunks them for the shared page-record finishing
 (finish.js), and builds the job the composer writes out. Same
 rule as the PDF branch: separation only, judgement decides.
@@ -8,8 +8,8 @@ rule as the PDF branch: separation only, judgement decides.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { extractDocxParagraphs, validateDocxArchive } from "../../@init/docx/helper/docx-extract.js";
-import { extractDocxParagraphsExternal } from "../../@init/docx/helper/docx-external.js";
+import { extractDocxParagraphs, validateDocxArchive } from "./docx-extract.js";
+import { extractDocxParagraphsExternal } from "./docx-external.js";
 import { cleanupFor, processPageRecord, collectChanges, adviseParserMiddleChain } from "../runtime/finish.js";
 import { containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts } from "../../core/@rule/detect.js";
 import { MAX_PAGES, MAX_TEXT_CHARS } from "../../@entry/helper/limit.js";
