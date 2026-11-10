@@ -266,7 +266,12 @@ class Shaper {
           d += `L${fmt(x)} ${fmt(y)} `;
           break;
         case "Q":
-          d += `Q${fmt(x2)} ${fmt(y2)} ${fmt(x)} ${fmt(y)} `;
+          // opentype.js quadratic commands carry their control point in
+          // x1/y1 (x2/y2 exist only on cubics). This used x2/y2, which
+          // are undefined for Q, so every TrueType curve in the sheet
+          // was written with control point 0,0 - shapes sagged to the
+          // glyph origin and the sheet could not be measured against.
+          d += `Q${fmt(x1)} ${fmt(y1)} ${fmt(x)} ${fmt(y)} `;
           break;
         case "C":
           d += `C${fmt(x2)} ${fmt(y2)} ${fmt(x1)} ${fmt(y1)} ${fmt(x)} ${fmt(y)} `;
