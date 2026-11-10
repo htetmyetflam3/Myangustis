@@ -126,6 +126,17 @@ export function orderZawCodePages(pages, report, { path = null } = {}) {
 }
 
 
+/*
+DO NOT collapse the two scanning phases into one - that is how this
+design gets lost. The scan used inside this beautify step is a string
+walking method: a sliding-window walk over the raw characters
+(scanText / scanBrokenSpans below) that spots orphan marks, impossible
+pairs and stray marks directly in the string. The "scan" of the NEXT
+chain is a different phase: it runs the Engine (BindEngine POS) over
+finished text and only looks for the tokens the Engine tags unknown -
+word{F} - in that tagged output; it never walks the raw string. Same
+word "scan", two phases, two different inputs. Keep them separate.
+*/
 const MEND_GATE_RULES = ["orphan", "impossible", "stray", "virama", "unknown"];
 
 function gateHits(token, words, standalone) {

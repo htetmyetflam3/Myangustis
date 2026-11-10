@@ -6,13 +6,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { StringDecoder } from "node:string_decoder";
-import { containsMyanmar } from "../../@rule/detect.js";
+import { containsMyanmar, hasOnlyZawgyiFonts } from "../../@rule/detect.js";
 import { arrangeZawCodeOrder } from "../../@postprocess/beautify/zawcode-order.js";
 import { correctWorldWord, judgePageLines, selectPageDecision } from "../../@rule/judgement.js";
 import { cleanupText, orderText } from "../../@postprocess/beautify/clean.js";
 import { preserveRegionalRuns } from "../../@rule/unicode-evidence.js";
 import { preserveCharacters, protectedCharacters } from "../../@rule/judgement.js";
-import { createRabbitStream } from "../../@rule/rabbit.js";
+import { Rabbit, createRabbitStream } from "../../@rule/rabbit.js";
 import { StreamingReplace } from "../../@helper/stream-replace.js";
 
 const READ_SIZE = 64 * 1024;
@@ -210,13 +210,20 @@ export function convertFinalizedPageText(text, page = {}, applyCleanup = true) {
 // disk-backed lines. No Rabbit rule is applied to a partially repaired page.
 export function finishPageToFile(store, {
   directory, parsingPath, sourceEncoding = "auto", fontKinds = new Set(),
+  fontNames = new Set(),
 } = {}) {
   function* pageTexts() {
     for (const [, , , text] of store.lines()) yield text;
   }
-  const judgment = judgePageLines(pageTexts(), arrangeZawCodeOrder);
+  // ZawCode is a codepage call: on a Zawgyi codepage page the beautify
+  // swapping rule is not offered as a candidate, so shared visual-order
+  // slots cannot reroute a Zawgyi page into the ZawCode lane.
+  const zawgyiCodepage = hasOnlyZawgyiFonts(fontNames);
+  const judgment = judgePageLines(pageTexts(),
+    zawgyiCodepage ? (line) => line : arrangeZawCodeOrder,
+    (line) => orderText(Rabbit.zg2uni(line)));
   const { originalHasText, count } = judgment;
-  let decision = selectPageDecision(judgment, parsingPath);
+  let decision = selectPageDecision(judgment, parsingPath, { zawgyiCodepage });
   const worldEvidence = sourceEncoding !== "unicode" && decision === "rabbit";
 
   const id = randomUUID();

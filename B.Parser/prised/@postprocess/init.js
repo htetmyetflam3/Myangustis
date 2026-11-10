@@ -169,6 +169,12 @@ function reportClusters(text, hits, limit) {
     });
 }
 
+// scanText / scanBrokenSpans are the beautify step's string scan: a
+// sliding-window walk over raw characters. The POS scan further below
+// (scanLineWithPos / scanTextWithPos) is the next chain's scan: it
+// reads Engine (BindEngine POS) output and only hunts the word{F}
+// unknown tokens there. Do not merge these two phases - they scan
+// different things on purpose.
 export function scanText(text, { perRule = 25 } = {}) {
   const report = {};
   for (const [key, title, finder] of RULES) {

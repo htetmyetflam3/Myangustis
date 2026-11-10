@@ -269,7 +269,7 @@ export function streamPdfPages(source, log = () => {}, {
         },
       });
       const finishedPage = finishPageToFile(extractedLines, {
-        directory: workDir, parsingPath, sourceEncoding, fontKinds,
+        directory: workDir, parsingPath, sourceEncoding, fontKinds, fontNames,
       });
       const finished = { decision: finishedPage.decision };
       const { category, originalHasText } = finishedPage;
