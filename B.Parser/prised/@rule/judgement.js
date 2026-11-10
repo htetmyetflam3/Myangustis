@@ -1,203 +1,21 @@
 /*
-(PDF 28) PDF branch - the lane judgement module: rules, judgement, decision, lane.
-This single module holds the four pieces that choose a PDF page's lane, kept apart on purpose:
-  1. RULE     - the mark-order tables and mark sets. Data only; no decisions here.
-  2. JUDGEMENT - pure functions that judge a piece of text against the rules
-                (scoreText, markOrderAligned, englishLikeness). Text in, evidence out.
-  3. DECISION - the one who calls the judgement functions to answer for a whole
-                page (judgePageLines): it asks, gathers, and returns the evidence pack.
-  4. LANE     - the one who actually selects the lane from that judgement
-                (selectPageDecision, instructionLane, isUnicodeLaneDecision).
-Nothing here writes files or rewrites text; consumers act on what it answers.
+(PDF 28) PDF branch - the lane judgement module: the top-level decision
+maker. Its whole job is distinguishing Burmese from English and
+turning evidence into lane decisions - judgePageLines gathers the
+evidence for a page, and the LANE piece below selects from it. It
+loads no JSON and keeps no mark tables: the strict low-level token
+walking lives in mm-score.js beside it (scoreText, markOrderAligned),
+which this module asks for evidence. Nothing here rewrites text.
+The TEXT KEEPING section at the bottom is inherited plumbing from the
+deleted normalize.js; it judges nothing and selects nothing.
 */
 import { containsMyanmar, isUnicodeFont } from "./detect.js";
 import { isLegacyFontName, normaliseFontName } from "../@core/pdf/method/legacy/codepage-names.js";
 import { PDF_PARSING_PATHS } from "../@core/pdf/method/decoder.js";
+import { markOrderAligned, scoreText } from "./mm-score.js";
 
 const LATIN_LIKE = /^[\x20-\xff\p{Script=Latin}\p{Number}\p{Punctuation}\p{Symbol}\s]+$/u;
 const PAGE_NUMBER = /^(?:[0-9]{1,4}|(?:page\s*[|:#-]?\s*[0-9]{1,4}\s*)+)$/iu;
-const SPACE_SEPARATOR = /^\p{Zs}$/u;
-
-// ===========================================================================
-// PIECE 1 - RULE
-// The tables the judgement functions judge against. Burmese syllable order
-// exists here three times on purpose and the three must never be merged:
-// MARK_ORDER is the Engine's own slot order (reorder code), SCORE_MARK_ORDER
-// is the mm-score order, UNICODE_MARK_ORDER is Unicode 16 table 16-4.
-// ===========================================================================
-
-// Burmese index (base consonant) characters — used to identify syllable bases.
-export const INDEX_BASES = new Set();
-for (let cp = 0x1000; cp <= 0x1021; cp += 1) INDEX_BASES.add(String.fromCodePoint(cp));
-for (let cp = 0x1023; cp <= 0x1027; cp += 1) INDEX_BASES.add(String.fromCodePoint(cp));
-INDEX_BASES.add("\u1029"); INDEX_BASES.add("\u102a"); INDEX_BASES.add("\u103f"); INDEX_BASES.add("\u104e");
-
-export function isIndex(ch) {
-  return INDEX_BASES.has(ch);
-}
-
-// Unicode 16, table 16-4: the modern Burmese syllable order. Characters on
-// the same row have the same priority; this is not the Engine's own order.
-export const MARK_ORDER = new Map([
-  ["\u1030", 1], ["\u1031", 2], ["\u102f", 3], ["\u102e", 4],
-  ["\u1032", 5], ["\u1033", 6], ["\u1034", 7], ["\u1035", 8],
-  ["\u1036", 9], ["\u102d", 10], ["\u102c", 11], ["\u102b", 12],
-  ["\u1014", 13], ["\u103a", 14], ["\u102f", 15], ["\u1037", 16],
-  ["\u1038", 17], ["\u1019", 18], ["\u103b", 19], ["\u103c", 20],
-  ["\u103d", 21], ["\u103e", 22],
-]);
-
-export const MARKS = new Set(MARK_ORDER.keys());
-
-const SCORE_MARKS = new Set([
-  "\u103b", "\u103c", "\u103d", "\u103e", "\u1031", "\u102d", "\u102e", "\u102f",
-  "\u1030", "\u1032", "\u102c", "\u102b", "\u1036", "\u103a", "\u1037", "\u1038",
-]);
-const SCORE_MARK_ORDER = new Map([
-  ["\u103b", 1], ["\u103c", 2], ["\u103d", 3], ["\u103e", 4], ["\u1031", 5],
-  ["\u102d", 6], ["\u102e", 7], ["\u102f", 8], ["\u1030", 9], ["\u1032", 10],
-  ["\u102c", 11], ["\u102b", 12], ["\u1036", 13], ["\u103a", 14], ["\u1037", 15],
-  ["\u1038", 16], [" ", 17], ["\n", 18],
-]);
-
-const ASAT = "\u103a";
-
-function isUnicodeBase(ch) {
-  if (!ch) return false;
-  const cp = ch.codePointAt(0);
-  return (cp >= 0x1000 && cp <= 0x1021) || (cp >= 0x1023 && cp <= 0x1027)
-    || cp === 0x1029 || cp === 0x102a || cp === 0x103f || cp === 0x104e;
-}
-
-// Unicode 16, table 16-4: the modern Burmese syllable order used to judge
-// whether a page's mark order is already aligned. Characters on the same
-// row share a priority. This is deliberately separate from MARK_ORDER
-// above, which is the Engine's own slot order used by the reorder code.
-const UNICODE_MARK_ORDER = new Map([
-  ["ျ", 1], ["ြ", 2], ["ွ", 3], ["ှ", 4],
-  ["ေ", 5], ["ိ", 6], ["ီ", 6], ["ဲ", 6],
-  ["ု", 7], ["ူ", 7], ["ါ", 8], ["ာ", 8],
-  ["ံ", 9], ["့", 10], ["း", 11],
-]);
-
-// ===========================================================================
-// PIECE 2 - JUDGEMENT
-// Functions that make a judgement about text: they read, they score, they
-// never rewrite. Callers who want an answer for a whole page go through
-// PIECE 3; callers who want a lane go through PIECE 4.
-// ===========================================================================
-
-// --- mm-score -------------------------------------------------------------
-// Port of the Python mm_score.score_text: how much a decoded string reads
-// like real Burmese, measured structurally — dependent marks must attach
-// to a base, must not repeat on one base, and must follow in a permitted
-// order. Only the *relative* score between candidate decodings of the same
-// source bytes is meaningful. This never rewrites text.
-function scoreIsIndex(ch) {
-  if (!ch) return false;
-  const cp = ch.codePointAt(0);
-  return (cp >= 0x1000 && cp <= 0x1021) || cp === 0x1025 || cp === 0x1027;
-}
-
-function* scoreWalk(text) {
-  let attached = false;
-  let run = [];
-  for (const ch of text) {
-    const mark = SCORE_MARKS.has(ch);
-    yield [ch, attached, run];
-    if (scoreIsIndex(ch)) { attached = true; run = []; }
-    else if (mark) { if (attached) run.push(ch); }
-    else { attached = false; run = []; }
-  }
-}
-
-export function scoreText(text) {
-  const sample = String(text ?? "");
-  let marks = 0;
-  let myanmar = 0;
-  for (const ch of sample) {
-    if (SCORE_MARKS.has(ch)) marks += 1;
-    const cp = ch.codePointAt(0);
-    if (cp >= 0x1000 && cp <= 0x109f) myanmar += 1;
-  }
-  const myanmarRatio = sample.length ? myanmar / sample.length : 0;
-  if (!marks) {
-    return { score: 0, orphan: 0, disorder: 0, duplicate: 0, marks: 0, myanmarRatio };
-  }
-  let markTotal = 0;
-  let orphans = 0;
-  let attachedTotal = 0;
-  let duplicates = 0;
-  for (const [ch, attached, run] of scoreWalk(sample)) {
-    if (!SCORE_MARKS.has(ch)) continue;
-    markTotal += 1;
-    if (!attached) orphans += 1;
-    else {
-      attachedTotal += 1;
-      if (run.includes(ch)) duplicates += 1;
-    }
-  }
-  let pairs = 0;
-  let disordered = 0;
-  let run = null;
-  for (const ch of sample) {
-    if (scoreIsIndex(ch)) { run = []; continue; }
-    if (SCORE_MARKS.has(ch)) {
-      if (run !== null) {
-        run.push(ch);
-        if (run.length > 1) {
-          pairs += 1;
-          if (SCORE_MARK_ORDER.get(run[run.length - 2]) > SCORE_MARK_ORDER.get(run[run.length - 1])) disordered += 1;
-        }
-      }
-      continue;
-    }
-    run = null;
-  }
-  const orphan = markTotal ? orphans / markTotal : 0;
-  const disorder = pairs ? disordered / pairs : 0;
-  const duplicate = attachedTotal ? duplicates / attachedTotal : 0;
-  return {
-    score: 1 - Math.max(orphan, disorder),
-    orphan, disorder, duplicate, marks, myanmarRatio,
-  };
-}
-
-export function markOrderAligned(text) {
-  let attached = false;
-  let precedingMarks = false;
-  let previous = -1;
-  for (const ch of String(text ?? "")) {
-    if (ch === " " || SPACE_SEPARATOR.test(ch)) continue;
-    if (isUnicodeBase(ch)) {
-      if (!attached && precedingMarks) return false;
-      attached = true;
-      precedingMarks = false;
-      previous = -1;
-      continue;
-    }
-    if (ch === ASAT || UNICODE_MARK_ORDER.has(ch)) {
-      if (!attached) {
-        precedingMarks = true;
-        continue;
-      }
-      // Asat can follow the consonant, medial ya, or aa; NFC can also place
-      // it after dot below. It therefore retains the preceding position.
-      if (ch === ASAT) {
-        if (previous < 0) previous = 0;
-        continue;
-      }
-      const priority = UNICODE_MARK_ORDER.get(ch);
-      if (priority < previous) return false;
-      previous = priority;
-      continue;
-    }
-    attached = false;
-    precedingMarks = false;
-    previous = -1;
-  }
-  return true;
-}
 
 // One-sided English check over Latin text: it can confirm that text reads
 // as English, and it can flag Latin layout junk (legacy keyboard bytes read
@@ -258,7 +76,7 @@ export function correctWorldWord(text, zawgyiEvidence = false) {
 // ===========================================================================
 // PIECE 3 - DECISION
 // The one who calls the judgement functions to answer for a whole page.
-// It walks the page's lines once, asks PIECE 2 about the raw reading and
+// It walks the page's lines once, asks the mm-score walker about the raw reading and
 // about the ZawCode-swapped candidate, and returns the evidence pack.
 // It selects nothing itself - that is PIECE 4's job.
 // ===========================================================================

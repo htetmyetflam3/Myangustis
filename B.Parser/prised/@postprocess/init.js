@@ -8,7 +8,7 @@ import path from "node:path";
 import readline from "node:readline";
 import { bindEngine as engineBind, MAX_LINE_BYTES } from "./bind-engine.js";
 import { textLines } from "../@core/runtime/finalized-cmap.js";
-import { INDEX_BASES, MARKS as MM_MARKS } from "../@rule/judgement.js";
+import { INDEX_BASES, MARKS as MM_MARKS } from "../@rule/mm-score.js";
 
 // Do not read the Engine master or build a dictionary matcher to validate
 // words. Hand the text object to the extend bind-engine and keep the
