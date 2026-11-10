@@ -17,17 +17,65 @@ import { note } from "../../core/@helper/provenance.js";
 import { MAX_TEXT_CHARS } from "../../@entry/helper/limit.js";
 import {
   MAX_PDF_OBJECTS, extractPageLines, pageHasImages, extractMetadata,
+  getStream, parseToUnicodeStream,
   isEncryptedPdf, hasObjectStreams, scanPdfFileMarkers,
 } from "../pdf/method/pdfencoding/decoding.js";
+import { FontResourceLoader } from "../pdf/method/unicode/ttf.js";
+import { parseTtfCmap } from "../pdf/method/unicode/ttf/ttf-cmap.js";
+import { PdfRef } from "../pdf/method/values.js";
 import { PdfFileObjects, openPdfScannedObjects } from "./objects.js";
 import { decodePdfInstructions } from "../pdf/instructions.js";
 import { PdfPagePieces } from "../pdf/pages/pages.js";
 import { DocumentDecoding, PDF_PARSING_PATHS, pageFontDecoders } from "../pdf/method/decoder.js";
-import { legacyLayoutForFont } from "../pdf/method/legacy/codepage-names.js";
-import { WININNWA_LEGACY_CODE_PAGE } from "../pdf/method/legacy/codepage-registry.js";
+import { legacyFontFamily, legacyLayoutForFont } from "../pdf/method/legacy/codepage-names.js";
+import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../pdf/method/legacy/codepage-registry.js";
 import { cleanupFor, collectChanges, adviseParserMiddleChain, instructionLane } from "./finish.js";
 import { RuntimeError } from "../../core/@helper/pylib.js";
 import { finishPageToFile, pageLayoutLines } from "./finalized-cmap.js";
+
+// The stem verdict: computed once, from the instruction pass alone,
+// before any page content is decoded. For every font object in the
+// document it records what the font's encoding is (its own map - and
+// whether that map's values are Myanmar or Latin slots - or no map at
+// all) and, for legacy faces, which family the name gate assigns. The
+// decoders below consume this table; they do not re-decide. Anything
+// the stem cannot settle (inline fonts, unreadable maps) is simply
+// absent, and the decoder falls back to asking the name gate itself.
+function stemFontTable(objects, instructionPages) {
+  const table = new Map();
+  let loader = null;
+  for (const page of instructionPages ?? []) {
+    for (const font of page.fonts ?? []) {
+      if (!font.key || table.has(font.key)) continue;
+      const [num, gen] = font.key.split(",").map(Number);
+      let toUnicode = "none";
+      try {
+        loader ??= new FontResourceLoader(objects, getStream, parseTtfCmap, parseToUnicodeStream);
+        const dict = loader.resolve(new PdfRef(num, gen));
+        const map = dict instanceof Map ? loader.tounicodeOf(dict, { preserveSpaces: true }) : null;
+        if (map) {
+          toUnicode = "latin";
+          for (const value of map.values()) {
+            if ([...String(value)].some((ch) => {
+              const cp = ch.codePointAt(0);
+              return cp >= 0x1000 && cp <= 0x109f;
+            })) { toUnicode = "myanmar"; break; }
+          }
+        }
+      } catch { toUnicode = "none"; }
+      const family = legacyFontFamily(font.baseFont);
+      table.set(font.key, {
+        baseFont: font.baseFont,
+        toUnicode,
+        family,
+        known: family != null,
+        codePage: family === "ayar" ? AYAR_LEGACY_CODE_PAGE
+          : family === "wininnwa" ? WININNWA_LEGACY_CODE_PAGE : null,
+      });
+    }
+  }
+  return table;
+}
 
 export function streamPdfPages(source, log = () => {}, {
   provenance = null, sourceEncoding = "auto", onPageContent = null, onPagePrefix = null, scratchDir = null,
@@ -94,6 +142,11 @@ export function streamPdfPages(source, log = () => {}, {
   // (legacyLayoutForFont) — Ayar-set faces get Ayar, unknown faces stay
   // on WinInnwa and are flagged for the cleaning stage's next module.
   const legacy = new DocumentDecoding("legacy", new Map(), WININNWA_LEGACY_CODE_PAGE);
+  // Encoding and family were settled at the stem (above); both decoding
+  // documents carry the verdicts so a decoder never re-decides by name.
+  const stemFonts = stemFontTable(objects, instructionPages);
+  legacy.stemFonts = stemFonts;
+  shared.stemFonts = stemFonts;
   const sharedFontKinds = new WeakMap();
   shared.fontKind = (font) => {
     if (sharedFontKinds.has(font)) return sharedFontKinds.get(font);
@@ -157,6 +210,16 @@ export function streamPdfPages(source, log = () => {}, {
           checkpoint = {
             reason: laneChoice.reason,
             ...(laneChoice.fonts ? { fonts: laneChoice.fonts } : {}),
+            ...(pageInstruction.fonts?.length ? {
+              verdicts: pageInstruction.fonts.map((font) => {
+                const verdict = font.key ? stemFonts.get(font.key) : null;
+                return {
+                  font: font.baseFont,
+                  toUnicode: verdict?.toUnicode ?? (font.toUnicode ? "latin" : "none"),
+                  ...(verdict?.family ? { family: verdict.family } : {}),
+                };
+              }),
+            } : {}),
           };
           onPagePrefix?.(idx, prefix, parsingPath, checkpoint);
           if (parsingPath !== PDF_PARSING_PATHS.LEGACY) return shared;

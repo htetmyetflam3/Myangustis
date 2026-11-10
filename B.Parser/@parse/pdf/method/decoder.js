@@ -563,8 +563,12 @@ export function buildFontDecoder(loader, name, entry, doc) {
   // Inside the legacy lane the font name is only a layout guard: a matched
   // subset profile wins; otherwise the name picks WinInnwa vs Ayar, and an
   // unknown face falls back to Ayar (legacyLayoutForFont).
+  // Family was decided at the stem (doc.stemFonts, keyed by font
+  // object); the bridge still wins for a profiled subset, and the name
+  // gate is only the fallback for fonts the stem could not settle.
+  const stemVerdict = doc.stemFonts && entry instanceof PdfRef ? doc.stemFonts.get(entry.key()) : null;
   const fontLegacyCodePage = doc.kind === "legacy"
-    ? (bridge?.codePage || legacyLayoutForFont(baseFont).codePage)
+    ? (bridge?.codePage || stemVerdict?.codePage || legacyLayoutForFont(baseFont).codePage)
     : null;
   return new FontDecoder(name, {
     subtype, baseFont, isCid: false, toUnicode, encoding, hasEncoding: declared, encodingHasDifferences,

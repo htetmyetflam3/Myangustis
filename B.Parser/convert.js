@@ -30,7 +30,27 @@ import { InitInput } from "./@entry/init.js";
 import { parseDecoding } from "./@parse/run.js";
 import { writeOutputFile } from "./@parse/requested.js";
 
-export async function convert(input, outputPath, { caller = "owner", log = () => {} } = {}) {
+// One conversion at a time through this door: callers queue, a second
+// conversion never runs beside the first (single-worker guard).
+let conversionTail = Promise.resolve();
+function acquireConversionSlot() {
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const acquired = conversionTail.then(() => release);
+  conversionTail = conversionTail.then(() => gate);
+  return acquired;
+}
+
+export async function convert(input, outputPath, options = {}) {
+  const release = await acquireConversionSlot();
+  try {
+    return await convertSerialised(input, outputPath, options);
+  } finally {
+    release();
+  }
+}
+
+async function convertSerialised(input, outputPath, { caller = "owner", log = () => {} } = {}) {
   if (!outputPath || typeof outputPath !== "string") {
     throw new TypeError("convert: outputPath is required (its extension picks pdf/docx/txt)");
   }
