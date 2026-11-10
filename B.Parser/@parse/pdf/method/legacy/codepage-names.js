@@ -18,6 +18,8 @@ export const WININNWA_FONT_NAMES = new Set([
 ]);
 
 export const AYAR_FONT_NAMES = new Set([
+  "amyanmar",
+  "arlarwade",
   "anonymouspro",
   "anonymousprobold",
   "anonymousprobolditalic",
