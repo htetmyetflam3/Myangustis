@@ -35,7 +35,7 @@ import {
   medialFollows, reorderMarks,
 } from "./clean.js";
 import { scoreText, isIndex } from "../../@rule/mm-score.js";
-import { arrangeZawCodeOrder } from "../../@rule/zawcode-order.js";
+import { arrangeZawCodeOrder } from "./zawcode-order.js";
 
 const DATA = loadMapJson("homoglyphs.json");
 

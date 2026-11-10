@@ -7,7 +7,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { StringDecoder } from "node:string_decoder";
 import { containsMyanmar } from "../../@rule/detect.js";
-import { arrangeZawCodeOrder } from "../../@rule/zawcode-order.js";
+import { arrangeZawCodeOrder } from "../../@postprocess/beautify/zawcode-order.js";
 import { correctWorldWord, judgePageLines, selectPageDecision } from "../../@rule/judgement.js";
 import { cleanupText, orderText } from "../../@postprocess/beautify/clean.js";
 import { preserveRegionalRuns } from "../../@rule/unicode-evidence.js";
