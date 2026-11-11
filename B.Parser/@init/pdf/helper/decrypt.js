@@ -8,10 +8,43 @@ so this tree answers for its own stages end to end.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { validatePdf } from "../../../@entry/helper/validator.js";
 
-const QPDF_BIN = process.env.PRASER_QPDF_BIN || "qpdf";
+import { fileURLToPath } from "node:url";
+
+// Where qpdf comes from, in order: the operator's override, the real binary,
+// then the pikepdf-backed shim in this repository. The shim exists because
+// every encrypted or object-stream PDF has to be prepared before it can be
+// read, so a machine without qpdf could not open those documents at all.
+const SHIM = fileURLToPath(new URL("../../../../tools-box/python/qpdf_shim.py", import.meta.url));
+const PYTHON = process.env.PRASER_PYTHON_BIN || "python3";
+
+export function qpdfRunners() {
+  if (process.env.PRASER_QPDF_BIN) return [{ bin: process.env.PRASER_QPDF_BIN, args: [] }];
+  return [{ bin: "qpdf", args: [] }, { bin: PYTHON, args: [SHIM] }];
+}
+
+let chosen = null;
+
+// The runner actually in force - resolved once, and reported to callers that
+// want to know whether qpdf is usable at all.
+export function qpdfRunner() {
+  if (chosen) return chosen;
+  if (process.env.PRASER_QPDF_BIN) {
+    chosen = qpdfRunners()[0];
+    return chosen;
+  }
+  try {
+    const probe = spawnSync("qpdf", ["--version"], { stdio: "ignore" });
+    if (probe.status === 0) {
+      chosen = { bin: "qpdf", args: [] };
+      return chosen;
+    }
+  } catch { /* fall through to the shim */ }
+  chosen = { bin: PYTHON, args: [SHIM] };
+  return chosen;
+}
 
 // Run qpdf file to file; nothing passes through memory.
 export function runQpdfFile(input, output, args = []) {
@@ -19,7 +52,8 @@ export function runQpdfFile(input, output, args = []) {
     throw new TypeError("qpdf requires input and output file paths");
   }
   return new Promise((resolve, reject) => {
-    const child = spawn(QPDF_BIN, [...args, "--", path.resolve(input), path.resolve(output)], {
+    const { bin, args: prefix } = qpdfRunner();
+    const child = spawn(bin, [...prefix, ...args, "--", path.resolve(input), path.resolve(output)], {
       windowsHide: true,
       stdio: ["ignore", "ignore", "pipe"],
     });
@@ -28,7 +62,7 @@ export function runQpdfFile(input, output, args = []) {
     child.stderr.on("data", (chunk) => { stderr += chunk; });
     child.once("error", (cause) => reject(new Error(
       cause?.code === "ENOENT"
-        ? `qpdf executable not found (${JSON.stringify(QPDF_BIN)})`
+        ? `qpdf executable not found (${JSON.stringify(bin)})`
         : `qpdf failed to start: ${cause?.message || cause}`,
       { cause },
     )));

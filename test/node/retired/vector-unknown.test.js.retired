@@ -4,14 +4,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { englishLikeness } from "../../../B.Parser/main/parser/text/myanmar-score.js";
-import { choosePageParser } from "../../../B.Parser/main/parser/text/page-decision.js";
-import { loadDetector, streamPdfPages } from "../../../B.Parser/extend/pipeline.js";
+import { englishLikeness } from "../../../B.Parser/prised/@rule/judgement.js";
+import { choosePageParser } from "../../../B.Parser/prised/@rule/judgement.js";
+import { loadDetector, streamPdfPages } from "../../../B.Parser/prised/@core/runtime/source.js";
 import { prepareVectorLayout } from "../../../B.Parser/main/parser/codepage/resolve.js";
-import { probePagePrefix } from "../../../B.Parser/main/parser/read/pdf-extract.js";
+import { probePagePrefix } from "../../../B.Parser/prised/@core/pdf/method/pdfencoding/decoding.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const SAMPLE = path.join(HERE, "..", "..", "..", "F.Site", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
+const SAMPLE = path.join(HERE, "..", "..", "..", "B.Parser", "host", "Frontend", "frontend-bootstrap", "public", "samples", "sample.pdf");
 
 
 async function decodeFirstPage(bytes) {

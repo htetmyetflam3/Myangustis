@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { matchRasterMask } from '../../../B.Parser/main/parser/shape/match.js';
+import { matchRasterMask } from '../../../B.Parser/prised/@postprocess/repair/match.js';
 
 test('raster-to-SVG matching advises on every call, even with --quiet', () => {
   const warnings = [];

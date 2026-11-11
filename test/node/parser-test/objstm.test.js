@@ -53,8 +53,8 @@ const PLAIN_PDF = Buffer.from("%PDF-1.4\ntrailer<</Size 1>>\n%%EOF\n", "latin1")
 
 test("object streams are detected on disk and prepared through file-backed qpdf", { skip }, async () => {
   await withFakeQpdf(async ({ dir, called, lastArgs }) => {
-    const { hasObjectStreams, scanPdfFileMarkers } = await import("../../../B.Parser/main/parser/read/decrypt.js");
-    const { runQpdfFile } = await import("../../../B.Parser/main/parser/core/qpdf.js");
+    const { hasObjectStreams, scanPdfFileMarkers } = await import("../../../B.Parser/prised/@core/pdf/method/pdfencoding/decoding.js");
+    const { runQpdfFile } = await import("../../../B.Parser/@init/pdf/helper/decrypt.js");
     const input = path.join(dir, "objects.pdf");
     const output = path.join(dir, "expanded.pdf");
     fs.writeFileSync(input, OBJSTM_PDF);
@@ -69,9 +69,9 @@ test("object streams are detected on disk and prepared through file-backed qpdf"
 });
 
 test("the sync extraction path names object streams instead of failing silently", async () => {
-  const { streamPdfPages } = await import("../../../B.Parser/extend/pipeline.js");
+  const { streamPdfPages } = await import("../../../B.Parser/prised/@core/runtime/source.js");
   assert.throws(
-    () => streamPdfPages(OBJSTM_PDF, null, () => {}),
+    () => streamPdfPages(OBJSTM_PDF, () => {}),
     /object streams \(\/ObjStm\)/,
   );
 });

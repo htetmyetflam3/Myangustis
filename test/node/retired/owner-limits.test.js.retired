@@ -419,8 +419,8 @@ test('Python bridge bounds public metadata and ignores forged job identities', (
 
 test('owner worker resource profiles remove PDF, DOCX and OCR quotas', async () => {
   const limitsUrl = new URL('../../../B.Parser/main/parser/core/limits.js', import.meta.url).href;
-  const pdfUrl = new URL('../../../B.Parser/main/parser/read/pdf-extract.js', import.meta.url).href;
-  const docxUrl = new URL('../../../B.Parser/main/parser/read/docx-extract.js', import.meta.url).href;
+  const pdfUrl = new URL('../../../B.Parser/prised/@core/pdf/method/pdfencoding/decoding.js', import.meta.url).href;
+  const docxUrl = new URL('../../../B.Parser/prised/@core/docx/docx-extract.js', import.meta.url).href;
   async function profile(owner) {
     const code = `
       const { parentPort } = require('node:worker_threads');
@@ -452,7 +452,7 @@ test('owner worker resource profiles remove PDF, DOCX and OCR quotas', async () 
 });
 
 test('large ToUnicode ranges stay bounded publicly but are not truncated for owner workers', async () => {
-  const pdfUrl = new URL('../../../B.Parser/main/parser/read/pdf-extract.js', import.meta.url).href;
+  const pdfUrl = new URL('../../../B.Parser/prised/@core/pdf/method/pdfencoding/decoding.js', import.meta.url).href;
   const code = `
     const { parentPort } = require('node:worker_threads');
     import(${JSON.stringify(pdfUrl)}).then(({parseToUnicodeStream}) => {
@@ -505,8 +505,8 @@ test('the Site key gate alone injects a fresh user ID into the Manager handoff',
   process.env.PARSER_RUNTIME_DIR = path.join(directory, 'site');
   process.env.CURL_ENDPOINT = '/owner-convert';
   process.env.CURL_MAX_MB = '0';
-  const { createCurlRouter } = await import('../../../F.Site/Backend/gateway/api/curl.js');
-  const { closePraserManager, createPdfParser } = await import('../../../F.Site/Backend/file/praser.js');
+  const { createCurlRouter } = await import('../../../B.Parser/host/Backend/gateway/api/curl.js');
+  const { closePraserManager, createPdfParser } = await import('../../../B.Parser/host/Backend/file/pdfanalysis.js');
   const intent = {
     source: 'converter', job: 'extracting', method: 'default', outputFormat: 'txt',
     inputFormat: 'pdf', uploadName: 'two-pages.pdf', userId: trusted.userId,

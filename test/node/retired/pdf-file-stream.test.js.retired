@@ -10,20 +10,20 @@ import {
   PDFArray, PDFDocument, PDFName, PDFRawStream, decodePDFRawStream,
 } from "pdf-lib";
 
-import { streamPdfPages, processPageRecord, collectPdfResult, buildFinalPages, loadDetector } from "../../../B.Parser/extend/pipeline.js";
-import { runQpdfFile } from "../../../B.Parser/main/parser/core/qpdf.js";
+import { streamPdfPages, processPageRecord, collectPdfResult, buildFinalPages, loadDetector } from "../../../B.Parser/prised/@core/runtime/source.js";
+import { runQpdfFile } from "../../../B.Parser/@init/pdf/helper/decrypt.js";
 import { findPdfEnd, copyPdfPrefix } from "../../../B.Parser/main/parser/read/pdf-tail.js";
-import { PdfScannedObjects } from "../../../B.Parser/main/parser/read/pdf-object-file.js";
+import { PdfScannedObjects } from "../../../B.Parser/prised/@core/runtime/objects.js";
 import { runPdfStream } from "../../../B.Parser/main/parser/worker/pdf-stream.js";
 import { finishManualPdf } from "../../../B.Parser/main/parser/worker/manual-pdf.js";
 import { finishManualDocx } from "../../../B.Parser/main/parser/worker/manual-docx.js";
 import { PdfTextSink } from "../../../B.Parser/main/parser/write/pdf-text-sink.js";
 import { PageStoreWriter } from "../../../B.Parser/main/parser/read/page-store.js";
 import { writeOutput } from "../../../B.Parser/main/parser/write/emit.js";
-import { openZipBuffer, readEntry } from "../../../B.Parser/main/parser/core/zip.js";
-import { pageLayoutLines, textLines } from "../../../B.Parser/main/parser/text/page-file-decision.js";
-import { extractDocxParagraphs } from "../../../B.Parser/main/parser/read/docx-extract.js";
-import { Rabbit, createRabbitStream } from "../../../B.Parser/main/parser/text/rabbit.js";
+import { openZipBuffer, readEntry } from "../../../B.Parser/prised/@core/docx/zip.js";
+import { pageLayoutLines, textLines } from "../../../B.Parser/prised/@core/runtime/finalized-cmap.js";
+import { extractDocxParagraphs } from "../../../B.Parser/prised/@core/docx/docx-extract.js";
+import { Rabbit, createRabbitStream } from "../../../B.Parser/prised/@rule/rabbit.js";
 import { Manager } from "../../../B.Parser/main/parser/manager.js";
 import { createSourceRunner } from "../../../B.Parser/main/parser/worker/runtime.js";
 import { getEngineNormalize } from "../../../B.Parser/_path.js";

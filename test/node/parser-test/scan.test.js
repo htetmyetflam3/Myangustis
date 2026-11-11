@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import {
   scanText, formatScanReport, PosScanner, scanTextWithPos, isPageNumberLine,
-} from "../../../B.Parser/main/parser/text/scan.js";
+} from "../../../B.Parser/prised/@postprocess/init.js";
 import { MAX_LINE_BYTES } from "../../../Architecture/Engine/MonoSyllabism/generators/SfomatterForP.js";
 
 test("JavaScript scanner retains the structural scan rules", () => {
@@ -14,7 +14,7 @@ test("JavaScript scanner retains the structural scan rules", () => {
   assert.equal(report.repeat.total, 1);
   assert.ok(report.orphan.clusters[0].context.includes("ကိ"));
   assert.match(formatScanReport(report, { source: "sample.txt" }), /context:/u);
-  assert.match(formatScanReport(report, { source: "sample.txt" }), /praser scan {2}sample\.txt/u);
+  assert.match(formatScanReport(report, { source: "sample.txt" }), /parser scan {2}sample\.txt/u);
 });
 
 test("only 1–4 digits on a line are tagged as possible page numbers", () => {

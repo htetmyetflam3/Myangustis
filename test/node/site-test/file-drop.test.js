@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { onFileDrop } from '../../../F.Site/Frontend/frontend-bootstrap/js/file-drop.js';
+import { onFileDrop } from '../../../B.Parser/host/Frontend/frontend-bootstrap/js/file-drop.js';
 
 test('file drop tracks drag state and delivers only the first file', () => {
   const handlers = {};

@@ -43,7 +43,7 @@ fs.copyFileSync(args.at(-2), args.at(-1));
 test("file-backed PDF jobs prepare with qpdf and optimize Fast Web View", { skip }, async () => {
   await withFakeQpdf(async ({ dir, history }) => {
     const { runPdfStream } = await import("../../../B.Parser/main/parser/worker/pdf-stream.js");
-    const { writeOptimizedPdf } = await import("../../../B.Parser/main/parser/write/pdf-optimize.js");
+    const { writeOptimizedPdf } = await import("../../../B.Parser/prised/@core/runtime/optimize.js");
     const document = await PDFDocument.create();
     document.addPage().drawText("Qpdf file input");
     const source = path.join(dir, "source.pdf");

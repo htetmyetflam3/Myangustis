@@ -5,14 +5,28 @@ import fs from 'node:fs/promises';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { PDFDocument } from 'pdf-lib';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
+
+// Every Parser conversion of a PDF goes through qpdf preparation. The Parser
+// resolves the binary itself (operator override -> real qpdf -> the pikepdf
+// shim in tools-box/python), so these lanes run wherever either exists.
+const { qpdfRunner } = await import('../../../B.Parser/@init/pdf/helper/decrypt.js');
+const runner = qpdfRunner();
+const PDF_SKIP = (() => {
+  try {
+    execFileSync(runner.bin, [...runner.args, '--version'], { stdio: 'pipe' });
+    return false;
+  } catch {
+    return `no qpdf runner available (${runner.bin})`;
+  }
+})();
 const CLI = path.join(REPO, 'tools-box/js/pipeline-cli.js');
 const ENGINE_ENTRY = path.join(REPO, 'Architecture/host/index.js');
-const SITE_ENTRY = path.join(REPO, 'F.Site/index.js');
+const SITE_ENTRY = path.join(REPO, 'B.Parser/host/index.js');
 const ENDPOINT = '/UchihaItachiIsMyFavChar';
 const inputText = 'ကောင်းကင် စမ်းသပ်။\nမြန်မာစာ။\n';
 let dir;
@@ -152,7 +166,7 @@ test('the real Site and Engine entry points start independently and report healt
   assert.equal(siteHealth.web, 'site');
 });
 
-test('local Parser streams a PDF to Manager without public page limits', async () => {
+test('local Parser streams a PDF to Manager without public page limits', { skip: PDF_SKIP }, async () => {
   const out = path.join(dir, 'local parsed.txt');
   const result = await runCli(['parser', 'local', pdf, '--out', out]);
   assert.equal(result.code, 0, 'local parser failed');
@@ -169,7 +183,7 @@ test('local Parser streams a PDF to Manager without public page limits', async (
   assert.ok((await fs.stat(summary.posScan.file)).isFile());
 });
 
-test('local Parser can produce DOCX and stream it back to text', async () => {
+test('local Parser can produce DOCX and stream it back to text', { skip: PDF_SKIP }, async () => {
   const docx = path.join(dir, 'local.docx');
   const rendered = await runCli(['parser', 'local', pdf, '--out', docx]);
   assert.equal(rendered.code, 0, 'PDF to DOCX failed');
@@ -206,7 +220,7 @@ test('local Engine reads text and yields hash-free Bridge syllables and POS', as
   assert.ok(lines.every(row => typeof row.rawPos === 'string' && typeof row.syllable === 'string'));
 });
 
-test('CLI will not overwrite the input, an existing output, or a Parser sidecar', async () => {
+test('CLI will not overwrite the input, an existing output, or a Parser sidecar', { skip: PDF_SKIP }, async () => {
   const original = await fs.readFile(text);
   const same = await runCli(['engine', 'local', text, '--out', text]);
   assert.notEqual(same.code, 0);
@@ -265,7 +279,7 @@ test('Engine HTTP mode rejects oversized input without writing output', async ()
   await assert.rejects(fs.stat(out), { code: 'ENOENT' });
 });
 
-test('Site HTTP mode uploads to the real keyed conversion route', async () => {
+test('Site HTTP mode uploads to the real keyed conversion route', { skip: PDF_SKIP }, async () => {
   const output = await runCli(['parser', 'http', pdf, '--url', siteBase]);
   assert.equal(output.code, 0, 'Site PDF conversion failed');
   assert.match(output.stdout, /Hello from page one/);
