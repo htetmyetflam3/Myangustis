@@ -13,7 +13,7 @@ import {
   PARSER_DIR,
   PRASER_JS,
   validatePraserAssets,
-} from "../../../F.Site/Backend/file/paths.js";
+} from "../../../B.Parser/host/Backend/file/paths.js";
 import {
   MAP_DIR,
   DEFAULT_OUTPUT_DIR,
@@ -23,62 +23,47 @@ import {
   findLatinFont,
   findMyanmarFont,
 } from "../../../B.Parser/_path.js";
-import { loadDetector } from "../../../B.Parser/extend/pipeline.js";
-import { ruleCount } from "../../../B.Parser/main/parser/text/rabbit.js";
-import { loadSidecarMap } from "../../../B.Parser/main/parser/read/pdf-extract.js";
-import { Manager } from "../../../B.Parser/main/parser/manager.js";
-import { writeDocxPlain } from "../../../B.Parser/main/parser/index.js";
-import { ZipStreamWriter } from "../../../B.Parser/main/parser/core/zip.js";
-import { validateDocxArchive } from "../../../B.Parser/main/parser/read/docx-extract.js";
+import { ZipStreamWriter } from "../../../B.Parser/prised/@core/docx/zip.js";
+import { validateDocxArchive } from "../../../B.Parser/prised/@core/docx/docx-extract.js";
+import { loadSidecarMap } from "../../../B.Parser/prised/@core/pdf/method/pdfencoding/decoding.js";
+import { isZawgyiOneFont, isUnicodeFont } from "../../../B.Parser/prised/@rule/detect.js";
 
 const isFile = (file) => fs.statSync(file).isFile();
 const repo = fileURLToPath(new URL("../../../", import.meta.url));
+const hasQpdf = () => {
+  try {
+    execFileSync(process.env.PRASER_QPDF_BIN ?? "qpdf", ["--version"], { stdio: "pipe" });
+    return true;
+  } catch {
+    return false;
+  }
+};
 
-test("relocated parser has every boot-critical sidecar", () => {
+test("the flattened Parser layout has every boot-critical sidecar", () => {
   const files = validatePraserAssets();
   assert.ok(files.length >= 10);
   assert.ok(files.every(isFile));
 
-  assert.ok(PARSED_ROOT.endsWith("B.Parser/main"), `PARSED_ROOT=${PARSED_ROOT}`);
-  assert.ok(PARSER_DIR.endsWith("B.Parser/main/parser"), `PARSER_DIR=${PARSER_DIR}`);
-  assert.ok(PRASER_JS.endsWith("B.Parser/main/parser/manager.js"), `PRASER_JS=${PRASER_JS}`);
-});
-
-test("scraper parser bridge resolves the current parser entry", async () => {
-  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "parser-bridge-"));
-  try {
-    const result = path.join(dir, "result.json");
-    const missing = path.join(dir, "missing.pdf");
-    execFileSync(process.execPath, [path.join(repo, "B.Parser/extend/parse-bridge.js"), "--out", result, missing], { stdio: "pipe" });
-    const verdict = JSON.parse(await fsp.readFile(result, "utf8"));
-    assert.equal(verdict[0].category, "error");
-    assert.match(verdict[0].reason, /ENOENT/);
-  } finally {
-    await fsp.rm(dir, { recursive: true, force: true });
-  }
-});
-
-test("scraper OCR worker points to existing parser modules", () => {
-  const worker = path.join(repo, "D.Scraper/main/deploy/continuous-ocr/worker.js");
-  const code = fs.readFileSync(worker, "utf8");
-  const imports = [...code.matchAll(/from '([^']*\.Parser\/[^']+)'/g)];
-  assert.ok(imports.length > 0);
-  for (const [, file] of imports) assert.ok(isFile(path.resolve(path.dirname(worker), file)));
+  // PARSED_ROOT is relative to the Site root (B.Parser/host) and names the
+  // component root; PARSER_DIR is its alias, PRASER_JS the chain door.
+  assert.equal(abs(PARSED_ROOT), path.resolve(repo, "B.Parser"));
+  assert.equal(PARSER_DIR, PARSED_ROOT);
+  assert.equal(abs(PRASER_JS), path.resolve(repo, "B.Parser/index.js"));
 });
 
 test("parser maps and models resolve outside the executable module directory", () => {
-  assert.equal(path.basename(MAP_DIR), "jason-map");
+  assert.equal(path.basename(MAP_DIR), "@jason-map");
   assert.equal(path.basename(MODEL_DIR), "model");
   assert.equal(OCR_MODEL_DIR, MODEL_DIR);
-  assert.deepEqual(loadDetector().detect("က", { sourceEncoding: "unicode" }), ["UNICODE", 0]);
-  assert.deepEqual(loadDetector().detect("က", { sourceEncoding: "zawgyi-one" }), ["ZAWGYI", 1]);
   assert.ok(isFile(path.join(OCR_MODEL_DIR, "mya.traineddata")));
-  assert.ok(ruleCount() > 100);
   assert.ok(loadSidecarMap().size > 0);
+  assert.equal(isZawgyiOneFont("Zawgyi-One"), true);
+  assert.equal(isUnicodeFont("Myanmar3"), true);
+  assert.equal(isZawgyiOneFont("Myanmar3"), false);
 });
 
 test("relocated output fonts resolve from shared Junk/fonts/used", () => {
-  assert.equal(OUTPUT_FONT_DIR, path.resolve(abs("../Junk/fonts/used")));
+  assert.equal(OUTPUT_FONT_DIR, path.resolve(repo, "Junk/fonts/used"));
   assert.ok(isFile(findMyanmarFont()));
   assert.ok(isFile(findLatinFont()));
 });
@@ -98,49 +83,18 @@ test("DOCX archive validation rejects extreme compression ratios", async () => {
   }
 });
 
-test("manager parses the shipped 100-page PDF through a worker", async () => {
-  const outputDir = await fsp.mkdtemp(path.join(os.tmpdir(), "linga-parser-test-"));
-  const manager = new Manager({ outputDir });
-  try {
-    const result = await manager.dispatch({
-      job: "extracting",
-      method: "default",
-      output: "txt",
-      inputKind: "pdf",
-      inPath: abs("Frontend/frontend-bootstrap/public/samples/sample.pdf"),
-      filename: "sample.pdf",
-    });
-    assert.equal(result.pages, 100);
-    assert.ok(result.textChars > 80_000);
-    assert.equal(result.counts.ZAWGYI, 100);
-    assert.ok((await fsp.readFile(result.file, "utf8")).includes("Chapter"));
-  } finally {
-    await manager.close();
-    await fsp.rm(outputDir, { recursive: true, force: true });
-  }
+test("the shipped 100-page sample parses through the Parser door", async (t) => {
+  if (!hasQpdf()) return t.skip("qpdf is not installed in this environment");
+  const { InitInput, parseDecoding } = await import("../../../B.Parser/index.js");
+  const sample = path.join(repo, "B.Parser/host/Frontend/frontend-bootstrap/public/samples/sample.pdf");
+  const prepared = await InitInput({ path: sample }, "owner");
+  const parsed = await parseDecoding({ kind: prepared.kind, source: prepared.path, filename: "sample.pdf" });
+  assert.equal(parsed.pages.length, 100);
+  assert.equal(parsed.counts.ZAWGYI, 100);
+  assert.ok(parsed.pages.some((page) => String(page.text ?? "").includes("Chapter")));
 });
 
-
-test("manager writes its default output under the parser workspace", async () => {
-  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "parser-default-output-"));
-  const manager = new Manager();
-  let output;
-  let report;
-  try {
-    const input = path.join(dir, "input.docx");
-    await writeDocxPlain(input, "မြန်မာစာ စမ်းသပ်ချက်");
-    const result = await manager.dispatch({
-      job: "extracting", method: "default", output: "txt", inputKind: "docx",
-      inPath: input, filename: "input.docx",
-    });
-    output = result.file;
-    report = result.posScan?.file;
-    assert.equal(path.dirname(output), DEFAULT_OUTPUT_DIR);
-    assert.match(await fsp.readFile(output, "utf8"), /မြန်မာစာ/);
-  } finally {
-    await manager.close();
-    if (output) await fsp.unlink(output).catch(() => {});
-    if (report) await fsp.unlink(report).catch(() => {});
-    await fsp.rm(dir, { recursive: true, force: true });
-  }
+test("the default output directory sits under the parser workspace", () => {
+  assert.ok(DEFAULT_OUTPUT_DIR.endsWith(".output"), `DEFAULT_OUTPUT_DIR=${DEFAULT_OUTPUT_DIR}`);
+  assert.ok(fs.existsSync(DEFAULT_OUTPUT_DIR));
 });

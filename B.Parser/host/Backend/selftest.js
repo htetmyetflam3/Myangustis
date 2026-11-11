@@ -9,7 +9,8 @@
  *
  * WHAT CAN MOVE HERE, AND WHAT CANNOT
  *
- * Measured, not guessed. Of the 103 tests in this repository:
+ * Measured, not guessed. The record of the last full run lives in
+ * CHANGELOG.md at the repository root:
  *
  *   PURE -- no database, no listening socket. They construct their own
  *   input and assert on a return value. Every backend test of that kind,
@@ -40,24 +41,23 @@ const { emitLog, reportInc } = (await getLogen()).coreLog;
 /** The pure files: no sqlite, no socket. Keep this list honest -- adding a
  *  file that opens a database here makes every boot write one. */
 export const PURE_SUITE = [
-  'backend/cookie/codec.test.js',
-  'backend/cookie/csrf.test.js',
-  'backend/file/parser.test.js',
-  'backend/gateway/cookieSecurity.test.js',
-  'backend/gateway/edge.test.js',
-  'backend/gateway/mirrorGuard.test.js',
-  'backend/gateway/api/hidden.test.js',
-  'backend/gateway/api/uploadMetadata.test.js',
-  'backend/gateway/generator/engine.test.js',
-  'backend/gateway/queue/artifact.test.js',
-  'backend/gateway/queue/managerHandoff.test.js',
-  'backend/gateway/queue/processingQueue.test.js',
-  // The parser's suite is pure throughout -- no database, no socket.
-  'Parsed/parser/test/layers.test.mjs',
-  'Parsed/parser/test/scan.test.mjs',
-  'Parsed/parser/test/repair.test.mjs',
-  'Parsed/parser/test/qpdf.test.mjs',
-  'Parsed/parser/test/provenance.test.mjs',
+  'test/node/site-test/codec.test.js',
+  'test/node/site-test/csrf.test.js',
+  'test/node/site-test/parser.test.js',
+  'test/node/site-test/cookieSecurity.test.js',
+  'test/node/site-test/edge.test.js',
+  'test/node/site-test/mirrorGuard.test.js',
+  'test/node/site-test/hidden.test.js',
+  'test/node/site-test/uploadMetadata.test.js',
+  'test/node/site-test/artifact.test.js',
+  'test/node/site-test/managerHandoff.test.js',
+  'test/node/site-test/processingQueue.test.js',
+  // The parser's unit suite is pure throughout -- no database, no socket.
+  'test/node/parser-test/beautify.test.js',
+  'test/node/parser-test/reorder.test.js',
+  'test/node/parser-test/scan.test.js',
+  'test/node/parser-test/provenance.test.js',
+  'test/node/parser-test/parser-layout.test.js',
 ];
 
 /** Tests that need a database or a socket, named so the summary can say

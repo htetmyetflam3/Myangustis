@@ -4,8 +4,8 @@ import fs from "node:fs";
 import {
   ZAWCODE_LEGACY_CODE_PAGE, ZAWCODE_INPUT_CMAP_INVENTORY, buildZawCodeCodePage,
 } from "../../../B.Parser/main/parser/codepage/zawcode-layout.js";
-import { LEGACY_CODE_PAGES, UNICODE_PATH, ZawCODE_PATH } from "../../../B.Parser/main/parser/codepage/registry.js";
-import { unmixZawCodeMarks } from "../../../B.Parser/main/parser/text/cleanup.js";
+import { LEGACY_CODE_PAGES, UNICODE_PATH, ZawCODE_PATH } from "../../../B.Parser/prised/@core/pdf/method/legacy/codepage-registry.js";
+import { unmixZawCodeMarks } from "../../../B.Parser/prised/@postprocess/beautify/clean.js";
 
 
 

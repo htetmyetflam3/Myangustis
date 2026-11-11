@@ -19,6 +19,20 @@ need to compose them themselves (e.g. parse many files, write later):
 
 See MAP.md for the one-page map of this whole directory.
 */
+import { advisoryOnce } from "../Architecture/host/advisory.js";
+
+// First-use guidance, once per user and terminal-only: this is the chain
+// door, and the middle-chain helpers are not. Text that still holds
+// unknown contexts comes back in the parse reports, not on stdout.
+advisoryOnce(
+  "parser-door",
+  "[Parser] B.Parser/index.js is the chain door: convert() takes a file in, "
+    + "parses it, and writes the requested output. The stage functions "
+    + "(InitInput, parseDecoding, writeOutputFile) only exist for callers that "
+    + "compose the stages themselves; parsing helpers called directly skip "
+    + "preparation, cleanup and the reports, where unknown contexts are kept.",
+);
+
 export { convert } from "./convert.js";
 export { InitInput } from "./@entry/init.js";
 export { parseDecoding } from "./prised/@core/run.js";

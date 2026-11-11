@@ -403,7 +403,7 @@ export class PosScanner {
   // consume its tagged output, and scan that output immediately. Only the
   // broken unknown-token contexts survive, in this.memory as
   // { page, line, context, count }; all other tagged lines are dropped.
-  async finish() {
+  async finish(outputPath = null) {
     if (this.complete || this.closed) throw new Error('POS scanner is closed');
     this.complete = true;
     try {
@@ -468,6 +468,7 @@ export class PosScanner {
           unknownCount += hit.count;
           this.memory.push({
             page, line: lineNumber, sequence, needsFallback,
+            source,
             context: hit.context, count: hit.count,
           });
         }
@@ -487,12 +488,17 @@ export class PosScanner {
         delete entry.sequence;
         delete entry.needsFallback;
       }
-      return {
+      const result = {
         memory: this.memory,
         unknownCount,
         contextCount: this.memory.length,
         longLines,
       };
+      if (outputPath) {
+        result.file = `${outputPath}.unknown.txt`;
+        fs.writeFileSync(result.file, formatUnknownReport(this.memory), { mode: 0o600 });
+      }
+      return result;
     } finally {
       await this.close();
     }
@@ -511,11 +517,22 @@ export class PosScanner {
 // the warning at scanText above and the repair.js header. This scan
 // hunts word{F} unknowns in tagged output; it is layout-blind and
 // must never be given lane, font or encoding work.
-export async function scanTextWithPos(text, { page = null, directory, bindEngine } = {}) {
+// One retained hit reads as: where it was, the line as written, and the
+// tagged context that exposed it. Nothing else from the scan is written.
+export function formatUnknownReport(memory = []) {
+  const blocks = memory.map((entry) => [
+    `Page ${entry.page ?? "?"}, line ${entry.line}`,
+    `Original: ${entry.source ?? ""}`,
+    `Context: ${entry.context}`,
+  ].join("\n"));
+  return blocks.length ? `${blocks.join("\n\n")}\n` : "";
+}
+
+export async function scanTextWithPos(text, { page = null, directory, bindEngine, outputPath = null } = {}) {
   const scanner = new PosScanner({ directory, bindEngine });
   try {
     await scanner.writePage(page, [String(text ?? '')]);
-    return await scanner.finish();
+    return await scanner.finish(outputPath);
   } finally {
     await scanner.close();
   }

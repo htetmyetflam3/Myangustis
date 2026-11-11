@@ -41,7 +41,8 @@ for (const scenario of ['shared', 'nested', 'standalone', 'missing-component-ent
     const shared = ['shared', 'nested'].includes(scenario);
     assert.equal(result.runtime, shared ? path.join(root, 'Junk/Parser') : component);
     assert.equal(result.fonts, path.join(shared ? path.join(root, 'Junk') : component, 'fonts/Unicode'));
-    assert.equal(result.source, path.join(component, 'main/parser'));
+    // PARSER_DIR is the flattened component root (no main/parser sub-tree).
+    assert.equal(result.source, component);
     for (const dir of [result.output]) {
       assert.ok(fs.statSync(dir).isDirectory(), dir);
     }

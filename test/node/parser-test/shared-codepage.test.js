@@ -5,7 +5,7 @@ import {
   SHARED_LEGACY_CODE_PAGE,
   WININNWA_LEGACY_CODE_PAGE,
   lookupLegacyCode,
-} from "../../../B.Parser/main/parser/codepage/registry.js";
+} from "../../../B.Parser/prised/@core/pdf/method/legacy/codepage-registry.js";
 
 test("shared legacy entries are exactly the equal keys and values in both original tables", () => {
   assert.deepEqual([...SHARED_LEGACY_CODE_PAGE], [

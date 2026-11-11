@@ -9,15 +9,15 @@ import multer from 'multer';
 const runtime = await fs.mkdtemp(path.join(os.tmpdir(), 'linga-roundtrip-'));
 process.env.PARSER_RUNTIME_DIR = runtime;
 const { abs, ensureUploadDir, OUTPUT_DIR, RAW_TXT_DIR, ORIGINAL_DIR } =
-  await import('../../../F.Site/Backend/file/paths.js');
-const { createProcessingQueue } = await import('../../../F.Site/Backend/gateway/queue/processingQueue.js');
-const { closePraserManager } = await import('../../../F.Site/Backend/file/praser.js');
-const { createIncomingRouter } = await import('../../../F.Site/Backend/gateway/api/incoming.js');
-const { createEngineQueueRouter } = await import('../../../F.Site/Backend/gateway/api/engineCollect.js');
-const { createHiddenProcessor } = await import('../../../F.Site/Backend/gateway/api/hidden.js');
-const { engineConfig, createEngineDispatcher } = await import('../../../F.Site/Backend/gateway/generator/engine.js');
+  await import('../../../B.Parser/host/Backend/file/paths.js');
+const { createProcessingQueue } = await import('../../../B.Parser/host/Backend/gateway/queue/processingQueue.js');
+const { closePraserManager } = await import('../../../B.Parser/host/Backend/file/pdfanalysis.js');
+const { createIncomingRouter } = await import('../../../B.Parser/host/Backend/gateway/api/incoming.js');
+const { createEngineQueueRouter } = await import('../../../B.Parser/host/Backend/gateway/api/engineCollect.js');
+const { createHiddenProcessor } = await import('../../../B.Parser/host/Backend/gateway/api/hidden.js');
+const { engineConfig, createEngineDispatcher } = await import('../../../B.Parser/host/Backend/gateway/generator/engine.js');
 const SAMPLE_PDF = path.resolve(
-  'F.Site/Frontend/frontend-bootstrap/public/samples/sample.pdf',
+  'B.Parser/host/Frontend/frontend-bootstrap/public/samples/sample.pdf',
 );
 const SITE_TO_ENGINE_KEY = 'a'.repeat(32);
 const ENGINE_TO_SITE_KEY = 'b'.repeat(32);

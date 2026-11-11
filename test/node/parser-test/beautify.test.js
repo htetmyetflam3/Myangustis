@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   HOMOGLYPH_PAIRS, homoglyphVariants, beautifyToken, beautifyHomoglyphs,
-} from "../../../B.Parser/main/parser/text/beautify.js";
+} from "../../../B.Parser/prised/@postprocess/beautify/beautify.js";
 
 const words = new Set(["စဉ်", "အစဉ်", "လုံးဝ", "ဝဂ်", "ယာဉ်", "ရေ"]);
 
@@ -65,7 +65,7 @@ test("non-Myanmar text passes through untouched", () => {
 });
 
 
-import { splitGluedNumber, beautifyText } from "../../../B.Parser/main/parser/text/beautify.js";
+import { splitGluedNumber, beautifyText } from "../../../B.Parser/prised/@postprocess/beautify/beautify.js";
 
 const toc = new Set(["သဒ္ဒါ", "ဝဂ်", "မျိုး", "စဉ်"]);
 
@@ -109,8 +109,8 @@ test("beautifyText is a no-op without a dictionary", () => {
 
 
 test("zawcode mend rewrites scan-flagged spans and nothing else", async () => {
-  const { mendZawCodeText } = await import("../../../B.Parser/main/parser/text/beautify.js");
-  const { mendZawCodeTextWithPos } = await import("../../../B.Parser/main/parser/text/repair.js");
+  const { mendZawCodeText } = await import("../../../B.Parser/prised/@postprocess/beautify/zawcode-order.js");
+  const { mendZawCodeTextWithPos } = await import("../../../B.Parser/prised/@postprocess/repair/repair.js");
 
   const line = "မြေတော်တွင် ကြေနပ်စွာ \u1014\u103C\u1031\u1015\u102E ကြေးဇူးပါ";
   const { text, repairs } = await mendZawCodeTextWithPos(line);
@@ -122,8 +122,8 @@ test("zawcode mend rewrites scan-flagged spans and nothing else", async () => {
 });
 
 test("zawcode guard splits stored order by readable result, not font name", async () => {
-  const { zawCodeGuard } = await import("../../../B.Parser/main/parser/text/beautify.js");
-  const { zawCodeGuardWithPos } = await import("../../../B.Parser/main/parser/text/repair.js");
+  const { zawCodeGuard } = await import("../../../B.Parser/prised/@postprocess/beautify/zawcode-order.js");
+  const { zawCodeGuardWithPos } = await import("../../../B.Parser/prised/@postprocess/repair/repair.js");
 
   const stored = Array(30).fill("\u1014\u103C\u1031\u1015\u102E").join(" ");
   const guard = await zawCodeGuardWithPos(stored);
@@ -140,7 +140,7 @@ test("zawcode guard splits stored order by readable result, not font name", asyn
 
 
 test("zawcode insertion variants offer the dropped glyphs", async () => {
-  const { zawCodeInsertionVariants, zawCodeSpuriousIVariants } = await import("../../../B.Parser/main/parser/text/beautify.js");
+  const { zawCodeInsertionVariants, zawCodeSpuriousIVariants } = await import("../../../B.Parser/prised/@postprocess/beautify/zawcode-order.js");
 
   assert.ok(zawCodeInsertionVariants("\u1000\u1031\u102C\u1004\u103A\u1037")
     .includes("\u1000\u103C\u1031\u102C\u1004\u103A\u1037"));
@@ -163,7 +163,7 @@ test("zawcode insertion variants offer the dropped glyphs", async () => {
 });
 
 test("zawcode mend retraces misnamed and dropped glyphs at scan coordinates", async () => {
-  const { mendZawCodeTextWithPos } = await import("../../../B.Parser/main/parser/text/repair.js");
+  const { mendZawCodeTextWithPos } = await import("../../../B.Parser/prised/@postprocess/repair/repair.js");
 
 
 
@@ -199,7 +199,7 @@ test("zawcode mend retraces misnamed and dropped glyphs at scan coordinates", as
 });
 
 test("zawcode mend frames cover the damage that still segments", async () => {
-  const { mendZawCodeTextWithPos } = await import("../../../B.Parser/main/parser/text/repair.js");
+  const { mendZawCodeTextWithPos } = await import("../../../B.Parser/prised/@postprocess/repair/repair.js");
 
 
 
@@ -223,7 +223,7 @@ test("zawcode mend frames cover the damage that still segments", async () => {
 });
 
 test("beautifyFromScanVerdict mends only the zawcode path, text and lines together", async () => {
-  const { repairFromPosVerdict: beautifyFromPosVerdict } = await import("../../../B.Parser/main/parser/text/repair.js");
+  const { repairFromPosVerdict: beautifyFromPosVerdict } = await import("../../../B.Parser/prised/@postprocess/repair/repair.js");
   const line = "မြေတော်တွင် \u1014\u103C\u1031\u1015\u102E ကြေးဇူးပါ";
   const pages = [{ text: line, lines: [[0, 0, 10, line]], wh: [1, 1] }];
 
@@ -248,7 +248,7 @@ test("beautifyFromScanVerdict mends only the zawcode path, text and lines togeth
 });
 
 test("production repair uses POS-confirmed candidates without changing standalone Myanmar digits", async () => {
-  const { repairTextWithPos: beautifyTextWithPos } = await import("../../../B.Parser/main/parser/text/repair.js");
+  const { repairTextWithPos: beautifyTextWithPos } = await import("../../../B.Parser/prised/@postprocess/repair/repair.js");
   const result = await beautifyTextWithPos("စဥ် သဒ္ဒါ၁ လုံး၀ ၀ ၇ ဝ ရ");
   assert.equal(result.text, "စဉ် သဒ္ဒါ ၁ လုံးဝ ၀ ၇ ဝ ရ");
   assert.deepEqual(result.splits, [{ from: "သဒ္ဒါ၁", count: 1 }]);
@@ -256,7 +256,7 @@ test("production repair uses POS-confirmed candidates without changing standalon
 });
 
 test("OCR repair locates POS unknowns using source spans and validates candidates through Engine", async () => {
-  const { scanBrokenSpansWithPos, inspectPosCandidate } = await import("../../../B.Parser/main/parser/text/repair.js");
+  const { scanBrokenSpansWithPos, inspectPosCandidate } = await import("../../../B.Parser/prised/@postprocess/repair/repair.js");
   const source = "ကောင်းကင် ဃက် မြန်မာ";
   const spans = await scanBrokenSpansWithPos(source);
   const target = spans.find((span) => span.token === "ဃက်");

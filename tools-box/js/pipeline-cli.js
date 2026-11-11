@@ -29,9 +29,10 @@ Examples (start the HTTP servers separately):
   node tools-box/js/pipeline-cli.js engine http text.txt --url http://localhost:9000
   node tools-box/js/pipeline-cli.js parser http book.pdf --url http://localhost:3000/UchihaItachiIsMyFavChar
 
-Local Parser uses Manager.dispatchStream and prints its result as JSON. The
-output defaults to a unique file in the Parser output directory; its path and
-any unknown-POS sidecar appear in the result. --out selects a new output file.
+Local Parser runs the Parser chain door (InitInput -> parseDecoding ->
+writeOutputFile) and prints its result as JSON. The output defaults to a unique
+file in the Parser output directory; its path and the unknown-POS sidecar
+appear in the result. --out selects a new output file.
 Local Engine reads the whole UTF-8 text file because BindEngine takes a string;
 it calls the Bridge without a caller hash. Syllables are text lines; POS is JSON
 Lines with syllable and rawPos fields.
@@ -43,7 +44,7 @@ The API accepts at most 16 KiB of JSON and returns positional data, not finished
 segmented text.
 
 Parser HTTP calls the Site's keyed conversion-only route, not the SPA upload
-lane. Its plain-text response omits the Manager's page headers. Give --url as
+lane. Its plain-text response carries no page headers. Give --url as
 the complete route, or as the Site root and set CURL_ENDPOINT in the existing
 environment. --endpoint appends an explicit path to --url. Set CURL_KEY in the
 environment; never put the key in the URL.
@@ -231,27 +232,68 @@ function cookieHeader(response) {
 async function localParser(source, options) {
   await inputFile(source, 'parser');
   const { format, output: chosenOutput } = outputFormat(options);
-  const { Manager } = await import('../../B.Parser/main/parser/manager.js');
-  const manager = new Manager({ quiet: options.quiet === true });
-  const output = chosenOutput || path.join(manager.outputDir, `${crypto.randomUUID()}.${format}`);
+  const { InitInput, parseDecoding, writeOutputFile } = await import('../../B.Parser/index.js');
+  const { DEFAULT_OUTPUT_DIR } = await import('../../B.Parser/_path.js');
+  const output = chosenOutput || path.join(DEFAULT_OUTPUT_DIR, `${crypto.randomUUID()}.${format}`);
+  await ensureNewFile(output, true);
+
+  // The same three stages convert() wires together, kept apart here so the
+  // summary can report the page count and scan the parsed pages.
+  const prepared = await InitInput({ path: source }, 'owner');
+  const kind = prepared.kind === 'ocr' ? 'ocr' : prepared.kind;
+  if (!['pdf', 'docx', 'ocr'].includes(kind)) {
+    throw new Error(`Parser cannot convert "${prepared.kind}" input.`);
+  }
+  const parsed = await parseDecoding({ kind, source: prepared.path, filename: path.basename(source) });
+  const written = await writeOutputFile(parsed.pages, output, {
+    source: parsed.filename ?? path.basename(source),
+    sourceKind: parsed.kind,
+    counts: parsed.counts,
+  });
+
+  // The unknown-context scan the Parser has always left beside its output:
+  // every parsed page goes through the hash-free POS bridge, and only the
+  // broken token contexts are written out.
+  const posScan = await writeUnknownSidecar(written.file, parsed.pages);
+  const summary = {
+    caller: 'local',
+    file: written.file,
+    format: written.to,
+    pages: written.pages,
+    textChars: written.textChars,
+    from: written.from,
+    counts: written.counts ?? parsed.counts ?? {},
+    posScan,
+  };
+  process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
+}
+
+// Run the POS scan over the parsed pages and write <output>.unknown.txt.
+// The report is advisory: a scan failure never fails the conversion.
+async function writeUnknownSidecar(file, pages) {
   try {
-    await ensureNewFile(output, true);
-    const job = {
-      filename: path.basename(source),
-      output: format,
-      outPath: output,
-      ...(options.job ? { job: options.job } : {}),
-      ...(options.method ? { method: options.method } : {}),
-      ...(options.encoding ? { sourceEncoding: options.encoding } : {}),
-      ...(options.cleanup ? { applyCleanup: true } : {}),
-    };
-    const result = await manager.dispatchStream(createReadStream(source), job);
-    // DOCX output can contain the full joined text; the file is the deliverable.
-    const summary = { ...result };
-    delete summary.text;
-    process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
-  } finally {
-    await manager.close();
+    const { PosScanner } = await import('../../B.Parser/prised/@postprocess/init.js');
+    const reportFile = `${file}.unknown.txt`;
+    const scanner = new PosScanner({ directory: path.dirname(file) });
+    let scan;
+    try {
+      (pages ?? []).forEach((page, index) => {
+        scanner.writePage(index + 1, [typeof page === 'string' ? page : page?.text ?? '']);
+      });
+      scan = await scanner.finish();
+    } finally {
+      await scanner.close();
+    }
+    const body = scan.memory.map(entry => [
+      `Page ${entry.page ?? '?'}, line ${entry.line}`,
+      `Context: ${entry.context}`,
+      '',
+    ].join('\n')).join('\n');
+    await fs.writeFile(reportFile, body, { mode: 0o600 });
+    return { file: reportFile, unknownCount: scan.unknownCount, contextCount: scan.contextCount };
+  } catch (error) {
+    process.stderr.write(`[pipeline] POS scan skipped: ${error?.message ?? 'scan failed'}\n`);
+    return null;
   }
 }
 

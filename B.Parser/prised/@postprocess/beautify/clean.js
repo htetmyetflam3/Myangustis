@@ -40,6 +40,22 @@ import { getEngineData } from "../../../_path.js";
 import { loadMapJson } from "../../@core/runtime/json-map.js";
 import { MARK_ORDER as PRIORITY, isIndex } from "../../@rule/mm-score.js";
 
+// Reordering inside one cluster follows the modern Burmese syllable order
+// (consonant, medials ျ ြ ွ ှ, then ေ, then the vowels above/below, then
+// ံ ့ း). MARK_ORDER above is the Engine's own SLOT order - a keyboard/code
+// order in which ေ sits at 2 and the medials at 19-22 - so sorting a
+// cluster's marks by it turns ကြေ into ကေြ. Marks outside this table keep
+// the Engine order.
+const REORDER_PRIORITY = new Map([
+  ["\u103b", 1], ["\u103c", 2], ["\u103d", 3], ["\u103e", 4],
+  ["\u1031", 5], ["\u102d", 6], ["\u102e", 6], ["\u1032", 6],
+  ["\u102f", 7], ["\u1030", 7],
+  ["\u102b", 8], ["\u102c", 8],
+  ["\u1036", 9], ["\u103a", 10], ["\u1037", 11], ["\u1038", 12],
+]);
+
+const reorderRank = (ch) => REORDER_PRIORITY.get(ch) ?? PRIORITY.get(ch);
+
 const { readMasterJson } = await getEngineData();
 let masterMapData = null;
 
@@ -367,11 +383,12 @@ function opensCluster(chars, i) {
 
 
 
-  const rank = PRIORITY.get(prev);
+  // A mark that belongs EARLIER in the syllable than the mark before it
+  // cannot attach backwards - it opens the next cluster. လာြ --> the ြ
+  // cannot follow ာ, so it moves behind the base that comes next.
+  const rank = reorderRank(prev);
   if (rank === undefined) return true;
-
-
-  return PRIORITY.get(chars[i]) < rank;
+  return reorderRank(chars[i]) < rank;
 }
 
 
@@ -434,7 +451,7 @@ export function reorderMarks(t) {
       while (i < n) {
         const nxt = chars[i];
         if (isIndex(nxt) || nxt === " " || nxt === "\n") break;
-        const p = PRIORITY.get(nxt);
+        const p = reorderRank(nxt);
         if (p === undefined) break;
         // Some input workflows deliberately emit two U+102F signs. Keep both
         // codepoints; neither is U+1030 and neither is proven overprinting.
@@ -446,7 +463,7 @@ export function reorderMarks(t) {
       }
 
       if (marks.length) {
-        marks.sort((a, b) => PRIORITY.get(a) - PRIORITY.get(b));
+        marks.sort((a, b) => reorderRank(a) - reorderRank(b));
         out.push(...marks);
       }
     } else {
@@ -514,8 +531,8 @@ export function unmixZawCodeMarks(t) {
       const base = ch;
       let marks = [...carry];
       carry = [];
-      const seenPriorities = new Set(marks.map((m) => PRIORITY.get(m)));
-      let pointer = marks.reduce((mx, m) => Math.max(mx, PRIORITY.get(m) ?? 0), 0);
+      const seenPriorities = new Set(marks.map((m) => reorderRank(m)));
+      let pointer = marks.reduce((mx, m) => Math.max(mx, reorderRank(m) ?? 0), 0);
       i += 1;
 
 
@@ -524,7 +541,7 @@ export function unmixZawCodeMarks(t) {
       while (i < n) {
         const nxt = chars[i];
         if (isIndex(nxt) || nxt === " " || nxt === "\n") break;
-        const p = PRIORITY.get(nxt);
+        const p = reorderRank(nxt);
         if (p === undefined) break;
 
         if ((nxt === "\u1031" || nxt === "\u103C") && p < pointer) {
@@ -549,7 +566,7 @@ export function unmixZawCodeMarks(t) {
         marks = marks.filter((m) => !MEDIALS.has(m));
       }
 
-      marks.sort((a, b) => PRIORITY.get(a) - PRIORITY.get(b));
+      marks.sort((a, b) => reorderRank(a) - reorderRank(b));
       out.push(base, ...marks);
     } else if (ZAWCODE_PREBASE.has(ch) && (() => {
       let k = i;

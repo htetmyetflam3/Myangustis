@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseTtfCmap } from "../../../B.Parser/main/parser/core/ttf-cmap.js";
-import { parseToUnicodeStream } from "../../../B.Parser/main/parser/read/pdf-extract.js";
-import { DocumentDecoding, FontDecoder } from "../../../B.Parser/main/parser/read/pdf-fonts.js";
+import { parseTtfCmap } from "../../../B.Parser/prised/@core/pdf/method/unicode/ttf/ttf-cmap.js";
+import { parseToUnicodeStream } from "../../../B.Parser/prised/@core/pdf/method/pdfencoding/decoding.js";
+import { DocumentDecoding, FontDecoder } from "../../../B.Parser/prised/@core/pdf/method/decoder.js";
 
 
 
