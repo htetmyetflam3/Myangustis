@@ -1,4 +1,4 @@
-import { curlKey, curlKeySha256, keyMatches } from '../../../../curl-key.js';
+import { curlKey, curlKeySha256, keyMatches } from '../../../../../curl-key.js';
 
 export { curlKey, curlKeySha256, keyMatches };
 

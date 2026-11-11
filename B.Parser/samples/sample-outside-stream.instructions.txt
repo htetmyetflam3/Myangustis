@@ -1,0 +1,836 @@
+OUTSIDE-STREAM SAMPLE PARSE -> INSTRUCTIONS
+============================================================
+Source PDF : B.Parser/host/Frontend/frontend-bootstrap/public/samples/sample.pdf
+Scope      : only objects that live outside object streams.
+Streams    : never opened, never decompressed in this sample.
+
+INVENTORY
+  objects visible outside object streams : 212
+  plain dictionary/values objects        : 110
+  stream objects (bodies skipped)        : 102
+  pages (page-tree leaves)               : 100
+
+DOCUMENT
+  START at object 1 0 R (Catalog)
+  FOLLOW /Pages -> object 2 0 R (page tree root)
+  INFO Author = "rooter"
+  INFO Creator = "Microsoft® Word 2010"
+  INFO Producer = "Microsoft® Word 2010"
+  INFO CreationDate = "D:20190814151213+06'30'"
+  INFO ModDate = "D:20190814151213+06'30'"
+
+PAGE INSTRUCTIONS (streams referenced, never decoded)
+PAGE 1 = object 4 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 106 0 R (stream, FlateDecode, 1602 bytes) NOT DECODED
+PAGE 2 = object 5 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 107 0 R (stream, FlateDecode, 1768 bytes) NOT DECODED
+PAGE 3 = object 6 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 108 0 R (stream, FlateDecode, 2232 bytes) NOT DECODED
+PAGE 4 = object 7 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 109 0 R (stream, FlateDecode, 2028 bytes) NOT DECODED
+PAGE 5 = object 8 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 110 0 R (stream, FlateDecode, 2682 bytes) NOT DECODED
+PAGE 6 = object 9 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 111 0 R (stream, FlateDecode, 2317 bytes) NOT DECODED
+PAGE 7 = object 10 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 112 0 R (stream, FlateDecode, 1578 bytes) NOT DECODED
+PAGE 8 = object 11 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 113 0 R (stream, FlateDecode, 2013 bytes) NOT DECODED
+PAGE 9 = object 12 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 114 0 R (stream, FlateDecode, 2123 bytes) NOT DECODED
+PAGE 10 = object 13 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 115 0 R (stream, FlateDecode, 2254 bytes) NOT DECODED
+PAGE 11 = object 14 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 116 0 R (stream, FlateDecode, 1619 bytes) NOT DECODED
+PAGE 12 = object 15 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 117 0 R (stream, FlateDecode, 1838 bytes) NOT DECODED
+PAGE 13 = object 16 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 118 0 R (stream, FlateDecode, 2160 bytes) NOT DECODED
+PAGE 14 = object 17 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 120 0 R (stream, FlateDecode, 1892 bytes) NOT DECODED
+PAGE 15 = object 18 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 121 0 R (stream, FlateDecode, 1768 bytes) NOT DECODED
+PAGE 16 = object 19 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 122 0 R (stream, FlateDecode, 1437 bytes) NOT DECODED
+PAGE 17 = object 20 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 123 0 R (stream, FlateDecode, 2035 bytes) NOT DECODED
+PAGE 18 = object 21 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 124 0 R (stream, FlateDecode, 1731 bytes) NOT DECODED
+PAGE 19 = object 22 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 125 0 R (stream, FlateDecode, 1505 bytes) NOT DECODED
+PAGE 20 = object 23 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 126 0 R (stream, FlateDecode, 1488 bytes) NOT DECODED
+PAGE 21 = object 24 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 127 0 R (stream, FlateDecode, 1535 bytes) NOT DECODED
+PAGE 22 = object 25 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 128 0 R (stream, FlateDecode, 1786 bytes) NOT DECODED
+PAGE 23 = object 26 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 129 0 R (stream, FlateDecode, 1731 bytes) NOT DECODED
+PAGE 24 = object 27 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 130 0 R (stream, FlateDecode, 1868 bytes) NOT DECODED
+PAGE 25 = object 28 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 131 0 R (stream, FlateDecode, 2051 bytes) NOT DECODED
+PAGE 26 = object 29 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 132 0 R (stream, FlateDecode, 2158 bytes) NOT DECODED
+PAGE 27 = object 30 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 133 0 R (stream, FlateDecode, 2107 bytes) NOT DECODED
+PAGE 28 = object 31 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 134 0 R (stream, FlateDecode, 1348 bytes) NOT DECODED
+PAGE 29 = object 32 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 135 0 R (stream, FlateDecode, 2104 bytes) NOT DECODED
+PAGE 30 = object 33 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 136 0 R (stream, FlateDecode, 1393 bytes) NOT DECODED
+PAGE 31 = object 34 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 137 0 R (stream, FlateDecode, 1943 bytes) NOT DECODED
+PAGE 32 = object 35 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 138 0 R (stream, FlateDecode, 1755 bytes) NOT DECODED
+PAGE 33 = object 36 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 139 0 R (stream, FlateDecode, 1662 bytes) NOT DECODED
+PAGE 34 = object 37 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 140 0 R (stream, FlateDecode, 1816 bytes) NOT DECODED
+PAGE 35 = object 38 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 141 0 R (stream, FlateDecode, 1799 bytes) NOT DECODED
+PAGE 36 = object 39 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 142 0 R (stream, FlateDecode, 1652 bytes) NOT DECODED
+PAGE 37 = object 40 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 143 0 R (stream, FlateDecode, 2152 bytes) NOT DECODED
+PAGE 38 = object 41 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 144 0 R (stream, FlateDecode, 2070 bytes) NOT DECODED
+PAGE 39 = object 42 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 145 0 R (stream, FlateDecode, 2012 bytes) NOT DECODED
+PAGE 40 = object 43 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 146 0 R (stream, FlateDecode, 1606 bytes) NOT DECODED
+PAGE 41 = object 44 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 147 0 R (stream, FlateDecode, 2172 bytes) NOT DECODED
+PAGE 42 = object 45 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 148 0 R (stream, FlateDecode, 1730 bytes) NOT DECODED
+PAGE 43 = object 46 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 149 0 R (stream, FlateDecode, 1643 bytes) NOT DECODED
+PAGE 44 = object 47 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 150 0 R (stream, FlateDecode, 1728 bytes) NOT DECODED
+PAGE 45 = object 48 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 151 0 R (stream, FlateDecode, 1428 bytes) NOT DECODED
+PAGE 46 = object 49 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 152 0 R (stream, FlateDecode, 2212 bytes) NOT DECODED
+PAGE 47 = object 50 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 153 0 R (stream, FlateDecode, 1637 bytes) NOT DECODED
+PAGE 48 = object 51 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 154 0 R (stream, FlateDecode, 1268 bytes) NOT DECODED
+PAGE 49 = object 52 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 155 0 R (stream, FlateDecode, 1605 bytes) NOT DECODED
+PAGE 50 = object 53 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 156 0 R (stream, FlateDecode, 1741 bytes) NOT DECODED
+PAGE 51 = object 54 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 157 0 R (stream, FlateDecode, 1737 bytes) NOT DECODED
+PAGE 52 = object 55 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 158 0 R (stream, FlateDecode, 2046 bytes) NOT DECODED
+PAGE 53 = object 56 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 159 0 R (stream, FlateDecode, 2118 bytes) NOT DECODED
+PAGE 54 = object 57 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 160 0 R (stream, FlateDecode, 1799 bytes) NOT DECODED
+PAGE 55 = object 58 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 161 0 R (stream, FlateDecode, 2028 bytes) NOT DECODED
+PAGE 56 = object 59 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 162 0 R (stream, FlateDecode, 2055 bytes) NOT DECODED
+PAGE 57 = object 60 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 163 0 R (stream, FlateDecode, 1855 bytes) NOT DECODED
+PAGE 58 = object 61 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 164 0 R (stream, FlateDecode, 1819 bytes) NOT DECODED
+PAGE 59 = object 62 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 165 0 R (stream, FlateDecode, 2100 bytes) NOT DECODED
+PAGE 60 = object 63 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 166 0 R (stream, FlateDecode, 2411 bytes) NOT DECODED
+PAGE 61 = object 64 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 167 0 R (stream, FlateDecode, 1908 bytes) NOT DECODED
+PAGE 62 = object 65 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 168 0 R (stream, FlateDecode, 1844 bytes) NOT DECODED
+PAGE 63 = object 66 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 169 0 R (stream, FlateDecode, 2061 bytes) NOT DECODED
+PAGE 64 = object 67 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 170 0 R (stream, FlateDecode, 2344 bytes) NOT DECODED
+PAGE 65 = object 68 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 171 0 R (stream, FlateDecode, 1970 bytes) NOT DECODED
+PAGE 66 = object 69 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 172 0 R (stream, FlateDecode, 2325 bytes) NOT DECODED
+PAGE 67 = object 70 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 173 0 R (stream, FlateDecode, 1914 bytes) NOT DECODED
+PAGE 68 = object 71 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 174 0 R (stream, FlateDecode, 1777 bytes) NOT DECODED
+PAGE 69 = object 72 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 175 0 R (stream, FlateDecode, 1919 bytes) NOT DECODED
+PAGE 70 = object 73 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 176 0 R (stream, FlateDecode, 1743 bytes) NOT DECODED
+PAGE 71 = object 74 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 177 0 R (stream, FlateDecode, 1955 bytes) NOT DECODED
+PAGE 72 = object 75 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 178 0 R (stream, FlateDecode, 1750 bytes) NOT DECODED
+PAGE 73 = object 76 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 179 0 R (stream, FlateDecode, 1954 bytes) NOT DECODED
+PAGE 74 = object 77 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 180 0 R (stream, FlateDecode, 2099 bytes) NOT DECODED
+PAGE 75 = object 78 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 181 0 R (stream, FlateDecode, 2132 bytes) NOT DECODED
+PAGE 76 = object 79 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 182 0 R (stream, FlateDecode, 1490 bytes) NOT DECODED
+PAGE 77 = object 80 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 183 0 R (stream, FlateDecode, 1695 bytes) NOT DECODED
+PAGE 78 = object 81 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 184 0 R (stream, FlateDecode, 1811 bytes) NOT DECODED
+PAGE 79 = object 82 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 185 0 R (stream, FlateDecode, 1798 bytes) NOT DECODED
+PAGE 80 = object 83 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 186 0 R (stream, FlateDecode, 1990 bytes) NOT DECODED
+PAGE 81 = object 84 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 187 0 R (stream, FlateDecode, 1564 bytes) NOT DECODED
+PAGE 82 = object 85 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 188 0 R (stream, FlateDecode, 2086 bytes) NOT DECODED
+PAGE 83 = object 86 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 189 0 R (stream, FlateDecode, 1766 bytes) NOT DECODED
+PAGE 84 = object 87 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 190 0 R (stream, FlateDecode, 2168 bytes) NOT DECODED
+PAGE 85 = object 88 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 191 0 R (stream, FlateDecode, 2020 bytes) NOT DECODED
+PAGE 86 = object 89 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 192 0 R (stream, FlateDecode, 1708 bytes) NOT DECODED
+PAGE 87 = object 90 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 193 0 R (stream, FlateDecode, 1956 bytes) NOT DECODED
+PAGE 88 = object 91 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 194 0 R (stream, FlateDecode, 2263 bytes) NOT DECODED
+PAGE 89 = object 92 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 195 0 R (stream, FlateDecode, 1926 bytes) NOT DECODED
+PAGE 90 = object 93 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 196 0 R (stream, FlateDecode, 2021 bytes) NOT DECODED
+PAGE 91 = object 94 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 197 0 R (stream, FlateDecode, 1655 bytes) NOT DECODED
+PAGE 92 = object 95 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 198 0 R (stream, FlateDecode, 1850 bytes) NOT DECODED
+PAGE 93 = object 96 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 199 0 R (stream, FlateDecode, 1678 bytes) NOT DECODED
+PAGE 94 = object 97 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 200 0 R (stream, FlateDecode, 2177 bytes) NOT DECODED
+PAGE 95 = object 98 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 201 0 R (stream, FlateDecode, 1731 bytes) NOT DECODED
+PAGE 96 = object 99 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 202 0 R (stream, FlateDecode, 1761 bytes) NOT DECODED
+PAGE 97 = object 100 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 203 0 R (stream, FlateDecode, 1608 bytes) NOT DECODED
+PAGE 98 = object 101 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 204 0 R (stream, FlateDecode, 1751 bytes) NOT DECODED
+PAGE 99 = object 102 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 205 0 R (stream, FlateDecode, 1674 bytes) NOT DECODED
+PAGE 100 = object 103 0 R
+  BOX    MediaBox [0.0 0.0 612.0 792.0] (own)
+  ROTATE 0 (own)
+  USE FONT /F2 -> object 105 0 R: TrueType ABCDEE+Zawgyi-One, encoding WinAnsiEncoding, embedded font file -> object 212 0 R (stream, not decoded)
+  USE FONT /F1 -> object 104 0 R: Type0 ABCDEE+Zawgyi-One, encoding Identity-H, ToUnicode -> object 208 0 R (stream, not decoded), embedded font file -> object 212 0 R (stream, not decoded)
+  DRAW   content -> object 206 0 R (stream, FlateDecode, 1844 bytes) NOT DECODED
+
+ALL OBJECTS OUTSIDE OBJECT STREAMS
+1 0 R @bytes 22..71 [object] << /Type /Catalog /Version /1.4 /Pages 2 0 R >>
+2 0 R @bytes 391..1128 [object] << /Type /Pages /Kids [4 0 R 5 0 R 6 0 R 7 0 R 8 0 R 9 0 R 10 0 R 11 0 R 12 0 R 13 0 R 14 0 R 15 0 R 16 0 R 17 0 R 18 0 R 19 0 R 20 0 R 21 0 R 22 0 R 23 0 R 24 0 R 25 0 R 26 0 R 27 0 R 28 0 R 29 0 R 30 0 R 31 0 R 32 0 R ...
+3 0 R @bytes 85..377 [object] << /Author (rooter) /Creator <FEFF004D006900630072006F0073006F0066007400AE00200057006F0072006400200032003000310030> /CreationDate (D:20190814151213+06'30') /ModDate (D:20190814151213+06'30') /Producer <FEFF004D0069006300...
+4 0 R @bytes 1142..1449 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 106 0 R /Group << /Type /Group /S /Transparency /C...
+5 0 R @bytes 1463..1770 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 107 0 R /Group << /Type /Group /S /Transparency /C...
+6 0 R @bytes 1784..2091 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 108 0 R /Group << /Type /Group /S /Transparency /C...
+7 0 R @bytes 2105..2412 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 109 0 R /Group << /Type /Group /S /Transparency /C...
+8 0 R @bytes 2426..2733 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 110 0 R /Group << /Type /Group /S /Transparency /C...
+9 0 R @bytes 2747..3054 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 111 0 R /Group << /Type /Group /S /Transparency /C...
+10 0 R @bytes 3069..3376 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 112 0 R /Group << /Type /Group /S /Transparency /C...
+11 0 R @bytes 3391..3698 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 113 0 R /Group << /Type /Group /S /Transparency /C...
+12 0 R @bytes 3713..4020 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 114 0 R /Group << /Type /Group /S /Transparency /C...
+13 0 R @bytes 4035..4342 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 115 0 R /Group << /Type /Group /S /Transparency /C...
+14 0 R @bytes 4357..4665 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 116 0 R /Group << /Type /Group /S /Transparency /C...
+15 0 R @bytes 4680..4988 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 117 0 R /Group << /Type /Group /S /Transparency /C...
+16 0 R @bytes 5003..5311 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 118 0 R /Group << /Type /Group /S /Transparency /C...
+17 0 R @bytes 5326..5665 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 120 0 R /Group << /...
+18 0 R @bytes 5680..6019 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 121 0 R /Group << /...
+19 0 R @bytes 6034..6373 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 122 0 R /Group << /...
+20 0 R @bytes 6388..6727 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 123 0 R /Group << /...
+21 0 R @bytes 6742..7081 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 124 0 R /Group << /...
+22 0 R @bytes 7096..7404 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 125 0 R /Group << /Type /Group /S /Transparency /C...
+23 0 R @bytes 7419..7727 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 126 0 R /Group << /Type /Group /S /Transparency /C...
+24 0 R @bytes 7742..8050 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 127 0 R /Group << /Type /Group /S /Transparency /C...
+25 0 R @bytes 8065..8373 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 128 0 R /Group << /Type /Group /S /Transparency /C...
+26 0 R @bytes 8388..8696 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 129 0 R /Group << /Type /Group /S /Transparency /C...
+27 0 R @bytes 8711..9019 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 130 0 R /Group << /Type /Group /S /Transparency /C...
+28 0 R @bytes 9034..9342 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 131 0 R /Group << /Type /Group /S /Transparency /C...
+29 0 R @bytes 9357..9665 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 132 0 R /Group << /Type /Group /S /Transparency /C...
+30 0 R @bytes 9680..9988 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 133 0 R /Group << /Type /Group /S /Transparency /C...
+31 0 R @bytes 10003..10311 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 134 0 R /Group << /Type /Group /S /Transparency /C...
+32 0 R @bytes 10326..10634 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 135 0 R /Group << /Type /Group /S /Transparency /C...
+33 0 R @bytes 10649..10957 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 136 0 R /Group << /Type /Group /S /Transparency /C...
+34 0 R @bytes 10972..11280 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 137 0 R /Group << /Type /Group /S /Transparency /C...
+35 0 R @bytes 11295..11634 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 138 0 R /Group << /...
+36 0 R @bytes 11649..11988 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 139 0 R /Group << /...
+37 0 R @bytes 12003..12311 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 140 0 R /Group << /Type /Group /S /Transparency /C...
+38 0 R @bytes 12326..12634 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 141 0 R /Group << /Type /Group /S /Transparency /C...
+39 0 R @bytes 12649..12957 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 142 0 R /Group << /Type /Group /S /Transparency /C...
+40 0 R @bytes 12972..13311 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 143 0 R /Group << /...
+41 0 R @bytes 13326..13665 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 144 0 R /Group << /...
+42 0 R @bytes 13680..13988 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 145 0 R /Group << /Type /Group /S /Transparency /C...
+43 0 R @bytes 14003..14311 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 146 0 R /Group << /Type /Group /S /Transparency /C...
+44 0 R @bytes 14326..14634 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 147 0 R /Group << /Type /Group /S /Transparency /C...
+45 0 R @bytes 14649..14957 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 148 0 R /Group << /Type /Group /S /Transparency /C...
+46 0 R @bytes 14972..15280 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 149 0 R /Group << /Type /Group /S /Transparency /C...
+47 0 R @bytes 15295..15603 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 150 0 R /Group << /Type /Group /S /Transparency /C...
+48 0 R @bytes 15618..15926 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 151 0 R /Group << /Type /Group /S /Transparency /C...
+49 0 R @bytes 15941..16249 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 152 0 R /Group << /Type /Group /S /Transparency /C...
+50 0 R @bytes 16264..16572 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 153 0 R /Group << /Type /Group /S /Transparency /C...
+51 0 R @bytes 16587..16895 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 154 0 R /Group << /Type /Group /S /Transparency /C...
+52 0 R @bytes 16910..17218 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 155 0 R /Group << /Type /Group /S /Transparency /C...
+53 0 R @bytes 17233..17541 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 156 0 R /Group << /Type /Group /S /Transparency /C...
+54 0 R @bytes 17556..17895 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 157 0 R /Group << /...
+55 0 R @bytes 17910..18218 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 158 0 R /Group << /Type /Group /S /Transparency /C...
+56 0 R @bytes 18233..18541 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 159 0 R /Group << /Type /Group /S /Transparency /C...
+57 0 R @bytes 18556..18895 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 160 0 R /Group << /...
+58 0 R @bytes 18910..19218 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 161 0 R /Group << /Type /Group /S /Transparency /C...
+59 0 R @bytes 19233..19541 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 162 0 R /Group << /Type /Group /S /Transparency /C...
+60 0 R @bytes 19556..19864 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 163 0 R /Group << /Type /Group /S /Transparency /C...
+61 0 R @bytes 19879..20187 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 164 0 R /Group << /Type /Group /S /Transparency /C...
+62 0 R @bytes 20202..20510 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 165 0 R /Group << /Type /Group /S /Transparency /C...
+63 0 R @bytes 20525..20833 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 166 0 R /Group << /Type /Group /S /Transparency /C...
+64 0 R @bytes 20848..21156 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 167 0 R /Group << /Type /Group /S /Transparency /C...
+65 0 R @bytes 21171..21479 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 168 0 R /Group << /Type /Group /S /Transparency /C...
+66 0 R @bytes 21494..21802 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 169 0 R /Group << /Type /Group /S /Transparency /C...
+67 0 R @bytes 21817..22125 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 170 0 R /Group << /Type /Group /S /Transparency /C...
+68 0 R @bytes 22140..22448 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 171 0 R /Group << /Type /Group /S /Transparency /C...
+69 0 R @bytes 22463..22802 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 172 0 R /Group << /...
+70 0 R @bytes 22817..23156 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 173 0 R /Group << /...
+71 0 R @bytes 23171..23510 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 174 0 R /Group << /...
+72 0 R @bytes 23525..23833 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 175 0 R /Group << /Type /Group /S /Transparency /C...
+73 0 R @bytes 23848..24187 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 176 0 R /Group << /...
+74 0 R @bytes 24202..24541 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 177 0 R /Group << /...
+75 0 R @bytes 24556..24895 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 178 0 R /Group << /...
+76 0 R @bytes 24910..25218 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 179 0 R /Group << /Type /Group /S /Transparency /C...
+77 0 R @bytes 25233..25541 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 180 0 R /Group << /Type /Group /S /Transparency /C...
+78 0 R @bytes 25556..25864 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 181 0 R /Group << /Type /Group /S /Transparency /C...
+79 0 R @bytes 25879..26187 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 182 0 R /Group << /Type /Group /S /Transparency /C...
+80 0 R @bytes 26202..26510 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 183 0 R /Group << /Type /Group /S /Transparency /C...
+81 0 R @bytes 26525..26833 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 184 0 R /Group << /Type /Group /S /Transparency /C...
+82 0 R @bytes 26848..27156 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 185 0 R /Group << /Type /Group /S /Transparency /C...
+83 0 R @bytes 27171..27479 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 186 0 R /Group << /Type /Group /S /Transparency /C...
+84 0 R @bytes 27494..27802 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 187 0 R /Group << /Type /Group /S /Transparency /C...
+85 0 R @bytes 27817..28125 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 188 0 R /Group << /Type /Group /S /Transparency /C...
+86 0 R @bytes 28140..28448 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 189 0 R /Group << /Type /Group /S /Transparency /C...
+87 0 R @bytes 28463..28802 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 190 0 R /Group << /...
+88 0 R @bytes 28817..29156 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 191 0 R /Group << /...
+89 0 R @bytes 29171..29510 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 192 0 R /Group << /...
+90 0 R @bytes 29525..29864 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 193 0 R /Group << /...
+91 0 R @bytes 29879..30218 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ExtGState << /GS38 119 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 194 0 R /Group << /...
+92 0 R @bytes 30233..30541 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 195 0 R /Group << /Type /Group /S /Transparency /C...
+93 0 R @bytes 30556..30864 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 196 0 R /Group << /Type /Group /S /Transparency /C...
+94 0 R @bytes 30879..31187 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 197 0 R /Group << /Type /Group /S /Transparency /C...
+95 0 R @bytes 31202..31510 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 198 0 R /Group << /Type /Group /S /Transparency /C...
+96 0 R @bytes 31525..31833 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 199 0 R /Group << /Type /Group /S /Transparency /C...
+97 0 R @bytes 31848..32156 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 200 0 R /Group << /Type /Group /S /Transparency /C...
+98 0 R @bytes 32171..32479 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 201 0 R /Group << /Type /Group /S /Transparency /C...
+99 0 R @bytes 32494..32802 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 202 0 R /Group << /Type /Group /S /Transparency /C...
+100 0 R @bytes 32818..33126 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 203 0 R /Group << /Type /Group /S /Transparency /C...
+101 0 R @bytes 33142..33450 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 104 0 R /F2 105 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 204 0 R /Group << /Type /Group /S /Transparency /C...
+102 0 R @bytes 33466..33774 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 205 0 R /Group << /Type /Group /S /Transparency /C...
+103 0 R @bytes 33790..34098 [object] << /Type /Page /Parent 2 0 R /Resources << /Font << /F2 105 0 R /F1 104 0 R >> /ProcSet [/PDF /Text /ImageB /ImageC /ImageI] >> /MediaBox [0.0 0.0 612.0 792.0] /Contents 206 0 R /Group << /Type /Group /S /Transparency /C...
+104 0 R @bytes 34114..34246 [object] << /Type /Font /Subtype /Type0 /BaseFont /ABCDEE+Zawgyi-One /Encoding /Identity-H /DescendantFonts [207 0 R] /ToUnicode 208 0 R >>
+105 0 R @bytes 34262..34732 [object] << /Type /Font /Subtype /TrueType /Name /F2 /BaseFont /ABCDEE+Zawgyi-One /Encoding /WinAnsiEncoding /FontDescriptor 209 0 R /FirstChar 32 /LastChar 121 /Widths [313 0 401 728 0 977 0 211 383 383 0 728 303 363 303 0 546 5...
+106 0 R @bytes 34748..36411 [STREAM (not decoded)] << /Length 1602 /Filter /FlateDecode >>
+107 0 R @bytes 36427..38256 [STREAM (not decoded)] << /Length 1768 /Filter /FlateDecode >>
+108 0 R @bytes 38272..40565 [STREAM (not decoded)] << /Length 2232 /Filter /FlateDecode >>
+109 0 R @bytes 40581..42670 [STREAM (not decoded)] << /Length 2028 /Filter /FlateDecode >>
+110 0 R @bytes 42686..45429 [STREAM (not decoded)] << /Length 2682 /Filter /FlateDecode >>
+111 0 R @bytes 45445..47823 [STREAM (not decoded)] << /Length 2317 /Filter /FlateDecode >>
+112 0 R @bytes 47839..49478 [STREAM (not decoded)] << /Length 1578 /Filter /FlateDecode >>
+113 0 R @bytes 49494..51568 [STREAM (not decoded)] << /Length 2013 /Filter /FlateDecode >>
+114 0 R @bytes 51584..53768 [STREAM (not decoded)] << /Length 2123 /Filter /FlateDecode >>
+115 0 R @bytes 53784..56099 [STREAM (not decoded)] << /Length 2254 /Filter /FlateDecode >>
+116 0 R @bytes 56115..57795 [STREAM (not decoded)] << /Length 1619 /Filter /FlateDecode >>
+117 0 R @bytes 57811..59710 [STREAM (not decoded)] << /Length 1838 /Filter /FlateDecode >>
+118 0 R @bytes 59726..61947 [STREAM (not decoded)] << /Length 2160 /Filter /FlateDecode >>
+119 0 R @bytes 61963..62005 [object] << /Type /ExtGState /BM /Normal /ca 1 >>
+120 0 R @bytes 62021..63974 [STREAM (not decoded)] << /Length 1892 /Filter /FlateDecode >>
+121 0 R @bytes 63990..65819 [STREAM (not decoded)] << /Length 1768 /Filter /FlateDecode >>
+122 0 R @bytes 65835..67333 [STREAM (not decoded)] << /Length 1437 /Filter /FlateDecode >>
+123 0 R @bytes 67349..69445 [STREAM (not decoded)] << /Length 2035 /Filter /FlateDecode >>
+124 0 R @bytes 69461..71253 [STREAM (not decoded)] << /Length 1731 /Filter /FlateDecode >>
+125 0 R @bytes 71269..72835 [STREAM (not decoded)] << /Length 1505 /Filter /FlateDecode >>
+126 0 R @bytes 72851..74400 [STREAM (not decoded)] << /Length 1488 /Filter /FlateDecode >>
+127 0 R @bytes 74416..76012 [STREAM (not decoded)] << /Length 1535 /Filter /FlateDecode >>
+128 0 R @bytes 76028..77875 [STREAM (not decoded)] << /Length 1786 /Filter /FlateDecode >>
+129 0 R @bytes 77891..79683 [STREAM (not decoded)] << /Length 1731 /Filter /FlateDecode >>
+130 0 R @bytes 79699..81628 [STREAM (not decoded)] << /Length 1868 /Filter /FlateDecode >>
+131 0 R @bytes 81644..83756 [STREAM (not decoded)] << /Length 2051 /Filter /FlateDecode >>
+132 0 R @bytes 83772..85991 [STREAM (not decoded)] << /Length 2158 /Filter /FlateDecode >>
+133 0 R @bytes 86007..88175 [STREAM (not decoded)] << /Length 2107 /Filter /FlateDecode >>
+134 0 R @bytes 88191..89600 [STREAM (not decoded)] << /Length 1348 /Filter /FlateDecode >>
+135 0 R @bytes 89616..91781 [STREAM (not decoded)] << /Length 2104 /Filter /FlateDecode >>
+136 0 R @bytes 91797..93251 [STREAM (not decoded)] << /Length 1393 /Filter /FlateDecode >>
+137 0 R @bytes 93267..95271 [STREAM (not decoded)] << /Length 1943 /Filter /FlateDecode >>
+138 0 R @bytes 95287..97103 [STREAM (not decoded)] << /Length 1755 /Filter /FlateDecode >>
+139 0 R @bytes 97119..98842 [STREAM (not decoded)] << /Length 1662 /Filter /FlateDecode >>
+140 0 R @bytes 98858..100735 [STREAM (not decoded)] << /Length 1816 /Filter /FlateDecode >>
+141 0 R @bytes 100751..102611 [STREAM (not decoded)] << /Length 1799 /Filter /FlateDecode >>
+142 0 R @bytes 102627..104340 [STREAM (not decoded)] << /Length 1652 /Filter /FlateDecode >>
+143 0 R @bytes 104356..106569 [STREAM (not decoded)] << /Length 2152 /Filter /FlateDecode >>
+144 0 R @bytes 106585..108716 [STREAM (not decoded)] << /Length 2070 /Filter /FlateDecode >>
+145 0 R @bytes 108732..110805 [STREAM (not decoded)] << /Length 2012 /Filter /FlateDecode >>
+146 0 R @bytes 110821..112488 [STREAM (not decoded)] << /Length 1606 /Filter /FlateDecode >>
+147 0 R @bytes 112504..114737 [STREAM (not decoded)] << /Length 2172 /Filter /FlateDecode >>
+148 0 R @bytes 114753..116544 [STREAM (not decoded)] << /Length 1730 /Filter /FlateDecode >>
+149 0 R @bytes 116560..118264 [STREAM (not decoded)] << /Length 1643 /Filter /FlateDecode >>
+150 0 R @bytes 118280..120069 [STREAM (not decoded)] << /Length 1728 /Filter /FlateDecode >>
+151 0 R @bytes 120085..121574 [STREAM (not decoded)] << /Length 1428 /Filter /FlateDecode >>
+152 0 R @bytes 121590..123863 [STREAM (not decoded)] << /Length 2212 /Filter /FlateDecode >>
+153 0 R @bytes 123879..125577 [STREAM (not decoded)] << /Length 1637 /Filter /FlateDecode >>
+154 0 R @bytes 125593..126922 [STREAM (not decoded)] << /Length 1268 /Filter /FlateDecode >>
+155 0 R @bytes 126938..128604 [STREAM (not decoded)] << /Length 1605 /Filter /FlateDecode >>
+156 0 R @bytes 128620..130422 [STREAM (not decoded)] << /Length 1741 /Filter /FlateDecode >>
+157 0 R @bytes 130438..132236 [STREAM (not decoded)] << /Length 1737 /Filter /FlateDecode >>
+158 0 R @bytes 132252..134359 [STREAM (not decoded)] << /Length 2046 /Filter /FlateDecode >>
+159 0 R @bytes 134375..136554 [STREAM (not decoded)] << /Length 2118 /Filter /FlateDecode >>
+160 0 R @bytes 136570..138430 [STREAM (not decoded)] << /Length 1799 /Filter /FlateDecode >>
+161 0 R @bytes 138446..140535 [STREAM (not decoded)] << /Length 2028 /Filter /FlateDecode >>
+162 0 R @bytes 140551..142667 [STREAM (not decoded)] << /Length 2055 /Filter /FlateDecode >>
+163 0 R @bytes 142683..144599 [STREAM (not decoded)] << /Length 1855 /Filter /FlateDecode >>
+164 0 R @bytes 144615..146495 [STREAM (not decoded)] << /Length 1819 /Filter /FlateDecode >>
+165 0 R @bytes 146511..148672 [STREAM (not decoded)] << /Length 2100 /Filter /FlateDecode >>
+166 0 R @bytes 148688..151160 [STREAM (not decoded)] << /Length 2411 /Filter /FlateDecode >>
+167 0 R @bytes 151176..153145 [STREAM (not decoded)] << /Length 1908 /Filter /FlateDecode >>
+168 0 R @bytes 153161..155066 [STREAM (not decoded)] << /Length 1844 /Filter /FlateDecode >>
+169 0 R @bytes 155082..157204 [STREAM (not decoded)] << /Length 2061 /Filter /FlateDecode >>
+170 0 R @bytes 157220..159625 [STREAM (not decoded)] << /Length 2344 /Filter /FlateDecode >>
+171 0 R @bytes 159641..161672 [STREAM (not decoded)] << /Length 1970 /Filter /FlateDecode >>
+172 0 R @bytes 161688..164074 [STREAM (not decoded)] << /Length 2325 /Filter /FlateDecode >>
+173 0 R @bytes 164090..166065 [STREAM (not decoded)] << /Length 1914 /Filter /FlateDecode >>
+174 0 R @bytes 166081..167919 [STREAM (not decoded)] << /Length 1777 /Filter /FlateDecode >>
+175 0 R @bytes 167935..169915 [STREAM (not decoded)] << /Length 1919 /Filter /FlateDecode >>
+176 0 R @bytes 169931..171735 [STREAM (not decoded)] << /Length 1743 /Filter /FlateDecode >>
+177 0 R @bytes 171751..173767 [STREAM (not decoded)] << /Length 1955 /Filter /FlateDecode >>
+178 0 R @bytes 173783..175594 [STREAM (not decoded)] << /Length 1750 /Filter /FlateDecode >>
+179 0 R @bytes 175610..177625 [STREAM (not decoded)] << /Length 1954 /Filter /FlateDecode >>
+180 0 R @bytes 177641..179801 [STREAM (not decoded)] << /Length 2099 /Filter /FlateDecode >>
+181 0 R @bytes 179817..182010 [STREAM (not decoded)] << /Length 2132 /Filter /FlateDecode >>
+182 0 R @bytes 182026..183577 [STREAM (not decoded)] << /Length 1490 /Filter /FlateDecode >>
+183 0 R @bytes 183593..185349 [STREAM (not decoded)] << /Length 1695 /Filter /FlateDecode >>
+184 0 R @bytes 185365..187237 [STREAM (not decoded)] << /Length 1811 /Filter /FlateDecode >>
+185 0 R @bytes 187253..189112 [STREAM (not decoded)] << /Length 1798 /Filter /FlateDecode >>
+186 0 R @bytes 189128..191179 [STREAM (not decoded)] << /Length 1990 /Filter /FlateDecode >>
+187 0 R @bytes 191195..192820 [STREAM (not decoded)] << /Length 1564 /Filter /FlateDecode >>
+188 0 R @bytes 192836..194983 [STREAM (not decoded)] << /Length 2086 /Filter /FlateDecode >>
+189 0 R @bytes 194999..196826 [STREAM (not decoded)] << /Length 1766 /Filter /FlateDecode >>
+190 0 R @bytes 196842..199071 [STREAM (not decoded)] << /Length 2168 /Filter /FlateDecode >>
+191 0 R @bytes 199087..201168 [STREAM (not decoded)] << /Length 2020 /Filter /FlateDecode >>
+192 0 R @bytes 201184..202953 [STREAM (not decoded)] << /Length 1708 /Filter /FlateDecode >>
+193 0 R @bytes 202969..204986 [STREAM (not decoded)] << /Length 1956 /Filter /FlateDecode >>
+194 0 R @bytes 205002..207326 [STREAM (not decoded)] << /Length 2263 /Filter /FlateDecode >>
+195 0 R @bytes 207342..209329 [STREAM (not decoded)] << /Length 1926 /Filter /FlateDecode >>
+196 0 R @bytes 209345..211427 [STREAM (not decoded)] << /Length 2021 /Filter /FlateDecode >>
+197 0 R @bytes 211443..213159 [STREAM (not decoded)] << /Length 1655 /Filter /FlateDecode >>
+198 0 R @bytes 213175..215086 [STREAM (not decoded)] << /Length 1850 /Filter /FlateDecode >>
+199 0 R @bytes 215102..216841 [STREAM (not decoded)] << /Length 1678 /Filter /FlateDecode >>
+200 0 R @bytes 216857..219095 [STREAM (not decoded)] << /Length 2177 /Filter /FlateDecode >>
+201 0 R @bytes 219111..220903 [STREAM (not decoded)] << /Length 1731 /Filter /FlateDecode >>
+202 0 R @bytes 220919..222741 [STREAM (not decoded)] << /Length 1761 /Filter /FlateDecode >>
+203 0 R @bytes 222757..224426 [STREAM (not decoded)] << /Length 1608 /Filter /FlateDecode >>
+204 0 R @bytes 224442..226254 [STREAM (not decoded)] << /Length 1751 /Filter /FlateDecode >>
+205 0 R @bytes 226270..228005 [STREAM (not decoded)] << /Length 1674 /Filter /FlateDecode >>
+206 0 R @bytes 228021..229926 [STREAM (not decoded)] << /Length 1844 /Filter /FlateDecode >>
+207 0 R @bytes 229942..230983 [object] << /BaseFont /ABCDEE+Zawgyi-One /Subtype /CIDFontType2 /Type /Font /CIDToGIDMap /Identity /DW 1000 /CIDSystemInfo 210 0 R /FontDescriptor 211 0 R /W [0 [1000] 3 [313] 5 [401 728] 8 [977] 10 [211 383 383] 14 [728 303 363 ...
+208 0 R @bytes 230999..231585 [STREAM (not decoded)] << /Length 526 /Filter /FlateDecode >>
+209 0 R @bytes 231601..231847 [object] << /Type /FontDescriptor /FontName /ABCDEE+Zawgyi-One /Flags 32 /ItalicAngle 0 /Ascent 1000 /Descent -464 /CapHeight 1172 /AvgWidth 444 /MaxWidth 3327 /FontWeight 400 /XHeight 250 /StemV 44 /FontBBox [-1076 -464 2251 117...
+210 0 R @bytes 231863..231923 [object] << /Ordering (Identity) /Registry (Adobe) /Supplement 0 >>
+211 0 R @bytes 231939..232185 [object] << /Type /FontDescriptor /FontName /ABCDEE+Zawgyi-One /Flags 32 /ItalicAngle 0 /Ascent 1000 /Descent -464 /CapHeight 1172 /AvgWidth 444 /MaxWidth 3327 /FontWeight 400 /XHeight 250 /StemV 44 /FontBBox [-1076 -464 2251 117...
+212 0 R @bytes 232201..265094 [STREAM (not decoded)] << /Length 32816 /Filter /FlateDecode /Length1 63888 >>

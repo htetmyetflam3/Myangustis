@@ -1,11 +1,18 @@
+/*
+(Support 4) Shared support, no chain position - path constants for the whole B.Parser tree.
+This module resolves the component, core and repository roots and provides the engine-data and logging accessors other modules import.
+*/
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 
 const COMPONENT_ROOT = path.dirname(fileURLToPath(import.meta.url));
-export const PARSED_ROOT = path.join(COMPONENT_ROOT, "main");
-export const PARSER_DIR = path.join(PARSED_ROOT, "parser");
-export const CORE_DIR = path.join(PARSER_DIR, "core");
+// Sketch layout (SEPARATION.md): core is flattened to B.Parser/core.
+// PARSED_ROOT/PARSER_DIR are kept as aliases so existing importers do not
+// break; they no longer point at the old main/parser tree.
+export const PARSER_DIR = COMPONENT_ROOT;
+export const PARSED_ROOT = COMPONENT_ROOT;
+export const CORE_DIR = path.join(COMPONENT_ROOT, "prised");
 export const REPO_ROOT = path.dirname(COMPONENT_ROOT);
 
 async function resolveBaseDir() {
@@ -37,9 +44,9 @@ export async function getEngineNormalize() {
 export const RUNTIME_ROOT = resolved.shared ? path.join(BASE_DIR, "Parser") : COMPONENT_ROOT;
 const FONT_ROOT = path.join(BASE_DIR, "fonts");
 
-export const MAP_DIR = path.join(PARSER_DIR, "jason-map");
+export const MAP_DIR = path.join(COMPONENT_ROOT, "@jason-map");
 export const VECTOR_MAP_DIR = path.join(MAP_DIR, "vector");
-export const MODEL_DIR = path.join(PARSER_DIR, "model");
+export const MODEL_DIR = path.join(COMPONENT_ROOT, "prised", "@core", "ocr", "model");
 export const OCR_MODEL_DIR = MODEL_DIR;
 
 export const FONT_DIR = path.join(FONT_ROOT, "Unicode");
@@ -50,7 +57,7 @@ export const DEFAULT_OUTPUT_DIR = path.join(RUNTIME_ROOT, ".output");
 
 
 
-export const REGISTER_LOG = path.join(DEFAULT_OUTPUT_DIR, "praser-register.log");
+export const REGISTER_LOG = path.join(DEFAULT_OUTPUT_DIR, "parser-register.log");
 
 const LATIN_FONT_CANDIDATES = [
   path.join(OUTPUT_FONT_DIR, "AnonymousPro-Regular.ttf"),

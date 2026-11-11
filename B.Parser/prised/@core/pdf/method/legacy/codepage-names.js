@@ -1,0 +1,311 @@
+/*
+(Support 27) Shared support, no chain position - the legacy font-name registry.
+This module holds the curated sets of known legacy font names, split by
+family, and answers: is this font name a registered legacy face, which
+family (Ayar or WinInnwa) does it belong to, and what layout does that
+family parse with. Name evidence only - it converts no bytes.
+*/
+import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "./codepage-registry.js";
+export const WININNWA_FONT_NAMES = new Set([
+  "wininnwa",
+  "wininnwa070",
+  "wininnwa070a",
+  "wininnwa080",
+  "wininnwa080a",
+  "wininnwa090",
+  "wininnwa090a",
+  "wininnwabold",
+]);
+
+export const AYAR_FONT_NAMES = new Set([
+  "amyanmar",
+  "arlarwade",
+  "anonymouspro",
+  "anonymousprobold",
+  "anonymousprobolditalic",
+  "anonymousproitalic",
+  "anonymousproregular",
+  "arkamm001tt",
+  "arkaoriginal",
+  "atypewriternormal",
+  "cetitle",
+  "msheavy",
+  "msmoom",
+  "nyicircle",
+  "nyidesigner",
+  "nyidesigner1",
+  "nyidesigner2",
+  "nyielephant",
+  "nyihorizonal",
+  "nyioval",
+  "nyit",
+  "nyithit1",
+  "nyithit2",
+  "nyithitf3",
+  "nyithitfontfour",
+  "nyithitfontone",
+  "nyithitfonttwo",
+  "nyitwice",
+  "robin",
+  "sakart",
+  "sakmahura",
+  "sakpadamya",
+  "sakpeacock",
+  "sakryoal",
+  "sakseinarka",
+  "sakthick",
+  "saktwoline",
+  "sakwide",
+  "sakyatana",
+  "softcrack",
+  "u4ahlone",
+  "u4bahan",
+  "u4botataung",
+  "u4dagonmyothit",
+  "u4pazundaung",
+  "u4thaketa",
+  "w01arthouse",
+  "w01arthouse2009",
+  "w01arthousewin",
+  "w02arthouse",
+  "w02arthouse2009",
+  "w02arthousewin",
+  "w03arthouse",
+  "w03arthouse2009",
+  "w03arthousewin",
+  "w04arthouse",
+  "w04arthouse2009",
+  "w04arthousewin",
+  "w05arthouse",
+  "w05arthouse2009",
+  "w05arthousewin",
+  "w06arthouse",
+  "w06arthouse2009",
+  "w06arthousewin",
+  "w07arthouse",
+  "w07arthouse2009",
+  "w07arthousewin",
+  "w08arthouse",
+  "w08arthouse2009",
+  "w08arthousewin",
+  "w09arthouse",
+  "w09arthouse2009",
+  "w09arthousewin",
+  "w10arthouse",
+  "w10arthouse2009",
+  "w10arthousewin",
+  "w11arthouse",
+  "w11arthouse2009",
+  "w11arthousewin",
+  "w12arthouse",
+  "w12arthouse2009",
+  "w12arthousewin",
+  "w13arthouse",
+  "w13arthouse2009",
+  "w13arthousewin",
+  "w14arthouse",
+  "w14arthouse2009",
+  "w14arthousewin",
+  "w15arthouse",
+  "w15arthouse2009",
+  "w15arthousewin",
+  "w16arthouse",
+  "w16arthouse2009",
+  "w16arthousewin",
+  "w17arthouse",
+  "w17arthouse2009",
+  "w17arthousewin",
+  "w18arthouse",
+  "w18arthouse2009",
+  "w18arthousewin",
+  "w19arthouse",
+  "w19arthouse2009",
+  "w19arthousewin",
+  "w20arthouse",
+  "w20arthouse2009",
+  "w20arthousewin",
+  "w21arthouse",
+  "w21arthouse2009",
+  "w21arthousebold",
+  "w22arthouse",
+  "w22arthouse2009",
+  "w23arthouse",
+  "w23arthouse2009",
+  "w24arthouse",
+  "w24arthouse2009",
+  "w25arthouse",
+  "w25arthouse2009",
+  "w26arthouse",
+  "w26arthouse2009",
+  "w27arthouse",
+  "w27arthouse2009",
+  "w28arthouse",
+  "w28arthouse2009",
+  "w29arthouse",
+  "w29arthouse2009",
+  "w30arthouse",
+  "w30arthouse2009",
+  "w31arthouse",
+  "w31arthouse2009",
+  "w31arthousebold",
+  "w32arthouse",
+  "w32arthouse2009",
+  "w33arthouse",
+  "w33arthouse2009",
+  "w34arthouse",
+  "w34arthouse2009",
+  "w35arthouse",
+  "w35arthouse2009",
+  "w36arthouse",
+  "w36arthouse2009",
+  "w37arthouse",
+  "w37arthouse2009",
+  "w37arthousebold",
+  "w38arthouse",
+  "w38arthouse2009",
+  "w39arthouse",
+  "w39arthouse2009",
+  "w40arthouse",
+  "w40arthouse2009",
+  "w41arthouse",
+  "w41arthouse2009",
+  "w42arthouse",
+  "w42arthouse2009",
+  "w43arthouse",
+  "w43arthouse2009",
+  "w44arthouse",
+  "w44arthouse2009",
+  "w45arthouse",
+  "w45arthouse2009",
+  "w46arthouse",
+  "w46arthouse2009",
+  "w47arthouse",
+  "w47arthouse2009",
+  "w48arthouse",
+  "w48arthouse2009",
+  "w49arthouse",
+  "w49arthouse2009",
+  "w50arthouse",
+  "w50arthouse2009",
+  "w51arthouse",
+  "w51arthouse2009",
+  "w52arthouse2009",
+  "w53arthouse",
+  "w53arthouse2009",
+  "w54arthouse",
+  "w54arthouse2009",
+  "w55arthouse",
+  "w55arthouse2009",
+  "w56arthouse",
+  "w56arthouse2009",
+  "w57arthouse",
+  "w57arthouse2009",
+  "w58arthouse",
+  "w58arthouse2009",
+  "w59arthouse",
+  "w59arthouse2009",
+  "w60arthouse",
+  "w60arthouse2009",
+  "w61arthouse",
+  "w61arthousebold",
+  "w61arthousebolditalic",
+  "w61arthouseextrabold",
+  "w61arthouseitalic",
+  "w62arthouse",
+  "w62arthousebold",
+  "w63arthouse",
+  "w64arthouse",
+  "w65arthouse",
+  "w66arthouse",
+  "w67arthouse",
+  "w68arthouse",
+  "w69arthouse",
+  "w70arthouse",
+  "whponnya",
+  "whponnyabold",
+  "winhaka",
+  "wininnlay",
+  "wininnlaya",
+  "winkalaw",
+  "winphaan",
+  "winphaana",
+  "winresearcher",
+  "winresearchera",
+  "wintaungyi",
+  "wintaungyia",
+  "winthanlyin",
+  "winthanlyina",
+  "winyadanapon",
+  "winyadanapona",
+  "winyangon",
+  "winyangona",
+  "wthawka",
+  "wwinburmese",
+  "wwinhanpagan",
+  "wwinhanpagana",
+  "wwinhanponnyacond",
+  "wwinhlaing",
+  "wwinhlaingmedium",
+  "wwinponnyacond",
+  "wwinponnyacondbold",
+  "wwinponnyacondextrabold",
+  "yadanabon",
+]);
+
+// One registry, two families: the name gate distinguishes Ayar faces
+// from WinInnwa faces; the union stays for plain legacy-or-not checks.
+export const LEGACY_FONT_NAMES = new Set([...WININNWA_FONT_NAMES, ...AYAR_FONT_NAMES]);
+
+export function normaliseFontName(baseFont) {
+  return String(baseFont || "")
+    .replace(/#([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/^[A-Z]{6}\+/, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+// These are legacy faces, but neither registered Ayar nor WinInnwa is a
+// verified decoder for them. A font name is evidence of a gap, not a map.
+export function isUnresolvedLegacyFont(baseFont) {
+  const n = normaliseFontName(baseFont);
+  return n.startsWith("wwin") || n.startsWith("msheavy") || n.startsWith("msmoom");
+}
+
+export function isLegacyFontName(baseFont) {
+  const n = normaliseFontName(baseFont);
+  if (!n) return false;
+  if (LEGACY_FONT_NAMES.has(n)) return true;
+  for (const known of LEGACY_FONT_NAMES) {
+    if (known.length >= 6 && (n.startsWith(known) || known.startsWith(n))) return true;
+  }
+  return false;
+}
+
+function matchesFamily(set, n) {
+  if (set.has(n)) return true;
+  for (const known of set) {
+    if (known.length >= 6 && (n.startsWith(known) || known.startsWith(n))) return true;
+  }
+  return false;
+}
+
+// The name gate's second decision, inside the legacy lane: which family
+// a face belongs to. Null means the name says nothing - not Ayar, not
+// WinInnwa - and no layout is known for it.
+export function legacyFontFamily(baseFont) {
+  const n = normaliseFontName(baseFont);
+  if (!n) return null;
+  if (n.startsWith("wininnwa") || matchesFamily(WININNWA_FONT_NAMES, n)) return "wininnwa";
+  if (/^(?:ayar|arlarwade|amyanmar)/u.test(n) || matchesFamily(AYAR_FONT_NAMES, n)) return "ayar";
+  return null;
+}
+
+// Layout choice for the legacy lane, decided here at the name gate:
+// known family faces parse with their family's code page; an unknown
+// face stays on WinInnwa and is flagged known:false for cleaning.
+export function legacyLayoutForFont(baseFont) {
+  const family = legacyFontFamily(baseFont);
+  if (family === "wininnwa") return { layout: "wininnwa", codePage: WININNWA_LEGACY_CODE_PAGE, known: true };
+  if (family === "ayar") return { layout: "ayar", codePage: AYAR_LEGACY_CODE_PAGE, known: true };
+  return { layout: "wininnwa", codePage: WININNWA_LEGACY_CODE_PAGE, known: false };
+}

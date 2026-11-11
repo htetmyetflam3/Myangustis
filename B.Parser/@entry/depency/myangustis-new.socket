@@ -1,0 +1,20 @@
+# Myangustis Parser (new tree) - Unix socket with TRUE wake-on-request.
+#
+# systemd owns this socket. NO parser process exists while idle:
+# the first connection makes systemd start myangustis-new.service;
+# the service exits itself after its idle window, and the next
+# connection starts a fresh one.
+#
+# Enable ONLY this socket (never enable the .service - an enabled
+# service would run all day, which is exactly what this avoids):
+#   systemctl enable --now myangustis-new.socket
+
+[Unit]
+Description=Myangustis Parser (new) Unix socket (wake-on-request)
+
+[Socket]
+ListenStream=/tmp/myangustis-new-parser.sock
+Accept=no
+
+[Install]
+WantedBy=sockets.target
