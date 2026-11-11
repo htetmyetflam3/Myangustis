@@ -8,7 +8,7 @@ Command: `npm test` (`node --test test/node/**/*.test.js`), Node 22.22.3, from a
 checkout with dependencies installed (`npm install`).
 
 ```
-tests 317 | pass 295 | fail 0 | skipped 22
+tests 320 | pass 303 | fail 0 | skipped 17
 ```
 
 Per suite:
@@ -16,10 +16,10 @@ Per suite:
 | Suite  | Tests | Pass | Fail | Skipped |
 | ------ | ----: | ---: | ---: | ------: |
 | site   |    99 |   99 |    0 |       0 |
-| parser |   134 |  116 |    0 |      18 |
+| parser |   137 |  120 |    0 |      17 |
 | engine |    42 |   42 |    0 |       0 |
 | paths  |    30 |   30 |    0 |       0 |
-| tools  |    12 |    8 |    0 |       4 |
+| tools  |    12 |   12 |    0 |       0 |
 
 Before this record the same command reported 121 tests / 45 pass / 73 fail / 3 skipped:
 most suites could not even import, because the tests and the host still named the
@@ -27,15 +27,37 @@ pre-flattening layout (`F.Site/`, `B.Parser/main/parser/`, `B.Parser/extend/`).
 
 Skipped tests, with reasons (all visible in the run, nothing silently dropped):
 
-- 4 in `tools-test` — `qpdf` is not installed in this environment; every PDF lane
-  prepares through it, so those tests report the prerequisite instead of a false failure.
-- 1 in `parser-test/parser-layout` — the shipped 100-page sample, same `qpdf` prerequisite.
-- 18 in `parser-test` (`zawcode-order`, `world-word`, `zawgyi-cmap`,
-  `visual-unicode-glyphs`) — the assertions describe the removed detector/Manager
+- 17 in `parser-test` (`zawcode-order` 8, `zawgyi-cmap` 5, `world-word` 3,
+  `visual-unicode-glyphs` 1) — the assertions describe the removed detector/Manager
   pipeline (page-level detector injection, the `posScan` Manager sidecar, the
   `ကမ်ဘာ`→`ကမ္ဘာ` world-word rule). The flattened chain decides pages from the font
   stem and keeps its reports in the parse result, so these need re-derivation against
   the current door rather than a rename.
+
+No PDF lane is skipped any more: PDF preparation resolves a real runner (see below), so
+all 100 pages of the shipped sample, the CLI's local and HTTP conversions, and the
+Site's keyed route are exercised in the run.
+
+### PDF preparation without a qpdf binary
+
+Every encrypted or object-stream PDF is prepared through qpdf before it can be read,
+which used to make those documents unopenable on a machine without the binary. The
+runner is now resolved in order (`B.Parser/@init/pdf/helper/decrypt.js`):
+
+1. `PRASER_QPDF_BIN` when the operator sets it,
+2. the real `qpdf` on `PATH`,
+3. `tools-box/python/qpdf_shim.py` — a qpdf CLI subset over **pikepdf**
+   (which bundles libqpdf) — invoked with `python3`.
+
+The shim answers the exact call shape the Parser uses
+(`--decrypt --object-streams=disable --qdf -- IN OUT`, plus `--version`), decrypts with
+an empty password, and reports like qpdf on stderr. It is a development fallback: the
+real binary always wins. Install the fallback with `pip install pikepdf`.
+
+New coverage for that path: `test/node/parser-test/pdf-prepare.test.js` builds an
+object-stream PDF with pdf-lib, proves the detector sees it, proves the runner converts
+it into a file the reader accepts, and proves the input stage marks it `prepared: true`
+before parsing.
 
 ### Fixed
 
@@ -76,6 +98,8 @@ Skipped tests, with reasons (all visible in the run, nothing silently dropped):
 - **Tests repointed** to the flattened tree (`prised/`, `host/`, `@rule/`, `@postprocess/`),
   with the `streamPdfPages(source, log, options)` / `processPageRecord(rec, cleanup, log,
   layout, encoding)` signatures and the `selectPageDecision` / `markOrderAligned` homes.
+- **`parser-layout` read `.text` off a string.** Parsed pages are marked-up strings, so the
+  old assertion could only ever be empty; it now joins the pages and checks real text.
 
 ### Retired test files (kept for reference, not run)
 
@@ -94,5 +118,4 @@ this tree; the rest needed `Manager`, the worker pool, `worker/pdf-stream`, `rea
 
 - The ZawCode lane needs new coverage: its "stored order" expectations (`ကာေ`) describe the
   pre-flattening convention, while the current unmixer emits Unicode order (`ကော`).
-- `tools-box/js/pipeline-cli.js parser local` and the Site's HTTP PDF lane need `qpdf` on
-  the machine; they cannot be exercised without it.
+- PDF preparation needs either `qpdf` on `PATH` or `pip install pikepdf` for the shim.

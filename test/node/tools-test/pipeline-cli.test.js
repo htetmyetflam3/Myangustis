@@ -11,14 +11,19 @@ import { PDFDocument } from 'pdf-lib';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 
-// Every Parser conversion of a PDF goes through qpdf preparation. Where qpdf
-// is not installed the PDF lanes below report the prerequisite instead of a
-// false failure; the DOCX lane needs no external binary.
-const HAS_QPDF = (() => {
-  try { execFileSync(process.env.PRASER_QPDF_BIN || 'qpdf', ['--version'], { stdio: 'pipe' }); return true; }
-  catch { return false; }
+// Every Parser conversion of a PDF goes through qpdf preparation. The Parser
+// resolves the binary itself (operator override -> real qpdf -> the pikepdf
+// shim in tools-box/python), so these lanes run wherever either exists.
+const { qpdfRunner } = await import('../../../B.Parser/@init/pdf/helper/decrypt.js');
+const runner = qpdfRunner();
+const PDF_SKIP = (() => {
+  try {
+    execFileSync(runner.bin, [...runner.args, '--version'], { stdio: 'pipe' });
+    return false;
+  } catch {
+    return `no qpdf runner available (${runner.bin})`;
+  }
 })();
-const PDF_SKIP = HAS_QPDF ? false : 'qpdf is not installed in this environment';
 const CLI = path.join(REPO, 'tools-box/js/pipeline-cli.js');
 const ENGINE_ENTRY = path.join(REPO, 'Architecture/host/index.js');
 const SITE_ENTRY = path.join(REPO, 'B.Parser/host/index.js');

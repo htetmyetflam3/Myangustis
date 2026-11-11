@@ -30,9 +30,13 @@ import { isZawgyiOneFont, isUnicodeFont } from "../../../B.Parser/prised/@rule/d
 
 const isFile = (file) => fs.statSync(file).isFile();
 const repo = fileURLToPath(new URL("../../../", import.meta.url));
-const hasQpdf = () => {
+// qpdf is the preparation step for every PDF; the Parser resolves the real
+// binary or its pikepdf-backed shim, so this asks the same source of truth.
+const hasQpdf = async () => {
   try {
-    execFileSync(process.env.PRASER_QPDF_BIN ?? "qpdf", ["--version"], { stdio: "pipe" });
+    const { qpdfRunner } = await import("../../../B.Parser/@init/pdf/helper/decrypt.js");
+    const { bin, args } = qpdfRunner();
+    execFileSync(bin, [...args, "--version"], { stdio: "pipe" });
     return true;
   } catch {
     return false;
@@ -84,14 +88,18 @@ test("DOCX archive validation rejects extreme compression ratios", async () => {
 });
 
 test("the shipped 100-page sample parses through the Parser door", async (t) => {
-  if (!hasQpdf()) return t.skip("qpdf is not installed in this environment");
+  if (!(await hasQpdf())) return t.skip("no qpdf runner available");
   const { InitInput, parseDecoding } = await import("../../../B.Parser/index.js");
   const sample = path.join(repo, "B.Parser/host/Frontend/frontend-bootstrap/public/samples/sample.pdf");
   const prepared = await InitInput({ path: sample }, "owner");
   const parsed = await parseDecoding({ kind: prepared.kind, source: prepared.path, filename: "sample.pdf" });
   assert.equal(parsed.pages.length, 100);
   assert.equal(parsed.counts.ZAWGYI, 100);
-  assert.ok(parsed.pages.some((page) => String(page.text ?? "").includes("Chapter")));
+  // One marked-up string per page (not a record object).
+  const text = parsed.pages.join("\n");
+  assert.ok(text.length > 70_000, `only ${text.length} characters`);
+  assert.match(text, /သတ်ဖြတ်သူ/u);
+  assert.match(text, /God of Slaughter/u);
 });
 
 test("the default output directory sits under the parser workspace", () => {
