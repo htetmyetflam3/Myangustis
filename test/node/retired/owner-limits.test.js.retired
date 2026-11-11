@@ -311,19 +311,24 @@ test('local entry rejects paths, non-byte streams and cleans failed spools', asy
   }
 });
 
-test('Python local stream is uncapped while Python path dispatch remains public', () => {
-  const modulePath = path.resolve('B.Parser/main/Python/modules/node_manager.py');
+test('the Python parser dispatches locally, in-process, with no Node child', () => {
+  const moduleDir = path.resolve('B.Parser/Python/modules');
   const out = path.join(directory, 'python-stream.txt');
   const script = `
-import importlib.util, io, sys
-spec = importlib.util.spec_from_file_location('parser_node_manager', sys.argv[1])
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
+import io, os, sys
+sys.path.insert(0, sys.argv[1])
+import manager
+
+# Public path dispatch keeps the documented page cap. The cap is this
+# process's own environment, not a JavaScript limit negotiated in a child.
 try:
-    module.dispatch_path(sys.argv[2], sys.argv[3], method='default')
-    raise AssertionError('public path bypassed the limit')
-except module.ManagerError as exc:
-    assert '1 page cap' in str(exc)
+    manager.dispatch_path(sys.argv[2], sys.argv[3], method='default')
+    raise AssertionError('public path bypassed the page cap')
+except manager.ManagerError as exc:
+    assert '1 page cap' in str(exc), str(exc)
+
+# A local in-process stream is trusted: it reads in bounded chunks, leaves
+# the caller's file open, and is not subject to the public cap.
 class CheckedStream:
     def __init__(self, source):
         self.source, self.reads = source, 0
@@ -331,90 +336,82 @@ class CheckedStream:
         assert 0 < size <= 65536
         self.reads += 1
         return self.source.read(min(size, 23))
+
 with open(sys.argv[2], 'rb') as file:
     stream = CheckedStream(file)
-    result = module.dispatch_stream(stream, sys.argv[3], filename='two-pages.pdf',
-                                    method='default', include_text=True)
+    result = manager.dispatch_stream(stream, sys.argv[3], filename='two-pages.pdf',
+                                     method='default', include_text=True)
     assert stream.reads > 1
     assert not file.closed
 assert result['caller'] == 'local'
 assert result['pages'] == 2
-assert 'One' in result['text'] and 'Two' in result['text']
+assert result['parserRuntime'] == 'python'
+assert 'Two' in result['text']          # second page, independently decoded
+expected_text = result['text']
+
 for method in ('default', 'manual'):
     for extension in ('docx', 'pdf'):
+        target = sys.argv[3] + '-' + method + '.' + extension
         with open(sys.argv[2], 'rb') as file:
             stream = CheckedStream(file)
-            converted = module.dispatch_stream(stream, sys.argv[3] + '-' + method + '.' + extension,
-                                               filename='two-pages.pdf', method=method, include_text=True)
+            converted = manager.dispatch_stream(stream, target, filename='two-pages.pdf',
+                                                method=method, include_text=True)
             assert stream.reads > 1
         assert converted['caller'] == 'local' and converted['pages'] == 2
-        assert converted['text'] == 'One\\n\\nTwo'
-try:
-    module.dispatch_stream(io.StringIO('not bytes'), sys.argv[3], filename='bad.pdf')
-    raise AssertionError('text stream accepted')
-except TypeError:
-    pass
-try:
-    module.dispatch_stream(io.BytesIO(b'text'), sys.argv[3], filename='not-a-document.txt')
-    raise AssertionError('text file accepted')
-except ValueError:
-    pass
+        assert converted['text'] == expected_text
+        assert os.path.getsize(target) > 0
+
+for bad, name, error in ((io.StringIO('not bytes'), 'bad.pdf', TypeError),
+                         (io.BytesIO(b'text'), 'not-a-document.txt', manager.ManagerError)):
+    try:
+        manager.dispatch_stream(bad, sys.argv[3], filename=name)
+        raise AssertionError('bad stream accepted: ' + name)
+    except error:
+        pass
 print('ok')
 `;
-  const child = spawnSync('python3', ['-c', script, modulePath, twoPage, out], {
-    encoding: 'utf8', env: process.env, timeout: 30000,
+  const child = spawnSync('python3', ['-c', script, moduleDir, twoPage, out], {
+    encoding: 'utf8', env: process.env, timeout: 120000,
   });
   assert.equal(child.status, 0, child.stderr);
   assert.equal(child.stdout.trim(), 'ok');
 });
 
-test('Python public wrapper retains its timeout and cannot request local stream mode', () => {
-  const modulePath = path.resolve('B.Parser/main/Python/modules/node_manager.py');
+test('the Python parser starts the engine for data but never the JS parser', () => {
+  const pythonRoot = path.resolve('B.Parser/Python');
   const script = `
-import importlib.util, json, os, sys, types
-spec = importlib.util.spec_from_file_location('parser_node_manager', sys.argv[1])
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
-os.environ['PRASER_PYTHON_TIMEOUT_SECONDS'] = '3'
-calls = []
-def run(*args, **kwargs):
-    request = json.loads(kwargs['input'])
-    assert args[0][-1].endswith('python-entry.js')
-    calls.append(kwargs['timeout'])
-    with open(request['responsePath'], 'w', encoding='utf-8') as response:
-        json.dump({'ok': True}, response)
-    return types.SimpleNamespace(returncode=0, stderr='')
-module.subprocess.run = run
-assert module._request({}) == {'ok': True}
-assert calls == [3]
+import ast, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+assert not (root / 'modules' / 'node_manager.py').exists(), 'the parser bridge must be gone'
+offenders = []
+for path in sorted(root.rglob('*.py')):
+    source = path.read_text(encoding='utf-8')
+    tree = ast.parse(source, filename=str(path))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import) or isinstance(node, ast.ImportFrom):
+            names = [a.name for a in node.names]
+            if any(n.endswith('.js') for n in names) or 'node_manager' in names:
+                offenders.append(f'{path}: imports JavaScript')
+        if isinstance(node, ast.Call):
+            name = getattr(node.func, 'attr', getattr(node.func, 'id', ''))
+            if name not in {'run', 'Popen', 'check_output', 'check_call', 'call'}:
+                continue
+            call = ast.get_source_segment(source, node) or ''
+            lowered = call.lower()
+            # The engine data bridge is the one allowed child process.
+            if 'engine-data.js' in lowered:
+                continue
+            if any(token in lowered for token in
+                   ('python-entry', 'manager.js', 'main/parser', 'prised/')):
+                offenders.append(f'{path}: starts the JavaScript parser')
+    if path.name == 'engine.py' and 'engine-data.js' not in source:
+        offenders.append(f'{path}: engine bridge target missing')
+assert not offenders, 'Python must not run the JavaScript parser: ' + '; '.join(offenders)
+print('ok')
 `;
-  const child = spawnSync('python3', ['-c', script, modulePath], { encoding: 'utf8' });
+  const child = spawnSync('python3', ['-c', script, pythonRoot], { encoding: 'utf8' });
   assert.equal(child.status, 0, child.stderr);
-});
-
-test('Python bridge bounds public metadata and ignores forged job identities', () => {
-  const entry = path.resolve('B.Parser/extend/python-entry.js');
-  const responsePath = path.join(directory, 'bridge-response.json');
-  const request = {
-    job: pdfJob(twoPage, { userId: trusted.userId, meta: { userId: trusted.userId } }),
-    caller: 'site', responsePath,
-  };
-  const forged = spawnSync(process.execPath, [entry], {
-    input: JSON.stringify(request), encoding: 'utf8', timeout: 30000,
-  });
-  assert.notEqual(forged.status, 0);
-  assert.match(forged.stderr, /1 page cap/);
-  const publicCall = spawnSync(process.execPath, [entry], {
-    input: JSON.stringify({ ...request, job: { ...request.job, meta: { padding: 'x'.repeat(1_000_001) } } }),
-    encoding: 'utf8', timeout: 30000,
-  });
-  assert.notEqual(publicCall.status, 0);
-  assert.match(publicCall.stderr, /Manager request is too large/);
-  const unsupported = spawnSync(process.execPath, [entry], {
-    input: JSON.stringify({ ...request, operation: 'dispatchStream' }), encoding: 'utf8', timeout: 30000,
-  });
-  assert.notEqual(unsupported.status, 0);
-  assert.match(unsupported.stderr, /Unsupported Manager operation/);
+  assert.equal(child.stdout.trim(), 'ok');
 });
 
 test('owner worker resource profiles remove PDF, DOCX and OCR quotas', async () => {

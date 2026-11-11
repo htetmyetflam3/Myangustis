@@ -42,9 +42,10 @@ of the same source bytes.
 """
 
 __all__ = [
-    "MARKS", "MARK_ORDER", "is_index", "is_mark", "is_myanmar",
+    "MARKS", "MARK_ORDER", "UNICODE_MARK_ORDER", "ASAT",
+    "is_index", "is_mark", "is_myanmar", "is_unicode_base",
     "orphan_mark_rate", "duplicate_mark_rate", "order_violation_rate",
-    "myanmar_ratio", "score_text",
+    "myanmar_ratio", "score_text", "mark_order_aligned",
 ]
 
 # The dependent marks: signs that cannot stand without a base in front of
@@ -73,6 +74,30 @@ MARK_ORDER = {
     "\u102c": 11, "\u102b": 12, "\u1036": 13, "\u103a": 14, "\u1037": 15,
     "\u1038": 16, " ": 17, "\n": 18,
 }
+
+
+# Unicode 16, table 16-4: the modern Burmese syllable order used to judge
+# whether a page's mark order is already aligned. Characters on the same row
+# share a priority. Deliberately NOT MARK_ORDER above, which is the grammar
+# engine's own slot order used by the reorder code. The two orders exist on
+# purpose and must never be merged.
+UNICODE_MARK_ORDER = {
+    "\u103b": 1, "\u103c": 2, "\u103d": 3, "\u103e": 4,
+    "\u1031": 5, "\u102d": 6, "\u102e": 6, "\u1032": 6,
+    "\u102f": 7, "\u1030": 7, "\u102b": 8, "\u102c": 8,
+    "\u1036": 9, "\u1037": 10, "\u1038": 11,
+}
+
+ASAT = "\u103a"
+
+
+def is_unicode_base(ch):
+    """Consonant/independent-vowel bases of the Unicode syllable table."""
+    if not ch:
+        return False
+    cp = ord(ch)
+    return ((0x1000 <= cp <= 0x1021) or (0x1023 <= cp <= 0x1027)
+            or cp in (0x1029, 0x102A, 0x103F, 0x104E))
 
 
 def is_index(ch):
@@ -225,3 +250,43 @@ def score_text(text):
         "marks": marks,
         "myanmar_ratio": myanmar_ratio(text),
     }
+
+
+def mark_order_aligned(text):
+    """True when ``text`` already follows Unicode 16's Burmese mark order.
+
+    The evidence walker `judgement` asks before it calls the Rabbit lane: a
+    page whose marks are already in a possible order is not a crossed page.
+    Space separators break the syllable; asat keeps the previous position
+    because NFC can place it after the dot below.
+    """
+    attached = False
+    preceding_marks = False
+    previous = -1
+    for ch in str(text if text is not None else ""):
+        if ch == " " or ch.isspace():
+            continue
+        if is_unicode_base(ch):
+            if not attached and preceding_marks:
+                return False
+            attached = True
+            preceding_marks = False
+            previous = -1
+            continue
+        if ch == ASAT or ch in UNICODE_MARK_ORDER:
+            if not attached:
+                preceding_marks = True
+                continue
+            if ch == ASAT:
+                if previous < 0:
+                    previous = 0
+                continue
+            priority = UNICODE_MARK_ORDER[ch]
+            if priority < previous:
+                return False
+            previous = priority
+            continue
+        attached = False
+        preceding_marks = False
+        previous = -1
+    return True

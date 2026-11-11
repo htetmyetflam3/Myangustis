@@ -67,7 +67,8 @@ Kept in place; only their `../main/core/…` imports were repointed to `../core/
 - `classify.js`, `04-classify.js` — scraper-source classification
   (**exact duplicates of each other** — dedupe is a later task, not done here)
 - `caller-policy.js` — caller (site/scraper/local) policy
-- `python-entry.js` — **omitted, see Python note below** (import path only)
+- `python-entry.js` — **removed**: the Python parser no longer delegates to the
+  JavaScript Manager (see the Python note below)
 
 ## 4. `integration/` — caller glue
 
@@ -123,15 +124,33 @@ Target: `core` imports nothing from `extend/`, `integration/` or `host/`;
    coupling inside core is gone.
 5. `core/api/parser_dispatcher_client.py` — Python client, omitted (below).
 
-## Omitted / untouched
+## Python parser — a peer, not a child
 
-- **Python parser is omitted from this restructure** (owner: treat as never
-  run). `B.Parser/main/Python/**` was not moved, edited or wired.
-  `extend/python-entry.js` and `core/api/parser_dispatcher_client.py` only
-  received/were carried by mechanical moves; they are not part of the sketch.
-- `B.Parser/main/` still remains, holding only the omitted Python tree and
-  `main/parser/{js/make-index-font11.js, jason-map/vector/*.svg}` build
-  tooling. Emptying/removing `main/` is a later task.
+`B.Parser/Python/` is a **standalone implementation** of the same parser, not
+a client of the JavaScript one. The two languages share data only:
+
+- JSON maps in `B.Parser/@jason-map/` (read by `modules/maps.py`)
+- dictionary/master data from the **engine** as a child process
+  (`modules/engine.py` -> `node tools-box/js/engine-data.js`). The engine is
+  JavaScript by design and owns that data; Python does not re-implement or
+  re-decrypt it. This is a data call, not delegated parsing.
+- an optional JSON job/result contract (`modules/interop.py`) for callers
+  that want to drive either parser the same way
+
+There is no `python-entry.js` and no `node_manager.py`; nothing under
+`B.Parser/Python/` starts the JavaScript **parser**. OCR is part of this
+parser (`modules/ocr.py`, Tesseract CLI). `test_frame_parity.py` compares the
+Python frame builder with a committed JSON golden emitted once by the JS
+builder — it never runs Node; `test_ocr.py` runs with a stub Tesseract.
+
+Inside Python, `modules/manager.py` is the executor
+(`pipeline.py` -> `render.py`), and `cli.py`, `api.py`, `prase.py` and
+`pdf_tool.py` all call it. Paths resolve through `modules/paths.py`
+(`Junk/fonts/Unicode`, `Junk/fonts/used`, `B.Parser/.output`), the Python
+mirror of `_path.js`.
+
+`B.Parser/main/` is no longer the Python tree's home; the layout above is.
+See `B.Parser/Python/README.md` for the run commands.
 - `host/**`, repo-level callers (`D.Scraper`, `test/`, `tools-box`)
   still reference the old `main/parser/…` layout in places — out of scope for
   this task; update them task-by-task against `B.Parser/index.js`.

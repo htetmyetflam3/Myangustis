@@ -1,48 +1,66 @@
-"""Path resolution for models, fonts, input, and output.
+"""Path resolution for fonts, maps and output — the Python mirror of
+``B.Parser/_path.js``.
 
-All paths are resolved relative to this file (``module/paths.py``) so the
-package works from any current working directory.
+Every path is resolved from this file's location, so the parser works from
+any current working directory. The layout is the repository's, not a private
+copy of it:
 
-Layout — Praser is the SHARED root for both ports (Python and js), so the
-centralized dirs live directly under it, NOT under a port dir:
+    <repo>/Junk/fonts/Unicode/     input-side Myanmar faces
+    <repo>/Junk/fonts/used/        faces used to WRITE output
+                                   (AnonymousPro-* + MyanmarSagar)
+    <repo>/B.Parser/@jason-map/    shared JSON maps (see :mod:`maps`)
+    <repo>/B.Parser/.output/       default output directory
 
-    Praser/
-      fonts/                 <- CENTRALIZED fonts (one dir, both ports)
-        Unicode/             <- Myanmar faces, input side (YoeYar-One, Padauk, ...)
-        output/              <- fonts used to WRITE output (Anonymous Pro + MyanmarSagar)
-      upload/input/          <- CENTRALIZED input (docx/ pdf/ txt/)
-      .output/               <- CENTRALIZED default output
-      Python/module/         <- this package (model/ kept beside the code)
-      js/module/             <- the Node port (model/ kept beside the code)
-
-  - Myanmar fonts: Praser/fonts/Unicode/
-  - Output fonts : Praser/fonts/output/ (Anonymous Pro + MyanmarSagar)
-  - Default output dir: Praser/.output/  (or pass an explicit output path)
+Environment overrides exist for deployment (`PRASER_FONT_DIR`,
+`PRASER_OUTPUT_FONT_DIR`, `PRASER_OUTPUT_DIR`). No path here points at a
+JavaScript file.
 """
 
+import os
 from pathlib import Path
 
-MODULE_DIR = Path(__file__).resolve().parent       # .../Praser/Python/module
-PORT_DIR = MODULE_DIR.parent                       # .../Praser/Python
-PRASER_ROOT = PORT_DIR.parent                      # .../Praser (shared root)
+MODULE_DIR = Path(__file__).resolve().parent        # .../B.Parser/Python/modules
+PYTHON_DIR = MODULE_DIR.parent                      # .../B.Parser/Python
+PARSER_ROOT = PYTHON_DIR.parent                     # .../B.Parser
+REPO_ROOT = PARSER_ROOT.parent                      # repository root
 
-# Centralized input — samples and runtime uploads land here (docx/ pdf/ txt/).
-UPLOAD_DIR = PRASER_ROOT / "upload"
-INPUT_DIR = UPLOAD_DIR / "input"
 
-# Myanmar Unicode fonts are centralized under Praser/fonts/Unicode/
-FONT_DIR = PRASER_ROOT / "fonts" / "Unicode"
+def _first_dir(env_name, *candidates):
+    """Environment override, else the first candidate that exists."""
+    override = os.environ.get(env_name)
+    if override:
+        return Path(override)
+    for candidate in candidates:
+        if Path(candidate).is_dir():
+            return Path(candidate)
+    return Path(candidates[0])
 
-# Fonts used to WRITE output files (PDF & DOCX): Latin = Anonymous Pro,
-# Burmese = MyanmarSagar. Both live in Praser/fonts/output/.
-OUTPUT_FONT_DIR = PRASER_ROOT / "fonts" / "output"
+
+# Input-side faces: the JS parser resolves the same directory (Junk/fonts).
+FONT_DIR = _first_dir(
+    "PRASER_FONT_DIR",
+    REPO_ROOT / "Junk" / "fonts" / "Unicode",
+    PARSER_ROOT / "fonts" / "Unicode",
+)
+
+# Faces used to WRITE output: Anonymous Pro (Latin) + MyanmarSagar (Burmese).
+OUTPUT_FONT_DIR = _first_dir(
+    "PRASER_OUTPUT_FONT_DIR",
+    REPO_ROOT / "Junk" / "fonts" / "used",
+    PARSER_ROOT / "fonts" / "output",
+)
 DEFAULT_MYANMAR_FONT = OUTPUT_FONT_DIR / "MyanmarSagar.ttf"
 
-# Default output directory when no output path is given on the CLI.
-DEFAULT_OUTPUT_DIR = PRASER_ROOT / ".output"
+# Runtime directories. ``upload`` and ``.output`` are created on demand by the
+# CLI/API; nothing is required to exist at import time.
+UPLOAD_DIR = Path(os.environ.get("PRASER_UPLOAD_DIR") or (PARSER_ROOT / "upload"))
+INPUT_DIR = UPLOAD_DIR / "input"
+DEFAULT_OUTPUT_DIR = Path(os.environ.get("PRASER_OUTPUT_DIR")
+                          or (PARSER_ROOT / ".output"))
 
 # Latin fallback candidates (for PDF output of non-Myanmar glyphs).
 _LATIN_FONT_CANDIDATES = [
+    OUTPUT_FONT_DIR / "AnonymousPro-Regular.ttf",
     FONT_DIR / "DejaVuSans.ttf",
     Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
     Path("/usr/share/fonts/dejavu/DejaVuSans.ttf"),
@@ -54,7 +72,7 @@ _LATIN_FONT_CANDIDATES = [
 def find_myanmar_font():
     """Return an available Myanmar-capable TTF from the shipped font dir."""
     candidates = [
-        DEFAULT_MYANMAR_FONT,                      # output/MyanmarSagar.ttf
+        DEFAULT_MYANMAR_FONT,                      # used/MyanmarSagar.ttf
         OUTPUT_FONT_DIR / "Aka02-Regular.ttf",
         FONT_DIR / "PYIDAUNGSU-2.5.2_REGULAR.TTF",
         FONT_DIR / "Padauk.ttf",
@@ -65,16 +83,21 @@ def find_myanmar_font():
     for cand in candidates:
         if Path(cand).is_file():
             return Path(cand)
-    # Fall back to the first .ttf found in the font dir.
     if FONT_DIR.is_dir():
-        for f in sorted(FONT_DIR.glob("*.ttf")):
-            return f
+        for path in sorted(FONT_DIR.glob("*.ttf")):
+            return path
     return DEFAULT_MYANMAR_FONT
 
 
 def find_latin_font():
-    """Return an available Latin fallback font, or None if none exist."""
+    """Return an available Latin fallback font, or ``None`` if none exist."""
     for cand in _LATIN_FONT_CANDIDATES:
         if Path(cand).is_file():
             return Path(cand)
     return None
+
+
+def ensure_dirs():
+    """Create the output/upload directories this parser writes into."""
+    DEFAULT_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    return DEFAULT_OUTPUT_DIR

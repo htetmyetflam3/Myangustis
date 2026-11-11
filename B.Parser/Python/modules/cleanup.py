@@ -19,23 +19,43 @@ The functions only touch characters in their defined sets; everything else
 passes through.
 """
 
-import importlib.util
 import unicodedata
 from functools import lru_cache
-from pathlib import Path
 
+import engine
 from mm_score import MARK_ORDER as _PRIORITY, is_index
+
+# Reordering inside one cluster follows the modern Burmese syllable order
+# (consonant, medials ျ ြ ွ ှ, then ေ, then the vowels above/below, then
+# ံ ့ း). MARK_ORDER is the Engine's own SLOT order -- a keyboard/code order
+# in which ေ sits at 2 and the medials at 19-22 -- so sorting a cluster's
+# marks by it turns ကြေ into ကေြ. Marks outside this table keep the Engine
+# order. (Mirror of REORDER_PRIORITY in beautify/clean.js.)
+REORDER_PRIORITY = {
+    "\u103b": 1, "\u103c": 2, "\u103d": 3, "\u103e": 4,
+    "\u1031": 5, "\u102d": 6, "\u102e": 6, "\u1032": 6,
+    "\u102f": 7, "\u1030": 7,
+    "\u102b": 8, "\u102c": 8,
+    "\u1036": 9, "\u103a": 10, "\u1037": 11, "\u1038": 12,
+}
+
+
+def reorder_rank(ch):
+    """Syllable rank for reordering: modern order first, Engine order after."""
+    rank = REORDER_PRIORITY.get(ch)
+    return _PRIORITY.get(ch) if rank is None else rank
 
 # Scoring and cleanup share the Python mark priority table from mm_score.
 
 @lru_cache(maxsize=1)
 def _master_data():
-    """Load the Engine master in memory through the shared workspace chain."""
-    workspace_path = Path(__file__).resolve().parents[4] / "index-path.py"
-    spec = importlib.util.spec_from_file_location("myangustis_workspace", workspace_path)
-    workspace = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(workspace)
-    data = workspace.get_engine_data().read_master_json().get("mapData")
+    """Load ``mapData`` (Glue + imposter table) from the JavaScript engine.
+
+    The engine owns the dictionary/master and the JS code that validates it,
+    so Python asks it as a child process (:mod:`engine`) instead of re-reading
+    or re-decrypting it here. The JavaScript *parser* is still never called.
+    """
+    data = engine.read_master_json().get("mapData")
     if (not isinstance(data, dict) or not isinstance(data.get("Glue"), list)
             or not isinstance(data.get("IMPOSTER"), dict)):
         raise ValueError("Engine master is missing cleanup data")
@@ -153,7 +173,7 @@ def reorder_marks(t: str) -> str:
                 nxt = chars[i]
                 if _is_index(nxt) or nxt in (" ", "\n"):
                     break
-                p = _PRIORITY.get(nxt)
+                p = reorder_rank(nxt)
                 if p is None:
                     break
                 if nxt == "\u102f" or p not in seen_priorities:
@@ -162,7 +182,7 @@ def reorder_marks(t: str) -> str:
                 i += 1
 
             if marks:
-                marks.sort(key=lambda c: _PRIORITY[c])
+                marks.sort(key=reorder_rank)
                 out.extend(marks)
         else:
             out.append(ch)

@@ -61,6 +61,7 @@ __all__ = [
     "load_sidecar_map", "map_code", "page_font_decoders", "page_has_images",
     "parse_pdf_objects", "parse_tounicode_stream", "parse_ttf_cmap",
     "pick_embedded_font", "zlib_decompress_capped",
+    "page_images", "decode_image", "page_image_bytes",
 ]
 
 # ── decompression-bomb guard ─────────────────────────────────
@@ -297,7 +298,7 @@ def find_tounicode_maps(objects):
 
 
 def load_sidecar_map(path=None):
-    """Optional cross-volume cipher map ``module/model/cipher-map.json``.
+    """Optional cross-volume cipher map (``@jason-map/cipher-map.json``).
 
     Some volumes ship only blanked ToUnicode maps; sibling volumes of the same
     series share the font cipher, so their valid maps (merged once into the
@@ -306,8 +307,9 @@ def load_sidecar_map(path=None):
     """
     import json
     from pathlib import Path
-    p = Path(path) if path else Path(__file__).resolve().parent / "model" / "cipher-map.json"
-    if not p.is_file():
+    import maps
+    p = Path(path) if path else maps.find_map("cipher-map.json")
+    if p is None or not p.is_file():
         return {}
     try:
         return {int(k, 16): v for k, v in json.loads(p.read_text(encoding="utf-8")).items()}
@@ -872,10 +874,19 @@ def _shown_strings(op, operands):
     return []
 
 
+def _line_font(ordered):
+    """First non-empty base font name on an assembled line (JS ``line[4]``)."""
+    for piece in ordered:
+        if len(piece) > 4 and piece[4]:
+            return piece[4]
+    return None
+
+
 def _join_draft_runs(pieces, order):
     """Order adjacent profiled runs together, never other font resources."""
     out, pending, selected = [], [], None
-    for _, _, text, runs in pieces:
+    for piece in pieces:
+        text, runs = piece[2], piece[3]
         for is_draft, part in (runs if runs is not None else [(False, text)]):
             if not part:
                 continue
@@ -893,10 +904,12 @@ def _join_draft_runs(pieces, order):
 def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=False, *, used_myanmar_fonts=None):
     """Extract text lines WITH layout: ``(lines, page_w, page_h)``.
 
-    ``lines`` is a top-to-bottom list of ``(x, y, size, text)`` where x/y are
+    ``lines`` is a top-to-bottom list of ``(x, y, size, text, font)`` where x/y are
     PDF points (y measured from the page BOTTOM, as in the PDF user space) and
     size is the Tf font size — everything the exact-layout DOCX writer needs
-    to reproduce the page. Page size comes from the (inherited) MediaBox.
+    to reproduce the page; ``font`` is the base font name of the line's first
+    shown run, which the markup stage turns into bold/italic (JS ``line[4]``).
+    Page size comes from the (inherited) MediaBox.
 
     ``detect_columns`` enables the multi-column splitter (the gutter guard
     below). OFF by default: paragraph rewrap (short first piece + long
@@ -944,6 +957,7 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
         in_block = False
         block_texts = []
         block_runs = []
+        block_font = None
         block_xy = None
         block_size = None
         text_xy = (0.0, 0.0)
@@ -963,6 +977,7 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
                     in_block = True
                     block_texts = []
                     block_runs = []
+                    block_font = None
                     block_xy = None
                     block_size = None
                     # BT resets the text matrix to the identity, i.e. the
@@ -1028,9 +1043,11 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
                         text = _collapse_overprint(text)
                     pieces.append((block_xy[1], block_xy[0],
                                    12.0 if block_size is None else block_size,
-                                   text, block_runs if doc.zawcode_order else None))
+                                   text, block_runs if doc.zawcode_order else None,
+                                   block_font))
                 block_texts = []
                 block_runs = []
+                block_font = None
                 continue
 
             if op in ("Tj", "TJ", "'", '"'):
@@ -1039,6 +1056,8 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
                     text = decoder.decode(shown)
                     if used_myanmar_fonts is not None and contains_myanmar(text):
                         used_myanmar_fonts.add(decoder.base_font or "")
+                    if block_font is None and decoder.base_font:
+                        block_font = decoder.base_font
                     block_texts.append(text)
                     if doc.zawcode_order:
                         block_runs.append((decoder.zawcode_glyphs is not None, text))
@@ -1060,9 +1079,10 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
     # farther away than that.
     unique_pieces = []
     for piece in pieces:
-        y, x, size, text, _runs = piece
+        y, x, size, text = piece[:4]
         drop = False
-        for k, (old_y, old_x, old_size, old_text, _old_runs) in enumerate(unique_pieces):
+        for k, existing in enumerate(unique_pieces):
+            old_y, old_x, old_size, old_text = existing[:4]
             if abs(x - old_x) > 1.0 or abs(y - old_y) > 1.0:
                 continue
             if text == old_text or text in old_text:
@@ -1126,8 +1146,8 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
             best = max(clusters, key=len)
             if len(best) >= max(5, int(0.5 * len(mixed_bands))):
                 c = sum(best) / len(best)
-                left = sum(len(t) for _, x, _, t, _ in pieces if x < c)
-                right = sum(len(t) for _, x, _, t, _ in pieces if x >= c)
+                left = sum(len(piece[3]) for piece in pieces if piece[1] < c)
+                right = sum(len(piece[3]) for piece in pieces if piece[1] >= c)
                 tot = left + right
                 if tot and 0.25 <= left / tot <= 0.75:
                     bounds = [c]
@@ -1138,26 +1158,28 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
                 col_pieces = [p for p in pieces if sum(1 for b in bounds if p[1] >= b) == c]
                 col_pieces.sort(key=lambda p: (-p[0], p[1]))
                 cur_line, cur_y = [], None
-                for y, x, size, text, runs in col_pieces:
+                for y, x, size, text, runs, font in col_pieces:
                     if cur_y is None or abs(y - cur_y) > 3:
                         if cur_line:
                             cur_line.sort(key=lambda p: p[0])   # x only; stable = stream order
                             _j = (_join_draft_runs(cur_line, doc.zawcode_order) if doc.zawcode_order
-                                  else ''.join(t for _, _, t, _ in cur_line))
+                                  else ''.join(p[2] for p in cur_line))
                             if doc.legacy_text_fix:
                                 _j = legacy_ayar_to_unicode(_j, apply_aa_vowel_rule=_aa_vowel_rule_for_legacy(doc))
                             lines.append((cur_line[0][0], cur_y,
-                                          max(s for _, s, _, _ in cur_line), _j))
+                                          max(p[1] for p in cur_line), _j,
+                                          _line_font(cur_line)))
                         cur_line, cur_y = [], y
-                    cur_line.append((x, size, text, runs))
+                    cur_line.append((x, size, text, runs, font))
                 if cur_line:
                     cur_line.sort(key=lambda p: p[0])   # x only; stable = stream order
                     joined = (_join_draft_runs(cur_line, doc.zawcode_order) if doc.zawcode_order
-                              else ''.join(t for _, _, t, _ in cur_line))
+                              else ''.join(p[2] for p in cur_line))
                     if doc.legacy_text_fix:
                         joined = legacy_ayar_to_unicode(joined, apply_aa_vowel_rule=_aa_vowel_rule_for_legacy(doc))
                     lines.append((cur_line[0][0], cur_y,
-                                  max(s for _, s, _, _ in cur_line), joined))
+                                  max(p[1] for p in cur_line), joined,
+                                  _line_font(cur_line)))
             return lines, page_w, page_h
 
     pieces.sort(key=lambda p: (-p[0], p[1]))
@@ -1180,18 +1202,18 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
         # puts it back on its base: 'ရှိသည်။'.
         ordered = sorted(current_line, key=lambda p: p[0])
         joined = (_join_draft_runs(ordered, doc.zawcode_order) if doc.zawcode_order
-                  else ''.join(t for _, _, t, _ in ordered))
+                  else ''.join(p[2] for p in ordered))
         if doc.legacy_text_fix:
             joined = legacy_ayar_to_unicode(joined, apply_aa_vowel_rule=_aa_vowel_rule_for_legacy(doc))
         lines.append((ordered[0][0], current_y,
-                      max(s for _, s, _, _ in ordered), joined))
+                      max(p[1] for p in ordered), joined, _line_font(ordered)))
 
-    for y, x, size, text, runs in pieces:
+    for y, x, size, text, runs, font in pieces:
         if abs(y - current_y) > 3:
             flush()
             current_line = []
             current_y = y
-        current_line.append((x, size, text, runs))
+        current_line.append((x, size, text, runs, font))
 
     if current_line:
         flush()
@@ -1207,3 +1229,259 @@ def extract_page_text_layout(objects, page_num, page_gen, decoding):
     """
     lines, _, _ = extract_page_lines(objects, page_num, page_gen, decoding)
     return '\n'.join(text for _, _, _, text in lines)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  RASTER IMAGES — the OCR lane's input
+# ═══════════════════════════════════════════════════════════════════════════
+# A scanned page stores its pixels as an image XObject. Extracting that
+# object is better than re-rendering the page: the scan is already at its
+# native resolution, and rendering would resample it (and blur it) before
+# OCR ever sees it.
+
+def _dict_name(head: bytes, key: bytes):
+    m = re.search(rb"/" + key + rb"\s*/([A-Za-z0-9._-]+)", head)
+    return m.group(1).decode("latin-1") if m else None
+
+
+def _dict_int(head: bytes, key: bytes, default=None):
+    m = re.search(rb"/" + key + rb"\s+(\d+)", head)
+    return int(m.group(1)) if m else default
+
+
+def _dict_filters(head: bytes):
+    m = re.search(rb"/Filter\s*(\[[^\]]*\]|/[A-Za-z0-9._-]+)", head)
+    if not m:
+        return []
+    return [name.decode("latin-1") for name in re.findall(rb"/([A-Za-z0-9._-]+)", m.group(1))]
+
+
+def _pdf_string(raw: bytes):
+    """Decode a PDF literal or hex string (the /Indexed lookup table)."""
+    raw = raw.strip()
+    if raw.startswith(b"<"):
+        digits = re.sub(rb"[^0-9A-Fa-f]", b"", raw)
+        if len(digits) % 2:
+            digits += b"0"
+        return bytes.fromhex(digits.decode("ascii"))
+    if raw.startswith(b"("):
+        body = raw[1:raw.rfind(b")")]
+        out, i = bytearray(), 0
+        escapes = {b"n": 10, b"r": 13, b"t": 9, b"b": 8, b"f": 12,
+                   b"(": 40, b")": 41, b"\\": 92}
+        while i < len(body):
+            ch = body[i:i + 1]
+            if ch == b"\\" and i + 1 < len(body):
+                nxt = body[i + 1:i + 2]
+                if nxt in escapes:
+                    out.append(escapes[nxt]); i += 2; continue
+                octal = re.match(rb"[0-7]{1,3}", body[i + 1:])
+                if octal:
+                    out.append(int(octal.group(0), 8) & 0xFF); i += 1 + len(octal.group(0)); continue
+                i += 2
+                continue
+            out.append(body[i]); i += 1
+        return bytes(out)
+    return b""
+
+
+def _colorspace(head: bytes, objects):
+    """``(kind, components, palette)`` for one image dictionary.
+
+    ``kind`` is ``gray``/``rgb``/``cmyk``/``indexed``. Anything else returns
+    ``None``: the OCR lane then falls back to rendering the page.
+    """
+    m = re.search(rb"/ColorSpace\s*(\[[^\]]*\]|/[A-Za-z0-9._-]+|\d+\s+\d+\s+R)", head)
+    if not m:
+        return None
+    token = m.group(1).strip()
+
+    if token.endswith(b"R"):
+        ref = re.match(rb"(\d+)\s+(\d+)\s+R", token)
+        target = objects.get((int(ref.group(1)), int(ref.group(2))), b"")
+        target_head = target[:target.find(b"stream")] if b"stream" in target else target
+        if re.search(rb"/ICCBased", target_head):
+            n = _dict_int(target_head, b"N", 3)
+            return ("gray", 1, None) if n == 1 else (
+                ("rgb", 3, None) if n == 3 else ("cmyk", 4, None))
+        return None
+
+    if token.startswith(b"["):
+        if re.search(rb"/Indexed", token):
+            palette = _indexed_palette(token, objects)
+            if palette is None:
+                return None
+            return ("indexed", 1, palette)
+        if re.search(rb"/DeviceRGB", token):
+            return ("rgb", 3, None)
+        if re.search(rb"/DeviceGray", token):
+            return ("gray", 1, None)
+        if re.search(rb"/DeviceCMYK", token):
+            return ("cmyk", 4, None)
+        return None
+
+    if b"DeviceGray" in token:
+        return ("gray", 1, None)
+    if b"DeviceRGB" in token:
+        return ("rgb", 3, None)
+    if b"DeviceCMYK" in token:
+        return ("cmyk", 4, None)
+    if b"CalRGB" in token:
+        return ("rgb", 3, None)
+    if b"CalGray" in token:
+        return ("gray", 1, None)
+    return None
+
+
+def _indexed_palette(token: bytes, objects):
+    """RGB palette bytes for an /Indexed colour space, or ``None``."""
+    m = re.match(rb"\[\s*/Indexed\s+(\S+)\s+(\d+)\s+(<[^>]*>|\([\s\S]*\)|\d+\s+\d+\s+R)", token)
+    if not m:
+        return None
+    base, _hival, lookup = m.group(1), int(m.group(2)), m.group(3)
+    rgb = 3
+    if base.startswith(b"/") and b"DeviceGray" in base:
+        rgb = 1
+    if lookup.endswith(b"R"):
+        ref = re.match(rb"(\d+)\s+(\d+)\s+R", lookup)
+        label = objects.get((int(ref.group(1)), int(ref.group(2))), b"")
+        stream = get_stream(objects, int(ref.group(1)), int(ref.group(2))) or b""
+        table = stream
+    else:
+        table = _pdf_string(lookup)
+    if not table:
+        return None
+    if rgb == 3:
+        return table
+    # Gray palette -> replicate each entry across R, G and B.
+    out = bytearray()
+    for value in table:
+        out += bytes((value, value, value))
+    return bytes(out)
+
+
+def page_images(objects, page_num, page_gen=0):
+    """Raster image XObjects the page draws, largest pixel count first.
+
+    Each entry is ``{"num", "gen", "width", "height", "bits", "filters",
+    "colorspace"}``; the object body stays in ``objects`` so nothing is
+    decompressed until :func:`decode_image` is asked for it.
+    """
+    page = objects.get((page_num, page_gen), b"")
+    if not page:
+        return []
+    text = page.decode("latin-1", errors="replace")
+    resources = text
+    m = re.search(r"/Resources\s+(\d+)\s+\d+\s+R", text)
+    if m:
+        resources = objects.get((int(m.group(1)), 0), b"").decode("latin-1", errors="replace")
+    mx = re.search(r"/XObject\s+(\d+)\s+\d+\s+R", resources)
+    xobjects = (objects.get((int(mx.group(1)), 0), b"").decode("latin-1", errors="replace")
+                if mx else resources)
+
+    found = []
+    for entry in re.finditer(r"/([A-Za-z0-9._-]+)\s+(\d+)\s+(\d+)\s+R", xobjects):
+        num, gen = int(entry.group(2)), int(entry.group(3))
+        body = objects.get((num, gen), b"")
+        head = body[:body.find(b"stream")] if b"stream" in body else body
+        if not re.search(rb"/Subtype\s*/Image", head):
+            continue
+        width = _dict_int(head, b"Width", 0)
+        height = _dict_int(head, b"Height", 0)
+        found.append({
+            "name": entry.group(1),
+            "num": num, "gen": gen,
+            "width": width, "height": height,
+            "bits": _dict_int(head, b"BitsPerComponent", 8),
+            "filters": _dict_filters(head),
+            "colorspace": _colorspace(head, objects),
+        })
+    found.sort(key=lambda item: item["width"] * item["height"], reverse=True)
+    return found
+
+
+def _ppm(kind, width, height, samples):
+    """Wrap raw 8-bit samples as a binary PPM (P6) or PGM (P5)."""
+    if kind == "gray":
+        return b"P5\n%d %d\n255\n" % (width, height) + samples
+    return b"P6\n%d %d\n255\n" % (width, height) + samples
+
+
+def _cmyk_to_rgb(samples):
+    out = bytearray()
+    for i in range(0, len(samples) - 3, 4):
+        c, m, y, k = samples[i], samples[i + 1], samples[i + 2], samples[i + 3]
+        out += bytes(((255 - c) * (255 - k) // 255,
+                      (255 - m) * (255 - k) // 255,
+                      (255 - y) * (255 - k) // 255))
+    return bytes(out)
+
+
+def decode_image(objects, image, *, max_pixels=None):
+    """Return ``(bytes, suffix)`` for an image XObject, or ``None``.
+
+    DCT (JPEG) and JPX payloads pass through untouched — re-encoding a scan
+    only loses quality. Flate/raw samples are wrapped as PPM/PGM. A filter
+    this module cannot unwrap (CCITT, LZW, JBIG2) returns ``None`` so the
+    caller can fall back to a page renderer.
+    """
+    width, height = image.get("width") or 0, image.get("height") or 0
+    if width <= 0 or height <= 0:
+        return None
+    if max_pixels and width * height > max_pixels:
+        raise ValueError(f"image is {width}x{height}; exceeds the {max_pixels} pixel cap")
+
+    filters = [name.lower() for name in image.get("filters") or ()]
+    if "dctdecode" in filters:
+        data = get_stream(objects, image["num"], image["gen"])
+        return (data, ".jpg") if data else None
+    if "jpxdecode" in filters:
+        data = get_stream(objects, image["num"], image["gen"])
+        return (data, ".jp2") if data else None
+    if any(name in filters for name in ("ccittfaxdecode", "jbig2decode", "lzwdecode")):
+        return None
+
+    colorspace = image.get("colorspace")
+    if colorspace is None:
+        return None
+    kind, components, palette = colorspace
+    if image.get("bits", 8) != 8:
+        return None
+    data = get_stream(objects, image["num"], image["gen"])
+    if not data:
+        return None
+
+    if kind == "indexed":
+        if palette is None:
+            return None
+        rgb = bytearray()
+        for value in data:
+            base = value * 3
+            if base + 2 >= len(palette):
+                break
+            rgb += palette[base:base + 3]
+        return _ppm("rgb", width, height, bytes(rgb[:width * height * 3])), ".ppm"
+
+    needed = width * height * components
+    samples = data[:needed]
+    if len(samples) < needed:
+        return None
+    if kind == "cmyk":
+        return _ppm("rgb", width, height, _cmyk_to_rgb(samples)), ".ppm"
+    return _ppm("gray" if kind == "gray" else "rgb", width, height, samples), \
+        ".pgm" if kind == "gray" else ".ppm"
+
+
+def page_image_bytes(objects, page_num, page_gen=0, *, max_pixels=None, log=lambda m: None):
+    """Best raster image for a page, decoded: ``(bytes, suffix)`` or ``None``."""
+    for image in page_images(objects, page_num, page_gen):
+        try:
+            decoded = decode_image(objects, image, max_pixels=max_pixels)
+        except ValueError:
+            raise
+        except Exception as exc:  # noqa: BLE001 - one bad image must not kill the page
+            log(f"[i] image {image['name']} could not be decoded: {exc}")
+            continue
+        if decoded:
+            return decoded
+    return None
