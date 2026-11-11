@@ -1,18 +1,27 @@
 #!/usr/bin/env python3
-# Separate JavaScript and Python parsers were planned and may be revisited;
-# currently Python invokes the JavaScript Manager in a Node child process.
-"""Python CLI/API entry point for the shared JavaScript Manager.
+"""Python parser entry point — standalone, no Node.
 
-Use ``python prase.py INPUT.pdf OUTPUT.docx --method manual`` for automatic
-per-page selection of the text extraction or OCR lane. ``--serve`` runs the
-Flask API; the Manager remains the parser for both interfaces.
+``B.Parser`` ships two independent parsers: a JavaScript one and this Python
+one. Neither runs the other and there is no dependency chain in either
+direction. They share data only, as JSON (``B.Parser/@jason-map``), plus the
+optional JSON job contract in :mod:`interop`.
+
+OCR is included: image-only PDF pages, embedded DOCX pictures and bare image
+input are recognised with the Tesseract CLI (``--no-ocr`` turns it off).
+Dictionary/master data comes from the JavaScript *engine* as a child process;
+that is the engine's data, not the JS parser.
+
+    python prase.py INPUT.pdf OUTPUT.docx --method manual
+    python prase.py INPUT.docx OUTPUT.txt
+    python prase.py --job request.json --response response.json
+    python prase.py --serve
 """
 
 import os
 import sys
 
-# Make the sibling modules (and detector.py) importable regardless of how this
-# entry point is invoked (e.g. `python module/prase.py` or `python prase.py`).
+# Make the sibling modules importable regardless of how this entry point is
+# invoked (e.g. `python modules/prase.py` or `python prase.py`).
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from cli import main  # noqa: E402

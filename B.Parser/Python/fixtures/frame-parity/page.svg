@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="595.28" height="841.89" viewBox="0 0 595.28 841.89">
+<defs>
+<path id="g1" d="M0 0 L5 0 L5 5 L0 5 Z"/>
+<path id="g2" d="M0 0 C2 3 4 3 6 0 Z"/>
+<path id="g3" d="M0 0 H4 V4 H0 Z"/>
+<path id="g4" d="M0 0 Q2 4 4 0 L4 -2 L0 -2 Z"/>
+</defs>
+<g id="text">
+<use xlink:href="#g1" transform="matrix(14,0,0,-14,72,120)"/>
+<use xlink:href="#g2" transform="matrix(14,0,0,-14,86,120)"/>
+<use xlink:href="#g3" transform="matrix(14,0,0,-14,100,120)"/>
+<use xlink:href="#g1" transform="matrix(14,0,0,-14,72,160)"/>
+<use xlink:href="#g4" transform="matrix(14,0,0,-14,90,160)"/>
+<use xlink:href="#g2" transform="matrix(11,0,0,-11,72,200)"/>
+<use xlink:href="#g3" transform="matrix(11,0,0,-11,83,200)"/>
+</g>
+</svg>

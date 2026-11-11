@@ -69,34 +69,44 @@ _IMPOSSIBLE = [
 
 
 # ── optional: judge the words against a real dictionary ──────────────────
-def _read_sealed(path):
-    """Read sealed JSON through the Node bridge and the engine's loader."""
-    import subprocess
-    from pathlib import Path
-    repo = next((p for p in Path(__file__).resolve().parents if (p / "index-path.js").is_file()), None)
-    if repo is None:
-        raise RuntimeError("sealed map requires the repository's index-path.js")
-    bridge = repo / "tools-box/js/engine-data.js"
-    out = subprocess.run(["node", str(bridge), "file", os.path.abspath(path)],
-                         capture_output=True, check=True).stdout
-    return json.loads(out)
-
-
 _MAP_CACHE = {}
 
 
 def load_map(path):
-    """The whole map, cached. ``.enc`` goes through the project's secure.js."""
+    """The whole map, cached.
+
+    Three container shapes are accepted, all data:
+
+    ``.enc``                  sealed JSON, read by the JavaScript engine as
+                              a child process (:mod:`engine`)
+    ``.db/.sqlite/.sqlite3``  a ``master_json`` sqlite table
+    anything else             a plain JSON file
+
+    A bare map name (``scan.json``) is resolved against the shared
+    ``B.Parser/@jason-map`` directory by :mod:`maps`. No Node process, no
+    JavaScript module, no workspace bridge.
+    """
     if path in _MAP_CACHE:
         return _MAP_CACHE[path]
+    import maps
+    if not os.path.exists(path) and "/" not in path and "\\" not in path:
+        resolved = maps.find_map(path)
+        if resolved is None:
+            raise FileNotFoundError(f"JSON map {path!r} is not shipped")
+        path = str(resolved)
     if path.endswith(".enc"):
-        data = _read_sealed(path)
+        import engine
+        data = engine.read_secure_json(path)
     elif path.endswith((".db", ".sqlite", ".sqlite3")):
         import sqlite3
         con = sqlite3.connect(path)
-        data = json.loads(con.execute("select data from master_json").fetchone()[0])
+        try:
+            data = json.loads(con.execute("select data from master_json").fetchone()[0])
+        finally:
+            con.close()
     else:
-        data = json.load(open(path, encoding="utf-8"))
+        with open(path, encoding="utf-8") as source:
+            data = json.load(source)
     _MAP_CACHE[path] = data
     return data
 
@@ -115,7 +125,7 @@ def clause_model(path):
 
 def load_dictionary(path):
     """Word set from a ``master_json`` sqlite table, a JSON file, or a sealed
-    ``.enc`` map read through the project's ``secure.js``.
+    ``.enc`` map read by the JavaScript engine (:mod:`engine`).
 
     Entries are stored SYLLABLE-SEPARATED (``\u1000  \u100f\u1039\u100c  \u1000\u1031\u102c  \u1005``), so every
     lookup has to strip the spaces first -- matching on the stored form

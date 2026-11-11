@@ -20,12 +20,10 @@ Two execution modes share the same building blocks:
 import os
 import re
 import hashlib
-import json
 import difflib
 import math
 import tempfile
 from functools import lru_cache
-from pathlib import Path
 
 from decrypt import (
     decrypt_pdf,
@@ -37,7 +35,7 @@ from rabbit import Rabbit
 from detector import contains_myanmar, has_only_zawgyi_fonts
 from cleanup import cleanup_text, order_text
 from legacy_order import count_zawcode_evidence, reorder_zawcode_text
-from docx_extract import extract_docx_paragraphs
+from docx_extract import extract_docx_paragraphs, strip_image_markers
 from mm_score import score_text
 from pdf_extract import (
     CmapIdentityMap,
@@ -61,7 +59,11 @@ from pdf_extract import (
     page_has_images,
     get_page_mediabox,
 )
-from render import _write_docx_layout, _write_pdf
+from render import _write_docx_layout, _write_pdf, write_docx_markup
+import maps
+import limits
+import markup
+from unicode_evidence import preserve_regional_runs
 
 # Pages probed with direct Identity-H decoding before deciding whether the
 # document needs the ToUnicode / embedded-font-cmap fallback path.
@@ -70,9 +72,8 @@ _DETECT_PROBE_PAGES = 20
 
 @lru_cache(maxsize=1)
 def _zawcode_data():
-    path = Path(__file__).resolve().parents[2] / 'parser/jason-map/zawcode-draft-glyphs.json'
-    with path.open(encoding='utf-8') as source:
-        return json.load(source)
+    """ZawCode draft profiles — read from the shared JSON map, nothing else."""
+    return maps.load_map('zawcode-draft-glyphs.json')
 
 
 def _has_zawcode_profile(objects, profiles):
@@ -255,7 +256,7 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
             "idx": idx,
             "lines": lines,
             "wh": (w, h),
-            "text": "\n".join(t for _, _, _, t in lines),
+            "text": "\n".join(line[3] for line in lines),
             "has_img": has_img,
             # How the glyph ids became characters, carried to the report
             # because the cmap fork below needs it (JS: pg.decodeKind).
@@ -565,7 +566,7 @@ def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
                 base = order_text(Rabbit.zg2uni(raw))
                 log(f"    Page {idx + 1}: ZAWGYI (font/source evidence) -> converted")
             elif cat == "UNICODE":
-                base = order_text(raw)
+                base = preserve_regional_runs(raw, order_text)
                 log(f"    Page {idx + 1}: UNICODE (source evidence) -> kept")
             else:
                 base = raw
@@ -612,15 +613,47 @@ def _convert_line(t, cat, apply_cleanup):
     """Apply the same per-page transform to one extracted line."""
     if cat == "ZAWGYI":
         return order_text(Rabbit.zg2uni(t))     # ordered, never imposter-fixed
-    if cat == "UNICODE" and apply_cleanup:
-        return cleanup_text(t)
+    if cat == "UNICODE":
+        # Regional (Mon/extended) runs keep their marks: ordering and cleanup
+        # are Burmese-only rules and must not rewrite them.
+        return (preserve_regional_runs(t, cleanup_text) if apply_cleanup
+                else preserve_regional_runs(t, order_text))
     return order_text(t)
 
 
 def _conv_lines(lines, cat, apply_cleanup):
-    """Per-line conversion mirroring the page-level transform (layout mode)."""
-    return [(x, y, size, _convert_line(t, cat, apply_cleanup))
-            for (x, y, size, t) in lines]
+    """Per-line conversion mirroring the page-level transform (layout mode).
+
+    The font name (5th element) rides along untouched: it is evidence for
+    the markup stage, not text, so no conversion may rewrite it.
+    """
+    out = []
+    for line in lines:
+        x, y, size, text = line[:4]
+        font = line[4] if len(line) > 4 else None
+        out.append((x, y, size, _convert_line(text, cat, apply_cleanup), font))
+    return out
+
+
+def page_markup(page, text=None):
+    """One finished page as a marked-up string (``markup.pageToMarkup``).
+
+    Pages that still carry geometry get heading/bold/italic from the line
+    evidence; text-only pages (DOCX, OCR, Engine rewrites) get one paragraph
+    per source paragraph. A page whose text already carries ``<b>``/``<i>``
+    (DOCX runs) keeps those tags.
+    """
+    page = dict(page or {})
+    if text is not None:
+        page["text"] = text
+    lines = page.get("lines")
+    if isinstance(lines, (list, tuple)) and lines:
+        marked = markup.lines_to_markup(lines)
+        if marked:
+            return marked
+    text = page.get("text") or ""
+    return markup.marked_text_to_markup(text) if page.get("marked") \
+        else markup.text_to_markup(text)
 
 
 def _count_diff_lines(base, clean):
@@ -647,7 +680,9 @@ def collect_stream_results(pdf_path, detector, apply_cleanup, log=lambda m: None
     total_changes = 0
     for rep in reports:
         counts[rep["category"]] = counts.get(rep["category"], 0) + 1
-        pages.append({k: rep[k] for k in ("text", "lines", "wh", "has_img") if k in rep})
+        page = {k: rep[k] for k in ("text", "lines", "wh", "has_img") if k in rep}
+        page["marked"] = page_markup(page)
+        pages.append(page)
         total_changes += rep["n_changes"]
     return pages, counts, total_changes, metadata
 
@@ -736,6 +771,8 @@ def render_texts(out_path, pages, counts, pdf_path):
 
     texts = [p["text"] if isinstance(p, dict) else p for p in pages]
     header = build_meta_header(pdf_path, texts, counts, {})
+    marked = [page_markup(page, text) if isinstance(page, dict) else markup.text_to_markup(text)
+              for page, text in zip(pages, texts)]
 
     if ext == ".txt":
         with open(out_path, "w", encoding="utf-8") as f:
@@ -746,10 +783,16 @@ def render_texts(out_path, pages, counts, pdf_path):
                 f.write("\n\n")
 
     elif ext == ".docx":
-        _write_docx_layout(out_path, pages, pdf_path)
+        # Markup is the mirrored behaviour (same document shape as the JS
+        # writer). PRASER_DOCX_LAYOUT=1 keeps the exact-layout writer for
+        # callers who want the source page reproduced.
+        if os.environ.get("PRASER_DOCX_LAYOUT", "").lower() in ("1", "true", "yes", "on"):
+            _write_docx_layout(out_path, pages, pdf_path)
+        else:
+            write_docx_markup(out_path, iter(marked), len(marked))
 
     elif ext == ".pdf":
-        _write_pdf(out_path, texts, {}, pdf_path, len(texts))
+        _write_pdf(out_path, iter(marked), {}, pdf_path, len(marked))
 
     else:
         raise ValueError(f"Unsupported output extension: {ext} (use .txt/.docx/.pdf)")
@@ -823,8 +866,14 @@ def _chunk_paragraphs(paragraphs, per_chunk=_DOCX_CHUNK_PARAGRAPHS):
             for i in range(0, len(paragraphs), per_chunk)]
 
 
-def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: None):
+def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: None,
+                       *, image_dir=None):
     """Run the SAME detect -> Rabbit -> cleanup pipeline on raw DOCX bytes.
+
+    With ``image_dir`` set, embedded pictures are extracted there and replaced
+    by OCR markers; the returned job carries ``image_files`` so the manager can
+    recognise them and swap the text back in (the JS branch does the same).
+
 
     The docx container only stores text, so extraction is trivial (see
     :mod:`docx_extract`); the ENCODING work is what the browser could never
@@ -834,19 +883,33 @@ def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: Non
     with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
         tmp.write(data)
         tmp_path = tmp.name
+    image_files = [] if image_dir is not None else None
     try:
-        paragraphs = extract_docx_paragraphs(tmp_path)
+        paragraphs = extract_docx_paragraphs(tmp_path, image_dir=image_dir,
+                                             image_files=image_files)
     finally:
         try:
             os.unlink(tmp_path)
         except OSError:
             pass
 
+    # limit.js caps: the extracted text and the chunk count, before any
+    # page record is built (mirrors prised/@core/docx/source.js).
+    total_chars = sum(len(paragraph) for paragraph in paragraphs)
+    if total_chars > limits.MAX_TEXT_CHARS:
+        raise RuntimeError(
+            f"Extracted text exceeds the {limits.MAX_TEXT_CHARS:g} character cap")
+    chunks = _chunk_paragraphs(paragraphs)
+    if len(chunks) > limits.MAX_PAGES:
+        raise RuntimeError(f"DOCX exceeds the {limits.MAX_PAGES:g} chunk cap")
+
     reports = []
     pages = []
     counts = {"ZAWGYI": 0, "UNICODE": 0, "UNKNOWN": 0}
-    for idx, chunk in enumerate(_chunk_paragraphs(paragraphs)):
-        category, prob = detector.detect(chunk)
+    for idx, chunk in enumerate(chunks):
+        # OCR placeholders are internal; they are not evidence about the
+        # document's encoding or keyboard.
+        category, prob = detector.detect(strip_image_markers(chunk))
         cat = _norm_category(category)
 
         # Same rule as the PDF path: ordering on every chunk, whatever the
@@ -864,7 +927,7 @@ def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: Non
         pages.append({"text": base})
         counts[cat] = counts.get(cat, 0) + 1
 
-    return {
+    job = {
         "filename": filename,
         "kind": "docx",
         "reports": reports,
@@ -873,6 +936,9 @@ def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: Non
         "changes": collect_changes(reports),
         "pages": pages,
     }
+    if image_files is not None:
+        job["image_files"] = image_files
+    return job
 
 
 def process_bytes(data, kind, detector, filename=None, log=lambda m: None, *, text_layout=None):
@@ -899,18 +965,24 @@ def build_final_pages(job, apply_cleanup):
     out = []
     for pg, rep in zip(job["pages"], job["reports"]):
         if "lines" not in pg:
-            out.append({"text": rep["clean"]
-                        if (apply_cleanup and rep.get("clean") is not None)
-                        else pg["text"]})
+            text = (rep["clean"]
+                    if (apply_cleanup and rep.get("clean") is not None)
+                    else pg["text"])
+            page = {"text": text}
+            page["marked"] = page_markup(page)
+            out.append(page)
             continue
         # ``clean`` is only ever set for a UNICODE page, so this per-line
         # pass cannot reach a Rabbit-converted (ZAWGYI) one.
         if apply_cleanup and rep["clean"] is not None:
-            lines = [(x, y, s, cleanup_text(t)) for (x, y, s, t) in pg["lines"]]
+            lines = [(line[0], line[1], line[2], cleanup_text(line[3]),
+                      line[4] if len(line) > 4 else None) for line in pg["lines"]]
             text = rep["clean"]
         else:
             lines = pg["lines"]
             text = pg["text"]
-        out.append({"text": text, "lines": lines,
-                    "wh": pg["wh"], "has_img": pg["has_img"]})
+        page = {"text": text, "lines": lines,
+                "wh": pg["wh"], "has_img": pg["has_img"]}
+        page["marked"] = page_markup(page)
+        out.append(page)
     return out

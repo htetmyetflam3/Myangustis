@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import re
 import sys
 
@@ -368,7 +369,8 @@ def modal(values):
 
 
 def parse_lines(spec: str, n: int):
-    """Same contract as parseLines() in make-line.js. Empty spec -> None."""
+    """Same contract as parseLines() in make-line.js (checked through the
+    shared JSON golden in fixtures/frame-parity/). Empty spec -> None."""
     if not spec:
         return None
     out: set[int] = set()
@@ -575,6 +577,7 @@ def main():
                             scene=render_scene(page_scene["scene"], selected_ids),
                             source_height=H, clip_id=page_scene["clip_id"],
                             page_height=H if sheet_full_page else None)
+    os.makedirs("known", exist_ok=True)   # same as the JS side's mkdirSync
     with open(f"known/line-sample{suffix}.svg", "w", encoding="utf-8") as fh:
         fh.write(line_output)
     with open(f"known/frame-sheet{suffix}.svg", "w", encoding="utf-8") as fh:

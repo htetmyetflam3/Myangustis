@@ -1,16 +1,15 @@
 """Visual-order slot rearrangement for Ayar, WinInnwa and ZawCode."""
 
-import json
 import re
 from functools import lru_cache
-from pathlib import Path
+
+import maps
 
 
 @lru_cache(maxsize=1)
 def legacy_bases():
-    path = Path(__file__).resolve().parents[2] / 'parser/jason-map/burmese-inventory.json'
-    with path.open(encoding='utf-8') as source:
-        return frozenset(json.load(source)['consonants']) | {'၎'}
+    """Cluster bases, from the shared ``burmese-inventory.json`` map."""
+    return frozenset(maps.load_map('burmese-inventory.json')['consonants']) | {'၎'}
 
 
 def reorder_legacy_slots(input_slots, *, layout="wininnwa"):

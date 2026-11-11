@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-# Separate JavaScript and Python parsers were planned and may be revisited;
-# currently the Python entry point invokes the JavaScript Manager in a Node child.
-"""Legacy PDF tool entry point; conversion now delegates to the JS Manager.
+"""Legacy PDF tool entry point; conversion runs this parser's own Manager.
 
 The historical helper functions below remain importable for offline work, but
-executing this program does not run a second production parser.
+executing this program goes through :mod:`manager` -> :mod:`pipeline`, i.e.
+the same standalone Python parser the CLI uses. Nothing here calls Node.
 """
 
 
@@ -13,7 +12,7 @@ def _delegate_to_manager():
     import os
     import sys
 
-    parser = argparse.ArgumentParser(description="Convert a PDF through the JavaScript Manager")
+    parser = argparse.ArgumentParser(description="Convert a PDF with the Python parser")
     parser.add_argument("pdf", help="Input PDF file path")
     parser.add_argument("out", nargs="?", default="", help="Output file or directory")
     parser.add_argument("--admin", action="store_true", help="Prompt once for cleanup")

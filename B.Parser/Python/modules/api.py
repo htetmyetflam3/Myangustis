@@ -1,6 +1,10 @@
-# Separate JavaScript and Python parsers were planned and may be revisited;
-# currently the Python API invokes the JavaScript Manager in a Node child.
-"""Flask API that delegates PDF/DOCX conversion to the JavaScript Manager."""
+"""Flask API for the standalone Python parser.
+
+Conversion runs in this process through :mod:`manager` (pipeline + render +
+OCR). No JavaScript parser is imported or started; the only JS child process
+is the engine's data bridge, used when dictionary/master data is needed.
+Cross-parser callers use the JSON job contract instead (:mod:`interop`).
+"""
 
 import io
 import os
@@ -9,7 +13,7 @@ import tempfile
 import threading
 from pathlib import Path
 
-from node_manager import dispatch_bytes
+from manager import dispatch_bytes
 
 _JOBS = {}
 _JOBS_LOCK = threading.Lock()
@@ -91,8 +95,11 @@ def create_app():
             kind = "pdf"
         elif name.endswith((".docx", ".doc")):
             kind = "docx"
+        elif name.endswith((".png", ".jpg", ".jpeg", ".tif", ".tiff",
+                            ".webp", ".gif", ".bmp")):
+            kind = "ocr"          # a bare image: one page of OCR text
         else:
-            return jsonify({"error": "only .pdf and .docx files are supported"}), 400
+            return jsonify({"error": "only .pdf, .docx and image files are supported"}), 400
 
         data = f.read()
         method = (request.form.get("method") or ("manual" if kind == "pdf" else "default")).lower()
