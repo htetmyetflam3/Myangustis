@@ -7,7 +7,7 @@ independent. A caller that wants them to agree exchanges JSON job files
 (:mod:`interop`, ``--job`` / ``--response``).
 
     python3 prase.py INPUT.pdf OUTPUT.docx --method manual
-    python3 prase.py INPUT.docx OUTPUT.txt --cleanup yes
+    python3 prase.py INPUT.docx OUTPUT.txt
     python3 prase.py --job request.json --response response.json
     python3 prase.py --serve --port 5000
 """
@@ -22,14 +22,12 @@ from myangustis_parser.resources.paths import DEFAULT_OUTPUT_DIR
 from myangustis_parser.entry.manager import ManagerError, dispatch_path, mute_advisories, render_text
 
 
-def parse_args(argv=None):
+def build_parser():
     parser = argparse.ArgumentParser(
         description="Convert PDF or DOCX with the standalone Python parser.")
     parser.add_argument("pdf", nargs="?",
                         help="Input PDF, DOCX, text file, or image (OCR)")
     parser.add_argument("out", nargs="?", default="", help="Output file or directory")
-    parser.add_argument("--cleanup", choices=["ask", "yes", "no"], default="ask",
-                        help="Apply the imposter cleanup stage")
     parser.add_argument("--method", choices=["manual", "default"], default=None,
                         help="PDF defaults to manual page routing; DOCX defaults to default")
     parser.add_argument("--source-encoding", choices=["auto", "unicode", "zawgyi-one"],
@@ -49,12 +47,11 @@ def parse_args(argv=None):
     parser.add_argument("--serve", action="store_true", help="Run the Flask API")
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=5000)
-    return parser.parse_args(argv)
+    return parser
 
 
-def ask_cleanup_once():
-    print("[?] Apply cleanup? [y/N]: ", end="", file=sys.stderr, flush=True)
-    return sys.stdin.readline().strip().lower() in ("y", "yes")
+def parse_args(argv=None):
+    return build_parser().parse_args(argv)
 
 
 def run_job_mode(args):
@@ -104,18 +101,16 @@ def run_cli(args):
     else:
         kind = ("pdf" if suffix == ".pdf"
                 else "ocr" if suffix in images else "docx")
-        apply_cleanup = (ask_cleanup_once() if args.cleanup == "ask"
-                         else args.cleanup == "yes")
         if args.content:
             with tempfile.TemporaryDirectory(prefix="myangustis-content-") as directory:
                 result = dispatch_path(source, Path(directory) / "content.txt", kind=kind,
-                                       method=args.method, apply_cleanup=apply_cleanup,
+                                       method=args.method,
                                        source_encoding=args.source_encoding,
                                        text_layout=args.text_layout)
             sys.stdout.write(result.get("text", ""))
             return
         result = dispatch_path(source, out_path, kind=kind, method=args.method,
-                               apply_cleanup=apply_cleanup, include_text=True,
+                               include_text=True,
                                source_encoding=args.source_encoding,
                                text_layout=args.text_layout)
 
@@ -128,7 +123,8 @@ def run_cli(args):
 
 
 def main(argv=None):
-    args = parse_args(argv)
+    parser = build_parser()
+    args = parser.parse_args(argv)
     if args.no_ocr:
         os.environ["PRASER_OCR"] = "off"
     if args.quiet:
@@ -141,6 +137,9 @@ def main(argv=None):
         app = create_app()
         print(f"[+] API listening on http://{args.host}:{args.port}")
         app.run(host=args.host, port=args.port, debug=False, threaded=True)
+        return 0
+    if not args.pdf:
+        parser.print_help()
         return 0
     try:
         run_cli(args)

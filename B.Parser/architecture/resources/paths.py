@@ -1,19 +1,23 @@
-"""Path resolution for fonts, maps and output — the Python mirror of
+"""Path resolution for fonts, maps and input/output — the Python mirror of
 ``B.Parser/_path.js``.
 
 Every path is resolved from this file's location, so the parser works from
 any current working directory. The layout is the repository's, not a private
 copy of it:
 
-    <repo>/Junk/fonts/Unicode/     input-side Myanmar faces
-    <repo>/Junk/fonts/used/        faces used to WRITE output
-                                   (AnonymousPro-* + MyanmarSagar)
-    <repo>/B.Parser/@jason-map/    shared JSON maps (see :mod:`maps`)
-    <repo>/B.Parser/.output/       default output directory
+    <repo>/Junk/fonts/Unicode/         input-side Myanmar faces
+    <repo>/Junk/fonts/used/            faces used to WRITE output
+                                       (AnonymousPro-* + MyanmarSagar)
+    <repo>/Junk/Parser/upload/pdf/     default input directory for PDFs
+    <repo>/Junk/Parser/upload/docx/    default input directory for DOCX
+    <repo>/Junk/Parser/output/txt/     default output directory for TXT
+    <repo>/Junk/Parser/output/docx/    default output directory for DOCX
+    <repo>/Junk/Parser/output/pdf/     default output directory for PDF
+    <repo>/B.Parser/architecture/resources/maps_data/   bundled JSON maps
 
 Environment overrides exist for deployment (`PRASER_FONT_DIR`,
-`PRASER_OUTPUT_FONT_DIR`, `PRASER_OUTPUT_DIR`). No path here points at a
-JavaScript file.
+`PRASER_OUTPUT_FONT_DIR`, `PRASER_UPLOAD_DIR`, `PRASER_OUTPUT_DIR`). No path
+here points at a JavaScript file.
 """
 
 import os
@@ -25,6 +29,7 @@ PACKAGE_DIR = Path(__file__).resolve().parents[1]
 PARSER_ROOT = (PACKAGE_DIR.parent if PACKAGE_DIR.name == "architecture"
                and PACKAGE_DIR.parent.name == "B.Parser" else PACKAGE_DIR.parents[1])
 REPO_ROOT = PARSER_ROOT.parent
+RUNTIME_ROOT = REPO_ROOT / "Junk" / "Parser"
 
 
 def _first_dir(env_name, *candidates):
@@ -53,12 +58,40 @@ OUTPUT_FONT_DIR = _first_dir(
 )
 DEFAULT_MYANMAR_FONT = OUTPUT_FONT_DIR / "MyanmarSagar.ttf"
 
-# Runtime directories. ``upload`` and ``.output`` are created on demand by the
-# CLI/API; nothing is required to exist at import time.
-UPLOAD_DIR = Path(os.environ.get("PRASER_UPLOAD_DIR") or (PARSER_ROOT / "upload"))
+# Runtime directories under <repo>/Junk/Parser (matching B.Parser/_path.js).
+# Created on demand; nothing is required to exist at import time.
+UPLOAD_DIR = Path(os.environ.get("PRASER_UPLOAD_DIR") or (RUNTIME_ROOT / "upload"))
+PDF_INPUT_DIR = UPLOAD_DIR / "pdf"
+DOCX_INPUT_DIR = UPLOAD_DIR / "docx"
 INPUT_DIR = UPLOAD_DIR / "input"
-DEFAULT_OUTPUT_DIR = Path(os.environ.get("PRASER_OUTPUT_DIR")
-                          or (PARSER_ROOT / ".output"))
+
+OUTPUT_DIR = Path(os.environ.get("PRASER_OUTPUT_DIR") or (RUNTIME_ROOT / "output"))
+DEFAULT_OUTPUT_DIR = OUTPUT_DIR
+TXT_OUTPUT_DIR = OUTPUT_DIR / "txt"
+DOCX_OUTPUT_DIR = OUTPUT_DIR / "docx"
+PDF_OUTPUT_DIR = OUTPUT_DIR / "pdf"
+
+
+def input_dir_for(ext_or_kind):
+    """Return the default upload directory for a file suffix or input kind."""
+    token = str(ext_or_kind or "").strip().lower().lstrip(".")
+    if token == "pdf":
+        return PDF_INPUT_DIR
+    if token in ("docx", "doc"):
+        return DOCX_INPUT_DIR
+    return UPLOAD_DIR
+
+
+def output_dir_for(fmt):
+    """Return the default output directory for ``txt``, ``docx``, or ``pdf``."""
+    token = str(fmt or "").strip().lower().lstrip(".")
+    if token == "txt":
+        return TXT_OUTPUT_DIR
+    if token == "docx":
+        return DOCX_OUTPUT_DIR
+    if token == "pdf":
+        return PDF_OUTPUT_DIR
+    raise ValueError(f"Unsupported output format {fmt!r} (use txt, docx or pdf)")
 
 # Latin fallback candidates (for PDF output of non-Myanmar glyphs).
 _LATIN_FONT_CANDIDATES = [
@@ -100,6 +133,13 @@ def find_latin_font():
 
 
 def ensure_dirs():
-    """Create the output/upload directories this parser writes into."""
-    DEFAULT_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    """Create the upload and output format directories on demand."""
+    for directory in (
+        PDF_INPUT_DIR,
+        DOCX_INPUT_DIR,
+        TXT_OUTPUT_DIR,
+        DOCX_OUTPUT_DIR,
+        PDF_OUTPUT_DIR,
+    ):
+        directory.mkdir(parents=True, exist_ok=True)
     return DEFAULT_OUTPUT_DIR

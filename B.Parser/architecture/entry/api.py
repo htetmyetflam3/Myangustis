@@ -85,7 +85,7 @@ def create_app():
         try:
             with tempfile.TemporaryDirectory(prefix="myangustis-preview-") as directory:
                 result = dispatch_bytes(data, f.filename, Path(directory) / "preview.txt",
-                                        kind=kind, method=method, apply_cleanup=False,
+                                        kind=kind, method=method,
                                         include_preview=True, source_encoding=source_encoding)
         except Exception as e:  # noqa: BLE001
             return jsonify({"error": str(e)}), 400
@@ -118,43 +118,26 @@ def create_app():
         """One full text for a stored job — no HTML, no decoration."""
         if request.method == "GET":
             jid = (request.args.get("job_id") or "").strip()
-            apply_raw = (request.args.get("apply") or "0").strip().lower()
         else:
             payload = request.get_json(silent=True) or {}
             jid = (request.form.get("job_id") or payload.get("job_id") or "").strip()
-            apply_raw = (request.form.get("apply") or payload.get("apply") or "0")
-            apply_raw = str(apply_raw).strip().lower()
-        apply_cleanup = apply_raw in ("1", "true", "yes", "y", "apply")
 
         with _JOBS_LOCK:
             job = _JOBS.get(jid)
         if job is None:
             return jsonify({"error": "unknown or expired job_id"}), 404
 
-        try:
-            body = job["content"]
-            if apply_cleanup:
-                with tempfile.TemporaryDirectory(prefix="myangustis-content-") as directory:
-                    result = dispatch_bytes(job["data"], job["filename"], Path(directory) / "content.txt",
-                                            kind=job["kind"], method=job["method"], apply_cleanup=True,
-                                            source_encoding=job["source_encoding"])
-                body = result.get("text", "")
-        except Exception as e:  # noqa: BLE001
-            return jsonify({"error": str(e)}), 400
         return jsonify({
             "job_id": jid,
             "filename": job["filename"],
             "kind": job.get("kind"),
-            "apply": apply_cleanup,
-            "content": body,
+            "content": job["content"],
         })
 
     @app.post("/api/finalize")
     def finalize():
         jid = (request.form.get("job_id") or "").strip()
-        apply_raw = (request.form.get("apply") or "0").strip().lower()
         fmt = (request.form.get("fmt") or "txt").strip().lower().lstrip(".")
-        apply_cleanup = apply_raw in ("1", "true", "yes", "y", "apply")
 
         with _JOBS_LOCK:
             job = _JOBS.get(jid)
@@ -162,15 +145,13 @@ def create_app():
             return jsonify({"error": "unknown or expired job_id"}), 404
         if fmt not in ("txt", "docx", "pdf"):
             return jsonify({"error": "fmt must be one of txt|docx|pdf"}), 400
-        if job.get("kind") == "docx" and fmt != "txt":
-            return jsonify({"error": "docx jobs carry no layout - use fmt=txt"}), 400
 
         base = os.path.splitext(job["filename"])[0] or "output"
         try:
             with tempfile.TemporaryDirectory(prefix="myangustis-finalize-") as directory:
                 target = Path(directory) / f"output.{fmt}"
                 dispatch_bytes(job["data"], job["filename"], target, kind=job["kind"],
-                               method=job["method"], apply_cleanup=apply_cleanup, include_text=False,
+                               method=job["method"], include_text=False,
                                source_encoding=job["source_encoding"])
                 payload = target.read_bytes()
         except Exception as e:  # noqa: BLE001

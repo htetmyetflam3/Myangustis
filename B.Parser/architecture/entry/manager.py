@@ -39,10 +39,12 @@ __all__ = [
     "dispatch_path",
     "dispatch_bytes",
     "dispatch_stream",
+    "dispatch_ocr",
     "render_text",
     "mute_advisories",
     "conversion_lanes",
     "ocr_image_job",
+    "ocr_pdf_job",
 ]
 
 # Output extensions this parser can write.
@@ -140,6 +142,66 @@ def _ocr_job(data, name, log):
                      "decision": "ocr", "scan": finished["scan"]}],
         "counts": {"UNKNOWN": 1}, "metadata": {}, "changes": [],
         "pages": [{"text": text}],
+    }
+
+
+def ocr_pdf_job(data, filename="input.pdf", *, log=None):
+    """OCR every page of a PDF via ``workflow.ocr`` and finish via ``finish_text``."""
+    log = log or (lambda _m: None)
+    if not _ocr_enabled():
+        raise ManagerError("OCR is disabled by PRASER_OCR")
+    if not ocr.available():
+        raise ManagerError(ocr.describe())
+
+    from myangustis_parser.extract.decrypt import (
+        decrypt_pdf,
+        expand_object_streams,
+        has_object_streams,
+        is_encrypted_pdf,
+    )
+    from myangustis_parser.extract import pdf_extract
+
+    name = os.path.basename(str(filename or "input.pdf"))
+    raw = bytes(data)
+    if is_encrypted_pdf(raw):
+        raw = decrypt_pdf(raw, log)
+    if has_object_streams(raw):
+        raw = expand_object_streams(raw, log)
+    objects = pdf_extract.parse_pdf_objects(raw)
+    root = pdf_extract.find_root_pages(objects)
+    pdf_pages = pdf_extract.collect_pages(objects, root) if root else []
+    if not pdf_pages:
+        raise ManagerError(f"No PDF pages found in {name}")
+
+    reports = []
+    pages = []
+    ocr_pages = []
+    for page_number in range(1, len(pdf_pages) + 1):
+        raw_text = ocr.ocr_pdf_page(raw, page_number, objects=objects, log=log) or ""
+        finished = finish.finish_text(raw_text, source="ocr")
+        base = finished["base"]
+        reports.append({
+            "page": page_number,
+            "category": "UNKNOWN",
+            "prob": 0.0,
+            "base": base,
+            "clean": finished["clean"],
+            "decision": "ocr",
+            "scan": finished["scan"],
+        })
+        pages.append({"text": base})
+        ocr_pages.append(page_number)
+        log(f"    Page {page_number}/{len(pdf_pages)}: OCR ({len(base.strip()):,} chars)")
+
+    return {
+        "filename": name,
+        "kind": "ocr",
+        "reports": reports,
+        "counts": {"UNKNOWN": len(pdf_pages)},
+        "metadata": {},
+        "changes": pipeline.collect_changes(reports),
+        "pages": pages,
+        "ocrPages": ocr_pages,
     }
 
 
@@ -278,7 +340,7 @@ def prepare_job(data, name, *, kind, source_encoding="auto", text_layout=None, l
     return job
 
 
-def _convert(data, filename, out_path, *, kind, method=None, apply_cleanup=True,
+def _convert(data, filename, out_path, *, kind, method=None,
              include_text=True, include_preview=False, source_encoding="auto",
              caller="site", text_layout=None, log=None):
     """Run this parser's pipeline on bytes and write the requested output.
@@ -291,8 +353,6 @@ def _convert(data, filename, out_path, *, kind, method=None, apply_cleanup=True,
     log = log or (lambda _m: None)
     kind = _infer_kind(filename, kind)
     out_format = _output_format(out_path)
-    if kind == "docx" and out_format != "txt":
-        raise ManagerError("DOCX input carries no page layout; write .txt only")
     if method is None:
         method = "manual" if kind == "pdf" else "default"
     if method not in ("manual", "default"):
@@ -315,11 +375,9 @@ def _convert(data, filename, out_path, *, kind, method=None, apply_cleanup=True,
 
     page_count = len(job.get("reports") or [])
 
-    # ``process_bytes`` always returns the raw per-page frame plus the cleanup
-    # candidate. Whether cleanup is applied is the caller's decision, taken
-    # here exactly once, at write time.
-    pages = pipeline.build_final_pages(job, bool(apply_cleanup))
+    pages = pipeline.build_final_pages(job, True)
     counts = job.get("counts") or {}
+    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     try:
         written_path, pos_report = pipeline.render_and_scan(out_path, pages, counts, name)
     except (OSError, ValueError, RuntimeError) as exc:
@@ -337,12 +395,11 @@ def _convert(data, filename, out_path, *, kind, method=None, apply_cleanup=True,
         "pages": page_count,
         "counts": counts,
         "metadata": job.get("metadata") or {},
-        "applyCleanup": bool(apply_cleanup),
         # 1-based PDF pages (or DOCX image ids) whose text came from OCR.
         "ocrPages": ocr_pages,
     }
     if include_text:
-        result["text"] = pipeline.build_content(job, bool(apply_cleanup), kind)
+        result["text"] = pipeline.build_content(job, True, kind)
     if include_preview:
         result["changes"] = job.get("changes") or []
     if job.get("encoding_path"):
@@ -351,7 +408,7 @@ def _convert(data, filename, out_path, *, kind, method=None, apply_cleanup=True,
 
 
 def dispatch_path(in_path, out_path, *, kind=None, filename=None, method=None,
-                  apply_cleanup=True, include_text=True, include_preview=False,
+                  include_text=True, include_preview=False,
                   source_encoding="auto", caller="site", text_layout=None,
                   log=None):
     """Convert one file, by this parser's own pipeline."""
@@ -359,28 +416,28 @@ def dispatch_path(in_path, out_path, *, kind=None, filename=None, method=None,
     if not source.is_file():
         raise ManagerError(f"Input not found: {source}")
     return _convert(source.read_bytes(), filename or source.name, out_path,
-                    kind=kind, method=method, apply_cleanup=apply_cleanup,
+                    kind=kind, method=method,
                     include_text=include_text, include_preview=include_preview,
                     source_encoding=source_encoding, caller=caller,
                     text_layout=text_layout, log=log)
 
 
 def dispatch_bytes(data, filename, out_path, *, kind, method=None,
-                   apply_cleanup=True, include_text=True, include_preview=False,
+                   include_text=True, include_preview=False,
                    source_encoding="auto", caller="site", text_layout=None,
                    log=None):
     """Convert in-memory bytes (the API upload path)."""
     if not isinstance(data, (bytes, bytearray, memoryview)):
         raise TypeError("data must be bytes")
     return _convert(data, filename, out_path, kind=kind, method=method,
-                    apply_cleanup=apply_cleanup, include_text=include_text,
+                    include_text=include_text,
                     include_preview=include_preview,
                     source_encoding=source_encoding, caller=caller,
                     text_layout=text_layout, log=log)
 
 
 def dispatch_stream(source, out_path, *, filename, kind=None, method=None,
-                    apply_cleanup=True, include_text=False, include_preview=False,
+                    include_text=False, include_preview=False,
                     source_encoding="auto", caller="local", log=None,
                     chunk_size=64 * 1024):
     """Convert from an opened binary stream.
@@ -402,10 +459,68 @@ def dispatch_stream(source, out_path, *, filename, kind=None, method=None,
         chunks.append(bytes(chunk))
     kind = _infer_kind(filename, kind)
     return dispatch_bytes(b"".join(chunks), os.path.basename(filename), out_path,
-                          kind=kind, method=method, apply_cleanup=apply_cleanup,
+                          kind=kind, method=method,
                           include_text=include_text,
                           include_preview=include_preview,
                           source_encoding=source_encoding, caller=caller, log=log)
+
+
+def dispatch_ocr(in_path, out_path, *, filename=None,
+                 include_text=True, include_preview=False, caller="local",
+                 log=None):
+    """Run the OCR lane across a PDF or image file and write the requested output."""
+    source = Path(in_path)
+    if not source.is_file():
+        raise ManagerError(f"Input not found: {source}")
+    log = log or (lambda _m: None)
+    name = os.path.basename(str(filename or source.name))
+    out_format = _output_format(out_path)
+    kind = _infer_kind(name)
+    if kind == "docx":
+        raise ManagerError(
+            "OCR mode supports PDF and image inputs; run without --ocr to parse DOCX "
+            "(embedded DOCX images are still OCR'd)"
+        )
+    data = source.read_bytes()
+    log(f"[+] {name}: {len(data):,} bytes -> .{out_format} (OCR)")
+    try:
+        if kind == "ocr":
+            job = _ocr_job(data, name, log)
+            job["ocrPages"] = [1]
+        else:
+            job = ocr_pdf_job(data, name, log=log)
+    except ManagerError:
+        raise
+    except (OSError, ValueError, RuntimeError) as exc:
+        raise ManagerError(f"{name}: {exc}") from exc
+
+    pages = pipeline.build_final_pages(job, True)
+    counts = job.get("counts") or {}
+    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+    try:
+        written_path, pos_report = pipeline.render_and_scan(out_path, pages, counts, name)
+    except (OSError, ValueError, RuntimeError) as exc:
+        raise ManagerError(f"could not finish {out_path}: {exc}") from exc
+
+    result = {
+        "posScan": pos_report,
+        "file": written_path,
+        "from": "ocr",
+        "to": out_format,
+        "filename": name,
+        "method": "ocr",
+        "caller": caller,
+        "parserRuntime": "python",
+        "pages": len(job.get("reports") or []),
+        "counts": counts,
+        "metadata": job.get("metadata") or {},
+        "ocrPages": job.get("ocrPages") or [],
+    }
+    if include_text:
+        result["text"] = pipeline.build_content(job, True, "ocr")
+    if include_preview:
+        result["changes"] = job.get("changes") or []
+    return result
 
 
 def render_text(in_path, out_path):
@@ -416,8 +531,9 @@ def render_text(in_path, out_path):
     if Path(out_path).suffix.lower() != ".docx":
         raise ManagerError("render_text writes .docx only")
     text = source.read_text(encoding="utf-8")
+    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     try:
-        render.write_docx_plain(str(out_path), text)
+        written_path = render.write_docx_plain(str(out_path), text)
     except (OSError, ValueError, RuntimeError) as exc:
         raise ManagerError(f"could not write {out_path}: {exc}") from exc
     return {"file": written_path, "from": "txt", "to": "docx",

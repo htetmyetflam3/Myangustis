@@ -704,13 +704,13 @@ def collect_changes(reports):
     return changes
 
 
-def build_content(job, apply_cleanup=False, kind=None):
+def build_content(job, apply_cleanup=True, kind=None):
     """Whole document body as ONE plain text string (API output).
 
     Every page's final text joined with a blank line — no metadata banner,
     no ``--- Page N ---`` markers, no HTML tags. This is what a caller that
     just wants the text (e.g. the Node backend feeding the grammar engine)
-    consumes. ``apply_cleanup=True`` returns the cleaned variant.
+    consumes.
 
     ``kind`` (or ``job['kind']``) picks the join: PDF page texts are joined
     with a blank line (page = block); DOCX page texts are chunked paragraph
@@ -820,7 +820,8 @@ def process_pdf_bytes(data, detector, filename="upload.pdf", log=lambda m: None,
         tmp.write(data)
         tmp_path = tmp.name
     try:
-        # apply_cleanup=False here: the apply decision comes at finalize time.
+        # Keep pg["text"] at base here so reports retain base vs clean diffs;
+        # build_final_pages / build_content apply cleanup unconditionally.
         metadata, npages, reports_iter = process_pdf_stream(
             tmp_path, detector, False, log=log, want_layout=True, text_layout=text_layout,
             source_encoding=source_encoding)
@@ -959,14 +960,11 @@ def process_bytes(data, kind, detector, filename=None, log=lambda m: None, *, te
     raise ValueError(f"Unsupported kind: {kind!r} (use 'pdf' or 'docx')")
 
 
-def build_final_pages(job, apply_cleanup):
-    """Assemble final render pages from a stored job (API finalize).
+def build_final_pages(job, apply_cleanup=True):
+    """Assemble final render pages from a job.
 
-    Lines already hold the CONVERTED base text — cleanup is applied per line
-    when approved; Rabbit is never re-run (no double conversion).
-
-    DOCX jobs carry no layout (``lines``/``wh``/``has_img`` absent) — those
-    pages render txt-only; api.py refuses layout formats for them.
+    Lines already hold the CONVERTED base text — cleanup runs internally
+    as part of finishing; Rabbit is never re-run (no double conversion).
     """
     out = []
     for pg, rep in zip(job["pages"], job["reports"]):
