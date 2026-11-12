@@ -22,7 +22,7 @@ import {
   finishPageToFile, orderUnicodeText as orderUnicode, pageLayoutLines,
 } from "./finalized-cmap.js";
 import { legacyLayoutForFont } from "../pdf/method/legacy/codepage-names.js";
-import { agentAdvisory } from "../../../../Architecture/host/advisory.js";
+import { agentAdvisory } from "../../../../A.Engine/public/advisory.js";
 
 const PARSER_CHAIN_DOOR = "ParserManager";
 

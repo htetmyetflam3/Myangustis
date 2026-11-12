@@ -67,7 +67,7 @@ test('no host, scheme or port is ever read from configuration', async () => {
 const hasExpress = await import('express').then(() => true, () => false);
 
 test('createCurlRouter returns null when unconfigured, and a mount when armed', { skip: !hasExpress && 'express not installed' }, async () => {
-  const { createCurlRouter } = await import('../../../B.Parser/host/Backend/gateway/api/curl.js');
+  const { createCurlRouter } = await import('../../B.Parser/public/Backend/gateway/api/curl.js');
   withEnv({ CURL_ENDPOINT: undefined, CURL_KEY: undefined }, () => {
     assert.equal(createCurlRouter(), null);
   });
@@ -79,7 +79,7 @@ test('createCurlRouter returns null when unconfigured, and a mount when armed', 
 });
 
 test('a wrong or missing key gets 404, never 403 — the path must not confirm itself', { skip: !hasExpress && 'express not installed' }, async () => {
-  const { createCurlRouter } = await import('../../../B.Parser/host/Backend/gateway/api/curl.js');
+  const { createCurlRouter } = await import('../../B.Parser/public/Backend/gateway/api/curl.js');
   await withEnv({ CURL_ENDPOINT: '/secret', CURL_KEY: 'right-key' }, async () => {
     const { router } = createCurlRouter();
 
@@ -105,7 +105,7 @@ test('a wrong or missing key gets 404, never 403 — the path must not confirm i
 });
 
 test('the key is accepted from a header, a bearer token, or ?key=', { skip: !hasExpress && 'express not installed' }, async () => {
-  const { createCurlRouter } = await import('../../../B.Parser/host/Backend/gateway/api/curl.js');
+  const { createCurlRouter } = await import('../../B.Parser/public/Backend/gateway/api/curl.js');
   await withEnv({ CURL_ENDPOINT: '/secret', CURL_KEY: 'right-key' }, async () => {
     const { router } = createCurlRouter();
 

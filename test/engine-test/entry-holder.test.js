@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MAX_LINE_BYTES, toLineStrings } from '../../../Architecture/Engine/MonoSyllabism/generators/SfomatterForP.js';
-import { fullstopHolder } from '../../../Architecture/Engine/MonoSyllabism/generators/pos-input.js';
+import { MAX_LINE_BYTES, toLineStrings } from '../../A.Engine/architecture/MonoSyllabism/generators/SfomatterForP.js';
+import { fullstopHolder } from '../../A.Engine/architecture/MonoSyllabism/generators/pos-input.js';
 
 async function* segments(...items) {
   yield* items;

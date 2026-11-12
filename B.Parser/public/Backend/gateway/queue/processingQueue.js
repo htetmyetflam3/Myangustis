@@ -6,7 +6,7 @@ import { createReadStream } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import { queueTriggerRequest } from './managerHandoff.js';
 import path from 'node:path';
-import { BindInput } from '../../../../init/bind-input.js';
+import { BindInput } from '../../../../integration/init/bind-input.js';
 
 // Reads the queued Site file into the trigger's object before dispatch
 // (formerly integration/host/file-reader.js). The read itself goes

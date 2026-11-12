@@ -1,4 +1,4 @@
-import { W, L } from '../../abstract/kernel.js';
+import { W, L } from '../../../../../B.Parser/index-path.js';
 import C from '../sentences/const.js';
 ["§163"].forEach(r => W.register("wakyarore_multiple_dependent_chars", r, 0.9));
 function validateMultipleDependentChars(tokens, splitResult, context) {

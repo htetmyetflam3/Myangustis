@@ -13,7 +13,7 @@ import {
   PARSER_DIR,
   PRASER_JS,
   validatePraserAssets,
-} from "../../../B.Parser/host/Backend/file/paths.js";
+} from "../../B.Parser/public/Backend/file/paths.js";
 import {
   MAP_DIR,
   DEFAULT_OUTPUT_DIR,
@@ -22,11 +22,11 @@ import {
   OUTPUT_FONT_DIR,
   findLatinFont,
   findMyanmarFont,
-} from "../../../B.Parser/_path.js";
-import { ZipStreamWriter } from "../../../B.Parser/prised/@core/docx/zip.js";
-import { validateDocxArchive } from "../../../B.Parser/prised/@core/docx/docx-extract.js";
-import { loadSidecarMap } from "../../../B.Parser/prised/@core/pdf/method/pdfencoding/decoding.js";
-import { isZawgyiOneFont, isUnicodeFont } from "../../../B.Parser/prised/@rule/detect.js";
+} from "../../B.Parser/_path.js";
+import { ZipStreamWriter } from "../../B.Parser/architecture/@core/docx/zip.js";
+import { validateDocxArchive } from "../../B.Parser/architecture/@core/docx/docx-extract.js";
+import { loadSidecarMap } from "../../B.Parser/architecture/@core/pdf/method/pdfencoding/decoding.js";
+import { isZawgyiOneFont, isUnicodeFont } from "../../B.Parser/architecture/@rule/detect.js";
 
 const isFile = (file) => fs.statSync(file).isFile();
 const repo = fileURLToPath(new URL("../../../", import.meta.url));
@@ -34,7 +34,7 @@ const repo = fileURLToPath(new URL("../../../", import.meta.url));
 // binary or its pikepdf-backed shim, so this asks the same source of truth.
 const hasQpdf = async () => {
   try {
-    const { qpdfRunner } = await import("../../../B.Parser/@init/pdf/helper/decrypt.js");
+    const { qpdfRunner } = await import("../../B.Parser/architecture/@init/pdf/helper/decrypt.js");
     const { bin, args } = qpdfRunner();
     execFileSync(bin, [...args, "--version"], { stdio: "pipe" });
     return true;
@@ -89,7 +89,7 @@ test("DOCX archive validation rejects extreme compression ratios", async () => {
 
 test("the shipped 100-page sample parses through the Parser door", async (t) => {
   if (!(await hasQpdf())) return t.skip("no qpdf runner available");
-  const { InitInput, parseDecoding } = await import("../../../B.Parser/index.js");
+  const { InitInput, parseDecoding } = await import("../../B.Parser/index.js");
   const sample = path.join(repo, "B.Parser/host/Frontend/frontend-bootstrap/public/samples/sample.pdf");
   const prepared = await InitInput({ path: sample }, "owner");
   const parsed = await parseDecoding({ kind: prepared.kind, source: prepared.path, filename: "sample.pdf" });

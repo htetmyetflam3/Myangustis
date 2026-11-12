@@ -11,7 +11,7 @@ import {
   SchemaDriftError,
   LATEST_VERSION,
   BASELINE_TABLES,
-} from '../../../B.Parser/host/Backend/db/migrate.js';
+} from '../../B.Parser/public/Backend/db/migrate.js';
 
 const SCHEMA_FILE = path.resolve(import.meta.dirname, '../../../B.Parser/host/Backend/db/schema.sql');
 

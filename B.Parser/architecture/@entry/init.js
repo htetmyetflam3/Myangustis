@@ -15,7 +15,7 @@ import { generatorA } from "./helper/file-reader.js";
 import { packInput } from "./helper/metadata.js";
 import { preparePdf } from "../@init/pdf/pdf.js";
 import { prepareDocx } from "../@init/docx/read.js";
-import { prepareOcr } from "../prised/@core/ocr/read.js";
+import { prepareOcr } from "../@core/ocr/read.js";
 
 async function* byteChunks(object) {
   if (object instanceof Uint8Array) {

@@ -2,8 +2,8 @@
 // read stream on their side. The engine preserves its internal streaming
 // pipeline when processing the received string; normal output is not written.
 import { randomUUID } from 'node:crypto';
-import { SlotLimiter } from '../../host/job-store.js';
-import { advisoryOnce, muteAdvisories } from '../../host/advisory.js';
+import { SlotLimiter } from '../../public/job-store.js';
+import { advisoryOnce, muteAdvisories } from '../../public/advisory.js';
 
 const webSlots = new SlotLimiter(2);
 

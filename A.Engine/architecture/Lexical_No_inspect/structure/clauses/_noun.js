@@ -1,4 +1,4 @@
-import { W, L } from '../../abstract/kernel.js';
+import { W, L } from '../../../../../B.Parser/index-path.js';
 import C from '../sentences/const.js';
 ["§120","§150"].forEach(r => W.register("wakyarore_noun_clause", r, 0.9));
 function classifyNounClause(tokens, index, context) {

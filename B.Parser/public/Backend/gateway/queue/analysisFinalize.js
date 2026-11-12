@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { writeDocxPlain, writePdf } from '../../../../core/io/render.js';
+import { writeDocxPlain, writePdf } from '../../../../architecture/@output/io/render.js';
 import { storeAnalysisArtifact } from './artifact.js';
 
 export const RESULT_MIME = new Map([

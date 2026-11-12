@@ -23,8 +23,8 @@ import path from "node:path";
 import { InitInput } from "../../@entry/init.js";
 import { parseDecoding } from "../../prised/@core/run.js";
 import { writeOutputFile } from "../../prised/@core/requested.js";
-import { stripMarkup } from "../../@output/helper/markup.js";
-import { SITE_OUTPUT_DIR } from "../../host/_path.js";
+import { stripMarkup } from "../../architecture/@output/helper/markup.js";
+import { SITE_OUTPUT_DIR } from "../../public/_path.js";
 
 const MIME_BY_EXT = {
   txt: "text/plain; charset=utf-8",

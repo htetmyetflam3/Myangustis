@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 
 process.env.COOKIE_SECRET ||= 'codec-test-secret-at-least-32-characters-xx';
-const { decodeCookie, encodeCookie } = await import('../../../B.Parser/host/Backend/cookie/codec.js');
+const { decodeCookie, encodeCookie } = await import('../../B.Parser/public/Backend/cookie/codec.js');
 test('authenticated cookie codec round-trips objects with fresh nonces', () => {
   const data = { id: 'USER-123', ip: '127.0.0.1', country: null };
   const first = encodeCookie(data);

@@ -1,5 +1,5 @@
 m
-import { W, L } from '../../abstract/kernel.js';
+import { W, L } from '../../../../../B.Parser/index-path.js';
 import C from './const.js';
 ["§206","§207","§208","§209"].forEach(r => W.register("wakyarore_wordorder", r, 0.9));
 function measureDistance(tokens, modifierIdx, headIdx) {

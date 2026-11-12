@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { csrfCheck } from '../../../B.Parser/host/Backend/cookie/csrf.js';
+import { csrfCheck } from '../../B.Parser/public/Backend/cookie/csrf.js';
 function run(req) {
   const response = {
     statusCode: null,

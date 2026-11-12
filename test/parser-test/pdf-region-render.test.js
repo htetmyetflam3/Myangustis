@@ -6,7 +6,7 @@ import path from "node:path";
 import { PDFDocument, degrees, rgb } from "pdf-lib";
 import { createCanvas, loadImage } from "@napi-rs/canvas";
 
-import { pageHasRasterImage, pdfPageCount, renderPdfPagePng, renderPdfRegionPng } from "../../../B.Parser/prised/@core/runtime/render.js";
+import { pageHasRasterImage, pdfPageCount, renderPdfPagePng, renderPdfRegionPng } from "../../B.Parser/architecture/@core/runtime/render.js";
 
 test("region rendering converts PDF coordinates at each page rotation and offset", async () => {
   const document = await PDFDocument.create();

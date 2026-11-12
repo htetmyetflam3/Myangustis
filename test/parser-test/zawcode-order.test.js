@@ -4,16 +4,16 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { getEngineNormalize } from "../../../B.Parser/_path.js";
-import { arrangeZawCodeOrder, orderZawCodePages } from "../../../B.Parser/prised/@postprocess/beautify/zawcode-order.js";
-import { repairFromScanVerdict as beautifyFromScanVerdict } from "../../../B.Parser/prised/@postprocess/beautify/zawcode-order.js";
-import { scanText } from "../../../B.Parser/prised/@postprocess/init.js";
-import { selectPageDecision as choosePageParser, normalizePageLines } from "../../../B.Parser/prised/@rule/judgement.js";
-import { markOrderAligned } from "../../../B.Parser/prised/@rule/mm-score.js";
-import { normalizeOutputText } from "../../../B.Parser/prised/@rule/judgement.js";
+import { arrangeZawCodeOrder, orderZawCodePages } from "../../B.Parser/architecture/@postprocess/beautify/zawcode-order.js";
+import { repairFromScanVerdict as beautifyFromScanVerdict } from "../../B.Parser/architecture/@postprocess/beautify/zawcode-order.js";
+import { scanText } from "../../B.Parser/architecture/@postprocess/init.js";
+import { selectPageDecision as choosePageParser, normalizePageLines } from "../../B.Parser/architecture/@rule/judgement.js";
+import { markOrderAligned } from "../../B.Parser/architecture/@rule/mm-score.js";
+import { normalizeOutputText } from "../../B.Parser/architecture/@rule/judgement.js";
 import {
   convertFinalizedPageText, finishPageToFile, normalizePageToFile,
-} from "../../../B.Parser/prised/@core/runtime/finalized-cmap.js";
-import { Rabbit } from "../../../B.Parser/prised/@rule/rabbit.js";
+} from "../../B.Parser/architecture/@core/runtime/finalized-cmap.js";
+import { Rabbit } from "../../B.Parser/architecture/@rule/rabbit.js";
 
 const E = "\u1031";
 const RA = "\u103C";
@@ -137,8 +137,8 @@ test("there is no maximum counter or search across intervening marks", () => {
 });
 
 test("base matching uses the Engine MMap.Base inventory", { skip: "pinned to the pre-restructure detector/Manager pipeline: the assertion describes behaviour the flattened chain no longer produces (see CHANGELOG.md)" }, async () => {
-  const { MMap } = await import("../../../Architecture/Engine/MonoSyllabism/map/loader.js");
-  const { getMasterMapData } = await import("../../../B.Parser/prised/@postprocess/beautify/clean.js");
+  const { MMap } = await import("../../A.Engine/architecture/MonoSyllabism/map/loader.js");
+  const { getMasterMapData } = await import("../../B.Parser/architecture/@postprocess/beautify/clean.js");
   assert.deepEqual(getMasterMapData().MMap.Base, MMap.Base);
   assert.ok(MMap.Base.includes("ဣ"));
   for (const base of MMap.Base) {
@@ -200,7 +200,7 @@ test("repair ordering precedes normalize once per line", () => {
 
 test("Engine normalize, not mapperNormalize, follows repair ordering", async () => {
   const normalize = await getEngineNormalize();
-  const engine = await import("../../../Architecture/Engine/MonoSyllabism/map/loader.js");
+  const engine = await import("../../A.Engine/architecture/MonoSyllabism/map/loader.js");
   assert.equal(normalize, engine.normalize);
   assert.notEqual(normalize, engine.mapperNormalize);
   const source = "ေသမှ\nေြကိ\nေကျိ";

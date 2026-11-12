@@ -1,4 +1,4 @@
-import { W, L } from '../../abstract/kernel.js';
+import { W, L } from '../../../../../B.Parser/index-path.js';
 import C from './const.js';
 [
     "§180","§181","§182","§183","§184","§185","§186","§187","§188",

@@ -17,8 +17,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { extractMetadata } from "../../../B.Parser/prised/@core/pdf/method/pdfencoding/decoding.js";
-import { startRecord, note, appendRecord, registerPath } from "../../../B.Parser/prised/@helper/provenance.js";
+import { extractMetadata } from "../../B.Parser/architecture/@core/pdf/method/pdfencoding/decoding.js";
+import { startRecord, note, appendRecord, registerPath } from "../../B.Parser/architecture/@helper/provenance.js";
 
 test("a PDF with no /Info yields {} rather than throwing", () => {
   assert.deepEqual(extractMetadata(new Map(), Buffer.from("trailer<</Size 1>>")), {});

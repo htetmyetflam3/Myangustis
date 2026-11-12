@@ -8,13 +8,13 @@ import { File } from 'node:buffer';
 import express from 'express';
 import multer from 'multer';
 import { Document, Packer, Paragraph } from 'docx';
-import { buildPayload } from '../../../B.Parser/host/Frontend/frontend-bootstrap/js/upload.js';
+import { buildPayload } from '../../B.Parser/public/Frontend/frontend-bootstrap/js/upload.js';
 
 const runtime = await fs.mkdtemp(path.join(os.tmpdir(), 'analysis-conversion-'));
 process.env.PARSER_RUNTIME_DIR = runtime;
-const { ensureUploadDir } = await import('../../../B.Parser/host/Backend/file/paths.js');
-const { createIncomingRouter } = await import('../../../B.Parser/host/Backend/gateway/api/incoming.js');
-const { createProcessingQueue } = await import('../../../B.Parser/host/Backend/gateway/queue/processingQueue.js');
+const { ensureUploadDir } = await import('../../B.Parser/public/Backend/file/paths.js');
+const { createIncomingRouter } = await import('../../B.Parser/public/Backend/gateway/api/incoming.js');
+const { createProcessingQueue } = await import('../../B.Parser/public/Backend/gateway/queue/processingQueue.js');
 const { closePraserManager } = await import('../../../B.Parser/host/Backend/file/pdfanalysis.js');
 
 async function until(predicate) {

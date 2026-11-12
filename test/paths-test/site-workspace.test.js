@@ -27,7 +27,7 @@ for (const scenario of ['shared', 'missing-root', 'missing-entry', 'broken-entry
     }
     fs.writeFileSync(path.join(root, 'B.Parser/_path.js'), `
       export const OUTPUT_FONT_DIR = "/fonts/used";
-      export async function getEngineData() { return import('../Architecture/Engine/.data/secure.js'); }
+      export async function getEngineData() { return import('../../A.Engine/architecture/.data/secure.js'); }
     `);
     if (scenario !== 'missing-root') fs.copyFileSync(path.join(repo, 'index-path.js'), path.join(root, 'index-path.js'));
     if (scenario !== 'missing-entry') {

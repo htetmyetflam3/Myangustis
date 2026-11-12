@@ -1,4 +1,4 @@
-import { W, L } from '../../abstract/kernel.js';
+import { W, L } from '../../../../../B.Parser/index-path.js';
 import C from '../sentences/const.js';
 ["§149"].forEach(r => W.register("wakyarore_dependent_types", r, 0.9));
 function classifyDependentType(tokens, index, context) {

@@ -14,7 +14,7 @@ import os from "node:os";
 import path from "node:path";
 import { renderPdfPagePng } from "./render.js";
 import { note } from "../../@helper/provenance.js";
-import { MAX_TEXT_CHARS } from "../../../@entry/helper/limit.js";
+import { MAX_TEXT_CHARS } from "../../@entry/helper/limit.js";
 import {
   MAX_PDF_OBJECTS, extractPageLines, pageHasImages, extractMetadata,
   getStream, parseToUnicodeStream,

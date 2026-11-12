@@ -1,4 +1,4 @@
-import { W, L } from '../../abstract/kernel.js';
+import { W, L } from '../../../../../B.Parser/index-path.js';
 import C from '../sentences/const.js';
 ["§156","§157","§158","§159","§160","§161","§162"].forEach(r => W.register("wakyarore_multiple_dependent", r, 0.9));
 function classifyMultipleDependent(tokens, index, context) {

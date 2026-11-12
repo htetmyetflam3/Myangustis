@@ -14,7 +14,7 @@ const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 // Every Parser conversion of a PDF goes through qpdf preparation. The Parser
 // resolves the binary itself (operator override -> real qpdf -> the pikepdf
 // shim in tools-box/python), so these lanes run wherever either exists.
-const { qpdfRunner } = await import('../../../B.Parser/@init/pdf/helper/decrypt.js');
+const { qpdfRunner } = await import('../../B.Parser/architecture/@init/pdf/helper/decrypt.js');
 const runner = qpdfRunner();
 const PDF_SKIP = (() => {
   try {

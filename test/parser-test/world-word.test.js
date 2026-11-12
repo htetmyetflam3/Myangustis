@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { correctWorldWord } from "../../../B.Parser/prised/@rule/judgement.js";
-import { streamPdfPages } from "../../../B.Parser/prised/@core/runtime/source.js";
-import { processPageRecord } from "../../../B.Parser/prised/@core/runtime/finish.js";
+import { correctWorldWord } from "../../B.Parser/architecture/@rule/judgement.js";
+import { streamPdfPages } from "../../B.Parser/architecture/@core/runtime/source.js";
+import { processPageRecord } from "../../B.Parser/architecture/@core/runtime/finish.js";
 
 // The source generator yields decoding records; the finishing step turns
 // them into the final page (text, layout lines, font kinds).

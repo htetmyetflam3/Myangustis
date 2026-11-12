@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import {
   scanText, formatScanReport, PosScanner, scanTextWithPos, isPageNumberLine,
-} from "../../../B.Parser/prised/@postprocess/init.js";
+} from "../../B.Parser/architecture/@postprocess/init.js";
 import { MAX_LINE_BYTES } from "../../../Architecture/Engine/MonoSyllabism/generators/SfomatterForP.js";
 
 test("JavaScript scanner retains the structural scan rules", () => {

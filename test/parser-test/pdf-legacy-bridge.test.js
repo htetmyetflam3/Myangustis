@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../../../B.Parser/prised/@core/pdf/method/legacy/codepage-registry.js";
-import { subsetFontBridge } from "../../../B.Parser/prised/@core/pdf/method/legacy/codepage-subset.js";
-import * as confirmedRuns from "../../../B.Parser/prised/@core/pdf/method/legacy/codepage-confirmed.js";
-import { DocumentDecoding, FontDecoder } from "../../../B.Parser/prised/@core/pdf/method/decoder.js";
-import { decodeRawBytes, encodeRawByteSlots } from "../../../B.Parser/prised/@core/pdf/method/legacy/fallback.js";
+import { AYAR_LEGACY_CODE_PAGE, WININNWA_LEGACY_CODE_PAGE } from "../../B.Parser/architecture/@core/pdf/method/legacy/codepage-registry.js";
+import { subsetFontBridge } from "../../B.Parser/architecture/@core/pdf/method/legacy/codepage-subset.js";
+import * as confirmedRuns from "../../B.Parser/architecture/@core/pdf/method/legacy/codepage-confirmed.js";
+import { DocumentDecoding, FontDecoder } from "../../B.Parser/architecture/@core/pdf/method/decoder.js";
+import { decodeRawBytes, encodeRawByteSlots } from "../../B.Parser/architecture/@core/pdf/method/legacy/fallback.js";
 
 const bg1 = {
   fontSha256: "9b3622c34d21de53fb2a6dacd19e698f05dc46e2d32091ddefe42e23ab7916f2",

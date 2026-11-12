@@ -25,7 +25,7 @@ import crypto from "node:crypto";
 
 import "../../index-path.js";
 
-import { abs, FRONTEND_DIR } from "../../F.Site/Backend/file/paths.js";
+import { abs, FRONTEND_DIR } from "../../B.Parser/public/Backend/file/paths.js";
 import { GetOutputDir, resolvePath } from "../../Architecture/host/path.js";
 
 const SITE = `http://127.0.0.1:${process.env.SITE_PORT || process.env.PORT || 3000}`;

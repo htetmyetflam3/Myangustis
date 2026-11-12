@@ -6,7 +6,7 @@ import path from 'node:path';
 import {
   readUploadMetadata,
   validateUploadedFileSignature,
-} from '../../../B.Parser/host/Backend/gateway/api/uploadMetadata.js';
+} from '../../B.Parser/public/Backend/gateway/api/uploadMetadata.js';
 const intent = {
   v: 1,
   source: 'converter', content: 'text', job: 'extracting', method: 'default',

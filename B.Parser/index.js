@@ -19,7 +19,7 @@ need to compose them themselves (e.g. parse many files, write later):
 
 See MAP.md for the one-page map of this whole directory.
 */
-import { advisoryOnce } from "../Architecture/host/advisory.js";
+import { advisoryOnce } from "../A.Engine/public/advisory.js";
 
 // First-use guidance, once per user and terminal-only: this is the chain
 // door, and the middle-chain helpers are not. Text that still holds

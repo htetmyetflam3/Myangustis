@@ -4,12 +4,12 @@ import fs from "node:fs";
 import * as fontkit from "fontkit";
 import { PDFDocument, PDFName } from "pdf-lib";
 
-import { parseTtfCmap } from "../../../B.Parser/prised/@core/pdf/method/unicode/ttf/ttf-cmap.js";
-import { DocumentDecoding, FontDecoder } from "../../../B.Parser/prised/@core/pdf/method/decoder.js";
-import { streamPdfPages } from "../../../B.Parser/prised/@core/runtime/source.js";
+import { parseTtfCmap } from "../../B.Parser/architecture/@core/pdf/method/unicode/ttf/ttf-cmap.js";
+import { DocumentDecoding, FontDecoder } from "../../B.Parser/architecture/@core/pdf/method/decoder.js";
+import { streamPdfPages } from "../../B.Parser/architecture/@core/runtime/source.js";
 import {
   decodeVisualUnicodeRun, hasVisualUnicodeConflicts, matchVisualUnicodeGlyphs,
-} from "../../../B.Parser/prised/@core/pdf/method/legacy/codepage-visual.js";
+} from "../../B.Parser/architecture/@core/pdf/method/legacy/codepage-visual.js";
 
 // GIDs below are observations from the embedded resource on merged part 7,
 // page 64, not keyboard slots or a map for other fonts. The witness is the

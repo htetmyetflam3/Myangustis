@@ -3,7 +3,7 @@
  * Every rule has a unique ID: baseline.js-{section}-{letter}
  */
 
-import { lookupId } from '../../MonoSyllabism/map/base/idmapper.js';
+import { lookupId } from '../../../../B.Parser/index-path.js';
 
 const ID_TO_WORD = new Map();
 if (typeof lookupId === 'object' && lookupId !== null) {

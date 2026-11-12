@@ -272,7 +272,7 @@ async function localParser(source, options) {
 // The report is advisory: a scan failure never fails the conversion.
 async function writeUnknownSidecar(file, pages) {
   try {
-    const { PosScanner } = await import('../../B.Parser/prised/@postprocess/init.js');
+    const { PosScanner } = await import('../../B.Parser/architecture/@postprocess/init.js');
     const reportFile = `${file}.unknown.txt`;
     const scanner = new PosScanner({ directory: path.dirname(file) });
     let scan;

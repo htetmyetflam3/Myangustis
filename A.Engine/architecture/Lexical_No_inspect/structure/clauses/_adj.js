@@ -1,4 +1,4 @@
-import { W, L } from '../../abstract/kernel.js';
+import { W, L } from '../../../../../B.Parser/index-path.js';
 import C from '../../../../../vite.config.js';
 W.register("wakyarore_adjective_clause", "§151", 0.9);
 function classifyAdjectiveClause(tokens, index, context) {

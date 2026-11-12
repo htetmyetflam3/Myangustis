@@ -5,8 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { TREE_DIR, cacheInfo } from '../../../Architecture/Engine/MonoSyllabism/main/grapheme/cache-integrity.js';
-import { getTree, getRtlTree, getPosTree, resetTree, resetRtlTree, resetPosTree } from '../../../Architecture/Engine/MonoSyllabism/main/grapheme/Tree.loaded.js';
+import { TREE_DIR, cacheInfo } from '../../A.Engine/architecture/MonoSyllabism/main/grapheme/cache-integrity.js';
+import { getTree, getRtlTree, getPosTree, resetTree, resetRtlTree, resetPosTree } from '../../A.Engine/architecture/MonoSyllabism/main/grapheme/Tree.loaded.js';
 
 const engine = fileURLToPath(new URL('../../../Architecture/Engine/', import.meta.url));
 test('bundled tree path and shipped manifest are valid', () => {

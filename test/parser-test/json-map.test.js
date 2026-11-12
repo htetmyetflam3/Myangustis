@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { MAP_DIR } from '../../../B.Parser/_path.js';
-import { loadSidecarMap } from '../../../B.Parser/prised/@core/pdf/method/pdfencoding/decoding.js';
+import { loadSidecarMap } from '../../B.Parser/architecture/@core/pdf/method/pdfencoding/decoding.js';
 
 const repo = new URL('../../../', import.meta.url);
 

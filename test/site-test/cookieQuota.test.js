@@ -4,8 +4,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Database from 'better-sqlite3';
-import { migrate } from '../../../B.Parser/host/Backend/db/migrate.js';
-import { createRequest, dailyLimit, QUOTA_OFF_SENTINEL } from '../../../B.Parser/host/Backend/db/request.js';
+import { migrate } from '../../B.Parser/public/Backend/db/migrate.js';
+import { createRequest, dailyLimit, QUOTA_OFF_SENTINEL } from '../../B.Parser/public/Backend/db/request.js';
 
 const DAILY_LIMIT = dailyLimit();
 

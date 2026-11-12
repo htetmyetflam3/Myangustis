@@ -37,7 +37,7 @@ fs.mkdirSync(JUNK_DIR, { recursive: true });
 
 
 export async function getEngineData() {
-  return import('./Architecture/Engine/.data/secure.js');
+  return import('./A.Engine/architecture/.data/secure.js');
 }
 
 export async function getLogen() {
@@ -50,7 +50,7 @@ export async function getEngineBinding() {
 }
 
 export async function getEngineNormalize() {
-  const entry = await import('./Architecture/Engine/MonoSyllabism/map/loader.js');
+  const entry = await import('./A.Engine/architecture/MonoSyllabism/map/loader.js');
   return entry.normalize;
 }
 

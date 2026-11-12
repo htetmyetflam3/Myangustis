@@ -1,4 +1,4 @@
-import { W, L } from '../../abstract/kernel.js';
+import { W, L } from '../../../../../B.Parser/index-path.js';
 import C from './const.js';
 ["§189","§190","§191","§192","§193"].forEach(r => W.register("wakyarore_compound", r, 0.88));
 function classifyCompound(tokens, index, context) {

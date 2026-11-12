@@ -5,8 +5,8 @@ import os from "node:os";
 import path from "node:path";
 import { PDFDocument } from "pdf-lib";
 
-import { validatePdf } from "../../../B.Parser/@entry/helper/validator.js";
-import { qpdfRunner, runQpdfFile } from "../../../B.Parser/@init/pdf/helper/decrypt.js";
+import { validatePdf } from "../../B.Parser/architecture/@entry/helper/validator.js";
+import { qpdfRunner, runQpdfFile } from "../../B.Parser/architecture/@init/pdf/helper/decrypt.js";
 
 // pdf-lib's default save writes object streams, which the reader refuses
 // until the file is prepared - exactly the shape qpdf handles.
@@ -36,7 +36,7 @@ test("an object-stream PDF is detected and prepared into a readable file", async
 });
 
 test("the Parser prepares an object-stream PDF through the resolved runner", async () => {
-  const { InitInput, parseDecoding } = await import("../../../B.Parser/index.js");
+  const { InitInput, parseDecoding } = await import("../../B.Parser/index.js");
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "parser-prepare-door-"));
   try {
     const input = path.join(dir, "streams.pdf");

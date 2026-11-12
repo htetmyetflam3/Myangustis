@@ -1,4 +1,4 @@
-import { W, L } from '../../abstract/kernel.js';
+import { W, L } from '../../../../../B.Parser/index-path.js';
 import C from '../sentences/const.js';
 ["§121","§122","§152"].forEach(r => W.register("wakyarore_adverb_clause", r, 0.9));
 function classifyAdverbClause(tokens, index, context) {

@@ -1,4 +1,4 @@
-import { W, L } from '../../abstract/kernel.js';
+import { W, L } from '../../../../../B.Parser/index-path.js';
 import C from '../sentences/const.js';
 ["§145","§146","§147","§148"].forEach(r => W.register("wakyarore_single_dependent", r, 0.9));
 function classifySingleDependent(tokens, index, context) {

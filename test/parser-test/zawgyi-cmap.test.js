@@ -4,8 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { processPageRecord } from "../../../B.Parser/prised/@core/runtime/finish.js";
-import { streamPdfPages } from "../../../B.Parser/prised/@core/runtime/source.js";
+import { processPageRecord } from "../../B.Parser/architecture/@core/runtime/finish.js";
+import { streamPdfPages } from "../../B.Parser/architecture/@core/runtime/source.js";
 
 
 

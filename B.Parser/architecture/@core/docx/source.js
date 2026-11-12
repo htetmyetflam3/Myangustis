@@ -12,7 +12,7 @@ import { extractDocxParagraphs, validateDocxArchive } from "./docx-extract.js";
 import { extractDocxParagraphsExternal } from "./docx-external.js";
 import { cleanupFor, processPageRecord, collectChanges, adviseParserMiddleChain } from "../runtime/finish.js";
 import { containsMyanmar, hasOnlyZawgyiFonts, hasOnlyUnicodeFonts } from "../../@rule/detect.js";
-import { MAX_PAGES, MAX_TEXT_CHARS } from "../../../@entry/helper/limit.js";
+import { MAX_PAGES, MAX_TEXT_CHARS } from "../../@entry/helper/limit.js";
 import { RuntimeError } from "../../@helper/pylib.js";
 
 export const DOCX_CHUNK_PARAGRAPHS = 80;

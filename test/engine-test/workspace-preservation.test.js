@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { createProcessingQueue } from '../../../B.Parser/host/Backend/gateway/queue/processingQueue.js';
+import { createProcessingQueue } from '../../B.Parser/public/Backend/gateway/queue/processingQueue.js';
 
 const repo = fileURLToPath(new URL('../../../', import.meta.url));
 const read = relative => fs.readFileSync(path.join(repo, relative), 'utf8');
