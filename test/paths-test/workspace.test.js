@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 
-const repo = fileURLToPath(new URL('../../../', import.meta.url));
+const repo = fileURLToPath(new URL('../../', import.meta.url));
 
 for (const scenario of ['shared', 'nested', 'standalone', 'missing-component-entry', 'broken-exporter', 'invalid-export']) {
   test(`Parser workspace: ${scenario}`, t => {

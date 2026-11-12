@@ -16,7 +16,7 @@ stage's limit home; owner jobs are uncapped there already.
 */
 import fs from "node:fs";
 import path from "node:path";
-import { writePdf } from "../../@output/pdf/write.js";
+import { writePdf } from "../@output/pdf/write.js";
 import { writeDocxMarkup } from "../@output/docx/write.js";
 import { stripMarkup } from "../@output/helper/markup.js";
 import { normalizeOutputType } from "../@output/helper/output-type.js";

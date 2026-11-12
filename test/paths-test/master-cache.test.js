@@ -7,24 +7,24 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const repo = fileURLToPath(new URL('../../../', import.meta.url));
+const repo = fileURLToPath(new URL('../../', import.meta.url));
 
 function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'myangustis-master-cache-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}');
   for (const file of [
-    'index-path.js', 'Architecture/_index.js', 'Architecture/Engine/_path.js',
-    'Architecture/Engine/.data/secure.js', 'Architecture/Engine/init/bridge.js',
-    'Architecture/host/config.js', 'Architecture/host/job-store.js', 'Architecture/host/advisory.js',
-    'Architecture/Engine/MonoSyllabism/main/grapheme/Tree.loaded.js',
-    'Architecture/Engine/MonoSyllabism/main/grapheme/cache-integrity.js',
+    'index-path.js', 'A.Engine/_index.js', 'A.Engine/architecture/_path.js',
+    'A.Engine/architecture/.data/secure.js', 'A.Engine/architecture/init/bridge.js',
+    'A.Engine/public/config.js', 'A.Engine/public/job-store.js', 'A.Engine/public/advisory.js',
+    'A.Engine/architecture/MonoSyllabism/main/grapheme/Tree.loaded.js',
+    'A.Engine/architecture/MonoSyllabism/main/grapheme/cache-integrity.js',
   ]) {
     const target = path.join(root, file);
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.copyFileSync(path.join(repo, file), target);
   }
-  const dataDir = path.join(root, 'Architecture/Engine/.data');
+  const dataDir = path.join(root, 'A.Engine/architecture/.data');
   const master = path.join(dataDir, 'master.json.enc');
   const cache = path.join(dataDir, 'master.json.cache');
   const key = 'ab'.repeat(32);
@@ -65,7 +65,7 @@ test('master access uses the engine cache, isolates callers and invalidates on s
   } finally {
     JSON.parse = originalParse;
   }
-  const tree = await import(pathToFileURL(path.join(f.root, 'Architecture/Engine/MonoSyllabism/main/grapheme/Tree.loaded.js')).href);
+  const tree = await import(pathToFileURL(path.join(f.root, 'A.Engine/architecture/MonoSyllabism/main/grapheme/Tree.loaded.js')).href);
   assert.deepEqual(await tree.loadSyllablesData(), ['က', 'ခ']);
   assert.deepEqual(await tree.streamSyllables(f.master), ['က', 'ခ']);
   const oldHash = data.masterFingerprint();

@@ -57,7 +57,6 @@ test("the qpdf runner resolves to an executable command in this repository", () 
   const runner = qpdfRunner();
   assert.equal(typeof runner.bin, "string");
   assert.ok(Array.isArray(runner.args));
-  // Either the real binary or the pikepdf-backed shim ships with the repo.
-  const shim = path.resolve("tools-box/python/qpdf_shim.py");
-  assert.ok(runner.bin === "qpdf" || fs.existsSync(shim) || process.env.PRASER_QPDF_BIN);
+  // The real binary is preferred, otherwise the bundled JS/WASM CLI is used.
+  assert.ok(runner.bin === "qpdf" || runner.bin === "qpdf-wasm" || process.env.PRASER_QPDF_BIN);
 });

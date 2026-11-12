@@ -8,8 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential python3-dev pkg-config \
     # Canvas & PDF native deps
     libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev \
-    # MuPDF / PyMuPDF
-    libmupdf-dev libfreetype6-dev libharfbuzz-dev \
+    # Font shaping and rendering
+    libfreetype6-dev libharfbuzz-dev \
     # SQLite + MySQL clients
     sqlite3 libsqlite3-dev default-mysql-client \
     # OCR / image processing
@@ -23,14 +23,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
     && corepack enable \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# --- Python 3.12 + UV (fast package manager) ---
-RUN add-apt-repository ppa:deadsnakes/ppa -y \
-    && apt-get update && apt-get install -y python3.12 python3.12-venv python3.12-dev \
-    && ln -sf /usr/bin/python3.12 /usr/bin/python3 \
-    && curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && mv /root/.local/bin/uv /usr/local/bin/ \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # --- GitHub CLI ---
@@ -49,4 +41,4 @@ RUN mkdir /var/run/sshd \
 EXPOSE 22
 
 # --- Verify installations ---
-RUN node -v && npm -v && python3 --version && uv --version && gh --version && ssh -V
+RUN node -v && npm -v && gh --version && ssh -V

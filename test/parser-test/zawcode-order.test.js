@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { getEngineNormalize } from "../../../B.Parser/_path.js";
+import { getEngineNormalize } from "../../B.Parser/_path.js";
 import { arrangeZawCodeOrder, orderZawCodePages } from "../../B.Parser/architecture/@postprocess/beautify/zawcode-order.js";
 import { repairFromScanVerdict as beautifyFromScanVerdict } from "../../B.Parser/architecture/@postprocess/beautify/zawcode-order.js";
 import { scanText } from "../../B.Parser/architecture/@postprocess/init.js";

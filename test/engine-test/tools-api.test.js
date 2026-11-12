@@ -6,7 +6,7 @@ import path from 'node:path';
 
 process.env.API_KEY = 'test-only-api-key';
 process.env.ENGINE_ALLOWED_IPS = '127.0.0.1';
-const { createApp } = await import('../../../tools-box/js/api-server.js');
+const { createApp } = await import('../../tools-box/js/api-server.js');
 
 test('tools API reads caller files and streams positional results through BindEngine', async t => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'tools-engine-'));

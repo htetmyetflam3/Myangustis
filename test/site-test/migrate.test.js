@@ -13,7 +13,7 @@ import {
   BASELINE_TABLES,
 } from '../../B.Parser/public/Backend/db/migrate.js';
 
-const SCHEMA_FILE = path.resolve(import.meta.dirname, '../../../B.Parser/host/Backend/db/schema.sql');
+const SCHEMA_FILE = path.resolve(import.meta.dirname, '../../B.Parser/public/Backend/db/schema.sql');
 
 function tempDb(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'linga-migrate-'));

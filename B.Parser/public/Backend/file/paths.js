@@ -28,14 +28,12 @@ export const FILE_DIR = `${BACKEND_DIR}/file`;
 export const SITE_ENTRY = "index.js";
 export const SITE_ENV = ".env";
 export const SITE_PACKAGE_JSON = "package.json";
-// The component root after the SEPARATION.md flattening: B.Parser itself,
-// with prised/ as the parse core and @jason-map/ holding the sidecar maps.
-// PARSED_ROOT keeps its old name for importers but no longer names a
-// main/parser sub-tree - that layout is gone.
+// The parser implementation and sidecars now live in B.Parser/architecture.
+// PARSED_ROOT remains the component root for older importers.
 export const PARSED_ROOT = "..";
 export const PARSER_DIR = PARSED_ROOT;
-export const PARSER_CORE_DIR = `${PARSER_DIR}/prised`;
-export const PARSER_MAP_DIR = `${PARSER_DIR}/@jason-map`;
+export const PARSER_CORE_DIR = `${PARSER_DIR}/architecture`;
+export const PARSER_MAP_DIR = `${PARSER_CORE_DIR}/@jason-map`;
 export const PARSER_MODEL_DIR = `${PARSER_CORE_DIR}/@core/ocr/model`;
 export const PARSER_FONT_DIR = path.dirname(OUTPUT_FONT_DIR);
 export const PRASER_WEB = PARSED_ROOT;

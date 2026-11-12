@@ -29,13 +29,14 @@ import { loadSidecarMap } from "../../B.Parser/architecture/@core/pdf/method/pdf
 import { isZawgyiOneFont, isUnicodeFont } from "../../B.Parser/architecture/@rule/detect.js";
 
 const isFile = (file) => fs.statSync(file).isFile();
-const repo = fileURLToPath(new URL("../../../", import.meta.url));
-// qpdf is the preparation step for every PDF; the Parser resolves the real
-// binary or its pikepdf-backed shim, so this asks the same source of truth.
+const repo = fileURLToPath(new URL("../../", import.meta.url));
+// qpdf is the preparation step for every PDF; a bundled WASM CLI is an
+// available runner even though it is invoked in-process, not as a shell bin.
 const hasQpdf = async () => {
   try {
     const { qpdfRunner } = await import("../../B.Parser/architecture/@init/pdf/helper/decrypt.js");
     const { bin, args } = qpdfRunner();
+    if (bin === "qpdf-wasm") return true;
     execFileSync(bin, [...args, "--version"], { stdio: "pipe" });
     return true;
   } catch {
@@ -90,7 +91,7 @@ test("DOCX archive validation rejects extreme compression ratios", async () => {
 test("the shipped 100-page sample parses through the Parser door", async (t) => {
   if (!(await hasQpdf())) return t.skip("no qpdf runner available");
   const { InitInput, parseDecoding } = await import("../../B.Parser/index.js");
-  const sample = path.join(repo, "B.Parser/host/Frontend/frontend-bootstrap/public/samples/sample.pdf");
+  const sample = path.join(repo, "B.Parser/public/Frontend/frontend-bootstrap/public/samples/sample.pdf");
   const prepared = await InitInput({ path: sample }, "owner");
   const parsed = await parseDecoding({ kind: prepared.kind, source: prepared.path, filename: "sample.pdf" });
   assert.equal(parsed.pages.length, 100);

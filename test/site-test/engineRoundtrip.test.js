@@ -11,13 +11,13 @@ process.env.PARSER_RUNTIME_DIR = runtime;
 const { abs, ensureUploadDir, OUTPUT_DIR, RAW_TXT_DIR, ORIGINAL_DIR } =
   await import('../../B.Parser/public/Backend/file/paths.js');
 const { createProcessingQueue } = await import('../../B.Parser/public/Backend/gateway/queue/processingQueue.js');
-const { closePraserManager } = await import('../../../B.Parser/host/Backend/file/pdfanalysis.js');
+const { closePraserManager } = await import('../../B.Parser/public/Backend/file/pdfanalysis.js');
 const { createIncomingRouter } = await import('../../B.Parser/public/Backend/gateway/api/incoming.js');
 const { createEngineQueueRouter } = await import('../../B.Parser/public/Backend/gateway/api/engineCollect.js');
 const { createHiddenProcessor } = await import('../../B.Parser/public/Backend/gateway/api/hidden.js');
 const { engineConfig, createEngineDispatcher } = await import('../../B.Parser/public/Backend/gateway/generator/engine.js');
 const SAMPLE_PDF = path.resolve(
-  'B.Parser/host/Frontend/frontend-bootstrap/public/samples/sample.pdf',
+  'B.Parser/public/Frontend/frontend-bootstrap/public/samples/sample.pdf',
 );
 const SITE_TO_ENGINE_KEY = 'a'.repeat(32);
 const ENGINE_TO_SITE_KEY = 'b'.repeat(32);

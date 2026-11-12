@@ -5,9 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-const bridge = new URL('../../../Architecture/Engine/init/bridge.js', import.meta.url).href;
-const parserDoor = new URL('../../../B.Parser/index.js', import.meta.url).href;
-const secure = new URL('../../../Architecture/Engine/.data/secure.js', import.meta.url).href;
+const bridge = new URL('../../A.Engine/architecture/init/bridge.js', import.meta.url).href;
+const parserDoor = new URL('../../B.Parser/index.js', import.meta.url).href;
+const secure = new URL('../../A.Engine/architecture/.data/secure.js', import.meta.url).href;
 const tty = `Object.defineProperty(process.stderr, 'isTTY', { value: true, configurable: true });`;
 
 function child(code, state, args = []) {

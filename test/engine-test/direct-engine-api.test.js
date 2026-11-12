@@ -6,7 +6,7 @@ process.env.CURL_KEY = 'private-test-only-key';
 delete process.env.CURL_KEY_SHA256;
 delete process.env.CURL_MAX_MB;
 const { createServer } = await import('../../A.Engine/public/index.js');
-const { createApp } = await import('../../../Architecture/host/server.js');
+const { createApp } = await import('../../A.Engine/public/server.js');
 
 test('private engine API reuses Site key, bypasses sessions, and yields actual engine output', async t => {
   const listener = await new Promise(resolve => {

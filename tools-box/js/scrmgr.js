@@ -617,16 +617,17 @@ async function executeScript(filename, extraArgs) {
     console.error(`Script not found in DB: ${filename}`);
     process.exit(1);
   }
+  const ext = path.extname(filename).toLowerCase();
+  if (!['.js', '.mjs', '.cjs', '.sh'].includes(ext)) {
+    console.error(`Unsupported script type: ${ext || '(none)'}`);
+    return 1;
+  }
   const tmpFile = path.join(__dirname, `.tmp_${Date.now()}_${filename}`);
   fs.writeFileSync(tmpFile, row.content, 'utf-8');
-  const ext = path.extname(filename).toLowerCase();
   let command, args;
   if (ext === '.sh') {
     fs.chmodSync(tmpFile, 0o755);
     command = 'bash';
-    args = [tmpFile, ...extraArgs];
-  } else if (ext === '.py') {
-    command = 'python3';
     args = [tmpFile, ...extraArgs];
   } else {
     command = process.execPath;

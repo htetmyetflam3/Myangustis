@@ -25,9 +25,9 @@ only wires them - it contains no parsing logic of its own):
 OCR inputs are prepared by stage 1 but not yet converted here; they
 fail loudly instead of silently producing nothing.
 */
-import { InitInput } from "./@entry/init.js";
-import { parseDecoding } from "./prised/@core/run.js";
-import { writeOutputFile } from "./prised/@core/requested.js";
+import { InitInput } from "./architecture/@entry/init.js";
+import { parseDecoding } from "./architecture/@core/run.js";
+import { writeOutputFile } from "./architecture/@core/requested.js";
 
 // One conversion at a time through this door: callers queue, a second
 // conversion never runs beside the first (single-worker guard).

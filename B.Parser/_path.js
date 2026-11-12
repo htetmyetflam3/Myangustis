@@ -7,12 +7,11 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 
 const COMPONENT_ROOT = path.dirname(fileURLToPath(import.meta.url));
-// Sketch layout (SEPARATION.md): core is flattened to B.Parser/core.
-// PARSED_ROOT/PARSER_DIR are kept as aliases so existing importers do not
-// break; they no longer point at the old main/parser tree.
+// The parser implementation lives under architecture/ after the workspace split.
+// PARSED_ROOT/PARSER_DIR remain compatibility aliases for the component root.
 export const PARSER_DIR = COMPONENT_ROOT;
 export const PARSED_ROOT = COMPONENT_ROOT;
-export const CORE_DIR = path.join(COMPONENT_ROOT, "prised");
+export const CORE_DIR = path.join(COMPONENT_ROOT, "architecture");
 export const REPO_ROOT = path.dirname(COMPONENT_ROOT);
 
 async function resolveBaseDir() {
@@ -44,9 +43,9 @@ export async function getEngineNormalize() {
 export const RUNTIME_ROOT = resolved.shared ? path.join(BASE_DIR, "Parser") : COMPONENT_ROOT;
 const FONT_ROOT = path.join(BASE_DIR, "fonts");
 
-export const MAP_DIR = path.join(COMPONENT_ROOT, "@jason-map");
+export const MAP_DIR = path.join(CORE_DIR, "@jason-map");
 export const VECTOR_MAP_DIR = path.join(MAP_DIR, "vector");
-export const MODEL_DIR = path.join(COMPONENT_ROOT, "prised", "@core", "ocr", "model");
+export const MODEL_DIR = path.join(CORE_DIR, "@core", "ocr", "model");
 export const OCR_MODEL_DIR = MODEL_DIR;
 
 export const FONT_DIR = path.join(FONT_ROOT, "Unicode");

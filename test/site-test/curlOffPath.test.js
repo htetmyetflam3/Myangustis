@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 const load = async () => {
-  const mod = await import(`../../../B.Parser/host/Backend/gateway/api/curlGate.js?v=${Math.random()}`);
+  const mod = await import(`../../B.Parser/public/Backend/gateway/api/curlGate.js?v=${Math.random()}`);
   return mod;
 };
 
@@ -58,7 +58,7 @@ test('the suffix is normalised, and the domain is never part of it', async () =>
 
 test('no host, scheme or port is ever read from configuration', async () => {
   const source = await (await import('node:fs/promises'))
-    .readFile(new URL('../../../B.Parser/host/Backend/gateway/api/curlGate.js', import.meta.url), 'utf8');
+    .readFile(new URL('../../B.Parser/public/Backend/gateway/api/curlGate.js', import.meta.url), 'utf8');
 
   assert.match(source, /req\.get\('host'\)/u);
   assert.equal(/process\.env\.(?:HOST|PORT|DOMAIN|SITE_URL)/u.test(source), false);
@@ -133,7 +133,7 @@ test('the key is accepted from a header, a bearer token, or ?key=', { skip: !has
 
 test('the off-path never imports the engine', async () => {
   const source = await (await import('node:fs/promises'))
-    .readFile(new URL('../../../B.Parser/host/Backend/gateway/api/curl.js', import.meta.url), 'utf8');
+    .readFile(new URL('../../B.Parser/public/Backend/gateway/api/curl.js', import.meta.url), 'utf8');
   for (const forbidden of ['engine', 'processingQueue', 'engineCollect', 'engineDispatcher']) {
     assert.equal(
       new RegExp(`from\\s+'[^']*${forbidden}`, 'iu').test(source),

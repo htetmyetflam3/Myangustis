@@ -3,15 +3,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import * as root from '../../../index-path.js';
-import * as engine from '../../../Architecture/Engine/_path.js';
-import * as parser from '../../../B.Parser/_path.js';
-import * as site from '../../../B.Parser/host/_path.js';
-import * as tools from '../../../tools-box/_path.js';
-import * as proofreading from '../../../C.Proofreading/index.js';
-import { BindEngine } from '../../../Architecture/_index.js';
+import * as root from '../../index-path.js';
+import * as engine from '../../A.Engine/architecture/_path.js';
+import * as parser from '../../B.Parser/_path.js';
+import * as site from '../../B.Parser/public/_path.js';
+import * as tools from '../../tools-box/_path.js';
+import { BindEngine } from '../../A.Engine/_index.js';
 
-const repo = fileURLToPath(new URL('../../../', import.meta.url));
+const repo = fileURLToPath(new URL('../../', import.meta.url));
 
 test('component path chains reach the same root logging module and event bus', async () => {
   const main = await root.getLogen();
@@ -25,10 +24,8 @@ test('component path chains reach the same root logging module and event bus', a
   main.coreLog.bus.once(event, handler);
   main.siteLog.emitEvent(event, { value: 7 });
   assert.equal(seen.value, 7);
-  assert.strictEqual(proofreading.BindEngine, BindEngine);
-  assert.equal(typeof proofreading.tagProofreading, 'function');
-  for (const old of ['Bridge/logen', 'Architecture/Engine/bridge/logen.js',
-    'B.Parser/host/site_logen/engine.js', 'Bridge/proofreading-tagger.js']) {
+  for (const old of ['Bridge/logen', 'A.Engine/architecture/bridge/logen.js',
+    'B.Parser/public/site_logen/engine.js', 'Bridge/proofreading-tagger.js']) {
     assert.equal(fs.existsSync(path.join(repo, old)), false, old);
   }
 });

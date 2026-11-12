@@ -20,9 +20,9 @@ site output dir (so `/api/submit/file/:submitId` can serve it), and
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { InitInput } from "../../@entry/init.js";
-import { parseDecoding } from "../../prised/@core/run.js";
-import { writeOutputFile } from "../../prised/@core/requested.js";
+import { InitInput } from "../../architecture/@entry/init.js";
+import { parseDecoding } from "../../architecture/@core/run.js";
+import { writeOutputFile } from "../../architecture/@core/requested.js";
 import { stripMarkup } from "../../architecture/@output/helper/markup.js";
 import { SITE_OUTPUT_DIR } from "../../public/_path.js";
 
