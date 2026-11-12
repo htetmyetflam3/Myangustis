@@ -14,7 +14,7 @@ import {
 // GIDs below are observations from the embedded resource on merged part 7,
 // page 64, not keyboard slots or a map for other fonts. The witness is the
 // full TharLon layout font in this repository.
-const fontBytes = fs.readFileSync(new URL("../../../Junk/fonts/Unicode/TharLon.ttf", import.meta.url));
+const fontBytes = fs.readFileSync(new URL("../../Junk/fonts/Unicode/TharLon.ttf", import.meta.url));
 const cmap = parseTtfCmap(fontBytes);
 const gid = (ch) => cmap.get(ch.codePointAt(0));
 const raw = (...gids) => Buffer.from(gids.flatMap((value) => [value >>> 8, value & 255])).toString("latin1");
@@ -75,7 +75,7 @@ test("glyph recovery requires both direct contradictions and independent full-fo
   assert.equal(hasVisualUnicodeConflicts(observedDecoder({ toUnicode: correct })), false);
   assert.equal(matchVisualUnicodeGlyphs(observedDecoder({ toUnicode: correct }), fontBytes), null);
   assert.equal(matchVisualUnicodeGlyphs(decoder, Buffer.from("not a font")), null);
-  const pyidaungsu = fs.readFileSync(new URL("../../../Junk/fonts/Unicode/PYIDAUNGSU-2.5.2_REGULAR.TTF", import.meta.url));
+  const pyidaungsu = fs.readFileSync(new URL("../../Junk/fonts/Unicode/PYIDAUNGSU-2.5.2_REGULAR.TTF", import.meta.url));
   assert.equal(matchVisualUnicodeGlyphs(decoder, pyidaungsu), null);
   const insufficient = observedDecoder();
   insufficient.ownGids.direct = new Map([...insufficient.ownGids.direct].filter(([, cp]) => cp < 0x1004));
@@ -162,7 +162,7 @@ test("file-backed PDF reading reports witnessed recovery but honors a forced Zaw
 });
 
 test("space-dominated ToUnicode retains a separately drawn witnessed kinzi", async () => {
-  const bytes = fs.readFileSync(new URL("../../../Junk/fonts/Unicode/mm3_05-Jan-2011.ttf", import.meta.url));
+  const bytes = fs.readFileSync(new URL("../../Junk/fonts/Unicode/mm3_05-Jan-2011.ttf", import.meta.url));
   const mm3 = parseTtfCmap(bytes);
   const code = (ch) => mm3.get(ch.codePointAt(0));
   const mappings = new Map();
@@ -182,7 +182,7 @@ test("space-dominated ToUnicode retains a separately drawn witnessed kinzi", asy
 });
 
 test("witnessed non-space glyphs can repair sparse space mappings without consuming real spaces", async () => {
-  const bytes = fs.readFileSync(new URL("../../../Junk/fonts/Unicode/mm3_05-Jan-2011.ttf", import.meta.url));
+  const bytes = fs.readFileSync(new URL("../../Junk/fonts/Unicode/mm3_05-Jan-2011.ttf", import.meta.url));
   const mm3 = parseTtfCmap(bytes);
   const code = (ch) => mm3.get(ch.codePointAt(0));
   // Source evidence: merged part 2 page 252. Some drawn consonant/medial
@@ -243,7 +243,7 @@ test("witnessed non-space glyphs can repair sparse space mappings without consum
 });
 
 test("a witnessed ra-wa glyph and a conflicting multi-output map retain the rendered cluster", () => {
-  const bytes = fs.readFileSync(new URL("../../../Junk/fonts/Unicode/mm3_05-Jan-2011.ttf", import.meta.url));
+  const bytes = fs.readFileSync(new URL("../../Junk/fonts/Unicode/mm3_05-Jan-2011.ttf", import.meta.url));
   const mm3 = parseTtfCmap(bytes);
   const code = (ch) => mm3.get(ch.codePointAt(0));
   // Merged part 2 page 1315 draws e + ra-wa + ka while its ToUnicode

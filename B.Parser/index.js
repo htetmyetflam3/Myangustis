@@ -34,6 +34,6 @@ advisoryOnce(
 );
 
 export { convert } from "./convert.js";
-export { InitInput } from "./@entry/init.js";
-export { parseDecoding } from "./prised/@core/run.js";
-export { writeOutputFile } from "./prised/@core/requested.js";
+export { InitInput } from "./architecture/@entry/init.js";
+export { parseDecoding } from "./architecture/@core/run.js";
+export { writeOutputFile } from "./architecture/@core/requested.js";

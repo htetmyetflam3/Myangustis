@@ -304,7 +304,7 @@ async function localEngine(source, options) {
   const output = options.out ? path.resolve(options.out) : null;
   if (output) await ensureNewFile(output);
   const sourceText = await readText(source);
-  const { BindEngine } = await import('../../Architecture/_index.js');
+  const { BindEngine } = await import('../../A.Engine/_index.js');
   async function* lines() {
     for await (const result of BindEngine({ sourceText, flag, log: false, quiet: options.quiet === true })) {
       yield `${flag === 'pos' ? JSON.stringify(result) : result}\n`;

@@ -4,7 +4,7 @@ import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { SlotLimiter } from '../../A.Engine/public/job-store.js';
-import { BASE_DIR } from '../../../Architecture/Engine/_path.js';
+import { BASE_DIR } from '../../A.Engine/architecture/_path.js';
 import { BindEngine, JUNK_DIR } from '../../A.Engine/_index.js';
 import { consumePos } from '../../A.Engine/architecture/init/pos-guard.js';
 import { readFromApi } from '../../A.Engine/architecture/MonoSyllabism/generators/input.js';
@@ -12,7 +12,7 @@ import { runSegmentor } from '../../A.Engine/architecture/MonoSyllabism/main/pho
 import { fullstopHolder } from '../../A.Engine/architecture/MonoSyllabism/generators/pos-input.js';
 import { toLineStrings } from '../../A.Engine/architecture/MonoSyllabism/generators/SfomatterForP.js';
 import { runTagger } from '../../A.Engine/architecture/MonoSyllabism/main/phoneme/phonology.js';
-import { runRuleEngine } from '../../../Architecture/Engine/bridge/Ginit.js';
+import { runRuleEngine } from '../../A.Engine/architecture/bridge/Ginit.js';
 import { toBurmeseLine, toBurmeseLineWithPos, toSyllableLine, toPositions } from '../../A.Engine/architecture/MonoSyllabism/utilities/formatter.js';
 import { positionalSyllableLines } from '../../A.Engine/architecture/init/tokenizer.js';
 

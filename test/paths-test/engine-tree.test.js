@@ -8,7 +8,7 @@ import { execFileSync } from 'node:child_process';
 import { TREE_DIR, cacheInfo } from '../../A.Engine/architecture/MonoSyllabism/main/grapheme/cache-integrity.js';
 import { getTree, getRtlTree, getPosTree, resetTree, resetRtlTree, resetPosTree } from '../../A.Engine/architecture/MonoSyllabism/main/grapheme/Tree.loaded.js';
 
-const engine = fileURLToPath(new URL('../../../Architecture/Engine/', import.meta.url));
+const engine = fileURLToPath(new URL('../../A.Engine/architecture/', import.meta.url));
 test('bundled tree path and shipped manifest are valid', () => {
   assert.equal(path.resolve(TREE_DIR), path.join(engine, '.cache-tree'));
   assert.ok(cacheInfo().files.includes('syllable.tree.json'));
@@ -25,7 +25,7 @@ test('verified tree data is cached in memory and can be reset', () => {
   }
 });
 
-for (const layout of ['Engine', 'Myangustis/Architecture/Engine']) {
+for (const layout of ['A.Engine/architecture', 'Myangustis/A.Engine/architecture']) {
   test(`tree location follows relocated engine: ${layout}`, t => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'engine-tree-'));
     t.after(() => fs.rmSync(root, { recursive: true, force: true }));

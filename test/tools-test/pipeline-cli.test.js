@@ -9,14 +9,14 @@ import { execFileSync, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { PDFDocument } from 'pdf-lib';
 
-const REPO = fileURLToPath(new URL('../../../', import.meta.url));
+const REPO = fileURLToPath(new URL('../../', import.meta.url));
 
-// Every Parser conversion of a PDF goes through qpdf preparation. The Parser
-// resolves the binary itself (operator override -> real qpdf -> the pikepdf
-// shim in tools-box/python), so these lanes run wherever either exists.
+// Every Parser conversion of a PDF goes through qpdf preparation. It uses an
+// operator override, a system qpdf binary, or the bundled JS/WASM CLI.
 const { qpdfRunner } = await import('../../B.Parser/architecture/@init/pdf/helper/decrypt.js');
 const runner = qpdfRunner();
 const PDF_SKIP = (() => {
+  if (runner.bin === 'qpdf-wasm') return false;
   try {
     execFileSync(runner.bin, [...runner.args, '--version'], { stdio: 'pipe' });
     return false;
@@ -25,8 +25,8 @@ const PDF_SKIP = (() => {
   }
 })();
 const CLI = path.join(REPO, 'tools-box/js/pipeline-cli.js');
-const ENGINE_ENTRY = path.join(REPO, 'Architecture/host/index.js');
-const SITE_ENTRY = path.join(REPO, 'B.Parser/host/index.js');
+const ENGINE_ENTRY = path.join(REPO, 'A.Engine/public/index.js');
+const SITE_ENTRY = path.join(REPO, 'B.Parser/public/index.js');
 const ENDPOINT = '/UchihaItachiIsMyFavChar';
 const inputText = 'ကောင်းကင် စမ်းသပ်။\nမြန်မာစာ။\n';
 let dir;
@@ -200,7 +200,7 @@ test('local Parser can produce DOCX and stream it back to text', { skip: PDF_SKI
 });
 
 test('local Engine reads text and yields hash-free Bridge syllables and POS', async () => {
-  const { BindEngine } = await import('../../../Architecture/_index.js');
+  const { BindEngine } = await import('../../A.Engine/_index.js');
   const expectedSyllables = await Array.fromAsync(BindEngine({ sourceText: inputText, flag: 'syllable', log: false }));
   const syllable = await runCli(['engine', 'local', text]);
   assert.equal(syllable.code, 0, 'local syllable call failed');

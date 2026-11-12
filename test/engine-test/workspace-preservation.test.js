@@ -7,10 +7,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createProcessingQueue } from '../../B.Parser/public/Backend/gateway/queue/processingQueue.js';
 
-const repo = fileURLToPath(new URL('../../../', import.meta.url));
+const repo = fileURLToPath(new URL('../../', import.meta.url));
 const read = relative => fs.readFileSync(path.join(repo, relative), 'utf8');
 
-for (const owner of ['Architecture/Engine/_path.js', 'Architecture/host/path.js']) {
+for (const owner of ['A.Engine/architecture/_path.js', 'A.Engine/public/path.js']) {
   test(`${owner}: setup creates directories and preserves earlier runs`, async t => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'workspace-retain-'));
     t.after(() => fs.rmSync(root, { recursive: true, force: true }));
@@ -22,7 +22,7 @@ for (const owner of ['Architecture/Engine/_path.js', 'Architecture/host/path.js'
     fs.copyFileSync(path.join(repo, owner), entry);
     const api = await import(pathToFileURL(entry).href);
     api.configureWorkspace({ treeDir: path.join(root, 'tree'), outputDir: path.join(root, 'output'), logDir: path.join(root, 'log') });
-    const directories = owner.includes('/Engine/') ? ['output', 'log'] : ['tree', 'output', 'log'];
+    const directories = owner.includes('/architecture/') ? ['output', 'log'] : ['tree', 'output', 'log'];
     api.ensureWorkspace();
     for (const dir of directories) {
       assert.ok(fs.statSync(path.join(root, dir)).isDirectory());
@@ -83,9 +83,9 @@ for (const options of [{ max: 1 }, { ttlMs: -1 }]) {
 }
 
 test('startup, rebuild and maintenance no longer clear runtime directories', () => {
-  assert.doesNotMatch(read('B.Parser/host/index.js'), /cleanupExpiredRuntimeFiles|runArtifactCleanup|cleanupTimer/);
-  assert.equal(fs.existsSync(path.join(repo, 'B.Parser/host/Backend/file/runtimeCleanup.js')), false);
-  for (const config of ['B.Parser/host/Frontend/frontend-react/vite.config.js', 'B.Parser/host/Frontend/frontend-react/vite.config.ts']) {
+  assert.doesNotMatch(read('B.Parser/public/index.js'), /cleanupExpiredRuntimeFiles|runArtifactCleanup|cleanupTimer/);
+  assert.equal(fs.existsSync(path.join(repo, 'B.Parser/public/Backend/file/runtimeCleanup.js')), false);
+  for (const config of ['B.Parser/public/Frontend/frontend-react/vite.config.js', 'B.Parser/public/Frontend/frontend-react/vite.config.ts']) {
     assert.match(read(config), /emptyOutDir: false/);
   }
   const bootstrap = read('tools-box/bash/bootstrap.sh');

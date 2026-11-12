@@ -45,7 +45,7 @@ export async function getLogen() {
 }
 
 export async function getEngineBinding() {
-  const entry = await import('./Architecture/_index.js');
+  const entry = await import('./A.Engine/_index.js');
   return entry.BindEngine;
 }
 

@@ -15,7 +15,7 @@ process.env.PARSER_RUNTIME_DIR = runtime;
 const { ensureUploadDir } = await import('../../B.Parser/public/Backend/file/paths.js');
 const { createIncomingRouter } = await import('../../B.Parser/public/Backend/gateway/api/incoming.js');
 const { createProcessingQueue } = await import('../../B.Parser/public/Backend/gateway/queue/processingQueue.js');
-const { closePraserManager } = await import('../../../B.Parser/host/Backend/file/pdfanalysis.js');
+const { closePraserManager } = await import('../../B.Parser/public/Backend/file/pdfanalysis.js');
 
 async function until(predicate) {
   const deadline = Date.now() + 30000;
@@ -59,7 +59,7 @@ test('pre-production analysis documents convert without engine; analysis text st
       myanmarLetters: 1, imageBytes: 0, textBytes: 1 } };
   const intent = buildPayload({ plan, flow: 'analysis', outputFormat: 'txt', confirmed: true });
   const form = new FormData();
-  const bytes = await fs.readFile('B.Parser/host/Frontend/frontend-bootstrap/public/samples/sample.pdf');
+  const bytes = await fs.readFile('B.Parser/public/Frontend/frontend-bootstrap/public/samples/sample.pdf');
   form.append('file', new File([bytes], intent.uploadName, { type: 'application/pdf' }));
   form.append('metadata', JSON.stringify(intent));
   const response = await fetch(base, { method: 'POST', body: form });

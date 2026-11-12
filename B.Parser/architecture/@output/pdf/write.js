@@ -13,7 +13,7 @@ import {
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { OUTPUT_FONT_DIR } from "../../_path.js";
+import { OUTPUT_FONT_DIR } from "../../../_path.js";
 import { PdfWriter } from "../../@core/runtime/pdf-writer.js";
 import { writeOptimizedPdf } from "../../@core/runtime/optimize.js";
 import { RuntimeError } from "../../@helper/pylib.js";

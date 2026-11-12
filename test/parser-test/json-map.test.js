@@ -4,22 +4,22 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { MAP_DIR } from '../../../B.Parser/_path.js';
+import { MAP_DIR } from '../../B.Parser/_path.js';
 import { loadSidecarMap } from '../../B.Parser/architecture/@core/pdf/method/pdfencoding/decoding.js';
 
-const repo = new URL('../../../', import.meta.url);
+const repo = new URL('../../', import.meta.url);
 
 async function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'parser-json-map-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   const parser = path.join(root, 'B.Parser');
-  const core = path.join(parser, 'main/parser/core');
-  const maps = path.join(parser, 'main/parser/jason-map');
+  const core = path.join(parser, 'architecture/@core/runtime');
+  const maps = path.join(parser, 'architecture/@jason-map');
   fs.mkdirSync(core, { recursive: true });
   fs.mkdirSync(path.join(maps, 'vector'), { recursive: true });
   fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}');
   fs.writeFileSync(path.join(parser, '_path.js'), `export const MAP_DIR = ${JSON.stringify(maps)};`);
-  fs.copyFileSync(new URL('B.Parser/prised/@core/runtime/json-map.js', repo), path.join(core, 'json-map.js'));
+  fs.copyFileSync(new URL('B.Parser/architecture/@core/runtime/json-map.js', repo), path.join(core, 'json-map.js'));
   const loader = await import(pathToFileURL(path.join(core, 'json-map.js')).href);
   return { root, maps, ...loader };
 }

@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { advisoryOnce } from '../../host/advisory.js';
+import { advisoryOnce } from '../../public/advisory.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const MASTER_ENC = path.join(HERE, 'master.json.enc');

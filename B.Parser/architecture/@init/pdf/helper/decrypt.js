@@ -8,21 +8,18 @@ so this tree answers for its own stages end to end.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { createRequire } from "node:module";
 import { spawn, spawnSync } from "node:child_process";
 import { validatePdf } from "../../../@entry/helper/validator.js";
 
-import { fileURLToPath } from "node:url";
-
-// Where qpdf comes from, in order: the operator's override, the real binary,
-// then the pikepdf-backed shim in this repository. The shim exists because
-// every encrypted or object-stream PDF has to be prepared before it can be
-// read, so a machine without qpdf could not open those documents at all.
-const SHIM = fileURLToPath(new URL("../../../../tools-box/python/qpdf_shim.py", import.meta.url));
-const PYTHON = process.env.PRASER_PYTHON_BIN || "python3";
+// Prefer a system qpdf when available, with the bundled qpdf WASM CLI as the
+// portable fallback. Keep the Python parser/runtime out of this JS path.
+const require = createRequire(import.meta.url);
+const loadQpdfWasm = () => require("@jspawn/qpdf-wasm/qpdf.js");
 
 export function qpdfRunners() {
   if (process.env.PRASER_QPDF_BIN) return [{ bin: process.env.PRASER_QPDF_BIN, args: [] }];
-  return [{ bin: "qpdf", args: [] }, { bin: PYTHON, args: [SHIM] }];
+  return [{ bin: "qpdf", args: [] }, { bin: "qpdf-wasm", args: [] }];
 }
 
 let chosen = null;
@@ -41,9 +38,48 @@ export function qpdfRunner() {
       chosen = { bin: "qpdf", args: [] };
       return chosen;
     }
-  } catch { /* fall through to the shim */ }
-  chosen = { bin: PYTHON, args: [SHIM] };
+  } catch { /* fall through to the bundled WASM CLI */ }
+  chosen = { bin: "qpdf-wasm", args: [] };
   return chosen;
+}
+
+let wasmModulePromise;
+let wasmMounted = false;
+let wasmStdout = "";
+let wasmStderr = "";
+
+async function getQpdfWasmModule() {
+  if (!wasmModulePromise) {
+    const originalFetch = globalThis.fetch;
+    // This Emscripten build uses Node's filesystem loader when fetch is absent.
+    globalThis.fetch = undefined;
+    wasmModulePromise = loadQpdfWasm()({
+      noInitialRun: true,
+      print: (line) => { wasmStdout += `${line}\n`; },
+      printErr: (line) => { wasmStderr += `${line}\n`; },
+    }).finally(() => { globalThis.fetch = originalFetch; });
+  }
+  const module = await wasmModulePromise;
+  if (!wasmMounted) {
+    try { module.FS.mkdir("/host"); } catch (error) {
+      if (error.code !== "EEXIST") throw error;
+    }
+    module.FS.mount(module.NODEFS, { root: path.parse(process.cwd()).root }, "/host");
+    wasmMounted = true;
+  }
+  return module;
+}
+
+async function runQpdfWasm(args) {
+  wasmStdout = "";
+  wasmStderr = "";
+  const module = await getQpdfWasmModule();
+  const virtualArgs = args.map((arg) =>
+    path.isAbsolute(arg) ? `/host${path.resolve(arg)}` : arg);
+  const code = module.callMain(virtualArgs);
+  const stderr = wasmStderr.trim();
+  if (code === 0 || code === 3) return { warnings: stderr };
+  throw new Error(`qpdf exited with status ${code}${stderr ? `: ${stderr}` : ""}`);
 }
 
 // Run qpdf file to file; nothing passes through memory.
@@ -51,8 +87,11 @@ export function runQpdfFile(input, output, args = []) {
   if (typeof input !== "string" || typeof output !== "string" || !input || !output) {
     throw new TypeError("qpdf requires input and output file paths");
   }
+  const { bin, args: prefix } = qpdfRunner();
+  if (bin === "qpdf-wasm") {
+    return runQpdfWasm([...prefix, ...args, "--", path.resolve(input), path.resolve(output)]);
+  }
   return new Promise((resolve, reject) => {
-    const { bin, args: prefix } = qpdfRunner();
     const child = spawn(bin, [...prefix, ...args, "--", path.resolve(input), path.resolve(output)], {
       windowsHide: true,
       stdio: ["ignore", "ignore", "pipe"],

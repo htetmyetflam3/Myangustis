@@ -12,7 +12,7 @@ const DAILY_LIMIT = dailyLimit();
 function freshDb(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'linga-cq-'));
   const db = new Database(path.join(dir, 'site.db'));
-  migrate(db, { schemaFile: path.resolve(import.meta.dirname, '../../../B.Parser/host/Backend/db/schema.sql') });
+  migrate(db, { schemaFile: path.resolve(import.meta.dirname, '../../B.Parser/public/Backend/db/schema.sql') });
   t.after(() => {
     try { db.close(); } catch { /* closed */ }
     fs.rmSync(dir, { recursive: true, force: true });

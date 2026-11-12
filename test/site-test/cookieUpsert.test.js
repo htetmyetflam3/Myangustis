@@ -6,7 +6,7 @@ import path from 'node:path';
 import Database from 'better-sqlite3';
 import { migrate } from '../../B.Parser/public/Backend/db/migrate.js';
 
-const SCHEMA_FILE = path.resolve(import.meta.dirname, '../../../B.Parser/host/Backend/db/schema.sql');
+const SCHEMA_FILE = path.resolve(import.meta.dirname, '../../B.Parser/public/Backend/db/schema.sql');
 
 
 

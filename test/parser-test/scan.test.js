@@ -6,7 +6,7 @@ import path from "node:path";
 import {
   scanText, formatScanReport, PosScanner, scanTextWithPos, isPageNumberLine,
 } from "../../B.Parser/architecture/@postprocess/init.js";
-import { MAX_LINE_BYTES } from "../../../Architecture/Engine/MonoSyllabism/generators/SfomatterForP.js";
+import { MAX_LINE_BYTES } from "../../A.Engine/architecture/MonoSyllabism/generators/SfomatterForP.js";
 
 test("JavaScript scanner retains the structural scan rules", () => {
   const report = scanText("ကိ ိ သွားသွားသွား");

@@ -23,7 +23,7 @@ import { migrate } from '../../B.Parser/public/Backend/db/migrate.js';
 import { SqliteSessionStore } from '../../B.Parser/public/Backend/db/sessionStore.js';
 import { createRequest } from '../../B.Parser/public/Backend/db/request.js';
 
-const SCHEMA_FILE = path.resolve(import.meta.dirname, '../../../B.Parser/host/Backend/db/schema.sql');
+const SCHEMA_FILE = path.resolve(import.meta.dirname, '../../B.Parser/public/Backend/db/schema.sql');
 
 function freshDb(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'linga-db-'));

@@ -6,34 +6,34 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const repo = fileURLToPath(new URL('../../../', import.meta.url));
+const repo = fileURLToPath(new URL('../../', import.meta.url));
 
 for (const scenario of ['shared', 'missing-root', 'missing-entry', 'broken-entry', 'invalid-export']) {
   test(`Site workspace and environment: ${scenario}`, t => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'site-path-'));
     t.after(() => fs.rmSync(root, { recursive: true, force: true }));
-    const site = path.join(root, 'B.Parser', 'host');
+    const site = path.join(root, 'B.Parser', 'public');
     fs.mkdirSync(path.join(site, 'Backend/file'), { recursive: true });
     fs.mkdirSync(path.join(root, 'B.Parser'), { recursive: true });
     fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}');
     fs.writeFileSync(path.join(root, '.env'), 'SITE_CHAIN=root\nSITE_SHELL=root\n');
     fs.writeFileSync(path.join(site, '.env'), 'SITE_CHAIN=local\nSITE_SHELL=local\n');
-    for (const file of ['B.Parser/host/_path.js', 'B.Parser/host/Backend/file/paths.js',
-      'B.Parser/host/Backend/file/saveOriginfile.js', 'B.Parser/host/Backend/gateway/generator/rawSaver.js',
-      'B.Parser/host/Backend/gateway/generator/responses.js', 'Architecture/Engine/.data/secure.js',
-      'Architecture/host/advisory.js']) {
+    for (const file of ['B.Parser/public/_path.js', 'B.Parser/public/Backend/file/paths.js',
+      'B.Parser/public/Backend/file/saveOriginfile.js', 'B.Parser/public/Backend/gateway/generator/rawSaver.js',
+      'B.Parser/public/Backend/gateway/generator/responses.js', 'A.Engine/architecture/.data/secure.js',
+      'A.Engine/public/advisory.js']) {
       fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
       fs.copyFileSync(path.join(repo, file), path.join(root, file));
     }
     fs.writeFileSync(path.join(root, 'B.Parser/_path.js'), `
       export const OUTPUT_FONT_DIR = "/fonts/used";
-      export async function getEngineData() { return import('../../A.Engine/architecture/.data/secure.js'); }
+      export async function getEngineData() { return import('../A.Engine/architecture/.data/secure.js'); }
     `);
     if (scenario !== 'missing-root') fs.copyFileSync(path.join(repo, 'index-path.js'), path.join(root, 'index-path.js'));
     if (scenario !== 'missing-entry') {
       const entry = scenario === 'broken-entry' ? 'throw new Error("broken entry")' :
         scenario === 'invalid-export' ? 'export const JUNK_DIR = "relative"; export const ENV_RESULT = {sources:[]};' :
-          fs.readFileSync(path.join(repo, 'B.Parser/host/_index.js'), 'utf8');
+          fs.readFileSync(path.join(repo, 'B.Parser/public/_index.js'), 'utf8');
       fs.writeFileSync(path.join(site, '_index.js'), entry);
     }
     const env = { ...process.env, SITE_SHELL: 'shell' };
@@ -67,7 +67,7 @@ for (const scenario of ['shared', 'missing-root', 'missing-entry', 'broken-entry
     assert.equal(path.dirname(result.raw), path.join(runtime, '.output/txt'));
     assert.equal(result.text, 'hello');
     assert.equal(result.db, path.join(site, '.data/site.db'));
-    assert.equal(result.master, path.join(root, 'Architecture/Engine/.data/master.json.enc'));
+    assert.equal(result.master, path.join(root, 'A.Engine/architecture/.data/master.json.enc'));
     assert.equal(result.value, shared ? 'root' : 'local');
     assert.equal(result.shell, 'shell');
     assert.deepEqual(result.sources, [path.join(shared ? root : site, '.env')]);
@@ -85,11 +85,11 @@ for (const scenario of ['shared', 'missing-root', 'missing-entry', 'broken-entry
 test('Site fallback preserves previous output', t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'site-preserve-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
-  const site = path.join(root, 'B.Parser', 'host');
+  const site = path.join(root, 'B.Parser', 'public');
   const output = path.join(site, '.output');
   fs.mkdirSync(output, { recursive: true });
   fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}');
-  fs.copyFileSync(path.join(repo, 'B.Parser/host/_path.js'), path.join(site, '_path.js'));
+  fs.copyFileSync(path.join(repo, 'B.Parser/public/_path.js'), path.join(site, '_path.js'));
   fs.writeFileSync(path.join(output, 'keep.txt'), 'previous');
   const env = { ...process.env };
   delete env.PARSER_RUNTIME_DIR;
