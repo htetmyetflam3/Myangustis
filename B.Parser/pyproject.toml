@@ -1,0 +1,56 @@
+[project]
+name = "myangustis-parser"
+version = "0.2.2"
+description = "Extract and normalize Burmese text from PDFs. Handles Zawgyi-encoded embedded fonts and non-standard Unicode substitutions."
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Kaung Myat Thu", email = "htetmyet157@gmail.com"}
+]
+keywords = ["pdf", "zawgyi", "unicode", "burmese", "myanmar", "text-extraction", "font-embedding"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Text Processing :: Linguistic",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "flask>=3.0.0",
+    "myangustis-engine",
+    "fpdf2>=2.8.8",
+    "pypdf>=6.0",
+]
+
+[project.optional-dependencies]
+pdf-linearize = ["pikepdf>=8"]
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+myangustis-parse = "myangustis_parser.entry.cli:main"
+
+[tool.uv.sources]
+myangustis-engine = { workspace = true }
+
+[tool.setuptools]
+package-dir = { myangustis_parser = "architecture" }
+packages = [
+    "myangustis_parser",
+    "myangustis_parser.entry",
+    "myangustis_parser.extract",
+    "myangustis_parser.normalize",
+    "myangustis_parser.output",
+    "myangustis_parser.resources",
+    "myangustis_parser.workflow",
+]
+
+[tool.setuptools.package-data]
+"myangustis_parser.resources" = ["maps_data/*.json"]

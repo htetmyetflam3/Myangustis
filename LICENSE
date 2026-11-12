@@ -1,0 +1,184 @@
+MYANGUSTIS — PROPRIETARY SOFTWARE LICENSE AGREEMENT
+
+Copyright (c) 2025–2026 Kaung Myat Thu
+All Rights Reserved.
+
+NOTICE: This software and its source code are proprietary and confidential.
+This is NOT open source software. No license, right, or interest of any kind
+is granted to you except as expressly stated in a separate written agreement
+signed by the copyright holder.
+
+The former text of this file was the Apache License, Version 2.0. That license
+is HEREBY SUPERSEDED in its entirety for this repository and does NOT apply to
+any code, data, model, configuration, script, font subset, syllable tree,
+codepage map, or other artifact contained herein. The Apache License's
+permission to reproduce, prepare derivative works of, publicly display,
+publicly perform, sublicense, or distribute the Work is REVOKED as to this
+Work. Any prior forks or copies that were made under that superseded grant
+must be brought into compliance with this Agreement or destroyed.
+
+--------------------------------------------------------------------------
+1. DEFINITIONS
+--------------------------------------------------------------------------
+"Software" means the Myangustis program, including all source code, object
+code, scripts, syllable/cache trees, codepage registries, shape/vector maps,
+models, data files, configuration, tooling (tools-box/), Architecture/
+Engine, Bridge, B.Parser, C.Proofreading, D.Scraper, F.Site (both Backend
+and Frontend), test fixtures, documentation, and any updates, modifications,
+or derivative works thereof contained in this repository.
+
+"Licensor" means Kaung Myat Thu, the sole owner of the Software.
+
+"You" means any individual or legal entity that accesses, receives, or
+possesses a copy of the Software.
+
+--------------------------------------------------------------------------
+2. OWNERSHIP
+--------------------------------------------------------------------------
+The Software is licensed, not sold. The Licensor retains all right, title,
+and interest in and to the Software, including all copyrights, trade secrets,
+and other intellectual property rights therein. Any rights not expressly
+granted in writing are reserved by the Licensor. This includes — without
+limitation — the syllable/phoneme engine, the codepage and vector-repair
+pipelines, the Zawgyi/Unicode layout heuristics, the PDF/DOCX parsers, the
+proofreading tagger, the site service, and any data, tables, or tree
+structures shipped alongside them.
+
+--------------------------------------------------------------------------
+3. RESTRICTIONS
+--------------------------------------------------------------------------
+Without the prior express written permission of the Licensor, You may NOT:
+
+  (a) copy, reproduce, publish, archive, or mirror the Software, in whole or
+      in part, on any public or third-party code-hosting service, model
+      weight registry, dataset aggregator, or package registry (npm, PyPI,
+      Docker Hub, Hugging Face, and the like);
+  (b) distribute, sublicense, sell, rent, lease, lend, host, or otherwise
+      make the Software available to any third party, including as a
+      service (SaaS), API, hosted application, demo, or "live preview";
+  (c) modify, adapt, translate, or create derivative works of the Software
+      for the purpose of circumventing these restrictions or producing a
+      competing Burmese text-processing tool;
+  (d) reverse engineer, decompile, disassemble, deobfuscate (bytenode /
+      javascript-obfuscator output included), or otherwise attempt to
+      derive the source code or underlying algorithms of any obfuscated
+      or binary-delivered component of the Software, except to the limited
+      extent such restriction is prohibited by applicable law;
+  (e) remove, alter, or obscure any copyright, trademark, proprietary
+      notice, or license watermark contained in the Software;
+  (f) use the Software, or any part of it (including the syllable tree,
+      codepage registry, vector-shape maps, and any corpus-derived data),
+      to train, fine-tune, evaluate, distill, or otherwise develop any
+      machine learning or artificial intelligence model or dataset;
+  (g) fork this repository into a public repository or submit a public
+      pull request that exposes previously private modules;
+  (h) use the Software for any commercial purpose or in any production
+      environment without a separate commercial license from the Licensor.
+
+Unauthorized copying, distribution, or modification of this Software, via
+any medium (Git, archive, LLM training crawl, screenshot, paste site), is
+strictly prohibited and constitutes a violation of applicable copyright
+and trade secret law.
+
+--------------------------------------------------------------------------
+4. CONFIDENTIALITY
+--------------------------------------------------------------------------
+The Software constitutes confidential information and trade secrets of the
+Licensor. You shall use at least a reasonable degree of care to protect the
+Software from unauthorized disclosure and shall not disclose it to any third
+party without the Licensor's prior written consent. This includes — but is
+not limited to — preventing AI/ML crawlers, language-model training pipelines,
+and code-search indexers from ingesting any part of the repository.
+
+--------------------------------------------------------------------------
+5. TERMINATION
+--------------------------------------------------------------------------
+Any use of the Software in breach of this Agreement automatically terminates
+any permission You may have had, immediately and without notice. Upon
+termination, You must cease all use of the Software and permanently destroy
+all copies in Your possession or control. Sections 2, 4, 6, 7, 8, and 9
+survive termination.
+
+--------------------------------------------------------------------------
+6. NO WARRANTY
+--------------------------------------------------------------------------
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NONINFRINGEMENT. THE LICENSOR
+MAKES NO REPRESENTATION THAT THE SOFTWARE PRODUCES CORRECT MYANMAR SCRIPT
+OUTPUT, HANDLES EVERY ENCODING, OR IS FREE FROM DEFECTS.
+
+--------------------------------------------------------------------------
+7. LIMITATION OF LIABILITY
+--------------------------------------------------------------------------
+IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING
+FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE — INCLUDING WITHOUT LIMITATION LOSS OF DATA,
+MISPARSED DOCUMENTS, INCORRECT ENCODING CONVERSIONS, OR ANY INDIRECT,
+INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES.
+
+--------------------------------------------------------------------------
+8. THIRD-PARTY COMPONENTS — LICENSE AUDIT
+--------------------------------------------------------------------------
+A full dependency-license audit was performed against the package manifest
+(package.json / pyproject.toml) and the installed dependency tree. No package
+under a pure copyleft license (AGPL / LGPL / SSPL / CPAL / EUPL, or GPL
+without a permissive dual-license option) is included.
+
+Two categories of dependency require specific notice:
+
+  (a) DUAL-LICENSED MIT / GPL-3.0-or-later
+      jszip — used under the MIT option. The GPL alternative is NOT chosen.
+
+  (b) MPL-2.0 (file-level copyleft)
+      lightningcss, lightningcss-linux-x64-gnu, lightningcss-linux-x64-musl
+      (used by the Tailwind / Vite build toolchain at build time only).
+      These files are used verbatim, unmodified, as supplied by upstream.
+      You may replace them with a non-MPL CSS minifier/transformer in your
+      own fork; this repository does not modify MPL-2.0 source files.
+
+All remaining npm dependencies are under permissive licenses
+(MIT / ISC / Apache-2.0 / BSD-2-Clause / BSD-3-Clause / BlueOak-1.0.0 / 0BSD /
+CC0-1.0 / Zlib). The CC-BY-3.0 and CC-BY-4.0 entries (spdx-exceptions,
+spdx-ranges, caniuse-lite) are data/SPDX-list files, not code libraries,
+used only by build tooling (autoprefixer / browserslist) at build time.
+
+Python-side dependencies (pyproject.toml) are similarly permissive:
+beautifulsoup4 (MIT), cryptography (Apache-2.0/BSD), httpx (BSD),
+huggingface_hub (Apache-2.0), pikepdf (MPL-2.0 — used unmodified),
+pyarrow (Apache-2.0), pypdf (BSD), requests (Apache-2.0), selenium
+(Apache-2.0), tenacity (Apache-2.0), trio (MIT/Apache-2.0), trio-websocket
+(MIT), typing_extensions (PSF/MIT), urllib3 (MIT), websocket-client (Apache-2.0).
+
+Nothing in this Agreement modifies or restricts your rights in those
+third-party components under their own upstream licenses; this proprietary
+license applies only to the Licensor's own code and materials.
+
+--------------------------------------------------------------------------
+9. PREVIOUS APACHE-LICENSED CODE
+--------------------------------------------------------------------------
+To the extent any file in this repository was previously distributed under
+the Apache License, Version 2.0, it is now redistributed to You under this
+Agreement instead, with all permissions granted by the Apache License
+withdrawn and replaced by the restrictions above. You may not rely on any
+prior Apache grant as to copies obtained after the effective date of this
+Agreement.
+
+--------------------------------------------------------------------------
+10. GENERAL
+--------------------------------------------------------------------------
+This Agreement is the entire agreement between the parties regarding the
+Software and supersedes all prior discussions (including any README or
+package.json "license" field that may still name a permissive license — such
+metadata is informational and is overridden by this file). If any provision
+is held unenforceable, the remaining provisions remain in full force.
+Failure to enforce any provision is not a waiver of it.
+
+--------------------------------------------------------------------------
+CONTACT
+--------------------------------------------------------------------------
+For licensing inquiries, commercial use, or written permission, contact:
+
+  Kaung Myat Thu
+  https://github.com/htetmyetflam3/Myangustis
