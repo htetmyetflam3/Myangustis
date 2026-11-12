@@ -37,7 +37,7 @@ class RealOcrServiceTest(unittest.TestCase):
             result = convert(source, root / 'conversion.txt', include_text=True)
             self.assertTrue(result['ocrPages'])
             self.assertTrue(result['text'].strip())
-            job = parse_decoding(source, apply_cleanup=True)
+            job = parse_decoding(source)
             self.assertEqual(job['ocrPages'], result['ocrPages'])
             write_output_file(root / 'two-stage.txt', job)
             self.assertIn('posScan', job)

@@ -28,14 +28,17 @@ import sys
 from pathlib import Path
 
 from myangustis_parser.workflow import pipeline
-from myangustis_parser.entry.manager import (ManagerError, dispatch_bytes, dispatch_path,
-                                             prepare_job, render_text)
+from myangustis_parser.entry.manager import (ManagerError, dispatch_bytes, dispatch_ocr,
+                                             dispatch_path, ocr_pdf_job, prepare_job,
+                                             render_text)
 
 _IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".tif", ".tiff",
                    ".webp", ".gif", ".bmp")
 
 __all__ = [
     "convert",
+    "dispatch_ocr",
+    "ocr_pdf_job",
     "parse_decoding",
     "write_output_file",
     "ManagerError",
@@ -44,7 +47,7 @@ __all__ = [
 
 
 def convert(source, out_path, *, kind=None, filename=None, method=None,
-            apply_cleanup=True, include_text=False, source_encoding="auto",
+            include_text=False, source_encoding="auto",
             text_layout=None, log=None):
     """Convert one document, exactly like ``convert()`` in ``index.js``.
 
@@ -56,7 +59,6 @@ def convert(source, out_path, *, kind=None, filename=None, method=None,
     if isinstance(source, (bytes, bytearray, memoryview)):
         name = filename or ("input.pdf" if kind in (None, "pdf") else "input.docx")
         return dispatch_bytes(source, name, out_path, kind=kind, method=method,
-                              apply_cleanup=apply_cleanup,
                               include_text=include_text,
                               source_encoding=source_encoding,
                               text_layout=text_layout, log=log)
@@ -64,13 +66,12 @@ def convert(source, out_path, *, kind=None, filename=None, method=None,
     if not path.is_file():
         raise ManagerError(f"Input not found: {path}")
     return dispatch_path(path, out_path, kind=kind, filename=filename,
-                         method=method, apply_cleanup=apply_cleanup,
-                         include_text=include_text,
+                         method=method, include_text=include_text,
                          source_encoding=source_encoding,
                          text_layout=text_layout, log=log)
 
 
-def parse_decoding(source, *, kind=None, filename=None, apply_cleanup=False,
+def parse_decoding(source, *, kind=None, filename=None,
                    source_encoding="auto", text_layout=None, log=None):
     """Stage 2: input -> ``{"pages": [...], "counts": {...}, ...}``.
 
@@ -92,21 +93,17 @@ def parse_decoding(source, *, kind=None, filename=None, apply_cleanup=False,
                     else "ocr" if lowered.endswith(_IMAGE_SUFFIXES) else "pdf")
     job = prepare_job(data, os.path.basename(name), kind=kind,
                       source_encoding=source_encoding, text_layout=text_layout, log=log)
-    job["applyCleanup"] = bool(apply_cleanup)
     job["sourceEncoding"] = source_encoding
     return job
 
 
-def write_output_file(out_path, job, *, apply_cleanup=None):
+def write_output_file(out_path, job):
     """Stage 3: write a parsed job to ``.txt`` / ``.docx`` / ``.pdf``.
 
     Never re-opens the source document and never re-runs detection, so the
-    same parse can be written several times (plain, cleaned, another format)
-    without paying for the parse again.
+    same parse can be written several times without paying for the parse again.
     """
-    if apply_cleanup is None:
-        apply_cleanup = bool(job.get("applyCleanup", False))
-    pages = pipeline.build_final_pages(job, bool(apply_cleanup))
+    pages = pipeline.build_final_pages(job, True)
     written, job["posScan"] = pipeline.render_and_scan(
         out_path, pages, job.get("counts") or {}, job.get("filename") or "")
     return written

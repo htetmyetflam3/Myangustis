@@ -12,7 +12,6 @@ either one writes a **job JSON**, and the parser writes a **result JSON**:
         "inputKind":  "pdf",                # pdf | docx
         "method":     "manual",             # manual | default
         "output":     "docx",               # txt | docx | pdf
-        "applyCleanup": true,
         "includeText":  true,
         "includePreview": false,
         "sourceEncoding": "auto",           # auto | unicode | zawgyi-one
@@ -86,7 +85,6 @@ def run_job(request, *, caller=None, log=None):
 
     common = dict(kind=job.get("inputKind"),
                   method=job.get("method"),
-                  apply_cleanup=bool(job.get("applyCleanup", True)),
                   include_text=bool(job.get("includeText", True)),
                   include_preview=bool(job.get("includePreview", False)),
                   source_encoding=job.get("sourceEncoding") or "auto",
