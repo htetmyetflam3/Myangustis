@@ -67,25 +67,18 @@ under noun particle as a gender-related item; retaining both paths matters.
 Your override rules are your own operational rules, not names for the book's
 wibat categories. A rule may recognise, refine, or connect **any** category;
 the identifier must not imply that it belongs exclusively to a particular
-wibat type. These names are proposals for you to choose, not runtime labels:
+wibat type. The chosen series is **MOR** — **M**yangustis **O**verride
+**R**ule. The first rule is **`MOR-01`**.
 
-- **`MOR-01`** — **M**yangustis **O**verride **R**ule 01. My recommendation:
-  concise, identifies the owner/project, and works for future rules of any POS.
-- Alternatives: **`OR-01`** (Override Rule 01; simplest), **`ZOR-01`** (your
-  alien-sounding override rule series, with `Z` as a distinctive series letter,
-  not a grammatical category), or simply **`MY-RULE-01`**.
-- The number identifies the rule, not the grammatical type, order of
-  execution, final POS, sentence position, or priority. Those require separate
-  fields if needed. Do not assign `wi.nu.zor` as a new category/type name:
-  the existing output meaning is **ပိုင်ဆိုင်ခြင်းပြဝိဘတ်**.
-
-For this ledger, **`MOR-01` is a proposed working ID**, pending your choice.
-This does not rename your rule, change a POS tag, or create a runtime rule.
+The number identifies the rule, not the grammatical type, execution order,
+final POS, sentence position, or priority. Those require separate fields if
+needed. `MOR-01` names your rule; its output remains the existing grammatical
+type **ပိုင်ဆိုင်ခြင်းပြဝိဘတ်**. Naming the rule does not implement it.
 
 ### The first rule and its book-reference context
 
 ```
-My rule 01 (proposed ID MOR-01):
+My rule 01 (MOR-01):
     pronoun + bare ့  →  ပိုင်ဆိုင်ခြင်းပြဝိဘတ်
 
 Context / expectation proposed by the owner:
@@ -148,10 +141,10 @@ pipeline and is not evidence that contextual grammar rules are running.
 
 ## Proposed rules
 
-### `MOR-01` — owner’s pronoun + bare dot rule (proposed ID)
+### `MOR-01` — owner’s pronoun + bare dot rule
 
-**Status:** owner-defined rule, **not implemented**. `MOR-01` is only a proposed
-rule-series name. The output is the existing **ပိုင်ဆိုင်ခြင်းပြဝိဘတ်** type.
+**Status:** owner-defined rule, **not implemented**. The output is the existing
+**ပိုင်ဆိုင်ခြင်းပြဝိဘတ်** type.
 
 **Owner's rule:** `pronoun + bare dot below = ပိုင်ဆိုင်ခြင်းပြဝိဘတ်`.
 
@@ -229,8 +222,6 @@ proposed wibat type.
 - Define how the pronoun/mark relation is represented and where its wibat type
   belongs in the future output; the current schema has no agreed mark-level
   provenance/offset contract.
-- Choose a category-independent name for your override rule series; `MOR-01`
-  is only a suggestion.
 - Define “next cluster” and the noun-head expectation separately from rule
   matching; check the original book for a more direct reference.
 - Provide worked examples for how LSE/LSN resolves a `disambiguate` overlap,
