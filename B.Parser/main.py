@@ -250,7 +250,7 @@ def _modern_cli(argv):
     parser.add_argument('mode', choices=('parse', 'prase', 'ocr'))
     parser.add_argument('input', nargs='?')
     parser.add_argument('output', nargs='?')
-    parser.add_argument('--ssh', action='store_true', help='continuously read the configured remote queue; output is Parquet')
+    parser.add_argument('--ssh', action='store_true', help='continuously read the remote queue; parser writes Parquet and combined TXT')
     parser.add_argument('--continuous', action='store_true', help='watch a local input directory')
     service = parser.add_mutually_exclusive_group()
     service.add_argument('--service', action='store_true', help='install and start an independent systemd service')
@@ -258,7 +258,7 @@ def _modern_cli(argv):
     args = parser.parse_args(argv)
     mode = 'parse' if args.mode == 'prase' else args.mode
     if args.ssh and (args.input is not None or args.output is not None or args.continuous):
-        parser.error('--ssh uses the configured remote directory and Parquet output; no paths or --continuous')
+        parser.error('--ssh uses the configured remote directory and fixed output locations; no paths or --continuous')
     if args.service and not (args.ssh or args.continuous):
         parser.error('--service requires --ssh or --continuous')
     try:

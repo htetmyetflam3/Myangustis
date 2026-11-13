@@ -1,4 +1,4 @@
-"""Standalone, read-only SSH PDF queue and crash-recoverable Parquet export."""
+"""Read-only SSH PDF queue with recoverable Parquet and parser text exports."""
 from __future__ import annotations
 import fcntl
 import hashlib
@@ -104,6 +104,10 @@ def _open_db(state):
         segmented text not null, sha256 text not null, mode text not null)''')
     db.execute('create table if not exists export_state (id integer primary key, dirty integer not null)')
     db.execute('insert or ignore into export_state values (1, 1)')
+    db.execute('''create table if not exists text_export (
+        id integer primary key check(id=1), initialized integer not null,
+        bytes integer not null, last_rowid integer not null)''')
+    db.execute('insert or ignore into text_export values (1, 0, 0, 0)')
     db.commit()
     return db
 
@@ -130,6 +134,91 @@ def _export(db, output):
     db.commit()
 
 
+def _sync_dir(path):
+    fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def _sections(db, last_rowid=0):
+    """Stream source sections in insertion order rather than loading the book collection."""
+    for rowid, book, text in db.execute(
+            'select rowid, book, text from books where rowid > ? order by rowid', (last_rowid,)):
+        yield rowid, f'===== {book} =====\n{text}\n\n'.encode('utf-8')
+
+
+def _sync_text(db, output):
+    """Append/recover a single headed TXT from the durable parser ledger.
+
+    The tracked byte position is committed only after fsync. A crash while
+    appending is recovered by validating the tail against pending sections,
+    truncating that partial tail, and appending it again. A missing or shortened
+    tracked file is rebuilt atomically. Untracked existing text is never replaced.
+    """
+    initialized, expected, last_id = db.execute(
+        'select initialized, bytes, last_rowid from text_export where id=1').fetchone()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    if output.is_symlink():
+        raise RuntimeError(f'Refusing to modify a symlink as the text collection: {output}')
+    if not initialized:
+        if output.exists() and output.stat().st_size:
+            raise RuntimeError(f'Refusing to overwrite an untracked text collection: {output}')
+        db.execute('update text_export set initialized=1 where id=1')
+        db.commit()
+
+    if not output.exists() or output.stat().st_size < expected:
+        # Rebuild to a separate file, preserving the original until it is complete.
+        fd, name = tempfile.mkstemp(prefix='.parsed-books.', suffix='.tmp', dir=output.parent)
+        temp = Path(name)
+        try:
+            total, last = 0, 0
+            with os.fdopen(fd, 'wb') as stream:
+                for rowid, section in _sections(db):
+                    stream.write(section)
+                    total += len(section)
+                    last = rowid
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temp, output)
+            _sync_dir(output.parent)
+            db.execute('update text_export set bytes=?, last_rowid=? where id=1', (total, last))
+            db.commit()
+        finally:
+            temp.unlink(missing_ok=True)
+        return
+
+    size = output.stat().st_size
+    with output.open('r+b') as stream:
+        if size > expected:
+            # Only discard a tail which matches the beginning of pending data:
+            # unrelated manual additions must not be silently destroyed.
+            stream.seek(expected)
+            remaining = size - expected
+            for _, section in _sections(db, last_id):
+                if not remaining:
+                    break
+                chunk = section[:remaining]
+                if stream.read(len(chunk)) != chunk:
+                    raise RuntimeError(f'Text collection was modified outside the parser: {output}')
+                remaining -= len(chunk)
+            if remaining:
+                raise RuntimeError(f'Text collection was modified outside the parser: {output}')
+            stream.truncate(expected)
+        stream.seek(expected)
+        total, last = expected, last_id
+        for rowid, section in _sections(db, last_id):
+            stream.write(section)
+            total += len(section)
+            last = rowid
+        stream.flush()
+        os.fsync(stream.fileno())
+    if total != expected or last != last_id:
+        db.execute('update text_export set bytes=?, last_rowid=? where id=1', (total, last))
+        db.commit()
+
+
 def run_once(mode, convert, config=None, runtime=RUNTIME_ROOT):
     """Scan one remote folder; source files stay untouched; failures are retained."""
     config = config or remote_config(mode)
@@ -138,12 +227,17 @@ def run_once(mode, convert, config=None, runtime=RUNTIME_ROOT):
     state = runtime / 'state' / 'ssh' / mode
     state.mkdir(parents=True, exist_ok=True)
     output = runtime / 'output' / 'parquet' / ('books.parquet' if mode == 'parse' else 'ocr-books.parquet')
+    text_output = runtime / 'output' / 'txt' / 'parsed-books.txt' if mode == 'parse' else None
     with (state / 'queue.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         with _open_db(state) as db:
             count = db.execute('select count(*) from books').fetchone()[0]
             if output.exists() and count == 0:
                 raise RuntimeError(f'Refusing to overwrite untracked collection: {output}')
+            if text_output is not None and count == 0 and text_output.exists() and text_output.stat().st_size:
+                raise RuntimeError(f'Refusing to overwrite an untracked text collection: {text_output}')
+            if text_output is not None and count:
+                _sync_text(db, text_output)  # backfill existing entries and recover interrupted appends
             dirty = db.execute('select dirty from export_state where id=1').fetchone()[0]
             if count and (dirty or not output.exists()):
                 _export(db, output)  # recover an interrupted export
@@ -154,6 +248,7 @@ def run_once(mode, convert, config=None, runtime=RUNTIME_ROOT):
                 if shutil.disk_usage(state).free < DISK_FLOOR:
                     raise RuntimeError('Less than 5 GiB free; downloads paused to protect the disk.')
                 target = state / 'staging' / hashlib.sha256(key.encode()).hexdigest() / PurePosixPath(source).name
+                committed = False
                 try:
                     digest = download(config, source, target)
                     with tempfile.TemporaryDirectory(dir=state) as tmp:
@@ -170,12 +265,20 @@ def run_once(mode, convert, config=None, runtime=RUNTIME_ROOT):
                     db.execute('insert into books values (?,?,?,?,?,?)', (key, base, text, segmented, digest, mode))
                     db.execute('update export_state set dirty=1 where id=1')
                     db.commit()
+                    committed = True
+                    if text_output is not None:
+                        _sync_text(db, text_output)
                     _export(db, output)
                     target.unlink()
-                    print(f'[parser-ssh] {source} -> {output}', flush=True)
+                    destinations = f'{output} and {text_output}' if text_output is not None else str(output)
+                    print(f'[parser-ssh] {source} -> {destinations}', flush=True)
                 except Exception as exc:
+                    if not committed:
+                        db.rollback()
                     print(f'[parser-ssh] failed {source}: {exc}; local input retained', flush=True)
-                    # A committed DB row is exported at the start of the next scan.
+                    # Recover both outputs on the next scan before processing more books.
+                    if committed:
+                        break
     return output
 
 
