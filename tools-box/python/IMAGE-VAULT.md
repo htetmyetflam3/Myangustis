@@ -1,71 +1,76 @@
-# Personal image vault (experimental)
+# Personal SVG raster store
 
-This is separate from the engine and its dictionaries. You enter **your own
-named secrets** interactively: passwords, API tokens, the key that unlocks a
-JSON file, or an SSH private key. It does not open the engine's JSON, collect
-its contents, or create an `.env`.
+This tool uses your repository `sig.svg` artwork by default; the original is
+never overwritten. You enter your own names and values interactively: passwords,
+API keys, the key that unlocks a JSON file, or an SSH private key. The tool
+does **not** scan `.env` or open the engine's JSON.
 
-## Important limits
+## How entries are stored
 
-- **Experimental, not independently audited.** For important secrets, a
-  reputable password manager is safer. Hiding data in an image is not security.
-- Secret **values** are encrypted with AES-256-GCM using a key derived from your
-  passphrase with scrypt. Use a long, unique passphrase and keep a separate,
-  secure backup of it. Forgetting it means the secrets cannot be recovered.
-  Encryption authenticates the secret data, not the surrounding artwork or labels.
-- The **names/labels are visible** to anyone who inspects the SVG or its
-  embedded copy in PNG/JPEG metadata. Don't put a secret in a name.
-- PNG and JPEG have no editable SVG layers. The script embeds a recoverable
-  copy of the encrypted SVG as image metadata. Anyone can see/extract that SVG;
-  its secret values still require your passphrase.
-- Many websites, messengers, image editors, screenshots, and format converters
-  strip or change metadata. The picture may still look normal while the vault
-  is gone. Keep independent backups of the original vault files and test recovery.
-- Use only trusted SVG artwork. Rasterizing an SVG can access referenced local
-  or remote resources. Don't open untrusted SVGs, even as vaults.
-- Don't commit vaults or plaintext exports to Git, share them publicly, or assume
-  the pictures are private just because the data is invisible. The image includes
-  the original artwork as well as the encrypted vault and can be much larger.
-- If input and output are both PNG or both JPEG, the original image bytes are
-  preserved apart from added metadata. Converting formats or rasterizing SVG can
-  change rendering; JPEG is lossy and has no transparency.
+For each entry the tool appends one SVG group **without an ID**. It contains two
+small, fully transparent PNG images at the same position, in this order:
+
+1. The lower raster carries the entry's name and value as plain text in its PNG
+   `Comment` data; that PNG is base64-encoded inside the SVG.
+2. The upper raster is meaningless and fully transparent.
+
+No IDs are added to the new groups or their images. Existing IDs in `sig.svg`
+are left alone because the artwork may depend on them. The tool reads the
+first raster of each matching group to retrieve the entries. The extra groups
+have no visible effect on the original artwork in the tested renderer.
+
+**This is obscurity, not encryption.** Anyone who inspects and decodes the SVG
+can recover the names and values without a password. Don't put the image in Git,
+share it publicly, or assume an export will strip the data. The tool saves new
+files with owner-only permissions where supported; access to your unlocked
+account or a copy of the file still exposes the secrets.
+
+Copy the original SVG file byte-for-byte for backup, and test opening the copy.
+Editors, optimizers, re-exporting, or conversion may remove or change the raster
+groups and lose some or all data. They may also **preserve** it, so stripping is
+not a reliable safety net for accidental sharing. There is no integrity check
+that can reliably detect every removed group. Keep the file outside project
+folders that you might bulk-delete.
 
 ## Create
 
-Run locally, not in a shared terminal. Secret input requires an interactive
-terminal with echo disabled. `uv` installs this script's dependencies
-for the command; alternatively install `cryptography`, `Pillow` and `resvg-py`
-in your Python environment.
+Run locally in a private interactive terminal. `uv` installs this script's
+legacy-compatibility dependency; alternatively install `cryptography` in your
+Python environment.
 
 ```bash
-uv run tools-box/python/image_vault.py create \
-  --svg /private/vault.svg --png /private/vault.png --jpg /private/vault.jpg
+uv run tools-box/python/image_vault.py create --svg ~/my-private-image.svg
 ```
 
-This uses the repository's `sig.svg` by default without modifying it. To use
-another trusted source image, provide its path after `create` instead. You may
-choose any one or more outputs. Use a **clean source image**; existing vault
-images aren't modified or overwritten. Enter a name, then a
-secret with hidden input. For a multiline private key already stored in a file,
-enter `@` followed by its path at the secret prompt. `@@` starts a literal
-secret with `@`. A blank name ends entry. Enter your new vault passphrase twice.
-SVG groups preserve each item name as an ID/label, but contain no visible shapes.
+Enter a name and a value for each entry. Values are hidden while typed, but they
+are **not encrypted** in the SVG. Enter `@` followed by a path to read a
+multiline SSH key from an existing local file. `@@` begins a literal value with
+`@`. Leave the name empty when done. No vault passphrase is required.
 
-## Open or recover
+Use another trusted SVG by passing its path after `create`. The output must be
+a **new** `.svg` file; the script refuses to overwrite the input or any file.
+The new format is SVG-only: the script no longer creates PNG or JPEG outputs.
+
+## Retrieve or add
 
 ```bash
-# Displays your decrypted secrets in the terminal after asking for the passphrase.
-uv run tools-box/python/image_vault.py open /private/vault.png
+# Print the stored names and values; don't do this in a shared terminal.
+uv run tools-box/python/image_vault.py open ~/my-private-image.svg
 
-# Recovers the encrypted SVG from image metadata (no passphrase required).
-uv run tools-box/python/image_vault.py recover-svg /private/vault.jpg /private/recovered.svg
-
-# Decrypt into a NEW plaintext JSON file with restrictive permissions instead:
-uv run tools-box/python/image_vault.py open /private/recovered.svg --output /private/secrets.json
+# Add NEW names to a separate SVG; the first file remains unchanged.
+uv run tools-box/python/image_vault.py add ~/my-private-image.svg --svg ~/my-private-image-2.svg
 ```
 
-A plaintext export is optional and contains real secrets: protect it and delete
-it when finished. The tool won't overwrite output files. It does not upload
-anything itself; vault authentication, sync, backup and safe storage are your
-responsibility. If metadata has already been stripped, the raster image cannot
-recover it.
+`add` refuses duplicate names and does not currently change or remove existing
+entries. Check the new file and its backup before deciding what to do with the
+older file: both contain readable secrets. `open --output /private/out.json`
+optionally writes a new owner-only plaintext JSON file instead of printing;
+protect and delete that export when finished.
+
+## Earlier encrypted images
+
+Images made with the previous version are not converted automatically. `open`
+still reads the old SVG/PNG/JPEG vaults with their **existing passphrase**;
+`recover-svg` can recover the earlier SVG from its PNG/JPEG metadata. New SVG
+raster entries have no passphrase. The tool does not upload files or manage
+backups for you.

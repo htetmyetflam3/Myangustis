@@ -32,9 +32,10 @@ class ReportTracker:
 
 
 class Logen:
-    def __init__(self, *, batch=False, file=None, checks=False):
+    def __init__(self, *, batch=False, file=None, checks=False, console=None):
         self.batch, self.file = batch, Path(file) if file else None
         self.checks_enabled = checks
+        self.console = console or print
         self.reports = {}
         self.listeners = defaultdict(list)
         self.checks = []
@@ -58,8 +59,12 @@ class Logen:
         data = data or {}
         stamp = datetime.now().strftime('%H:%M:%S.%f')[:-3]
         if not self.batch or level in ('fail', 'error'):
-            extra = ' '.join(f'{k}={v}' for k, v in data.items() if v is not None and v != '')
-            print(f'{stamp} [{module}] {level.upper():<7} {event} {extra}'.rstrip())
+            def safe(value):
+                # One event must stay on one console line, even for filenames.
+                return ''.join(f'\\u{ord(ch):04x}' if ord(ch) < 32 or ord(ch) == 127 else ch
+                               for ch in str(value))
+            extra = ' '.join(f'{k}={safe(v)}' for k, v in data.items() if v is not None and v != '')
+            self.console(f'{stamp} [{module}] {level.upper():<7} {event} {extra}'.rstrip())
         self.append_file(f'[{stamp}] [{module}] {level} {event} {json.dumps(data, ensure_ascii=False)}')
 
     def on_event(self, name, callback): self.listeners[name].append(callback)

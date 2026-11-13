@@ -1,13 +1,13 @@
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["cryptography>=42", "Pillow>=10", "resvg-py>=0.5"]
+# dependencies = ["cryptography>=42"]
 # ///
-"""Encrypt personal secrets into an SVG and/or recoverable PNG/JPEG metadata.
+"""Keep named personal secrets in transparent rasters inside an SVG.
 
-These files are NOT a conventional password manager. Labels in the SVG are
-visible; values are AES-GCM encrypted with a passphrase-derived key. Image
-editing, messaging and hosting services may strip metadata. Keep independent
-backups and do not commit vault images to Git. See IMAGE-VAULT.md.
+New values are NOT encrypted. Each new SVG group has two transparent raster
+images, with the name and value in the lower PNG's metadata. Anyone inspecting
+the SVG can read them without a password. See IMAGE-VAULT.md. Legacy encrypted
+vaults remain readable with their existing passphrase.
 """
 from __future__ import annotations
 
@@ -15,7 +15,6 @@ import argparse
 import base64
 import binascii
 import getpass
-import io
 import json
 import os
 from pathlib import Path
@@ -61,11 +60,7 @@ def _unb64(value):
         raise VaultError('Invalid vault encoding.') from exc
 
 
-def _derive(passphrase, salt):
-    return Scrypt(salt=salt, length=32, n=32768, r=8, p=1).derive(passphrase.encode('utf-8'))
-
-
-def encrypt_items(items, passphrase):
+def _validate_items(items):
     if not isinstance(items, dict) or not items:
         raise VaultError('At least one named secret is required.')
     if any(not isinstance(k, str) or not k.strip() or not isinstance(v, str) or not v
@@ -74,6 +69,47 @@ def encrypt_items(items, passphrase):
     raw = json.dumps(items, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
     if len(raw) > MAX_SECRETS:
         raise VaultError('The combined secrets are too large (maximum 1 MiB).')
+    return raw
+
+
+def encode_items(items):
+    """Version 2 contains readable secrets; base64 in the SVG is not encryption."""
+    _validate_items(items)
+    return json.dumps({'version': 2, 'items': items}, ensure_ascii=False, separators=(',', ':'))
+
+
+def envelope_version(envelope):
+    try:
+        data = json.loads(envelope)
+        if not isinstance(data, dict) or data.get('version') not in (1, 2):
+            raise VaultError('Unsupported vault format.')
+        return data['version']
+    except (ValueError, TypeError) as exc:
+        raise VaultError('Invalid vault data.') from exc
+
+
+def decode_items(envelope, *, legacy_passphrase=None):
+    """Read unencrypted v2 or, with its existing password, a legacy v1 vault."""
+    version = envelope_version(envelope)
+    if version == 1:
+        if legacy_passphrase is None:
+            raise VaultError('This older encrypted image requires its existing passphrase.')
+        return decrypt_items(envelope, legacy_passphrase)
+    try:
+        items = json.loads(envelope)['items']
+        _validate_items(items)
+        return items
+    except (KeyError, ValueError, TypeError) as exc:
+        raise VaultError('Invalid vault data.') from exc
+
+
+def _derive(passphrase, salt):
+    return Scrypt(salt=salt, length=32, n=32768, r=8, p=1).derive(passphrase.encode('utf-8'))
+
+
+def encrypt_items(items, passphrase):
+    """Legacy v1 writer kept for compatibility and tests; CLI creates v2 only."""
+    raw = _validate_items(items)
     salt, nonce = os.urandom(16), os.urandom(12)
     ciphertext = AESGCM(_derive(passphrase, salt)).encrypt(nonce, raw, AAD)
     return json.dumps({'version': 1, 'salt': _b64(salt), 'nonce': _b64(nonce),
@@ -155,24 +191,6 @@ def add_svg_vault(svg, names, envelope):
     return result
 
 
-def image_as_svg(image):
-    from PIL import Image
-    try:
-        with Image.open(io.BytesIO(image)) as im:
-            width, height = im.size
-            kind = im.format
-            if width <= 0 or height <= 0 or width * height > 100_000_000:
-                raise VaultError('Image dimensions exceed the safety limit.')
-            if kind not in ('PNG', 'JPEG'):
-                raise VaultError('Input image must be SVG, PNG or JPEG.')
-    except (OSError, ValueError) as exc:
-        raise VaultError('Invalid image.') from exc
-    mime = 'image/png' if kind == 'PNG' else 'image/jpeg'
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
-            f'viewBox="0 0 {width} {height}"><image width="{width}" height="{height}" '
-            f'href="data:{mime};base64,{_b64(image)}"/></svg>').encode('utf-8')
-
-
 def _png_chunks(data):
     if not data.startswith(PNG_SIGNATURE):
         raise VaultError('Not a PNG image.')
@@ -194,6 +212,108 @@ def _png_chunks(data):
                 raise VaultError('Unexpected data after PNG end.')
             return
     raise VaultError('PNG has no complete end marker.')
+
+
+def _png_chunk(kind, body):
+    return (struct.pack('>I', len(body)) + kind + body
+            + struct.pack('>I', zlib.crc32(kind + body) & 0xffffffff))
+
+
+def _transparent_png(*, name=None, value=None):
+    """An invisible 8x8 PNG; when present, the item is plain text in Comment."""
+    rows = bytearray()
+    for _ in range(8):
+        rows.append(0)  # PNG filter: none
+        for _ in range(8):
+            rows.extend(os.urandom(3))
+            rows.append(0)  # transparent regardless of the random colour bytes
+    header = struct.pack('>IIBBBBB', 8, 8, 8, 6, 0, 0, 0)
+    chunks = [_png_chunk(b'IHDR', header)]
+    if name is not None:
+        comment = json.dumps({'name': name, 'value': value}, ensure_ascii=True,
+                             separators=(',', ':')).encode('ascii')
+        chunks.append(_png_chunk(b'tEXt', b'Comment\0' + comment))
+    chunks.extend((_png_chunk(b'IDAT', zlib.compress(bytes(rows))), _png_chunk(b'IEND', b'')))
+    return PNG_SIGNATURE + b''.join(chunks)
+
+
+def raster_items(svg):
+    """Read item comments from the first of two embedded rasters in each group."""
+    root = _svg_root(svg)
+    tag_g = '{http://www.w3.org/2000/svg}g'
+    tag_image = '{http://www.w3.org/2000/svg}image'
+    found = {}
+    for group in root.iter(tag_g):
+        children = list(group)
+        if len(children) != 2 or any(child.tag != tag_image for child in children):
+            continue
+        hrefs = [child.get('href') or child.get('{http://www.w3.org/1999/xlink}href', '')
+                 for child in children]
+        prefix = 'data:image/png;base64,'
+        if not all(h.startswith(prefix) for h in hrefs):
+            continue
+        try:
+            png = _unb64(hrefs[0][len(prefix):])
+            comments = [body[len(b'Comment\0'):] for kind, body, _, _ in _png_chunks(png)
+                        if kind == b'tEXt' and body.startswith(b'Comment\0')]
+        except VaultError:
+            continue  # unrelated or damaged image in the source artwork
+        for comment in comments:
+            try:
+                item = json.loads(comment.decode('ascii'))
+            except (UnicodeError, ValueError):
+                continue
+            if (not isinstance(item, dict) or set(item) != {'name', 'value'}
+                    or not isinstance(item['name'], str) or not item['name'].strip()
+                    or not isinstance(item['value'], str) or not item['value']):
+                continue
+            if item['name'] in found:
+                raise VaultError('Duplicate item names found in the SVG.')
+            found[item['name']] = item['value']
+    if found:
+        _validate_items(found)
+    return found
+
+
+def create_raster_svg(svg, items, *, allow_existing=False):
+    """Append one anonymous, invisible two-raster group per named item."""
+    _validate_items(items)
+    root = _svg_root(svg)
+    if any(n.attrib.get(VAULT_ATTRIBUTE) == '1' for n in root.iter()):
+        raise VaultError('This SVG contains a legacy vault; open it instead.')
+    existing = raster_items(svg)
+    if existing and not allow_existing:
+        raise VaultError('This SVG already contains secrets; use the add command.')
+    if allow_existing and not existing:
+        raise VaultError('No existing raster entries found; use the create command.')
+    if set(existing) & set(items):
+        raise VaultError('One or more item names already exist in the SVG.')
+    combined = {**existing, **items}
+    _validate_items(combined)
+    opening = re.search(br'<(?P<prefix>[A-Za-z_][\w.-]*:)?svg(?:\s|>)', svg)
+    endings = list(re.finditer(br'</(?P<prefix>[A-Za-z_][\w.-]*:)?svg\s*>', svg))
+    if not opening or not endings:
+        raise VaultError('The SVG must have an explicit closing svg tag.')
+    prefix = opening.group('prefix') or b''
+    ending = next((m for m in reversed(endings) if (m.group('prefix') or b'') == prefix), None)
+    if ending is None:
+        raise VaultError('Could not locate the closing SVG tag.')
+    p = prefix.decode('ascii')
+    groups = []
+    for name, value in items.items():
+        lower = _b64(_transparent_png(name=name, value=value))
+        upper = _b64(_transparent_png())
+        groups.append((f'<{p}g><{p}image width="1" height="1" '
+                       f'href="data:image/png;base64,{lower}"/>'
+                       f'<{p}image width="1" height="1" '
+                       f'href="data:image/png;base64,{upper}"/></{p}g>').encode('ascii'))
+    added = b'\n' + b'\n'.join(groups) + b'\n'
+    result = svg[:ending.start()] + added + svg[ending.start():]
+    if len(result) > MAX_SVG:
+        raise VaultError('Resulting SVG is too large (maximum 40 MiB).')
+    if raster_items(result) != combined:
+        raise VaultError('Could not safely insert the raster data into this SVG.')
+    return result
 
 
 def _png_payload(data):
@@ -276,7 +396,7 @@ def recover_svg(data):
     elif data.startswith(JPEG_SIGNATURE):
         payload = _jpeg_payload(data)
     else:
-        svg_envelope(data)
+        _svg_root(data)
         return data
     if payload is None:
         raise VaultError('No image vault metadata found. It may have been stripped.')
@@ -289,53 +409,6 @@ def recover_svg(data):
         raise VaultError('Damaged image vault metadata.') from exc
     svg_envelope(svg)
     return svg
-
-
-def rasterize(svg, fmt):
-    try:
-        from resvg_py import svg_to_bytes
-        from PIL import Image
-        # Only use SVGs you trust: rendering may access external references.
-        png = svg_to_bytes(svg_string=svg.decode('utf-8'))
-    except Exception as exc:
-        raise VaultError('Could not render SVG; check the SVG and resvg-py installation.') from exc
-    if fmt == 'png':
-        return png
-    with Image.open(io.BytesIO(png)) as im:
-        im.load()
-        rgba = im.convert('RGBA')
-        background = Image.new('RGB', rgba.size, 'white')
-        background.paste(rgba, mask=rgba.getchannel('A'))
-        out = io.BytesIO()
-        background.save(out, format='JPEG', quality=95)
-        return out.getvalue()
-
-
-def create_outputs(source, items, passphrase, *, svg=False, png=False, jpg=False):
-    if len(source) > MAX_IMAGE:
-        raise VaultError('Input image is too large (maximum 24 MiB).')
-    if source.startswith(PNG_SIGNATURE):
-        if _png_payload(source) is not None:
-            raise VaultError('Input PNG already contains a vault.')
-        base_svg = image_as_svg(source)
-    elif source.startswith(JPEG_SIGNATURE):
-        if _jpeg_payload(source) is not None:
-            raise VaultError('Input JPEG already contains a vault.')
-        base_svg = image_as_svg(source)
-    else:
-        base_svg = source
-    enveloped = add_svg_vault(base_svg, list(items), encrypt_items(items, passphrase))
-    compressed = zlib.compress(enveloped, level=9)
-    result = {}
-    if svg:
-        result['svg'] = enveloped
-    if png:
-        original = source if source.startswith(PNG_SIGNATURE) else rasterize(enveloped, 'png')
-        result['png'] = png_embed(original, compressed)
-    if jpg:
-        original = source if source.startswith(JPEG_SIGNATURE) else rasterize(enveloped, 'jpg')
-        result['jpg'] = jpeg_embed(original, compressed)
-    return result
 
 
 def save_new(path, data):
@@ -364,8 +437,8 @@ def secret_prompt(message):
             raise VaultError('Cannot disable terminal echo; refusing to read a secret.') from exc
 
 
-def collect_items():
-    print('Enter a name for each secret. Names are VISIBLE in the SVG metadata.')
+def collect_items(existing=()):
+    print('Enter a name for each secret. Names and values are NOT encrypted.')
     print('Values are hidden. Enter @ followed by a path for a private-key file; @@ starts a literal @ value.')
     print('Press Enter on an empty name when finished.')
     items = {}
@@ -373,7 +446,7 @@ def collect_items():
         name = input('Name (blank to finish): ').strip()
         if not name:
             break
-        if name in items:
+        if name in items or name in existing:
             print('That name is already used; choose another.', file=sys.stderr)
             continue
         value = secret_prompt('Secret (or @path): ')
@@ -393,61 +466,66 @@ def collect_items():
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
-    create = commands.add_parser('create', help='read secrets interactively and create vault images')
+    create = commands.add_parser('create', help='read secrets interactively and create an SVG')
     create.add_argument('image', nargs='?', type=Path, default=DEFAULT_IMAGE,
-                        help='trusted source SVG, PNG or JPEG (default: repository sig.svg)')
-    create.add_argument('--svg', type=Path, help='new SVG vault file')
-    create.add_argument('--png', type=Path, help='new PNG vault file')
-    create.add_argument('--jpg', type=Path, help='new JPEG vault file')
-    extract = commands.add_parser('open', help='decrypt secrets from a vault image')
+                        help='trusted source SVG (default: repository sig.svg)')
+    create.add_argument('--svg', type=Path, required=True, help='new SVG file')
+    add = commands.add_parser('add', help='add new secrets to an existing SVG, saving a new copy')
+    add.add_argument('image', type=Path, help='existing SVG with raster entries')
+    add.add_argument('--svg', type=Path, required=True, help='new SVG file (original is not overwritten)')
+    extract = commands.add_parser('open', help='read secrets from a vault image')
     extract.add_argument('image', type=Path)
     extract.add_argument('--output', type=Path, help='write plaintext JSON to a new private file instead of the terminal')
-    restore = commands.add_parser('recover-svg', help='recover the encrypted SVG from a PNG or JPEG')
+    restore = commands.add_parser('recover-svg', help='recover SVG from a legacy PNG or JPEG vault')
     restore.add_argument('image', type=Path)
-    restore.add_argument('output', type=Path, help='new SVG file; no decryption is performed')
+    restore.add_argument('output', type=Path, help='new SVG file containing the embedded secrets')
     args = parser.parse_args(argv)
     try:
-        if args.command in ('create', 'open') and not sys.stdin.isatty():
-            raise VaultError('A private interactive terminal is required for secret entry and passphrases.')
-        if args.command == 'create':
-            paths = {name: getattr(args, name) for name in ('svg', 'png', 'jpg') if getattr(args, name)}
-            if not paths:
-                raise VaultError('Choose at least one output: --svg, --png or --jpg.')
-            resolved = [p.resolve() for p in paths.values()]
-            if len(set(resolved)) != len(resolved) or args.image.resolve() in resolved:
-                raise VaultError('Output paths must be distinct and different from the input.')
-            for kind, path in paths.items():
-                valid = {'.svg'} if kind == 'svg' else ({'.png'} if kind == 'png' else {'.jpg', '.jpeg'})
-                if path.suffix.lower() not in valid:
-                    raise VaultError(f'Output for --{kind} must have the matching file extension.')
-                if path.exists():
-                    raise VaultError(f'Refusing to overwrite: {path}')
+        if args.command in ('create', 'add') and not sys.stdin.isatty():
+            raise VaultError('A private interactive terminal is required for secret entry.')
+        if args.command in ('create', 'add'):
+            if args.svg.suffix.lower() != '.svg':
+                raise VaultError('Output must have the .svg extension.')
+            if args.image.resolve() == args.svg.resolve():
+                raise VaultError('Output must be different from the original image.')
+            if args.svg.exists():
+                raise VaultError(f'Refusing to overwrite: {args.svg}')
             if args.image.stat().st_size > MAX_IMAGE:
-                raise VaultError('Input image is too large (maximum 24 MiB).')
+                raise VaultError('Input SVG is too large (maximum 24 MiB).')
             source = args.image.read_bytes()
-            items = collect_items()
+            _svg_root(source)
+            existing = raster_items(source)
+            if args.command == 'add' and not existing:
+                raise VaultError('No existing raster entries found; use the create command.')
+            if args.command == 'create' and existing:
+                raise VaultError('This SVG already contains secrets; use the add command.')
+            items = collect_items(existing)
             if not items:
                 raise VaultError('No secrets entered; nothing was saved.')
-            password = secret_prompt('New vault passphrase (at least 12 characters): ')
-            if len(password) < 12:
-                raise VaultError('Choose a passphrase of at least 12 characters.')
-            if password != secret_prompt('Repeat vault passphrase: '):
-                raise VaultError('Passphrases did not match; nothing was saved.')
-            outputs = create_outputs(source, items, password, svg='svg' in paths, png='png' in paths, jpg='jpg' in paths)
-            for name, path in paths.items():
-                save_new(path, outputs[name])
-                print(f'Created {path}')
-            print('Keep separate backups. Secret names are visible; image services may strip metadata.')
+            result = create_raster_svg(source, items, allow_existing=args.command == 'add')
+            save_new(args.svg, result)
+            print(f'Created {args.svg}')
+            print('WARNING: secrets are NOT encrypted. Anyone inspecting the SVG can read them.')
+            print('Keep a byte-for-byte backup outside the project.')
         elif args.command == 'recover-svg':
             if args.image.stat().st_size > MAX_ARCHIVE:
                 raise VaultError('Vault image is too large (maximum 80 MiB).')
             save_new(args.output, recover_svg(args.image.read_bytes()))
-            print(f'Recovered encrypted SVG: {args.output}')
+            print(f'Recovered SVG: {args.output}. It may contain readable secrets; keep it private.')
         else:
             if args.image.stat().st_size > MAX_ARCHIVE:
                 raise VaultError('Vault image is too large (maximum 80 MiB).')
             svg = recover_svg(args.image.read_bytes())
-            items = decrypt_items(svg_envelope(svg), secret_prompt('Vault passphrase: '))
+            items = raster_items(svg)
+            if not items:
+                # Read vaults made by the previous version without losing access.
+                envelope = svg_envelope(svg)
+                if envelope_version(envelope) == 1:
+                    if not sys.stdin.isatty():
+                        raise VaultError('Older encrypted vaults require an interactive terminal for the existing passphrase.')
+                    items = decode_items(envelope, legacy_passphrase=secret_prompt('Existing vault passphrase: '))
+                else:
+                    items = decode_items(envelope)
             data = json.dumps(items, ensure_ascii=False, indent=2).encode('utf-8') + b'\n'
             if args.output:
                 save_new(args.output, data)

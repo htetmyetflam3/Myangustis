@@ -1083,7 +1083,8 @@ class DocumentDecoding:
 
     __slots__ = ("kind", "map", "key_kind", "trust_font_tounicode",
                  "legacy_text_fix", "legacy_code_page", "loader", "_decoders",
-                 "_page_fonts", "zawcode_profiles", "zawcode_templates", "zawcode_order", "zawcode_stats")
+                 "_page_fonts", "zawcode_profiles", "zawcode_templates", "zawcode_order", "zawcode_stats",
+                 "lane_observer")
 
     def __init__(self, kind, mapping=None, legacy_code_page=None):
         self.kind = kind
@@ -1111,6 +1112,7 @@ class DocumentDecoding:
         self.zawcode_templates = None
         self.zawcode_order = None
         self.zawcode_stats = None
+        self.lane_observer = None
 
     def reset_font_cache(self):
         """Drop cached decoders.
@@ -1393,13 +1395,23 @@ class FontDecoder:
         return self._cid_to_gid(cid)
 
     # -- decoding ---------------------------------------------------------
+    def _observe_lane(self, text, lane):
+        # Ignore Latin, punctuation and unresolved slots; they are not a
+        # Myanmar Unicode/legacy parsing decision. Called only on actual hits.
+        if self.doc.lane_observer and text and any(
+                ("\u1000" <= ch <= "\u109f" or "\ua9e0" <= ch <= "\ua9ff"
+                 or "\uaa60" <= ch <= "\uaa7f")
+                and unicodedata.category(ch)[0] in ("L", "M") for ch in text):
+            self.doc.lane_observer(lane)
+        return text
+
     def decode_code(self, code, cid=None):
         """Decode ONE character code to text (``None`` when unmapped)."""
         tu = self._trusted_tounicode
         if tu is not None:
             hit = tu.get(code)
             if hit is not None:
-                return hit
+                return self._observe_lane(hit, "unicode")
         if not self.is_cid:
             if self.has_encoding:
                 # The font DECLARED what its codes mean. Never fall through to
@@ -1407,15 +1419,17 @@ class FontDecoder:
                 # Latin /WinAnsiEncoding resource used to be re-read as
                 # Myanmar glyph ids when it shared a font program with the
                 # Myanmar resource.
-                return self.encoding.get(code)
+                return self._observe_lane(self.encoding.get(code), "unicode")
             bridged = self._legacy_lookup(code)
             if bridged is not None:
-                return bridged
-            return self._doc_lookup(code)
+                return self._observe_lane(bridged, "legacy")
+            return self._observe_lane(self._doc_lookup(code),
+                                      "legacy" if self.doc.kind == "legacy" else "unicode")
         cid = code if cid is None else cid
         key = cid if (self.doc.key_kind == "code" or self.doc.map is IDENTITY) \
             else self.gid_for(cid)
-        return self._doc_lookup(key)
+        return self._observe_lane(self._doc_lookup(key),
+                                  "legacy" if self.doc.kind == "legacy" and self.zawcode_glyphs is None else "unicode")
 
     def decode(self, data):
         """Decode a shown string (``bytes``) with this font's rules."""

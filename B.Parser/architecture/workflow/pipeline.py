@@ -65,6 +65,7 @@ from myangustis_parser.resources.font_names import has_only_unicode_fonts
 from myangustis_parser.output import markup
 from myangustis_parser.normalize.unicode_evidence import preserve_regional_runs
 from myangustis_parser.workflow import finish
+from myangustis_parser.workflow.lane_log import LaneLog
 
 # Pages probed with direct Identity-H decoding before deciding whether the
 # document needs the ToUnicode / embedded-font-cmap fallback path.
@@ -250,8 +251,19 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
         stats = getattr(code_to_uni, 'zawcode_stats', None)
         before = stats['glyphs'] if stats is not None else 0
         font_names = set()
-        lines, w, h = extract_page_lines(objects, pnum, pgen, code_to_uni,
-                                         used_myanmar_fonts=font_names)
+        # Probes may decode the same page more than once. Record locally, and
+        # emit only if this particular page is yielded by the chosen strategy.
+        lane_trace = []
+        def observe(lane):
+            if not lane_trace or lane_trace[-1] != lane:
+                lane_trace.append(lane)
+        previous_observer = code_to_uni.lane_observer
+        code_to_uni.lane_observer = observe
+        try:
+            lines, w, h = extract_page_lines(objects, pnum, pgen, code_to_uni,
+                                             used_myanmar_fonts=font_names)
+        finally:
+            code_to_uni.lane_observer = previous_observer
         used_draft_font = stats is not None and stats['glyphs'] > before
         return {
             "idx": idx,
@@ -263,6 +275,7 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
             # because the cmap fork below needs it (JS: pg.decodeKind).
             "decode_kind": getattr(code_to_uni, "kind", None),
             "font_names": font_names,
+            "lane_trace": lane_trace,
             "text_path": None if text_path == 'zawcode' and not used_draft_font else text_path,
         }
 
@@ -523,7 +536,8 @@ def _cmap_fork(cat, raw, decode_kind, idx, category, log):
 
 
 def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
-                       want_layout=False, *, text_layout=None, source_encoding="auto"):
+                       want_layout=False, *, text_layout=None, source_encoding="auto",
+                       book_name=None):
     """Single-pass streaming pipeline. Returns ``(metadata, npages, iterator)``.
 
     The iterator yields one dict per page and keeps only ONE page alive at a
@@ -544,10 +558,19 @@ def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
     metadata, npages, pages = stream_pdf_pages(pdf_path, detector=detector, log=log,
                                                 text_layout=text_layout)
 
+    lane_log = LaneLog(book_name or os.path.basename(pdf_path))
+
     def reports():
+        try:
+            yield from _reports()
+        finally:
+            lane_log.flush()
+
+    def _reports():
         for pg in pages:
             idx = pg["idx"]
             raw = pg["text"]
+            lane_log.stem(idx + 1, pg.get("lane_trace", ()))
             named_zawgyi = has_only_zawgyi_fonts(pg.get("font_names"))
             category, prob = ("ZAWGYI", 1.0) if named_zawgyi else detector.detect(raw)
             cat = _norm_category(category)
@@ -571,7 +594,11 @@ def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
                     value = finish.clean(converted, apply_cleanup=apply_cleanup)
                     lines.append((*line[:3], value, line[4] if len(line) > 4 else None))
                 rep.update({'lines': lines, 'wh': pg['wh'], 'has_img': pg['has_img']})
-            log(f"    Page {idx + 1}: {parsing_path} -> {result['decision']}")
+            decision = result['decision']
+            if pg.get('text_path') == 'zawcode':
+                decision = ('zawcode-draft' if decision == 'aligned'
+                            else f"zawcode-draft+{decision}")
+            lane_log.finish_page(idx + 1, decision)
             yield rep
 
     return metadata, npages, reports()
@@ -824,7 +851,7 @@ def process_pdf_bytes(data, detector, filename="upload.pdf", log=lambda m: None,
         # build_final_pages / build_content apply cleanup unconditionally.
         metadata, npages, reports_iter = process_pdf_stream(
             tmp_path, detector, False, log=log, want_layout=True, text_layout=text_layout,
-            source_encoding=source_encoding)
+            source_encoding=source_encoding, book_name=filename)
         reports = []
         pages = []
         counts = {"ZAWGYI": 0, "UNICODE": 0, "UNKNOWN": 0}

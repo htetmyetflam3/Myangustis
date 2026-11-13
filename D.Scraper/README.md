@@ -45,3 +45,12 @@ successful books in the selected folder can be backfilled from Parquet. A PDF
 is only released from local staging after both outputs succeed; failed inputs
 are retained and are not automatically retried. Image-only PDFs are not sent to
 this text-parser service; use the separate OCR workflow for those.
+
+### Parser lane decision logging
+
+Set `PARSER_LOG_ENABLED=on` in the VPS repository-root `.env` and restart
+`scraper-parse.service` to append lane decisions to
+`B.Parser/logs/lane-decisions.log`. `PARSER_LOG_FILE` can select another path.
+When off (the default), decision messages still appear in the service journal.
+See [Parser lane logging](../B.Parser/README.md#pdf-lane-decision-log) for
+page ranges, lane-switch behavior, and log-file handling.
