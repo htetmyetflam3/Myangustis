@@ -3,6 +3,9 @@ import unittest
 from copy import deepcopy
 
 from myangustis_engine.bridge.Ginit import run_rule_engine
+from myangustis_engine.Lexical_No_inspect.abstract.posoverride import (
+    run_rule_engine as run_pos_override,
+)
 
 
 class PosStageTests(unittest.TestCase):
@@ -27,6 +30,22 @@ class PosStageTests(unittest.TestCase):
         self.assertTrue(all(t['matches'] == [] for t in tokens))
         self.assertEqual([t['position'] for t in tokens], [0, 1, 2, 3])
         self.assertEqual([(line['lineIndex'], line['isEos']) for line in result], [(0, True), (1, False)])
+        self.assertEqual(lines, before)
+
+    def test_standalone_override_is_js_passthrough(self):
+        lines = [{'isEos': None, 'tokens': [
+            {'syllables': ['က'], 'ids': ['A001'], 'rawPos': ['n', 'v']},
+            {'syllables': ['ခ'], 'ids': ['B001'], 'rawPos': ['v']},
+        ]}]
+        before = deepcopy(lines)
+        line = list(run_pos_override(lines, hash='ignored'))[0]
+        first, second = line['tokens']
+        self.assertEqual(first['rawPos'], ['n', 'v'])
+        self.assertEqual(first['finalPos'], 'n')
+        self.assertTrue(first['isAmbiguous'])
+        self.assertEqual(first['matches'], [])
+        self.assertEqual(second['finalPos'], 'v')
+        self.assertFalse(line['isEos'])
         self.assertEqual(lines, before)
 
     def test_empty_candidates(self):
