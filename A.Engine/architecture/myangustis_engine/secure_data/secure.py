@@ -8,7 +8,11 @@ import re
 ENGINE_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ENGINE_ROOT / '.data'
 MASTER_ENC = Path(os.environ.get('MYANGUSTIS_MASTER_ENC', DATA_DIR / 'master.json.enc'))
-MASTER_KEY_FILE = Path(os.environ.get('MYANGUSTIS_MASTER_KEY_FILE', DATA_DIR / 'master.key.txt'))
+# Prefer the conventional local key if present; the bundled test key is public.
+_DEFAULT_KEY_FILE = DATA_DIR / 'master.key.txt'
+if not _DEFAULT_KEY_FILE.exists():
+    _DEFAULT_KEY_FILE = DATA_DIR / 'note.test.txt'
+MASTER_KEY_FILE = Path(os.environ.get('MYANGUSTIS_MASTER_KEY_FILE', _DEFAULT_KEY_FILE))
 
 
 def _key():

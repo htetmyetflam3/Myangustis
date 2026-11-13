@@ -7,6 +7,12 @@ POS tagger and formatters. `init/bridge.py` is the public engine entry;
 No Node, JS child process or WASM is used at runtime. The bridge has one
 hash-free streaming path; it does not expose positional API responses.
 
+This checkout includes a sample encrypted master, generated trees, and their
+**public test key** at `architecture/myangustis_engine/.data/note.test.txt`.
+Renaming a key does not keep it secret; do not use this key to protect private
+data. For production, use a separately stored master and key as shown below.
+The packaged wheel excludes these local runtime files.
+
 From the repository root:
 
 ```sh
@@ -19,7 +25,7 @@ export MYANGUSTIS_TREE_DIR=/private/prebuilt-trees
 ```
 
 The builder is a separate operation; the runtime requires existing trees and
-never builds them. Keep the master and key outside the repository. The tree
+never builds them. Keep production master data and keys outside the repository. The tree
 manifest checks file consistency, not authenticity or confidentiality.
 
 ```python
