@@ -62,110 +62,76 @@ label. Record these as **different source assertions**, not an automatic
 resolution. Likewise `ကို` is listed under noun wibat as object marker and
 under noun particle as a gender-related item; retaining both paths matters.
 
-## Wibat naming proposal — starting point, not runtime names
+## Naming your rules — independent of grammatical categories
 
-These are **invented, compact identifiers** for discussion, not established
-Burmese grammatical terminology and not names already present in the code.
-The Burmese names and existing lists remain the authority for which node is
-which. Choose or replace any code before implementing it.
+Your override rules are your own operational rules, not names for the book's
+wibat categories. A rule may recognise, refine, or connect **any** category;
+the identifier must not imply that it belongs exclusively to a particular
+wibat type. These names are proposals for you to choose, not runtime labels:
 
-### Recommended structure
+- **`MOR-01`** — **M**yangustis **O**verride **R**ule 01. My recommendation:
+  concise, identifies the owner/project, and works for future rules of any POS.
+- Alternatives: **`OR-01`** (Override Rule 01; simplest), **`ZOR-01`** (your
+  alien-sounding override rule series, with `Z` as a distinctive series letter,
+  not a grammatical category), or simply **`MY-RULE-01`**.
+- The number identifies the rule, not the grammatical type, order of
+  execution, final POS, sentence position, or priority. Those require separate
+  fields if needed. Do not assign `wi.nu.zor` as a new category/type name:
+  the existing output meaning is **ပိုင်ဆိုင်ခြင်းပြဝိဘတ်**.
 
-`wi.<family>.<type>` names a **wibat type**, not a word, style or rule:
+For this ledger, **`MOR-01` is a proposed working ID**, pending your choice.
+This does not rename your rule, change a POS tag, or create a runtime rule.
 
-- `wi` = wibat category; `nu` = noun family; `vu` = verb family.
-- `wi.nu.zor` = **ပိုင်ဆိုင်ခြင်းပြဝိဘတ်**, the possessive/associated relation.
-  Pronounce it “wee noo zor”. `zor` is arbitrary; it is not a claim about
-  Burmese etymology or an existing engine tag. `nu` follows the existing
-  `wibat.noun` inventory; it does not change the pronoun POS. It covers the
-  owner’s Burmese category rather than asserting literal legal ownership.
-- Use a separate rule ID such as `r.wi.zor.01` for **pronoun + bare dot →
-  `wi.nu.zor`**. The type and the rule that discovers it are not the same.
-- Suggested separate marker notation: `mk.dot` = the bare U+1037 input mark;
-  this names the **form**, not its grammatical function. The same glyph is not
-  automatically `zor` in every context.
-- `w` and `pn` remain existing raw POS tags; `wi.nu.zor` is a proposed
-  richer classification, **not** a replacement raw tag or a change to the
-  master. LSE/LSN and `BOTH` are not components of the type name.
-
-Example notation, once the owner’s pattern is matched:
+### The first rule and its book-reference context
 
 ```
-pronoun + mk.dot  --r.wi.zor.01-->  wi.nu.zor
+My rule 01 (proposed ID MOR-01):
+    pronoun + bare ့  →  ပိုင်ဆိုင်ခြင်းပြဝိဘတ်
+
+Context / expectation proposed by the owner:
+    a possessive wibat expects a noun in the next cluster.
 ```
 
-For readability in discussion one may say **“zor-wibat”**, and keep the
-full ID `wi.nu.zor` in the ledger. Alternate equally valid names for the same
-node are `wi.nu.pos` (transparent shorthand) or `wi.nu.vax` (more alien).
-Only one should eventually be chosen; aliases must not create duplicate types.
+These are two different things: the first is **your override rule**; the
+bracketed expectation is a grammatical relation to investigate in the book
+reference. Do not silently turn the expectation into a mandatory condition for
+firing the override, or assume “next cluster” equals the next raw POS token.
+How clusters are delimited and how the expectation behaves across modifiers,
+omission, and ambiguity remain to be designed.
 
-### Complete `wibat` node inventory from `mainrules`
+**Closest identified JSON reference:** `simple_sentence_patterns[12]`, ID
+`SP_13`, reference `§63(ဍ)`, has pattern `SUBJ + POSSESSION +
+SUBJ_COMPLEMENT + VERB` and the example `ဤစာအုပ်သည် မောင်ဘ၏ စာအုပ် ဖြစ်သည်။`
+Here `မောင်ဘ၏` is followed by `စာအုပ်` in the example. This supports looking
+at a possessor/possessed-noun relationship, but it is a **whole-sentence
+example**, not a named general rule saying every possessive wibat must be
+immediately followed by a noun or a direct statement of the bare-`့` rule.
 
-The labels below are proposed mnemonic aliases, not conclusions about the
-listed markers. An **empty list means the source has not assigned a surface
-here**, not that the function is impossible. Each item is a type node unless
-it is explicitly identified as a disambiguation queue.
+Another relevant example is `word_order_constraints`, `WOC_09`, §208(ခ)(၃):
+`မသန်မစွမ်းသူများ၏ ငါးကြိမ်မြောက် အားကစားပြိုင်ပွဲကို ...`. It places an
+ordinal modifier between the possessive phrase and the head noun. This is
+why a future “next cluster expects a noun” relation should be designed at the
+**cluster/head** level, not reduced to “the next token must have `n`”.
+`WOC_09` itself concerns ordinal modifier placement; it is not a dedicated
+possessive-wibat rule. Neither JSON entry proves the complete bracketed rule.
 
-| Family | Proposed ID | `mainrules` Burmese node | Source-list status / examples |
-|---|---|---|---|
-| noun | `wi.nu.sub` | ကတ္တားဝိဘတ် | empty |
-| noun | `wi.nu.obj` | ကံဝိဘတ် | `ကို` |
-| noun | `wi.nu.src` | ထွက်ခွာရာပြဝိဘတ် | `မှ` |
-| noun | `wi.nu.dir` | ရှေးရှုရာပြဝိဘတ် | empty; keep separate from endpoint |
-| noun | `wi.nu.end` | ဆိုက်ရောက်ရာပြဝိဘတ် | `ထိ`, `အထိ`, `ထိအောင်` |
-| noun | `wi.nu.ins` | အသုံးခံပြဝိဘတ် | empty |
-| noun | `wi.nu.cau` | အကြောင်းပြဝိဘတ် | `ကြောင့်` |
-| noun | `wi.nu.rec` | လက်ခံပြဝိဘတ် | `အား` |
-| noun | `wi.nu.loc` | နေရာပြဝိဘတ် | empty in mainrules |
-| noun | `wi.nu.tim` | အချိန်ပြဝိဘတ် | empty in mainrules |
-| noun | `wi.nu.zor` | ပိုင်ဆိုင်ခြင်းပြဝိဘတ် | empty in mainrules; first owner rule targets it |
-| noun | `wi.nu.fit` | လိုက်လျောပြဝိဘတ် | `အရ`, `အတိုင်း`, … |
-| noun | `wi.nu.com` | ယှဉ်တွဲပြဝိဘတ် | `နှင့်အတူ`, `နှင့်တကွ` |
-| noun | `wi.nu.sep` | ခွဲထုတ်ရာပြဝိဘတ် | `အနက်`, `အထဲမှာ`, `အထဲမှ` |
-| noun | `wi.nu.pur` | ရည်စူးချက်ပြဝိဘတ် | `ငှာ`, `ဖို့`, `အတွက်`, … |
-| noun | `wi.nu.spc` | နေရာဆက်တိုက်ပြဝိဘတ် | empty |
-| noun | `wi.nu.dur` | အချိန်ဆက်တိုက်ပြဝိဘတ် | `ပတ်လုံး`, `လုံးလုံး` |
-| verb | `wi.vu.prs` | ပစ္စုပ္ပန်ကာလပြကြိယာဝိဘတ် | empty |
-| verb | `wi.vu.pst` | အတိတ်ကာလပြကြိယာဝိဘတ် | `ပြီ` |
-| verb | `wi.vu.fut` | အနာဂတ်ကာလပြကြိယာဝိဘတ် | `မည်`, `လိမ့်မည်`, … |
-| verb | `wi.vu.cmd` | စေခိုင်းဝိဘတ် | `လော့` |
-| verb | `wi.vu.jnt` | ညှိနှိုင်းဝိဘတ် | `စို့`, `ရအောင်` |
-| verb | `wi.vu.wsh` | ဆန္ဒညွှန်ဝိဘတ် | `ပါရစေ`, `ပါစေ` |
-| verb | `wi.vu.ord` | အမိန့်ချဝိဘတ် | `စေ`; keep separate from `cmd` |
+### Starting inventory: `wibat`
 
-Queue nodes are **not types**: `wibat.noun.disambiguate` contains `က`, `မှာ`,
-`သို့`, `ဖြင့်`, `နှင့်`, `၌`, `တွင်`, `ဝယ်`, `တိုင်တိုင်`, `တိုင်အောင်`;
-`wibat.disambiguate` contains `သည်`, `၏`. Don't name a resolved class
-`wi.nu.disambiguate`. Store the queue position and **all possible category /
-family / type paths**, and resolve them using the owner’s LSE/LSN and context
-principles above. No mapping for an ambiguous occurrence is asserted here.
+The `wibat` section is the working inventory; the rest of the grammar-book
+JSON is reference/context, not a ready-made classifier. Its `noun` family
+contains nodes for subject, object, source, direction, endpoint, instrument,
+cause, recipient, place, time, **ပိုင်ဆိုင်ခြင်းပြဝိဘတ်**, conformity,
+comitative, separation, purpose, and spatial/temporal continuation. The
+`verb` family has present/past/future and directive/coordination/wish/order
+nodes. Preserve the Burmese source node names: those English summaries are
+navigation aids, not replacement definitions.
 
-### Why source paths must remain visible
-
-The draft template is useful but not the source of an automatic answer:
-`mainrules.wibat.noun.ပိုင်ဆိုင်ခြင်းပြဝိဘတ်` is empty, while the draft
-`LSE_Map`/`LSN_Map` lists `၏` there; `mainrules.wibat.disambiguate` also lists
-`၏`. Similarly the draft adds noun-location entries to a node left empty in
-mainrules. These are **source differences to retain for review**, not reasons
-to fill missing lists, discard the disambiguation queue, or assign `BOTH` from
-style membership. Sentence and clause templates may supply later context;
-the rest of the grammar-book data is reference material, not an implemented
-classifier or a prerequisite for naming the wibat nodes.
-
-### Proposed annotation for the first rule (concept only)
-
-```
-rule:        r.wi.zor.01
-input:       confirmed pronoun + bare mk.dot (U+1037)
-result:      category=wi, family=nu, type=zor
-source:      owner-defined rule; mainrules wibat noun type
-state:       proposed / not runtime
-```
-
-The label identifies the grammatical function; it does not decide whether
-future output should represent `mk.dot` as a separate token or as a relation
-attached to its pronoun. That is an implementation representation question,
-not a doubt about the owner’s stated rule.
+In `mainrules.wibat.noun`, the possessive node is **empty**;
+`wibat.disambiguate` lists `သည်` and `၏`. In the separate draft template,
+`LSE_Map`/`LSN_Map` list `၏` under the possessive noun node. These are
+source assertions to keep distinct, not permission to collapse ambiguity or
+invent a new spelling entry. Your pronoun + bare-mark rule is **additional to
+that inventory**; it is not a new name for the book's wibat type.
 
 ## Existing runtime rules and stage behavior
 
@@ -182,10 +148,10 @@ pipeline and is not evidence that contextual grammar rules are running.
 
 ## Proposed rules
 
-### `DRAFT-POS-001` — pronoun + bare dot below → possessive wibat
+### `MOR-01` — owner’s pronoun + bare dot rule (proposed ID)
 
-**Status:** proposed by owner; **not implemented**. Name and output schema are
-working labels. The Burmese label requested is **ပိုင်ဆိုင်ခြင်းပြဝိဘတ်**.
+**Status:** owner-defined rule, **not implemented**. `MOR-01` is only a proposed
+rule-series name. The output is the existing **ပိုင်ဆိုင်ခြင်းပြဝိဘတ်** type.
 
 **Owner's rule:** `pronoun + bare dot below = ပိုင်ဆိုင်ခြင်းပြဝိဘတ်`.
 
@@ -263,6 +229,10 @@ proposed wibat type.
 - Define how the pronoun/mark relation is represented and where its wibat type
   belongs in the future output; the current schema has no agreed mark-level
   provenance/offset contract.
+- Choose a category-independent name for your override rule series; `MOR-01`
+  is only a suggestion.
+- Define “next cluster” and the noun-head expectation separately from rule
+  matching; check the original book for a more direct reference.
 - Provide worked examples for how LSE/LSN resolves a `disambiguate` overlap,
   and how sentence-role evidence resolves a `BOTH` family/type overlap.
 - Replace lossy `particleToClass` flattening only after agreeing on a
