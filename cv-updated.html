@@ -127,6 +127,10 @@ section{ scroll-margin-top: calc(var(--nav-h) + 20px); }
 @media (max-width:640px){ .ref-grid{ grid-template-columns:1fr; } }
 .ref-card{ background:#f8fafc; border:1px solid var(--line); border-radius:12px; padding:20px 16px; text-align:center; }
 .ref-avatar{ width:52px; height:52px; border-radius:50%; margin:0 auto 10px; display:grid; place-items:center; background:var(--navy); color:#fff; font-weight:800; }
+.sample-details{ margin-top:18px; border:1px solid var(--line); border-radius:12px; padding:16px; background:#f8fafc; }
+.sample-details summary{ cursor:pointer; font-weight:700; color:var(--navy); }
+.sample-details h3{ font-size:1.05rem; margin:18px 0 8px; }
+.sample-details p{ line-height:1.8; overflow-wrap:anywhere; }
 .salary{ background:var(--navy); color:#fff; border-radius:14px; padding:26px; }
 .salary .tag{ font-size:.72rem; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:#93c5fd; margin-bottom:6px; }
 .salary .amount{ font-size:2rem; font-weight:800; letter-spacing:-.02em; }
@@ -302,16 +306,27 @@ footer a{ color:var(--navy); text-decoration:none; }
   <section class="cv-section" id="references">
     <div class="sec-head"><div class="kicker">07 — References</div><h2>Reference Letters</h2></div>
     <div class="ref-grid mb-4">
-      <div class="ref-card"><div class="ref-avatar">R1</div><div class="job-title">Reference 1</div><div class="job-meta">Letter available on request</div></div>
-      <div class="ref-card"><div class="ref-avatar">R2</div><div class="job-title">Reference 2</div><div class="job-meta">Letter available on request</div></div>
-      <div class="ref-card"><div class="ref-avatar">R3</div><div class="job-title">Reference 3</div><div class="job-meta">Letter available on request</div></div>
+      <div class="ref-card"><div class="ref-avatar">R1</div><div class="job-title">Reference 1</div><a href="https://drive.google.com/uc?export=view&amp;id=1KG9ewRu48N3WnjSfFvRYK5LhdpVRmb43" target="_blank" rel="noopener noreferrer">View reference letter 1</a></div>
+      <div class="ref-card"><div class="ref-avatar">R2</div><div class="job-title">Reference 2</div><a href="https://drive.google.com/uc?export=view&amp;id=1VwgSzeDYjemt6AA9O_D7EM30rQGAnchW" target="_blank" rel="noopener noreferrer">View reference letter 2</a></div>
+      <div class="ref-card"><div class="ref-avatar">R3</div><div class="job-title">Reference 3</div><a href="https://drive.google.com/uc?export=view&amp;id=1I54WQ9kL0G7cEDs3exd7bfuTCqiKgpz" target="_blank" rel="noopener noreferrer">View reference letter 3</a></div>
     </div>
+    <details class="sample-details mb-4">
+      <summary>Read writing sample excerpts</summary>
+      <p class="job-meta mt-2">Short excerpts from translation, adapted game writing and creative writing. The sample document is linked below.</p>
+      <h3>Literary translation — <em>If I Die in a Combat Zone, Box Me Up and Ship Me Home</em></h3>
+      <p lang="my">တစ်နေ့တွင်, “ဒါမျိုးပေါ့ မယုံနိင်စရာဆိုတာ ၊၊ဟုတ်တယ်မလား။ တောကြိုခြုံကြား တစ်လမ်းလုံး သောက်ဖားပြုတ်တွေလို ဟိုခုန်တက် ဒီခုန်ဆင်းနဲ့ ကိုယ့်ကိုယ်ကိုယ် မနည်းသယ်ရတဲ့အထဲ ကျည်ဆန်ကလဲရှောင်ရသေးတယ်။ဒီလို သွားရမယ်လို့ ခင်ဗျား အရင်တုန်းကတွေးဖူးလား၊၊ Cleveland မှာသာဆိုရင် ဟေ့လူ ကျုပ် အေးဆေးနှပ်နေတုန်းနေမှာ”</p>
+      <h3>Game lore adaptation — Carl, the Invoker</h3>
+      <p lang="my">အဲဒီခေတ် အစောပိုင်းကာလတွေမှာ မှော်ပညာက အရာရာပဲလို့ တစ်ချို့က ပြောကြတယ်၊၊ စိတ်မှတ်ဉာဏ်ရဲ့ခြယ်သမှု အနုပညာတစ်ခုလို့လဲဆိုကြတယ်။ ကျင့်သုံးဖို့အတွက်ဆိုရင်တော့ တခြားနည်းလမ်းတွေနဲ့ နှင်တံလို အသုံးဆောင်ပစ္စည်းတွေ မလိုအပ်ပဲ မှော်ဆရာရဲ့စိတ်ပဲ လိုတယ်။</p>
+      <p class="job-meta">Source: Dota 2 Liquipedia.</p>
+      <h3>Creative writing — RGB</h3>
+      <p lang="my">အဲဒီတုန်းက... သွားနေကြနေရာကို ပုံမှန်ခြေလှမ်းတွေနဲ့ ထုံစံအတိုင်း သွားရမယ့်လမ်းပေါ်မှာသွားနေတုန်း လူတစ်ယောက်နဲ့ အမှတ်မထင်ဆုံခဲ့တယ်။ ရုတ်တရက် သူ့လက်ထဲက ရောင်စုံဖလင်ပြားလေးတွေ ကျွန်တော့်ကို ကမ်းပြီးတစ်ကတ်ရွေးပြီးရင်အဲ့မင်းရွေးလိုက်တဲ့ကတ် က ဘာအရောင်ဆိုတာ အဲရွေးထားတဲ့ကတ်ပေါ်ပြန်ရေးပေး ။ မင်းမှန်မယ်ထင်လားဆိုပြီး ပြော လာတယ်။</p>
+    </details>
     <div class="salary">
       <div class="tag">Expected Salary</div>
       <div class="amount">MMK 650,000</div>
       <p class="mb-3">Open to both <strong class="text-white">part-time and full-time</strong> opportunities. Multi-skilled, reliable, and creative professional.</p>
       <div class="d-flex flex-wrap gap-2">
-        <a href="#" class="btn btn-light">View Sample Document</a>
+        <a href="https://docs.google.com/document/d/1drKD2vOqPHfUOkSpwGKXI1XeRiFdS49fiZhcfsPH0xc/edit?usp=drivesdk" class="btn btn-light" target="_blank" rel="noopener noreferrer">View Sample Document</a>
         <a href="/cdn-cgi/l/email-protection#9af1f7eedafeffecf4f5ecffe2b4e9f2f5eaa5e9eff8f0fff9eea7d0f5f8bfa8aad5eaeaf5e8eeeff4f3eee3" class="btn btn-ghost-light">Contact</a>
       </div>
     </div>
