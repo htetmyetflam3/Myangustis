@@ -1,26 +1,24 @@
-"""Personal image vault: encrypted secrets, invisible metadata and recovery."""
+"""Personal SVG vault: anonymous transparent rasters and recovery."""
+import base64
+import hashlib
 import importlib.util
 import io
+import json
 import os
 from pathlib import Path
+import shutil
 import tempfile
 import unittest
 from unittest.mock import patch
 import xml.etree.ElementTree as ET
 
 from PIL import Image
+from resvg_py import svg_to_bytes
 
 ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location('image_vault', ROOT / 'tools-box/python/image_vault.py')
 vault = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(vault)
-
-
-def make_image(fmt, *, noise=False):
-    image = Image.frombytes('RGB', (600, 600), os.urandom(600 * 600 * 3)) if noise else Image.new('RGB', (4, 3), (28, 73, 199))
-    out = io.BytesIO()
-    image.save(out, format=fmt)
-    return out.getvalue()
 
 
 def pixels(data):
@@ -30,72 +28,101 @@ def pixels(data):
 
 
 class ImageVaultTests(unittest.TestCase):
-    def test_png_svg_jpeg_recover_secrets_and_keep_png_pixels(self):
-        original = make_image('PNG')
-        items = {'SerpApi': 'sensitive-secret-314159', 'SSH personal': 'first line\nsecond line\n'}
-        result = vault.create_outputs(original, items, 'correct horse battery staple', svg=True, png=True, jpg=True)
-        self.assertEqual(pixels(original), pixels(result['png']))
-        for data in result.values():
-            with self.subTest(length=len(data)):
-                svg = vault.recover_svg(data)
-                self.assertEqual(svg, result['svg'])
-                self.assertNotIn(b'sensitive-secret-314159', data)
-                self.assertEqual(vault.decrypt_items(vault.svg_envelope(svg), 'correct horse battery staple'), items)
-                with self.assertRaisesRegex(vault.VaultError, 'Wrong passphrase'):
-                    vault.decrypt_items(vault.svg_envelope(svg), 'not-the-password')
-        root = ET.fromstring(result['svg'])
-        self.assertEqual([g.attrib['data-label'] for g in root.iter() if 'data-label' in g.attrib], list(items))
-        self.assertIn(b'SerpApi', result['svg'])  # labels are intentionally visible
+    def test_sig_artwork_uses_one_anonymous_two_raster_group_per_secret(self):
+        original = (ROOT / 'sig.svg').read_bytes()
+        initial_hash = hashlib.sha256(original).hexdigest()
+        items = {'SerpApi': 'fake-sensitive-secret-314159', 'SSH personal': 'first line\nsecond line\n'}
+        before = vault._svg_root(original)
+        result = vault.create_raster_svg(original, items)
+        after = vault._svg_root(result)
+        self.assertEqual(vault.raster_items(result), items)
+        self.assertEqual(hashlib.sha256((ROOT / 'sig.svg').read_bytes()).hexdigest(), initial_hash)
+        # New groups have no id or label attributes, and no visible elements.
+        self.assertEqual(len(after), len(before) + len(items))
+        added = list(after)[-len(items):]
+        prefix = 'data:image/png;base64,'
+        for group, (name, value) in zip(added, items.items()):
+            self.assertEqual(group.tag, '{http://www.w3.org/2000/svg}g')
+            self.assertEqual(group.attrib, {})
+            self.assertEqual(len(group), 2)
+            for child in group:
+                self.assertEqual(child.tag, '{http://www.w3.org/2000/svg}image')
+                self.assertNotIn('id', child.attrib)
+                self.assertTrue(child.attrib['href'].startswith(prefix))
+                raster = base64.b64decode(child.attrib['href'][len(prefix):])
+                with Image.open(io.BytesIO(raster)) as im:
+                    self.assertEqual(im.mode, 'RGBA')
+                    self.assertEqual(im.getchannel('A').getextrema(), (0, 0))
+            lower = base64.b64decode(group[0].attrib['href'][len(prefix):])
+            upper = base64.b64decode(group[1].attrib['href'][len(prefix):])
+            with Image.open(io.BytesIO(lower)) as im:
+                # No encryption: anyone can read the Comment once decoded.
+                self.assertEqual(json.loads(im.info['Comment']), {'name': name, 'value': value})
+            with Image.open(io.BytesIO(upper)) as im:
+                self.assertNotIn('Comment', im.info)
+        self.assertEqual(pixels(svg_to_bytes(svg_string=original.decode())),
+                         pixels(svg_to_bytes(svg_string=result.decode())))
+        self.assertNotIn(b'fake-sensitive-secret-314159', result)  # encoded, not encrypted
 
-    def test_jpeg_input_bytes_and_pixels_preserved_with_large_multisegment_vault(self):
-        original = make_image('JPEG', noise=True)
-        result = vault.create_outputs(original, {'key': 'my-password'}, 'correct horse battery staple', svg=True, jpg=True)
-        self.assertEqual(pixels(original), pixels(result['jpg']))
-        self.assertEqual(vault.recover_svg(result['jpg']), result['svg'])
-        self.assertGreater(result['jpg'].count(vault.JPEG_MAGIC), 1)
-        self.assertTrue(result['jpg'].endswith(original[2:]))
+    def test_many_secrets_unicode_and_multiline(self):
+        base = b'<svg xmlns="http://www.w3.org/2000/svg" width="2" height="3"></svg>'
+        items = {f'အကောင့် {i}': f'password\n{i}\n' for i in range(100)}
+        result = vault.create_raster_svg(base, items)
+        self.assertEqual(vault.raster_items(result), items)
 
-    def test_svg_input_preserved_and_values_stay_encrypted(self):
-        source = b'<svg xmlns="http://www.w3.org/2000/svg" width="2" height="3"><rect width="2" height="3" fill="red"/></svg>'
-        result = vault.create_outputs(source, {'Platform': 'long-password'}, 'correct horse battery staple', svg=True, png=True)
-        self.assertIn(b'<rect width="2" height="3" fill="red"/>', result['svg'])
-        self.assertNotIn(b'long-password', result['svg'])
-        self.assertEqual(vault.recover_svg(result['png']), result['svg'])
-
-    def test_user_sig_svg_preserves_visuals_and_is_default_artwork(self):
-        import hashlib
-        from resvg_py import svg_to_bytes
-        source = (ROOT / 'sig.svg').read_bytes()
-        before_hash = hashlib.sha256(source).hexdigest()
-        before = svg_to_bytes(svg_string=source.decode('utf-8'))
-        result = vault.create_outputs(source, {'personal': 'do-not-print-this'},
-                                      'correct horse battery staple', svg=True, png=True, jpg=True)
-        self.assertEqual(pixels(before), pixels(result['png']))
-        self.assertEqual(vault.recover_svg(result['png']), result['svg'])
-        self.assertEqual(vault.recover_svg(result['jpg']), result['svg'])
-        self.assertEqual(hashlib.sha256((ROOT / 'sig.svg').read_bytes()).hexdigest(), before_hash)
+    def test_copy_retains_entries_without_any_password(self):
+        base = b'<svg xmlns="http://www.w3.org/2000/svg" width="2" height="3"></svg>'
+        svg = vault.create_raster_svg(base, {'account': 'value'})
         with tempfile.TemporaryDirectory() as temp:
-            out = Path(temp) / 'vault.svg'
-            with patch('sys.stdin.isatty', return_value=True), \
-                 patch('builtins.input', side_effect=['personal', '']), \
-                 patch('getpass.getpass', side_effect=['secret', 'super secret passphrase', 'super secret passphrase']):
-                self.assertEqual(vault.main(['create', '--svg', str(out)]), 0)
-            self.assertEqual(vault.decrypt_items(vault.svg_envelope(out.read_bytes()), 'super secret passphrase'),
-                             {'personal': 'secret'})
-            self.assertEqual(hashlib.sha256((ROOT / 'sig.svg').read_bytes()).hexdigest(), before_hash)
+            first, second = Path(temp) / 'a.svg', Path(temp) / 'b.svg'
+            first.write_bytes(svg)
+            shutil.copyfile(first, second)
+            self.assertEqual(vault.raster_items(second.read_bytes()), {'account': 'value'})
 
-    def test_stripped_and_corrupted_metadata_cannot_recover(self):
-        result = vault.create_outputs(make_image('PNG'), {'x': 'secret'}, 'correct horse battery staple', png=True)
-        with Image.open(io.BytesIO(result['png'])) as im:
-            out = io.BytesIO()
-            im.save(out, format='PNG')  # ordinary re-export drops metadata
-        with self.assertRaisesRegex(vault.VaultError, 'metadata found'):
-            vault.recover_svg(out.getvalue())
-        corrupt = bytearray(result['png'])
-        i = corrupt.index(vault.PNG_KEY)
-        corrupt[i + len(vault.PNG_KEY) + 4] ^= 1
-        with self.assertRaises(vault.VaultError):
-            vault.recover_svg(bytes(corrupt))
+    def test_removing_added_groups_may_destroy_data(self):
+        base = b'<svg xmlns="http://www.w3.org/2000/svg" width="2" height="3"></svg>'
+        svg = vault.create_raster_svg(base, {'x': 'value'})
+        root = vault._svg_root(svg)
+        root.remove(root[-1])
+        self.assertEqual(vault.raster_items(ET.tostring(root)), {})
+
+    def test_add_creates_separate_copy_keeps_original_and_prevents_duplicates(self):
+        base = b'<svg xmlns="http://www.w3.org/2000/svg" width="2" height="3"></svg>'
+        first = vault.create_raster_svg(base, {'one': 'first'})
+        second = vault.create_raster_svg(first, {'two': 'second'}, allow_existing=True)
+        self.assertEqual(vault.raster_items(first), {'one': 'first'})
+        self.assertEqual(vault.raster_items(second), {'one': 'first', 'two': 'second'})
+        with self.assertRaisesRegex(vault.VaultError, 'already exist'):
+            vault.create_raster_svg(first, {'one': 'replacement'}, allow_existing=True)
+        with self.assertRaisesRegex(vault.VaultError, 'use the add'):
+            vault.create_raster_svg(first, {'two': 'second'})
+        with self.assertRaisesRegex(vault.VaultError, 'use the create'):
+            vault.create_raster_svg(base, {'two': 'second'}, allow_existing=True)
+
+    def test_interactive_cli_create_add_open_no_passphrase(self):
+        with tempfile.TemporaryDirectory() as temp:
+            first, second, output = (Path(temp) / x for x in ('first.svg', 'second.svg', 'out.json'))
+            with patch('sys.stdin.isatty', return_value=True), \
+                 patch('builtins.input', side_effect=['first', '']), \
+                 patch('getpass.getpass', return_value='first-value') as prompt:
+                self.assertEqual(vault.main(['create', '--svg', str(first)]), 0)
+            self.assertEqual(prompt.call_count, 1)  # value entry, no vault passphrase
+            with patch('sys.stdin.isatty', return_value=True), \
+                 patch('builtins.input', side_effect=['second', '']), \
+                 patch('getpass.getpass', return_value='second-value') as prompt:
+                self.assertEqual(vault.main(['add', str(first), '--svg', str(second)]), 0)
+            self.assertEqual(prompt.call_count, 1)
+            with patch('sys.stdin.isatty', return_value=False), \
+                 patch('getpass.getpass', side_effect=AssertionError('unexpected password prompt')):
+                self.assertEqual(vault.main(['open', str(second), '--output', str(output)]), 0)
+            self.assertEqual(json.loads(output.read_text()), {'first': 'first-value', 'second': 'second-value'})
+            self.assertEqual(output.stat().st_mode & 0o777, 0o600)
+            self.assertEqual(vault.raster_items(first.read_bytes()), {'first': 'first-value'})
+
+    def test_refuses_duplicate_names_during_interactive_add(self):
+        with patch('builtins.input', side_effect=['existing', 'new', '']), \
+             patch('getpass.getpass', return_value='new-value'):
+            self.assertEqual(vault.collect_items({'existing'}), {'new': 'new-value'})
 
     def test_no_overwrite_and_owner_only_permissions(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -114,42 +141,33 @@ class ImageVaultTests(unittest.TestCase):
                  patch('getpass.getpass', side_effect=['@' + str(key), '@@value']):
                 self.assertEqual(vault.collect_items(), {'server': 'first line\nsecond line\n', 'literal': '@value'})
 
-    def test_interactive_cli_create_then_export_plaintext(self):
+    def test_legacy_encrypted_vault_still_requires_existing_password(self):
+        source = b'<svg xmlns="http://www.w3.org/2000/svg" width="2" height="3"></svg>'
+        legacy = vault.add_svg_vault(source, ['old'], vault.encrypt_items({'old': 'old-value'}, 'old-passphrase'))
+        self.assertEqual(vault.raster_items(legacy), {})
         with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            source, encoded, output = root / 'image.png', root / 'vault.png', root / 'secrets.json'
-            source.write_bytes(make_image('PNG'))
-            with patch('sys.stdin.isatty', return_value=True), \
-                 patch('builtins.input', side_effect=['my key', '']), \
-                 patch('getpass.getpass', side_effect=['my-secret-value', 'super secret passphrase', 'super secret passphrase']):
-                self.assertEqual(vault.main(['create', str(source), '--png', str(encoded)]), 0)
-            self.assertNotIn(b'my-secret-value', encoded.read_bytes())
-            with patch('sys.stdin.isatty', return_value=True), \
-                 patch('getpass.getpass', return_value='super secret passphrase'):
-                self.assertEqual(vault.main(['open', str(encoded), '--output', str(output)]), 0)
-            self.assertEqual(output.stat().st_mode & 0o777, 0o600)
-            self.assertEqual(__import__('json').loads(output.read_text()), {'my key': 'my-secret-value'})
+            image, output = Path(temp) / 'old.svg', Path(temp) / 'out.json'
+            image.write_bytes(legacy)
+            with patch('sys.stdin.isatty', return_value=True), patch('getpass.getpass', return_value='old-passphrase'):
+                self.assertEqual(vault.main(['open', str(image), '--output', str(output)]), 0)
+            self.assertEqual(json.loads(output.read_text()), {'old': 'old-value'})
 
-    def test_wrong_passphrase_does_not_write_plaintext(self):
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            output = root / 'secrets.json'
-            image = root / 'vault.png'
-            image.write_bytes(vault.create_outputs(make_image('PNG'), {'x': 'secret-value'},
-                                                    'correct passphrase', png=True)['png'])
-            with patch('sys.stdin.isatty', return_value=True), \
-                 patch('getpass.getpass', return_value='wrong passphrase'):
-                self.assertEqual(vault.main(['open', str(image), '--output', str(output)]), 1)
-            self.assertFalse(output.exists())
+    def test_legacy_png_and_jpeg_still_recover_svg(self):
+        source = b'<svg xmlns="http://www.w3.org/2000/svg" width="2" height="3"></svg>'
+        legacy = vault.add_svg_vault(source, ['old'], vault.encrypt_items({'old': 'old-value'}, 'old-passphrase'))
+        import zlib
+        compressed = zlib.compress(legacy)
+        for fmt, embed in [('PNG', vault.png_embed), ('JPEG', vault.jpeg_embed)]:
+            image = Image.new('RGB', (4, 3), (28, 73, 199))
+            out = io.BytesIO()
+            image.save(out, format=fmt)
+            self.assertEqual(vault.recover_svg(embed(out.getvalue(), compressed)), legacy)
 
     def test_cli_refuses_noninteractive_secret_entry(self):
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            source = root / 'image.png'
-            source.write_bytes(make_image('PNG'))
-            with patch('sys.stdin.isatty', return_value=False):
-                self.assertEqual(vault.main(['create', str(source), '--png', str(root / 'vault.png')]), 1)
-            self.assertFalse((root / 'vault.png').exists())
+        with tempfile.TemporaryDirectory() as temp, patch('sys.stdin.isatty', return_value=False):
+            output = Path(temp) / 'vault.svg'
+            self.assertEqual(vault.main(['create', '--svg', str(output)]), 1)
+            self.assertFalse(output.exists())
 
     def test_refuses_getpass_echo_fallback(self):
         import getpass
@@ -161,13 +179,11 @@ class ImageVaultTests(unittest.TestCase):
             with self.assertRaisesRegex(vault.VaultError, 'echo'):
                 vault.secret_prompt('Secret: ')
 
-    def test_create_rejects_vault_input_and_empty_secrets(self):
-        original = make_image('PNG')
-        result = vault.create_outputs(original, {'x': 'secret'}, 'correct horse battery staple', png=True)
-        with self.assertRaisesRegex(vault.VaultError, 'already contains'):
-            vault.create_outputs(result['png'], {'x': 'secret'}, 'correct horse battery staple', png=True)
+    def test_invalid_or_empty_input(self):
         with self.assertRaisesRegex(vault.VaultError, 'At least one'):
-            vault.create_outputs(original, {}, 'correct horse battery staple', svg=True)
+            vault.create_raster_svg(b'<svg xmlns="http://www.w3.org/2000/svg"></svg>', {})
+        with self.assertRaises(vault.VaultError):
+            vault.create_raster_svg(b'not svg', {'x': 'value'})
 
 
 if __name__ == '__main__':

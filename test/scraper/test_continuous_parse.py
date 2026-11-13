@@ -237,7 +237,9 @@ class ContinuousParseTests(unittest.TestCase):
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(source.read_bytes())
             return runner.sha256_file(target)
-        with patch.object(runner, 'load_workspace_env'), \
+        log_file = self.root / 'lane.log'
+        with patch.dict(os.environ, {'PARSER_LOG_ENABLED': 'on', 'PARSER_LOG_FILE': str(log_file)}), \
+             patch.object(runner, 'load_workspace_env'), \
              patch.object(runner, 'load_config', return_value=SimpleNamespace(directory='pdfs')), \
              patch.object(runner, 'remote_parser_dir', return_value='old'), \
              patch.object(runner, 'discover', return_value=['old/စာအုပ်.pdf']), \
@@ -250,6 +252,10 @@ class ContinuousParseTests(unittest.TestCase):
         self.assertTrue(rows[0]['text'].strip())
         self.assertEqual(rows[0]['book'], 'စာအုပ်')
         self.assertEqual(self.text.read_text(), '===== စာအုပ် =====\n' + rows[0]['text'] + '\n\n')
+        decisions = log_file.read_text().splitlines()
+        self.assertEqual(len(decisions), 1)
+        self.assertIn('စာအုပ်.pdf', decisions[0])
+        self.assertIn('[BEAUTIFY]', decisions[0])
         # This tests wiring and matching outputs, not old-font conversion accuracy.
 
     def test_text_failure_does_not_mark_success_or_delete_local_pdf(self):
