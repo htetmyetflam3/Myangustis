@@ -225,6 +225,9 @@ class RemoteQueueTests(unittest.TestCase):
                 output = remote_queue.run_once('parse', convert, cfg, runtime)
             row = pq.read_table(output).to_pylist()[0]
             self.assertIn('Hello parser', row['text'])
+            text = (runtime / 'output/txt/parsed-books.txt').read_text(encoding='utf-8')
+            self.assertIn('===== book =====', text)
+            self.assertIn('Hello parser', text)
             self.assertEqual(row['segmented'], 'segments')
             self.assertTrue(generated.exists())
 

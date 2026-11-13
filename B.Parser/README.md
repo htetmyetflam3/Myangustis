@@ -85,7 +85,7 @@ uv run main.py parse /input/book.pdf
 uv run main.py ocr /input/scans Parser/output/ocr/
 # Watch a local folder continuously (default source can be set in .env).
 uv run main.py ocr /input/scans Parser/output/ocr/ --continuous
-# Remote queue, always Parquet; no input/output positional arguments allowed.
+# Remote queue; output locations are fixed and no positional paths are allowed.
 uv run main.py parse --ssh
 uv run main.py ocr --ssh
 ```
@@ -108,13 +108,22 @@ data; it is not started by the scraper or combined root service.
 SSH uses `SSH_HOST`, `SSH_USER`, `SSH_PORT`, `SSH_KEY`, `SSH_DIR` and the direct
 child `REMOTE_PRASER_DIR` (default `convertable`) or `REMOTE_OCR_DIR` (default
 `scanned`). Authentication is noninteractive, and the remote originals are never
-modified. All SSH output is `Junk/Parser/output/parquet/books.parquet` for parsing and
-`ocr-books.parquet` for OCR, with separate progress and local staging under
-`Junk/Parser/state/ssh/parse/` and `Junk/Parser/state/ssh/ocr/`. The collections contain text and
-Engine segmentation, and requires the Engine runtime, master and prebuilt trees.
-An interrupted Parquet export is rebuilt from its SQLite ledger; failed local
-staging is retained. Downloads pause when less than 5 GiB is free. The two modes have separate
-locks, ledgers and collections, so OCR does not block parsing. The former
+modified. The text parser writes both:
+
+- `Junk/Parser/output/parquet/books.parquet` — text and Engine segmentation.
+- `Junk/Parser/output/txt/parsed-books.txt` — a single UTF-8 file of parsed
+  text, with a `===== book name =====` heading for each book.
+
+The OCR queue remains separate and writes `Junk/Parser/output/parquet/ocr-books.parquet`.
+Progress and staging are under `Junk/Parser/state/ssh/parse/` and `ssh/ocr/`.
+The collections require the Engine runtime, master and prebuilt trees. On its
+next scan, the parser can backfill the combined TXT from books already in its
+current SQLite ledger, without downloading them again. It also recovers
+interrupted exports and refuses to replace an existing untracked TXT. Failed
+local staging is retained; a file retained after an interrupted export is not
+automatically removed during recovery. Downloads pause when less than 5 GiB is
+free. The two modes have separate locks, ledgers and collections, so OCR does
+not block parsing. The former
 scraper-side collection and ledger are **not migrated automatically**: keep them
 and plan a migration before removing them; the new queue may process the remote
 files again. This new SSH workflow does not send email. VPS/systemd and actual
