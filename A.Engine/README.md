@@ -57,3 +57,25 @@ Run `uv run --package myangustis-engine python -m unittest discover -s test/engi
 JS differential tests are optional and require an external reference checkout;
 set `MYANGUSTIS_JS_REFERENCE_ROOT` to it. `logen.py` is a partial logging port;
 the host, debug bridge and `Lexical_No_inspect` are out of scope.
+
+## Experimental sentence-template probe
+
+The opt-in `template` flag uses the draft `template-data.json` as the approval
+layer. This first step handles only `msp-01` (head-only verb unit) and a basic
+`msp-02` (tail-only noun sequence); `msp-03`–`msp-07` are explicitly reported
+as not implemented. The verb-unit probe uses POS candidates plus surfaces
+explicitly listed in the draft verb-particle/wibat maps, and reports the
+selected evidence without changing `rawPos`. It does not resolve particle type,
+validate modifier order or parse head and tail meeting in the middle. A match
+is a structural candidate, not a claim that the sentence is grammatically
+correct. Unknown or merged tokens remain unresolved instead of being guessed.
+Only sentences ending in Burmese `။` are evaluated in this initial step.
+Existing `syllable` and `pos` output is unchanged.
+
+```python
+from myangustis_engine.api import template_views
+for sentence in template_views('စားမလား။'):
+    for candidate in sentence['templates']:
+        if candidate['status'] == 'matched':
+            print(candidate['id'], candidate['analyses'])
+```

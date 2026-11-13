@@ -6,6 +6,7 @@ from myangustis_engine.MonoSyllabism.main.grapheme.cache_integrity import verify
 from myangustis_engine.MonoSyllabism.generators.pos_input import fullstop_holder
 from myangustis_engine.MonoSyllabism.generators.input import read_from_api
 from myangustis_engine.bridge.Ginit import run_rule_engine
+from myangustis_engine.Lexical_No_inspect.abstract.template_runtime import analyse_lines
 from myangustis_engine.MonoSyllabism.main.phoneme.lexer import run_segmentor
 from myangustis_engine.MonoSyllabism.main.phoneme.phonology import run_tagger
 from myangustis_engine.MonoSyllabism.generators.SfomatterForP import to_line_strings
@@ -14,15 +15,15 @@ _logger = Logen()
 
 
 def bind_engine(request, *, runtime=None, logger=None):
-    """Return one async stream of syllable strings or POS result dictionaries."""
+    """Return a stream of syllables, POS views, or experimental template reports."""
     if not isinstance(request, dict):
         raise TypeError('BindEngine: a request object is required')
     if not isinstance(request.get('sourceText'), str):
         raise TypeError('BindEngine: sourceText must be a string')
     if any(key in request for key in ('inputPath', 'outputPath', 'work', 'seg', 'hash')):
         raise TypeError('BindEngine: supply text without paths or a caller signature')
-    if request.get('flag') not in ('syllable', 'pos'):
-        raise TypeError('BindEngine: flag must be syllable or pos')
+    if request.get('flag') not in ('syllable', 'pos', 'template'):
+        raise TypeError('BindEngine: flag must be syllable, pos or template')
     for key, default in (('debug', False), ('log', True), ('quiet', False)):
         if not isinstance(request.get(key, default), bool):
             raise TypeError(f'BindEngine: {key} must be a boolean')
@@ -43,8 +44,13 @@ def bind_engine(request, *, runtime=None, logger=None):
             for line in lines:
                 yield fmt.to_syllable_line(line)
         else:
-            for line in run_rule_engine(run_tagger(fullstop_holder(lines), mapper, logger)):
-                yield {'syllable': fmt.to_burmese_line(line), 'rawPos': fmt.to_burmese_line_with_pos(line, 'rawPos')}
+            resolved = run_rule_engine(run_tagger(fullstop_holder(lines), mapper, logger))
+            if flag == 'template':
+                for report in analyse_lines(resolved):
+                    yield report
+            else:
+                for line in resolved:
+                    yield {'syllable': fmt.to_burmese_line(line), 'rawPos': fmt.to_burmese_line_with_pos(line, 'rawPos')}
 
     return stream()
 

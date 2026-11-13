@@ -31,3 +31,8 @@ def pos_views(text):
         return '\n'.join(unit[key] for unit in units) + ('\n' if units else '')
     return {'syllable': joined('syllable'), 'raw_pos': joined('rawPos'),
             'output_units': len(units)}
+
+
+def template_views(text):
+    """Return experimental draft-template analyses, one per sentence."""
+    return collect_sync(text, 'template')
