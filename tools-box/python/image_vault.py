@@ -38,6 +38,7 @@ PNG_KEY = b'MyangustisImageVault'
 JPEG_MAGIC = b'MyangustisVault1\0'
 AAD = b'myangustis-image-vault-v1'
 VAULT_ATTRIBUTE = 'data-myangustis-vault'
+DEFAULT_IMAGE = Path(__file__).resolve().parents[2] / 'sig.svg'
 MAX_IMAGE = 24 * 1024 * 1024
 MAX_ARCHIVE = 80 * 1024 * 1024
 MAX_SVG = 40 * 1024 * 1024
@@ -393,7 +394,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
     create = commands.add_parser('create', help='read secrets interactively and create vault images')
-    create.add_argument('image', type=Path, help='trusted source SVG, PNG or JPEG')
+    create.add_argument('image', nargs='?', type=Path, default=DEFAULT_IMAGE,
+                        help='trusted source SVG, PNG or JPEG (default: repository sig.svg)')
     create.add_argument('--svg', type=Path, help='new SVG vault file')
     create.add_argument('--png', type=Path, help='new PNG vault file')
     create.add_argument('--jpg', type=Path, help='new JPEG vault file')

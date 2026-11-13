@@ -38,12 +38,14 @@ for the command; alternatively install `cryptography`, `Pillow` and `resvg-py`
 in your Python environment.
 
 ```bash
-uv run tools-box/python/image_vault.py create /path/to/art.png \
+uv run tools-box/python/image_vault.py create \
   --svg /private/vault.svg --png /private/vault.png --jpg /private/vault.jpg
 ```
 
-You may choose any one or more of the outputs. Use a **clean source image**;
-existing vault images aren't modified or overwritten. Enter a name, then a
+This uses the repository's `sig.svg` by default without modifying it. To use
+another trusted source image, provide its path after `create` instead. You may
+choose any one or more outputs. Use a **clean source image**; existing vault
+images aren't modified or overwritten. Enter a name, then a
 secret with hidden input. For a multiline private key already stored in a file,
 enter `@` followed by its path at the secret prompt. `@@` starts a literal
 secret with `@`. A blank name ends entry. Enter your new vault passphrase twice.

@@ -62,6 +62,28 @@ class ImageVaultTests(unittest.TestCase):
         self.assertNotIn(b'long-password', result['svg'])
         self.assertEqual(vault.recover_svg(result['png']), result['svg'])
 
+    def test_user_sig_svg_preserves_visuals_and_is_default_artwork(self):
+        import hashlib
+        from resvg_py import svg_to_bytes
+        source = (ROOT / 'sig.svg').read_bytes()
+        before_hash = hashlib.sha256(source).hexdigest()
+        before = svg_to_bytes(svg_string=source.decode('utf-8'))
+        result = vault.create_outputs(source, {'personal': 'do-not-print-this'},
+                                      'correct horse battery staple', svg=True, png=True, jpg=True)
+        self.assertEqual(pixels(before), pixels(result['png']))
+        self.assertEqual(vault.recover_svg(result['png']), result['svg'])
+        self.assertEqual(vault.recover_svg(result['jpg']), result['svg'])
+        self.assertEqual(hashlib.sha256((ROOT / 'sig.svg').read_bytes()).hexdigest(), before_hash)
+        with tempfile.TemporaryDirectory() as temp:
+            out = Path(temp) / 'vault.svg'
+            with patch('sys.stdin.isatty', return_value=True), \
+                 patch('builtins.input', side_effect=['personal', '']), \
+                 patch('getpass.getpass', side_effect=['secret', 'super secret passphrase', 'super secret passphrase']):
+                self.assertEqual(vault.main(['create', '--svg', str(out)]), 0)
+            self.assertEqual(vault.decrypt_items(vault.svg_envelope(out.read_bytes()), 'super secret passphrase'),
+                             {'personal': 'secret'})
+            self.assertEqual(hashlib.sha256((ROOT / 'sig.svg').read_bytes()).hexdigest(), before_hash)
+
     def test_stripped_and_corrupted_metadata_cannot_recover(self):
         result = vault.create_outputs(make_image('PNG'), {'x': 'secret'}, 'correct horse battery staple', png=True)
         with Image.open(io.BytesIO(result['png'])) as im:
