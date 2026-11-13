@@ -8,10 +8,10 @@ OCR runtime to prepare - no tesseract, no worker.mjs, no npm ci - because the on
 engine step uses the in-process Python Engine and prebuilt trees. Existing scraper modules and configuration are imported in place,
 never copied over or replaced.
 
-What it runs: every PDF in <SSH_DIR>/convertable/ on the shared host, downloaded
+What it runs: PDFs in the configured <SSH_DIR>/<REMOTE_PRASER_DIR>/ on the shared host, downloaded
 read-only, text extracted and converted (Zawgyi-One or Unicode) with NO
 classification verdict, segmented, and appended as one row to
-pdfs/parquet/books.parquet. Success deletes the local download; failure keeps it,
+pdfs/parquet/books.parquet and pdfs/parquet/parsed-books.txt. Success deletes the local download; failure keeps it,
 records the reason, and mails at 20 retained failures, at most once an hour.
 """
 from __future__ import annotations
@@ -59,10 +59,13 @@ def main():
         sys.path.insert(0, str(ROOT))
         import bootstrap  # noqa: E402,F401
         from save_remote import load_config
+        from parse_queue import remote_parser_dir, load_workspace_env
+        load_workspace_env()
         config = load_config()
+        folder = remote_parser_dir()
         print(f'Using existing scraper SSH settings: {config.user}@{config.host}:{config.port}',
               flush=True)
-        print(f'Queue: {config.directory}/convertable/ on the host (read-only)', flush=True)
+        print(f'Queue: {config.directory}/{folder}/ on the host (read-only)', flush=True)
         # Stop only our own reminder units before refreshing our unit definitions.
         # An absent unit on first run is normal. Never stop scraper.service, and
         # never stop the OCR service - the two are independent.
