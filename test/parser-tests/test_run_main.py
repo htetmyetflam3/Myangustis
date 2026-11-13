@@ -1,4 +1,4 @@
-"""Tests for B.Parser/run/main.py, Junk/Parser path alignment, and OCR/parse dispatch."""
+"""Tests for B.Parser/main.py, Junk/Parser path alignment, and OCR/parse dispatch."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
-RUN_MAIN_PATH = ROOT / "B.Parser" / "run" / "main.py"
+RUN_MAIN_PATH = ROOT / "B.Parser" / "main.py"
 TEST_PARSER_DIR = Path(__file__).resolve().parent
 
 

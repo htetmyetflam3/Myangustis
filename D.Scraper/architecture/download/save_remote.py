@@ -48,7 +48,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from disk_floor import DISK_FLOOR, disk_tight, size_text
-from text_collect import parse_convertable_book, write_parquet_row
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ENV_FILE = REPO_ROOT / ".env"
@@ -491,13 +490,6 @@ def push_file(
         digest = sha256_file(path)
     known = entries.by_digest.get(digest)
 
-    is_convertable = path.parent.name == "convertable" and path.suffix.lower() == ".pdf"
-    parsed_row: tuple[str, str, str] | None = None
-    if is_convertable:
-        parsed_row = parse_convertable_book(path, log=log)
-        if parsed_row is None:
-            return PushOutcome(False, f"convertable parse/segment failed for {name}")
-
     resumed = False
     verified_existing = False
     last_error = "unknown"
@@ -510,11 +502,6 @@ def push_file(
                 and remote_sha256(config, known) == digest
             ):
                 log(f"[push-skip] {name} already archived and verified @ {_stamp()}")
-                if parsed_row is not None:
-                    book_name, book_text, book_segmented = parsed_row
-                    if write_parquet_row(path.parent.parent, book_name, book_text, book_segmented,
-                                   sha256=digest, log=log) is None:
-                        return PushOutcome(False, f"parquet row write failed for {name}")
                 deleted = _delete_local(path, timeline, log)
                 return PushOutcome(
                     True,
@@ -587,11 +574,6 @@ def push_file(
     else:
         detail = "sha256 verified"
     log(f"[push-ok] {name} {detail} -> {remote_path} @ {_stamp()}")
-    if parsed_row is not None:
-        book_name, book_text, book_segmented = parsed_row
-        if write_parquet_row(path.parent.parent, book_name, book_text, book_segmented,
-                                   sha256=digest, log=log) is None:
-            return PushOutcome(False, f"parquet row write failed for {name}", remote_path=remote_path)
     deleted = _delete_local(path, timeline, log)
     return PushOutcome(
         True,

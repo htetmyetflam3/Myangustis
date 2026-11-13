@@ -43,8 +43,7 @@ depends on the scans and traineddata; no accuracy guarantee is implied.
 Set `PARSER_LOG_ENABLED=on` in the repository-root `.env` (or process
 environment) to append lane decisions to `B.Parser/logs/lane-decisions.log`.
 The default is off; `PARSER_LOG_FILE` optionally selects another file path.
-The continuous scraper service loads the root `.env` on the VPS. Restart the
-service after changing it. The file is created with owner-only permissions when
+The continuous scraper service loads the root `.env` on the VPS. Restart the parser or combined service after changing it. The file is created with owner-only permissions when
 new, and is ignored by Git. Manage its rotation and backups as needed.
 
 Decision messages always go to the console's standard error (and thus the
@@ -69,3 +68,54 @@ A repeated parse creates new entries. The beautify range is emitted when it
 ends or the page iterator closes; an abruptly terminated process may lose the
 last pending range. Neither this file nor the console log is a per-page or
 per-character dump.
+
+
+## Independent parser and OCR runner
+
+From `B.Parser`, use `uv run main.py parse ...` (`prase` is also accepted),
+or `uv run main.py ocr ...`. These commands do not import the scraper. The
+older one-file `main.py book.pdf --txt` form is also supported.
+
+```sh
+# A single file, with an explicit output under repository Junk:
+uv run main.py parse /input/book.pdf Parser/output/docx/book.docx
+# No output argument: use Junk/Parser/output/ and the source extension.
+uv run main.py parse /input/book.pdf
+# A folder runs a batch, retaining nested folder names. Output ending / is a directory.
+uv run main.py ocr /input/scans Parser/output/ocr/
+# Watch a local folder continuously (default source can be set in .env).
+uv run main.py ocr /input/scans Parser/output/ocr/ --continuous
+# Remote queue, always Parquet; no input/output positional arguments allowed.
+uv run main.py parse --ssh
+uv run main.py ocr --ssh
+```
+
+For a single output path without an extension, the source extension is appended.
+All explicit output paths must resolve inside the repository's `Junk` directory:
+relative output paths are relative to `Junk`, and absolute paths outside it are
+rejected. Input files are never deleted. Existing output files are not
+intentionally overwritten. Set `PARSER_INPUT_DIR` or `PARSER_OCR_INPUT_DIR` in
+root `.env` to provide a default local input when the input argument is omitted.
+
+Continuous runs started as root on a systemd host install and start their own
+`myangustis-parse.service` or `myangustis-ocr.service`. Add `--foreground` to
+run in the current process instead, or `--service` to explicitly require a
+systemd host. The service installer refuses to replace a running service and
+never stops scraper or other units. Check `journalctl -u myangustis-parse.service
+-f` (or `myangustis-ocr.service`). OCR requires Tesseract and Myanmar language
+data; it is not started by the scraper or combined root service.
+
+SSH uses `SSH_HOST`, `SSH_USER`, `SSH_PORT`, `SSH_KEY`, `SSH_DIR` and the direct
+child `REMOTE_PRASER_DIR` (default `convertable`) or `REMOTE_OCR_DIR` (default
+`scanned`). Authentication is noninteractive, and the remote originals are never
+modified. All SSH output is `Junk/Parser/output/parquet/books.parquet` for parsing and
+`ocr-books.parquet` for OCR, with separate progress and local staging under
+`Junk/Parser/state/ssh/parse/` and `Junk/Parser/state/ssh/ocr/`. The collections contain text and
+Engine segmentation, and requires the Engine runtime, master and prebuilt trees.
+An interrupted Parquet export is rebuilt from its SQLite ledger; failed local
+staging is retained. Downloads pause when less than 5 GiB is free. The two modes have separate
+locks, ledgers and collections, so OCR does not block parsing. The former
+scraper-side collection and ledger are **not migrated automatically**: keep them
+and plan a migration before removing them; the new queue may process the remote
+files again. This new SSH workflow does not send email. VPS/systemd and actual
+SSH deployment still need testing on the destination host.

@@ -25,6 +25,7 @@ dependencies = [
     "myangustis-engine",
     "fpdf2>=2.8.8",
     "pypdf>=6.0",
+    "pyarrow>=17",
 ]
 
 [project.optional-dependencies]

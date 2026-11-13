@@ -77,7 +77,6 @@ def launch_under_systemd(args: list[str]) -> int | None:
         return 1
 
     cleanup = f"/usr/bin/rm -f {env_file}"
-    engine_ready = f"{sys.executable} -u {ROOT / 'deploy' / 'engine_ready.py'} --fix"
     command = [
         systemd_run,
         f"--unit={unit}",
@@ -92,7 +91,6 @@ def launch_under_systemd(args: list[str]) -> int | None:
         "--property=StandardOutput=journal",
         "--property=StandardError=journal",
         f"--property=EnvironmentFile=-{env_file}",
-        f"--property=ExecStartPre={engine_ready}",
         f"--property=ExecStopPost={cleanup}",
         "--",
         sys.executable,

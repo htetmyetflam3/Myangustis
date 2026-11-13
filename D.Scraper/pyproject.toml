@@ -1,11 +1,9 @@
 [project]
 name = "myangustis-scraper"
 version = "1.0.0"
-description = "Myangustis scraper: crawlers, disk guards, download pipeline, continuous OCR/parse deploy."
+description = "Myangustis scraper: crawlers, disk guards and download/upload pipeline."
 requires-python = ">=3.10"
 dependencies = [
-    "myangustis-engine",
-    "myangustis-parser",
     "beautifulsoup4>=4.12.0",
     "cryptography>=42.0",
     "httpx>=0.27",
@@ -30,7 +28,3 @@ build-backend = "hatchling.build"
 
 [tool.uv]
 package = false
-
-[tool.uv.sources]
-myangustis-engine = { workspace = true }
-myangustis-parser = { workspace = true }

@@ -230,3 +230,9 @@ svgout/known/*.png
 # Ignore additional local Python engine data and generated trees; selected test fixtures are tracked.
 /A.Engine/architecture/myangustis_engine/.data/
 /A.Engine/architecture/myangustis_engine/.cache-tree/
+
+# Parser runtime data: private inputs, generated outputs and queue state.
+# Existing tracked fixtures and placeholder files remain tracked.
+/Junk/Parser/upload/
+/Junk/Parser/output/
+/Junk/Parser/state/
