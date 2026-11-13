@@ -18,17 +18,14 @@ from typing import TYPE_CHECKING
 
 from pdf_classify import classify_pdf
 from pdf_support import linearize
-from text_collect import CONVERT_FINAL_NAME
 
 if TYPE_CHECKING:
     from Dcrawler import DownloadCandidate
 
-# Classified PDFs are filed under the output dir by category. The download step
-# detects image-only PDFs and saves directly to convertable/ or scanned/;
-# the uploader then parses convertable/ books, uploads the PDF to remote
-# storage, and appends one row per book to the VPS Parquet file.
+# Classify downloads for the independent text and OCR queues. Uploading
+# archives the files without invoking either parser.
 CATEGORY_DIRS = {
-    "convertable": CONVERT_FINAL_NAME,
+    "convertable": "convertable",
     "scanned": "scanned",
 }
 

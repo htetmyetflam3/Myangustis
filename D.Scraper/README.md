@@ -1,56 +1,33 @@
-# Scraper engine integration
+# Scraper
 
-`architecture/result/text_collect.py` segments through the in-process Python
-Engine; `pdf_classify.py` routes image-only PDFs to OCR and leaves all other PDFs to the Python Parser. Configure the external
-master, key and prebuilt trees as described in `A.Engine/README.md`.
-`run/deploy/engine_ready.py` verifies these inputs and never builds trees.
+The scraper runner is `D.Scraper/run/main.py`. It keeps its existing systemd
+launch behavior and email notifications. Downloads are classified and uploaded
+to the configured shared host; upload no longer parses or segments books. The
+parser and OCR are independent runners in `B.Parser/main.py`.
 
-Continuous OCR uses the Python Parser OCR and finishing stages, followed by
-its Engine POS scan. Vector repair is not wired. Tesseract with Myanmar
-traineddata is required; Poppler may be needed for PDF rendering. The service
-has not yet been verified on the production VPS.
+To run scraper and the continuous **text parser** together, use the repository
+root `main.py`. OCR is never started by this combined runner:
 
-## Continuous parse from the shared host
-
-In the **repository-root `.env` on the VPS**, configure the existing shared-host
-`SSH_HOST`, `SSH_USER`, `SSH_PORT`, `SSH_KEY` and `SSH_DIR`, then select a
-single direct child with `REMOTE_PRASER_DIR`. For example:
-
-```env
-SSH_DIR=~/domains/site/pdfs/
-REMOTE_PRASER_DIR=/old/
+```sh
+# On a root systemd VPS, installs/starts myangustis.service:
+uv run main.py
+# Pass scraper options after -- (default scraper command is --process):
+uv run main.py -- --process -l 2 -i 60
+# Run the two processes in the foreground instead:
+uv run main.py --foreground
 ```
 
-The queue is `~/domains/site/pdfs/old/` on the **shared host**; `/old/` is
-intentionally treated as a child, not an absolute path. An unset key defaults
-to `convertable` for compatibility. The service recursively reads PDFs only
-inside that child and does not alter the remote originals. `SSH_KEY` is a path
-to a private key on the VPS. The host connection must already support key-based
-SSH without an interactive prompt.
+The scraper and parser run concurrently. The parser reads the configured remote
+`SSH_DIR` / `REMOTE_PRASER_DIR` queue read-only. Configure root `.env` as shown
+in `.env.example`; `/old/` denotes `old` inside `SSH_DIR`, not a host-absolute
+path. Parser output and its new ledger are under `Junk/Parser`; the previous
+scraper Parquet/TXT/ledger are not migrated or deleted. See
+[B.Parser README](../B.Parser/README.md#independent-parser-and-ocr-runner)
+for parser/OCR flags, output locations and service management.
 
-From `D.Scraper/run` on the systemd VPS, `uv run parse.py` installs and starts
-`scraper-parse.service`. If it is already running, stop it before restarting
-with the new configuration. The service writes on the VPS:
-
-- `D.Scraper/run/pdfs/parquet/books.parquet` — the existing shared Parquet
-  collection, with its existing duplicate guard.
-- `D.Scraper/run/pdfs/parquet/parsed-books.txt` — combined UTF-8 extracted
-  text, one section per processed source with its PDF filename as the heading.
-
-The TXT is plain parsed text; Parquet also contains segmented text. TXT sections
-are recorded in `D.Scraper/run/scan/parse/state.sqlite3`, allowing the service
-to rebuild the file after a restart or deletion. Keep the ledger with the TXT;
-the service refuses to overwrite an existing untracked TXT collection. Existing
-successful books in the selected folder can be backfilled from Parquet. A PDF
-is only released from local staging after both outputs succeed; failed inputs
-are retained and are not automatically retried. Image-only PDFs are not sent to
-this text-parser service; use the separate OCR workflow for those.
-
-### Parser lane decision logging
-
-Set `PARSER_LOG_ENABLED=on` in the VPS repository-root `.env` and restart
-`scraper-parse.service` to append lane decisions to
-`B.Parser/logs/lane-decisions.log`. `PARSER_LOG_FILE` can select another path.
-When off (the default), decision messages still appear in the service journal.
-See [Parser lane logging](../B.Parser/README.md#pdf-lane-decision-log) for
-page ranges, lane-switch behavior, and log-file handling.
+The old `run/deploy/continuous-*` implementation is retained only as legacy
+reference for earlier installations; the new runners do not launch it. Stop
+and inspect any old `scraper-parse.service` or `scraper-ocr.service` yourself
+before using the new workers, to avoid processing the same queue twice. No
+installer here stops other services automatically. The combined service does
+not install or run OCR. VPS deployment has not been tested.

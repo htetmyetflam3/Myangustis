@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install a systemd scraper job; validate Python Engine data before startup."""
+"""Install an independent systemd scraper job."""
 
 from __future__ import annotations
 
@@ -26,14 +26,13 @@ def quote(value: str, *, command: bool = False) -> str:
 
 
 def render_unit(uv: str, args: list[str]) -> str:
-    """Render the service using the Python engine preflight."""
+    """Render the independent scraper service."""
     uv_dir = str(Path(uv).resolve().parent)
     parts: list[str] = []
     for entry in [uv_dir, *DEFAULT_PATH.split(":")]:
         if entry not in parts:
             parts.append(entry)
     unit_path = ":".join(parts)
-    engine = [uv, "run", "--", "python", "-u", str(ROOT / "deploy" / "engine_ready.py"), "--fix"]
     command = [uv, "run", "--", "python", "-u", str(ROOT / "main.py"), *args]
     return f"""[Unit]
 Description=Scraper unattended run
@@ -46,7 +45,6 @@ User=root
 WorkingDirectory={str(ROOT).replace("%", "%%")}
 Environment=PYTHONUNBUFFERED=1
 Environment=PATH={unit_path}
-ExecStartPre={' '.join(quote(arg, command=True) for arg in engine)}
 ExecStart={' '.join(quote(arg, command=True) for arg in command)}
 StandardInput=null
 StandardOutput=journal
@@ -68,8 +66,7 @@ def main() -> int:
     if not args or args == ["--help"]:
         print("Usage: python3 deploy/install_service.py -- <main.py flags>\n"
               "Example: python3 deploy/install_service.py -- --process -l 2 -i 60\n"
-              "Installs scraper.service; does not start it or enable it at boot.\n"
-              "At start it checks the Python engine, master and prebuilt trees.")
+              "Installs scraper.service; does not start it or enable it at boot.")
         return 0 if args else 2
     if os.geteuid() != 0:
         sys.exit("Run this installer as root.")
