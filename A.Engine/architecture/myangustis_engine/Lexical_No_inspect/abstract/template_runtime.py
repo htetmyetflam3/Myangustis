@@ -1,7 +1,7 @@
 """First, limited runtime for the owner's sentence templates.
 
-Only msp-01 (head-only verb unit) and msp-02 (tail-only noun sequence) are
-implemented. This is an opt-in structural probe, not a general grammar parser.
+Head/tail parsing is not implemented yet. The smaller one-sided templates
+are fallback probes and are not run until the two-piece stage exists.
 """
 from copy import deepcopy
 
@@ -84,29 +84,24 @@ def _tail_only(tokens, template):
 
 
 def analyse_sentence(tokens, *, complete, data=None):
-    """Evaluate the two supported templates without changing tagger candidates."""
+    """Report parsing as pending without prematurely approving fallback templates."""
     if data is None:
         data = load_template_data()
     templates = data['Templates']
+    # Head and tail must be attempted before a one-sided template is used as
+    # fallback. Until that parser exists, do not run or approve the probes.
     reports = []
-    for ident, template in templates.items():
+    for ident in templates:
         if not complete:
-            result = {'id': ident, 'status': 'unresolved', 'analyses': [],
-                      'note': 'A Burmese full stop is required for this initial probe.'}
-        elif (ident == 'msp-01' and template.get('parser') == 'head-only'
-              and template.get('seq') == ['v']
-              and template.get('head', {}).get('root', {}).get('posFamily') == 'verb'
-              and template.get('tail', {}).get('status') == 'reject'):
-            result = _head_only(tokens, data, template)
-        elif (ident == 'msp-02' and template.get('parser') == 'tail-only'
-              and template.get('seq') == ['n'] and template.get('head') is None
-              and template.get('tail', {}).get('posFamily') == 'noun'
-              and template.get('tail', {}).get('must') == 'end_with_punctuation'):
-            result = _tail_only(tokens, template)
+            status = 'unresolved'
+            note = 'A Burmese full stop is required for this initial probe.'
+        elif ident in ('msp-01', 'msp-02'):
+            status = 'pending_fallback'
+            note = 'One-sided fallback is not evaluated before the two-piece stage.'
         else:
-            result = {'id': ident, 'status': 'not_implemented', 'analyses': [],
-                      'note': 'This template is not implemented in the initial probe.'}
-        reports.append(result)
+            status = 'not_implemented'
+            note = 'The two-piece template parser is not implemented yet.'
+        reports.append({'id': ident, 'status': status, 'analyses': [], 'note': note})
     return {'complete': complete, 'tokens': tokens, 'templates': reports}
 
 
