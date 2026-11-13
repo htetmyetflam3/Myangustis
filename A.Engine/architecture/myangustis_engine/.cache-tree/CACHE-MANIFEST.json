@@ -1,0 +1,17 @@
+{
+  "builder": "python",
+  "excludedPosEntries": 0,
+  "sourceMasterSha256": "055c229cf66c228c7a46729ce82809eafe6874bab28885e241dc63f730e69503",
+  "generatedAt": "2026-11-13T11:23:17.215Z",
+  "treeDir": "A.Engine/architecture/myangustis_engine/.cache-tree",
+  "counts": {
+    "posRoots": 1907
+  },
+  "files": {
+    "pos.tree.json": "04fd522dc04e7989fcbe66710e1df764b252b393f5271cac5ed1ac9fa5d26c16",
+    "ref-syllables.json": "ebea6679d9739fafa24c5a0b17b09d233865dd50b0160dfdb65c0ec5dbf5c94d",
+    "rtl-tree.json": "8a17fde6b7bd47f4379e2e8a712aae1a6e1c5dc9123e13a7d4dbca33b1bee15d",
+    "syllable.mapped.txt": "9374875397b2e1fb997eaab323d1e6a886552fa2ed97690732812db165b918fd",
+    "syllable.tree.json": "8fa09f215a48583a8ea1db07ccb4451c22580b24267bc983311c170a9e45c1b5"
+  }
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Continuous convertable parse: serial read-only SSH pull -> PDF text parser -> Parquet.
+"""Continuous parse: read-only SSH pull -> PDF text parser -> Parquet and TXT.
 
 A duplicate of deploy/continuous-ocr/run.py with the same flow and the same logic -
 the same ledger, the same statuses, the same book_key, the same commit into the ONE
@@ -7,8 +7,8 @@ cumulative Parquet, the same restart reconciliation, the same 5 GB disk floor, t
 same retained-failure reminder and the same emails. Two things differ, both of them
 the point:
 
-  * the queue is ONLY <SSH_DIR>/convertable/ on the shared host, not the whole
-    hosting tree; and
+  * the queue is one direct child of SSH_DIR on the shared host, configured by
+    REMOTE_PRASER_DIR (default: convertable); and
   * each book is routed as image-only or text and text is sent to the Python
     Parser's convert API, followed by the native Python Engine. No old-font or
     text-quality rejection gate is applied by the Scraper.
@@ -30,18 +30,20 @@ import sqlite3
 import subprocess
 import sys
 import time
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 import bootstrap  # noqa: E402,F401
 from save_remote import load_config, _ssh_argv, sha256_file
+from parse_queue import remote_parser_dir, load_workspace_env
 from mailer import RunMail
 import text_collect
 from disk_floor import DISK_FLOOR
 
 STATE = ROOT / 'scan' / 'parse'
 DB = STATE / 'state.sqlite3'
-CONVERTABLE_DIR = 'convertable'   # the only directory this service reads
+TEXT_FILE = ROOT / 'pdfs' / 'parquet' / 'parsed-books.txt'
 LOCAL_STAGING = '.parse'          # downloaded PDFs, deleted on success
 
 
@@ -68,7 +70,16 @@ def database():
       source text primary key, local text not null, status text not null,
       digest text, error text, parquet text, updated real not null, book_key text);
     create table if not exists meta (key text primary key, value text not null);
+    create table if not exists text_sections (
+      id integer primary key autoincrement, source text unique not null,
+      title text not null, text text not null);
+    create table if not exists text_export (
+      id integer primary key check (id=1), bytes integer not null,
+      last_id integer not null, dirty integer not null);
+    insert or ignore into text_export values (1, 0, 0, 0);
     ''')
+    if not any(c[1] == 'book_key' for c in db.execute('pragma table_info(books)')):
+        db.execute('alter table books add column book_key text')
     db.commit()
     return db
 
@@ -81,8 +92,8 @@ def book_key(db, source):
     or the writer's duplicate guard would see two different books. The key is the
     filename minus .pdf, persisted so a retry replaces its own row; a basename
     already taken by another source is keyed <name>-<first 8 hex of the source>
-    instead. convertable/ is flat today, so the clash branch is a safety net rather
-    than a routine - but the host is not the only writer of that directory.
+    instead. Nested remote folders can contain books with the same basename,
+    so the suffix keeps those sources distinct in this service's ledger.
     """
     row = db.execute('select book_key from books where source=?', (source,)).fetchone()
     if row and row['book_key']:
@@ -159,7 +170,7 @@ def reminders(db):
             db.execute("insert or replace into meta values ('last_reminder',?)", (str(time.time()),))
             db.commit()
             mail_notice('failed', [
-                f'{len(active)} failed convertable PDFs remain on the VPS; no automatic retry.',
+                f'{len(active)} failed PDFs remain on the VPS; no automatic retry.',
                 'They are kept, not deleted. Delete them yourself and they drop out of '
                 'this count as "removed"; the service keeps running either way.',
             ])
@@ -169,21 +180,21 @@ def ssh(config, command):
     return subprocess.run(_ssh_argv(config, command), capture_output=True, check=True).stdout
 
 
-def discover(config):
-    """Every PDF in the host's convertable/ directory, and nothing else.
+def remote_shell_path(path):
+    """Safely expand ~/ on the remote host, without expanding other input."""
+    path = str(path)
+    if path == '~':
+        return '"$HOME"'
+    if path.startswith('~/'):
+        return '"$HOME"/' + shlex.quote(path[2:])
+    return shlex.quote(path)
 
-    The OCR service walks the whole hosting tree and keeps only what sits under a
-    scan/scanned directory; this is the mirror image, and it does not walk the tree
-    at all - one find over that one directory is the whole queue. NUL delimiters
-    preserve spaces, Burmese names and newlines. Symlinks are never followed.
 
-    A missing convertable/ directory makes find exit non-zero, which raises here and
-    reaches the owner as a failed email. That is deliberate: a queue that silently
-    reads nothing for a month is worse than one loud failure at the start.
-    """
-    root = config.directory
-    script = ('cd -- ' + shlex.quote(root)
-              + f' && find ./{CONVERTABLE_DIR} -type f -iname \'*.pdf\' -print0')
+def discover(config, folder=None):
+    """Discover PDFs below the configured child only, without following symlinks."""
+    folder = folder if folder is not None else remote_parser_dir()
+    script = ('cd -- ' + remote_shell_path(config.directory)
+              + ' && find ' + shlex.quote('./' + folder) + " -type f -iname '*.pdf' -print0")
     raw = ssh(config, script)
     sources = []
     for name in raw.split(b'\0'):
@@ -192,24 +203,17 @@ def discover(config):
         rel = PurePosixPath(os.fsdecode(name))
         if rel.is_absolute() or '..' in rel.parts:
             raise RuntimeError('Unsafe hosting-relative path')
-        # The bucket has to be a directory component, not merely part of a filename.
-        if CONVERTABLE_DIR not in [p.lower() for p in rel.parts[:-1]]:
+        if len(rel.parts) < 2 or rel.parts[0] != folder:
             continue
-        # find already asked for *.pdf. Filter again anyway: the queue is what gets
-        # downloaded, parsed and written into the collection, and trusting a remote
-        # shell's glob alone is a thin thing to hang that on - a busybox find, a
-        # quoting accident or a hand-edited directory should not be able to put a
-        # non-PDF in the collection.
-        if not rel.name.lower().endswith('.pdf'):
-            continue
-        sources.append(str(rel))
+        if rel.name.lower().endswith('.pdf'):
+            sources.append(str(rel))
     return sorted(set(sources))
 
 
 def download(config, source, target):
     """Byte-exact pull, verified against the host's own sha256 before and after."""
     remote = str(PurePosixPath(config.directory) / source)
-    quoted = shlex.quote(remote)
+    quoted = remote_shell_path(remote)
     expected = ssh(config, 'sha256sum -- ' + quoted).decode().split()[0]
     target.parent.mkdir(parents=True, exist_ok=True)
     part = target.with_name('.' + target.name + '.part')
@@ -225,6 +229,59 @@ def download(config, source, target):
     syncfile(target)
     # Each SSH subprocess has exited before returning to the caller.
     return digest
+
+
+def save_text_section(db, source, title, text):
+    """Save one source's extracted text durably for idempotent TXT export."""
+    old = db.execute('select title, text from text_sections where source=?', (source,)).fetchone()
+    if old is None:
+        db.execute('insert into text_sections(source,title,text) values (?,?,?)', (source, title, text))
+    elif old['title'] != title or old['text'] != text:
+        db.execute('update text_sections set title=?, text=? where source=?', (title, text, source))
+        db.execute('update text_export set dirty=1 where id=1')
+    db.commit()
+
+
+def sync_text_collection(db):
+    """Publish UTF-8 sections; recover partial appends/restarts without duplicates."""
+    state = db.execute('select bytes,last_id,dirty from text_export where id=1').fetchone()
+    count = db.execute('select count(*) from text_sections').fetchone()[0]
+    if not count and not TEXT_FILE.exists():
+        return
+    if not count and state['bytes'] == 0 and TEXT_FILE.exists() and TEXT_FILE.stat().st_size:
+        raise RuntimeError(f'Refusing to overwrite an untracked text collection: {TEXT_FILE}')
+    TEXT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    actual = TEXT_FILE.stat().st_size if TEXT_FILE.exists() else 0
+    rebuild = bool(state['dirty']) or actual != state['bytes']
+    last_id = 0 if rebuild else state['last_id']
+    rows = db.execute('select id,title,text from text_sections where id>? order by id', (last_id,))
+    temp_name = None
+    try:
+        if rebuild:
+            handle = tempfile.NamedTemporaryFile(mode='wb', dir=TEXT_FILE.parent,
+                                                  prefix='.parsed-books-', delete=False)
+            temp_name = handle.name
+        else:
+            handle = TEXT_FILE.open('ab')
+        with handle:
+            for row in rows:
+                title = row['title'].replace('\r', ' ').replace('\n', ' ')
+                handle.write(('===== ' + title + ' =====\n').encode('utf-8'))
+                handle.write(row['text'].encode('utf-8'))
+                handle.write(b'\n\n')
+                last_id = row['id']
+            handle.flush()
+            os.fsync(handle.fileno())
+        if rebuild:
+            os.replace(temp_name, TEXT_FILE)
+            temp_name = None
+        syncfile(TEXT_FILE)
+        db.execute('update text_export set bytes=?,last_id=?,dirty=0 where id=1',
+                   (TEXT_FILE.stat().st_size, last_id))
+        db.commit()
+    finally:
+        if temp_name is not None:
+            Path(temp_name).unlink(missing_ok=True)
 
 
 def commit_dataset(db, row, parsed):
@@ -249,32 +306,63 @@ def commit_dataset(db, row, parsed):
     if final is None:
         raise RuntimeError('Existing scraper Parquet writer failed')
     syncfile(final)
+    save_text_section(db, source, book, text)
+    sync_text_collection(db)
     # Deterministic row key + durable ledger make restart reconcile crash windows.
     update(db, source, 'success', parquet=str(final), error='')
     Path(row['local']).unlink(missing_ok=True)
-    print(f'[parse-success] {source} -> {final}', flush=True)
+    print(f'[parse-success] {source} -> {final} and {TEXT_FILE}', flush=True)
 
 
 def run(db):
+    load_workspace_env()
     config = load_config()
+    folder = remote_parser_dir()
     STATE.mkdir(parents=True, exist_ok=True)
     with (STATE / 'runner.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        mail_notice('started', [f'Queue: {config.directory}/{CONVERTABLE_DIR}/ on the host, '
+        sync_text_collection(db)
+        mail_notice('started', [f'Queue: {config.directory}/{folder}/ on the host, '
                                 'read-only. No runtime deadline. Parser only, no OCR.'])
         try:
             # Interrupted parses resume from the retained verified PDF, and the
             # deterministic row key prevents a second dataset row. Reconcile by ROW,
             # because every book shares one cumulative Parquet.
-            done = db.execute("select * from books where status='success'").fetchall()
+            done = [row for row in db.execute("select * from books where status='success'")
+                    if PurePosixPath(row['source']).parts[:1] == (folder,)]
             if done:
                 target = ROOT / 'pdfs' / 'parquet' / text_collect.PARQUET_FILE_NAME
-                committed = set()
+                committed, by_sha, by_text = {}, {}, {}
                 if target.is_file():
                     import pyarrow.parquet as pq
-                    committed = set(pq.read_table(target, columns=['book'])['book'].to_pylist())
+                    schema = pq.read_schema(target)
+                    columns = ['book', 'text'] + (['sha256'] if 'sha256' in schema.names else [])
+                    table = pq.read_table(target, columns=columns)
+                    for item in table.to_pylist():
+                        body = item['text'] or ''
+                        committed[item['book']] = body
+                        if item.get('sha256'):
+                            by_sha[item['sha256']] = body
+                        if len(body.strip()) >= text_collect.TEXT_DEDUPE_MIN_CHARS:
+                            by_text[body.strip()] = body
                 for row in done:
-                    if (row['book_key'] or book_key(db, row['source'])) in committed:
+                    key = row['book_key'] or book_key(db, row['source'])
+                    section = db.execute('select text from text_sections where source=?',
+                                         (row['source'],)).fetchone()
+                    # The shared Parquet writer may have deduplicated this PDF
+                    # into a row with another book name. Match the same file or
+                    # sufficiently long identical text before re-queuing it.
+                    body = committed.get(key)
+                    if body is None and row['digest']:
+                        body = by_sha.get(row['digest'])
+                    if body is None and section and len(section['text'].strip()) >= text_collect.TEXT_DEDUPE_MIN_CHARS:
+                        body = by_text.get(section['text'].strip())
+                    if body is not None:
+                        # Existing successes from before TXT support can be
+                        # recovered from Parquet without touching the remote PDF.
+                        if section is None:
+                            title = PurePosixPath(row['source']).stem
+                            save_text_section(db, row['source'], title, body)
                         Path(row['local']).unlink(missing_ok=True)
                         continue
                     # No row in the single Parquet - it was wiped, moved, or this ledger
@@ -285,16 +373,18 @@ def run(db):
                            error='re-queued: row absent from ' + target.name)
                     print(f'[migrate] {row["source"]}: no row in {target.name}, re-queued',
                           flush=True)
+                sync_text_collection(db)
             while True:
-                sources = discover(config)
+                sources = discover(config, folder)
                 for source in sources:
                     local = ROOT / 'pdfs' / LOCAL_STAGING / source
                     db.execute('insert or ignore into books(source,local,status,updated) '
                                'values (?,?,?,?)',
                                (source, str(local), 'pending', time.time()))
                 db.commit()
-                rows = db.execute("select * from books where status not in "
-                                  "('success','failed','removed') order by source").fetchall()
+                rows = [row for row in db.execute("select * from books where status not in "
+                                  "('success','failed','removed') order by source")
+                        if PurePosixPath(row['source']).parts[:1] == (folder,)]
                 if not rows:
                     break
                 for row in rows:
@@ -335,7 +425,7 @@ def run(db):
                         continue
                     reminders(db)
             mail_notice('finished', [
-                f'Parse stopped: no eligible PDFs remain in {CONVERTABLE_DIR}/. '
+                f'Parse stopped: no eligible PDFs remain in {folder}/. '
                 'Failed PDFs are not retried.',
                 'The reminder timer continues checking retained failures.'])
         finally:
