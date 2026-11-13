@@ -51,7 +51,7 @@ def read_file_content(file_path): return ''.join(collector(file_path))
 
 def read_and_prepare(file_path, runtime):
     for block in collector(file_path):
-        yield runtime.mapperStr(runtime.normalize(block))
+        yield runtime.mapperNormalize(block)
 
 
 def resolve_inputs(path):
