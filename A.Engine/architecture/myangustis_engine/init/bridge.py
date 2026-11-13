@@ -6,7 +6,7 @@ from myangustis_engine.MonoSyllabism.main.grapheme.cache_integrity import verify
 from myangustis_engine.MonoSyllabism.generators.pos_input import fullstop_holder
 from myangustis_engine.MonoSyllabism.generators.input import read_from_api
 from myangustis_engine.bridge.Ginit import run_rule_engine
-from myangustis_engine.Lexical_No_inspect.abstract.template_runtime import analyse_lines
+from myangustis_engine.Lexical.abstract.template_runtime import analyse_lines
 from myangustis_engine.MonoSyllabism.main.phoneme.lexer import run_segmentor
 from myangustis_engine.MonoSyllabism.main.phoneme.phonology import run_tagger
 from myangustis_engine.MonoSyllabism.generators.SfomatterForP import to_line_strings

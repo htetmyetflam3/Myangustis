@@ -3,7 +3,7 @@
 The lexical stage is a pass-through for classifier rules. This active bridge
 also preserves the JS owner rule: exactly the noun/verb candidates become rbvn.
 """
-from myangustis_engine.Lexical_No_inspect.abstract.posoverride import (
+from myangustis_engine.Lexical.abstract.posoverride import (
     run_rule_engine as run_pos_override,
 )
 

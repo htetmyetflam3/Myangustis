@@ -3,7 +3,7 @@ import unittest
 from copy import deepcopy
 
 from myangustis_engine.bridge.Ginit import run_rule_engine
-from myangustis_engine.Lexical_No_inspect.abstract.posoverride import (
+from myangustis_engine.Lexical.abstract.posoverride import (
     run_rule_engine as run_pos_override,
 )
 

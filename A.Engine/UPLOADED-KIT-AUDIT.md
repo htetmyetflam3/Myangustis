@@ -21,8 +21,8 @@ they do not rewrite the uploaded reference.
   JavaScript property ordering for roots, and JavaScript trim semantics in POS
   entries. An empty dictionary remains an empty JS object rather than falling
   back to the outer master.
-- Differential tests run the actual uploaded JS sources. The current full
-  master produces matching syllable lookup data, forward and reverse trees,
+- Differential tests run the actual uploaded JS sources. Using the uploaded
+  reference master, they produce matching syllable lookup data, forward and reverse trees,
   references, mapped rows and POS tree/failures. Mapper tests include generated
   mixed-script cases and UTF-16/whitespace edge cases. These tests do not prove
   universal parity or cover components absent from the kit.
@@ -40,3 +40,11 @@ this audit does not silently remove user data. The kit's master also contains
 plaintext data and its payload key is checked in; treat them as public, not
 secrets. The proofreading tool's `canonical` helper is separate from the
 engine runtime and was not used to change segmentation.
+
+## Owner-directed dictionary repair
+
+At the owner’s request, `သိမ်း` was moved from `dictionary.NOUN` to
+`dictionary.VERB` in both `secret/master.json` and the encrypted runtime master.
+The owner also directed removal of the erroneous `ကို  က` entry from
+`dictionary.NOUN` in both masters. The runtime trees were rebuilt; the master
+datasets match. These corrections do not change the reference JS algorithm.

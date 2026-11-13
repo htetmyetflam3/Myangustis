@@ -17,14 +17,14 @@ Rule IDs below are ledger identifiers, not established linguistic names.
   `SyllableSchema` (`posFamily`, `pos`, `unit`, `relation`, `role`),
   `LSE_Map`, `LSN_Map`, `particleToClass`, and sentence templates `msp-01`
   through `msp-07`. These are useful design material, not proof that a
-  particular sentence can already be parsed or a particle resolved.
+  particular sentence can already be parsed or a grammatical item resolved.
 - **Active POS stage:** [`bridge/Ginit.py`](architecture/myangustis_engine/bridge/Ginit.py)
-  calls [`posoverride.py`](architecture/myangustis_engine/Lexical_No_inspect/abstract/posoverride.py).
+  calls [`posoverride.py`](architecture/myangustis_engine/Lexical/abstract/posoverride.py).
   The latter is currently a pass-through. The active bridge applies the
   noun/verb rule below; it is not a grammar classifier yet.
 - **Tagger inputs:** [`phonology.py`](architecture/myangustis_engine/MonoSyllabism/main/phoneme/phonology.py)
   emits `syllables`, `ids`, and candidate `rawPos`. Relevant current tags
-  include `pn` (pronoun), `n` (noun), `p` (particle) and `w` (wibat).
+  include `pn` (pronoun), `n` (noun), `p` (ပစ္စည်း) and `w` (ဝိဘတ်).
   A candidate list is not, by itself, a confirmed grammatical analysis.
 
 ### Keep the ambiguity dimensions separate
@@ -60,7 +60,7 @@ leaves `wibat.noun.ပိုင်ဆိုင်ခြင်းပြဝိဘ�
 `၏` under that noun type and the draft `particleToClass` gives it a `BOTH`
 label. Record these as **different source assertions**, not an automatic
 resolution. Likewise `ကို` is listed under noun wibat as object marker and
-under noun particle as a gender-related item; retaining both paths matters.
+under noun ပစ္စည်း as a gender-related item; retaining both paths matters.
 
 ## Naming your rules — independent of grammatical categories
 
@@ -131,7 +131,7 @@ that inventory**; it is not a new name for the book's wibat type.
 | ID | Status | Condition | Current result | Source |
 |---|---|---|---|---|
 | `EXISTING-POS-001` | Active | A token has **exactly** two `rawPos` candidates, `n` and `v`, in either order. | Bridge replaces `rawPos` with `['rbvn']` and sets `finalPos` to `rbvn`. `isAmbiguous` reflects the original candidate count. A list containing `n`, `v`, and another tag is not collapsed. | `bridge/Ginit.py` (mirrors active `main` JS `bridge/Ginit.js`) |
-| `EXISTING-POS-002` | Active behavior | Any other token at the current POS override stage. | Candidates pass through, `finalPos` is the first candidate (or `None` for an empty list), and `matches` is empty. This is a placeholder, **not** evidence that ambiguity has been resolved. | `Lexical_No_inspect/abstract/posoverride.py` |
+| `EXISTING-POS-002` | Active behavior | Any other token at the current POS override stage. | Candidates pass through, `finalPos` is the first candidate (or `None` for an empty list), and `matches` is empty. This is a placeholder, **not** evidence that ambiguity has been resolved. | `Lexical/abstract/posoverride.py` |
 
 The tagger has additional standalone-token and number/punctuation handling in
 `phonology.py`; those are tagger behavior, not rules implemented by this POS
@@ -151,7 +151,7 @@ pipeline and is not evidence that contextual grammar rules are running.
 **Owner-defined scope:** `pronoun + bare ့ (U+1037) →` the possessive wibat
 type. The result for a confirmed match is **ပိုင်ဆိုင်ခြင်းပြဝိဘတ်**, not
 just a generic candidate. The mark may be an orthographic mark on the final
-syllable rather than an independently written particle; this does not change
+syllable rather than an independently written grammatical item; this does not change
 the owner’s rule. Non-bare attached forms are outside this specific rule.
 
 **Proposed evidence/guardrails before implementation:**
@@ -229,3 +229,144 @@ proposed wibat type.
 - Replace lossy `particleToClass` flattening only after agreeing on a
   multi-candidate, provenance-preserving model; don't change runtime maps as
   part of this ledger.
+
+## Dictionary repair note: `သိမ်း`
+
+- **Reported by owner:** `သိမ်း` is wrongly categorized as a noun in the
+  dictionary and needs repair; it is a verb in `အိပ်ရာ သိမ်း။` (book example
+  `MSP_03`).
+- **Observed before repair:** the POS view for `အိပ်ရာ သိမ်း။` returned
+  `အိပ်ရာ{n} သိမ်း{n} ။<eos>`, so no verb candidate is available for the
+  template parser in this example.
+- **Status:** repaired at the owner’s request: moved the exact entry from
+  `dictionary.NOUN` to `dictionary.VERB` in the encrypted runtime master and
+  rebuilt the trees. The POS view now returns `အိပ်ရာ{n} သိမ်း{v} ။<eos>`.
+  The source `secret/master.json` was corrected too; the two master datasets
+  match again. This is not a change to the template parser.
+
+## ဦး + `{?}` before a noun wibat — idea for later
+
+**Status:** recorded for future investigation, not implemented and not
+currently a POS-override rule. The owner originally associated `{?}` with
+wrong spelling, then clarified that dictionary-missing names can also produce
+`{?}`. The tag alone proves neither a typo nor a name and must not be
+automatically changed into a noun.
+
+The original idea was `ဦး + consecutive {?} + noun marker` → treat `ဦး` and
+the intervening sequence as a noun. **Noun marker means any နာမ်ဝိဘတ်**,
+not only a subject marker. The owner wants to find a suitable way to handle
+this later rather than include it in the current POS-override rules. The rule's
+scope, evidence, handling of misspellings and execution stage remain open;
+no `MOR-02` identifier or behavior is established for it.
+
+A raw `{w}` can also represent a verb wibat or be ambiguous, so it cannot by
+itself confirm a noun-wibat boundary. The current tagger reports `ဦးဘသည်`
+as `ဦး{r} ဘ{n} သည်{w,p,pn}`: that example does not contain a `{?}` token.
+
+## `pe` and grammatical candidates
+
+The owner clarified that `p` means **ပစ္စည်း**, not a generic English
+“particle”. `w` is ဝိဘတ်. `pe` is intentional and represents `{p, w, cj}`;
+it is not simply another name for the tagger's `p`. The owner had planned to
+resolve those separately, but the exact approach is not yet specified. Keep
+`pe`, `pe1`, etc. in the template without collapsing the constituent categories.
+The current Python tagger uses `cn` for conjunction, while the owner's grouping
+is written `cj`; how those labels correspond needs confirmation. No new runtime
+resolution rule is established by this note.
+
+## Dictionary-missing names in templates
+
+The owner notes that dictionaries cannot cover all names: a name such as
+`မန္တလေး` or `စဖရန်စ္စစကို` may be split into tokens with mixed and
+misleading POS tags. The msp-06 probe can retain a marker-bounded sequence that
+contains `{?}` as one **conditional noun-unit candidate**, with original
+token tags and uncertainty intact. It is not a confirmed name, correction,
+or POS override, and does not implement the deferred `ဦး` rule above. Word
+boundaries and alternatives still need further analysis.
+
+## Dictionary repair note: `ကို  က`
+
+- **Owner-directed correction:** remove the exact two-syllable `ကို  က` entry
+  from `dictionary.NOUN`; it was an erroneous noun entry. Separate `ကို` and
+  `က` entries in other categories were retained.
+- **Status: finished.** Removed it from both the plaintext source
+  `secret/master.json` and the encrypted runtime master
+  `A.Engine/architecture/myangustis_engine/.data/master.json.enc`; rebuilt
+  `A.Engine/architecture/myangustis_engine/.cache-tree/` from that master.
+  Both master datasets now match, and the tree manifest records the runtime
+  master fingerprint.
+- **Observed before:** in `ဦးဘက စဖရန်စ္စစကိုက ပြန်လာတယ်။`, the tagger
+  combined the last two syllables as `ကိုက{n}`. **After:** they appear
+  separately as `ကို{w,p} က{w,cn,n}`. This correction alone does not prove
+  a final noun-name span or resolve all POS/roles.
+
+## Name-unit boundary at `pe` — slot-aware stop sign
+
+The owner directed that name merging must not cross a `pe`: a selected `pe`
+is a stop sign globally, including for name spans. A raw POS possibility alone
+does not prove a token acts as `pe`. Both choices—using a token within a name
+unit or splitting it as `pe`—must satisfy the applicable template slots.
+
+The owner expects later rules and templates to honor this boundary as well.
+Unusual names may expose edge cases; keep those examples for review rather
+than assuming the present implementation handles every possible name.
+
+**Current implementation:** the msp-06 probe builds complete slot bindings
+first. When a binding selects an additional marker inside a noun unit of a
+less-detailed binding with the same verb unit and the same previously selected
+marker positions, it rejects that over-grouped binding. The boundary indices
+and rejected analysis remain available as `rejected_analyses`. Incomparable
+marker sets and different verb units remain alternatives, and raw tags do not
+change. This comparison is limited to generated msp-06 candidates; it is not
+a global cross-template resolver or proof that a conditional candidate is a
+final parse. Other template implementations must honor the same stop sign.
+
+For `ဦးဘက စဖရန်စ္စစကိုက ပြန်လာတယ်။`, msp-06 finds the complete binding
+`ဦးဘ + က` and `စဖရန်စ္စစကို + က`, so it rejects the binding that swallows
+the first `က` into `ဦးဘကစဖရန်စ္စစကို`. Ambiguous POS candidates inside the
+name are not automatically split as `pe` without a supported slot binding.
+
+## MOR-02: time versus place before `က` — RELOOK / EXTEND
+
+**Status: implemented in the experimental msp-06 candidate probe; revisit and
+extend the time list.** The owner corrected the draft and requested runtime
+integration. The owner says to extend the list later:
+
+```text
+{
+နာရီ
+အချိန်
+တုန်း
+ရက်
+လ
+နှစ်
+ခုနှစ်
+မိနစ်
+စဉ်
+ခိုက်
+/*will extend later*/
+} + က  → time
+else → place
+```
+
+MOR-02 distinguishes time/place interpretations of a selected `က` after a
+candidate noun unit, not subject-marker `က`. In the current msp-06 probe,
+normalize the combined unit to NFC and check whether it **ends with** a listed
+expression (longest match wins); a listed ending selects time, otherwise the
+owner's rule selects place. This is a provisional implementation of `+ က`;
+its matching scope, segmentation and inflections must be revisited. The owner
+corrected the original typo `နာdရီ` to `နာရီ`. The executable list and rule
+are in `Lexical/abstract/template_runtime.py` (`_MOR_02_TIME_ENDINGS`,
+`_mor_02_ka_role`). Candidate evidence records `MOR-02`, the matched ending or
+`default-place`, and the unit; original POS and resolution evidence are kept.
+
+**RELOOK:** the list is incomplete. For example, `မနက်က` currently takes the
+place default even though `မနက်` can indicate time. Suffix matching can also
+match the end of an unrelated word. Extend the list and reconsider matching
+when examples show the need. Some listed forms (such as `တုန်း`, `စဉ်`, and
+`ခိုက်`) have no noun-tag candidate in the tested standalone inputs, so the
+msp-06 noun-unit probe cannot yet bind them; the rule can recognize their
+endings when an eligible candidate unit is available, but does not override
+their POS. The rule does not itself establish a name boundary, settle source
+versus other place roles, or select the complete sentence analysis. It does
+not implement the deferred `ဦး` idea.

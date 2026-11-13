@@ -56,19 +56,54 @@ readable Python source.
 Run `uv run --package myangustis-engine python -m unittest discover -s test/engine -v`.
 JS differential tests are optional and require an external reference checkout;
 set `MYANGUSTIS_JS_REFERENCE_ROOT` to it. `logen.py` is a partial logging port;
-the host, debug bridge and `Lexical_No_inspect` are out of scope.
+the host and debug bridge are out of scope. The Python `Lexical` package
+contains the current inspectable lexical experiments; the JS reference calls
+its corresponding area `Lexical_No_inspect`.
 
 ## Experimental sentence-template probe
 
-The opt-in `template` flag is **not yet a sentence parser**. The required
-head-and-tail stage is not implemented, and the smaller one-sided `msp-01`
-and `msp-02` templates are fallbacks, not starting points. Until the two-piece
-stage has been evaluated, those fallbacks return `pending_fallback` and no
-sentence is approved. Other templates are reported as `not_implemented`.
-Incomplete sentences remain `unresolved`. Existing `syllable` and `pos`
+The experimental `template` report first scans `pe`-group POS candidates from the
+Burmese full stop backwards using the runtime master's `resolution.single`
+defaults and style alternatives. It skips surfaces supported by both styles
+and selects the first distinguishing style, then exposes applicable resolution
+entries throughout the sentence. POS ambiguity and multiple category/role
+paths remain visible; selection is based on candidates, not a confirmed parse.
+Unlisted forms and sentences with no discriminator remain unresolved.
+Grouped/multi-token resolution rules and position-based distinctions are not
+yet implemented. This style evidence does not yet resolve the template roles.
+
+The opt-in `template` flag is an incomplete parser. It can report `possible`
+`msp-03` and `msp-04` candidates for supported noun/verb structures, such as
+`အိပ်ရာ သိမ်း။` and `ထမင်းဆိုင်မှာ စားမလား။`. It looks from the end for a
+verb root, binds a noun unit as its `N1` child, and preserves the template's
+nested declarations and inheritance. The owner defines `pe` as a grouping of
+`p` (ပစ္စည်း), `w` (ဝိဘတ်), and `cj`; it is not equivalent to the single `p` tag. It can include a listed noun wibat and
+listed verb-family ending candidates, retaining the marker's source and
+`disambiguate` entries. Candidates do not resolve noun roles, marker category,
+ending order, or competing templates and are not final parses. Unsupported
+or ambiguously tagged tokens stay unresolved.
+
+For `msp-05`, the explicit ending can be reported as evidence, but its noun
+sequence and `pt` are not yet parsed. `msp-06` can probe the subject and optional source, goal, instrument and
+comitative/temporal marker chain using the selected style. An unknown name split into mixed POS tokens may be retained as one
+conditional noun-unit candidate before a noun wibat, without changing raw tags
+or asserting that the spelling is wrong. In msp-06, a noun unit cannot cross a
+`pe` selected by a fuller complete binding with the same verb unit and existing
+marker positions; rejected over-groupings remain inspectable. Raw `pe` POS
+candidates do not automatically split names, and incomparable bindings remain
+alternatives. This is not yet a global cross-template resolver. Proper-name status
+is not confirmed; fused temporal units are not parsed. MOR-02 distinguishes
+time versus place when a candidate noun unit is followed by `က`: listed time
+endings select time; otherwise it defaults to place. The list is incomplete,
+so unlisted time expressions can take the place default; see the ledger for
+extensions and the rule's implementation scope. Search limits are reported when reached.
+`msp-07` reports marker evidence but does not yet parse the fronted topic or
+omitted markers.
+`msp-01` and `msp-02` remain pending fallbacks while broader structures are
+incomplete. Incomplete sentences stay unresolved. Existing `syllable` and `pos`
 output is unchanged.
 
 ```python
 from myangustis_engine.api import template_views
-reports = template_views('စားမလား။')  # diagnostic only; no template approved
+reports = template_views('ထမင်းဆိုင်မှာ စားမလား။')
 ```
