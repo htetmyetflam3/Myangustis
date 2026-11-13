@@ -1,5 +1,9 @@
+"""Active POS resolution stage, mirroring main's bridge/Ginit.js.
 
-
+This is a pass-through for classifier rules, except that the exact two-tag
+noun/verb candidate set is collapsed to rbvn. The separate experimental JS
+Lexical_No_inspect/abstract/ modules are not wired into this Python stage.
+"""
 def run_rule_engine(tagged):
     for index, line in enumerate(tagged):
         tokens = []
