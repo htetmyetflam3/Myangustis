@@ -1,6 +1,5 @@
-
-
 # do not edit the lines below
+# ============================================================================
 *master.json.cache*
 *site.db
 *env*
@@ -14,7 +13,10 @@
 *uv*.envvars
 .venv*
 *.venv*
+*output*
+# ============================================================================
 #and above this line
+
 unused-exports.json
 Architecture/Engine/.data/master.json.cache*
 *site.db
