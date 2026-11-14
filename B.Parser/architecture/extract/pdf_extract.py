@@ -1049,7 +1049,7 @@ def _join_page_runs(pieces, doc):
     names = [piece[4] for piece in pieces if len(piece) > 4 and piece[4]]
     if not any(is_legacy_font_name(name) or 'zawgyi' in name.lower() for name in names):
         return joined
-    return legacy_ascii.map_residue(joined)[0]
+    return legacy_ascii.resolve(joined)
 
 def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=False, *, used_myanmar_fonts=None, used_legacy_fonts=None, image_records=None, diagnostics=None):
     """Extract text lines WITH layout: ``(lines, page_w, page_h)``.

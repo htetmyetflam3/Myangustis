@@ -131,3 +131,25 @@ class VerdictTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+def test_resolve_reads_a_slot_through_the_shared_layout():
+    """A slot is decoded; which reading wins is the line's, not a constant.
+
+    ``O`` is the one slot the two layouts read very differently (`ှု` against
+    `ဥ`), so the assertion is that it is decoded, not which reading won.
+    """
+    out = legacy_ascii.resolve('အံ့Oဖြစ်')
+    assert not any(ch.isascii() and ch.isalpha() for ch in out)
+    assert out.startswith('အံ့')
+
+
+def test_resolve_takes_the_default_path_on_a_consonant_slot():
+    # Both layouts read a valid letter at the same score, so the default stands.
+    assert legacy_ascii.resolve('Aံ့ဩ') == 'အံ့ဩ'
+
+
+def test_resolve_keeps_default_when_the_alternative_does_not_read_better():
+    # A consonant slot: both layouts read a valid letter and score the same,
+    # so the default stands and the line is not rewritten on a coin flip.
+    assert legacy_ascii.resolve('အနိမ့်') == 'အနိမ့်'

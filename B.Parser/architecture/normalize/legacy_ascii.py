@@ -64,6 +64,56 @@ def _contextual_runs(text):
             yield start, run
 
 
+#: The layouts share most slots and disagree on the rest, so the shared layout
+#: is one path with a second reading where they differ. One path is the default
+#: (Ayar, the wider of the two on the printed slot range); a line whose reading
+#: through the other path scores better is the only thing that can override it.
+def _code_pages():
+    # Lazy: the registry lives in the extract layer, which imports this module.
+    from myangustis_parser.extract.pdf_fonts import LEGACY_CODE_PAGES
+    return LEGACY_CODE_PAGES['ayar'], LEGACY_CODE_PAGES['wininnwa']
+
+
+def _apply_page(text, page):
+    """Read a line's ASCII slots through one layout, Myanmar context only."""
+    pieces, cursor, changed = [], 0, False
+    for start, run in _contextual_runs(text):
+        if len(run) != 1:
+            continue                      # a Latin word is text, not a slot
+        mapped = page.get(ord(run))
+        if mapped is None or mapped == run:
+            continue
+        pieces.append(text[cursor:start])
+        pieces.append(mapped)
+        cursor = start + 1
+        changed = True
+    if not changed:
+        return text
+    pieces.append(text[cursor:])
+    return ''.join(pieces)
+
+
+def resolve(text):
+    """Read lines slot-by-slot through the shared layout, per line.
+
+    ``mm_score`` is a character-level measure, so it can run here - before the
+    finish chain, on the line as it is being assembled - and it is evidence
+    only: the default path stands unless the alternative reading of the SAME
+    line measurably reads better. Ties keep the default.
+    """
+    from myangustis_parser.normalize import mm_score
+    default, alternative = _code_pages()
+    out = []
+    for line in text.split('\n'):
+        preferred = _apply_page(line, default)
+        other = _apply_page(line, alternative)
+        if other != preferred and mm_score.score_text(other)['score'] > mm_score.score_text(preferred)['score']:
+            out.append(other)
+        else:
+            out.append(preferred)
+    return '\n'.join(out)
+
+
 def scan(text):
     """Count every Latin letter sitting in Myanmar context, by letter.
 
