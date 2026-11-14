@@ -1,0 +1,56 @@
+
+══ WALKER REPORT ══
+elapsed: 4ms
+
+── counts ──
+  quit_no-match:     68
+  outputSyllables:     68
+
+══ TREE PATHS ══
+── root A ──
+  step1: total=12
+  step2: total=8
+  step3: total=4
+  step4: total=4
+── root B ──
+  step1: total=4
+  step2: total=4
+  step3: total=4
+── root C ──
+  step1: total=2
+── root E ──
+  step1: total=6
+  step2: total=2
+── root F ──
+  step1: total=4
+  step2: total=2
+── root M ──
+  step1: total=10
+  step2: total=4
+── root N ──
+  step1: total=2
+── root P ──
+  step1: total=4
+  step2: total=4
+  step3: total=2
+── root Q ──
+  step1: total=2
+  step2: total=2
+── root R ──
+  step1: total=2
+  step2: total=2
+  step3: total=2
+── root U ──
+  step1: total=4
+  step2: total=2
+── root X ──
+  step1: total=2
+── root Y ──
+  step1: total=2
+  step2: total=2
+── root § ──
+  step1: total=2
+── root ¶ ──
+  step1: total=2
+  step2: total=2
+

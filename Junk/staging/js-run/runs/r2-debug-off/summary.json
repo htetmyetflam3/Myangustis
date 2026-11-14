@@ -1,0 +1,16 @@
+{
+  "round": "r2-debug-off",
+  "engine": "staged main branch (67f0284) JS engine",
+  "engine_root": "/home/user/Myangustis/Junk/staging/main-js/A.Engine/architecture",
+  "flags": {
+    "BindEngine.log": true,
+    "legacyLog.init.DEBUG": false
+  },
+  "text_file": "/home/user/Myangustis/Junk/staging/input.txt",
+  "text_chars": 128,
+  "text_lines": 3,
+  "syllable_lines": 3,
+  "pos_units": 1,
+  "log_dir": "/home/user/Myangustis/Junk/staging/js-run/runs/r2-debug-off/logfromengine",
+  "log_files": []
+}

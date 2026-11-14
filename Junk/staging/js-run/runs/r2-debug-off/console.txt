@@ -1,0 +1,9 @@
+[38;5;245m14/11/2026, 20:05:43.131[0m [30;101m SEG    [0m [38;5;183m[1mPROCESSING[0m [38;5;114msegmenting...[0m
+[SEGMENTOR] Done. Total lines: 3
+[38;5;245m14/11/2026, 20:05:43.290[0m [30;45m TAG    [0m [38;5;183m[1mPROCESSING[0m [38;5;114mtagging...[0m
+[38;5;245m14/11/2026, 20:05:43.290[0m [30;101m SEG    [0m [38;5;183m[1mPROCESSING[0m [38;5;114msegmenting...[0m
+[SEGMENTOR] Done. Total lines: 3
+[38;5;245m14/11/2026, 20:05:43.296[0m [30;45m TAG    [0m [38;5;114m[1mSUCCESS[0m [38;5;114mdone[0m [38;5;183m|[0m [38;5;75m0ms[0m
+[runner] r2-debug-off: log=true DEBUG=false syllable_lines=3 pos_units=1 log_files=(none)
+(node:3666) ExperimentalWarning: WASI is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
