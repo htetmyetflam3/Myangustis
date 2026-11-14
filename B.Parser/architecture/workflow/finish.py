@@ -13,6 +13,7 @@ from myangustis_parser.normalize import judgement, mm_score, scan
 from myangustis_parser.normalize.detector import contains_myanmar
 from myangustis_parser.normalize.beautify import arrange_zawcode_order
 from myangustis_parser.normalize.cleanup import cleanup_text, order_text
+from myangustis_parser.normalize import legacy_ascii
 from myangustis_parser.normalize.rabbit import Rabbit
 from myangustis_parser.normalize.unicode_evidence import preserve_regional_runs
 
@@ -40,11 +41,20 @@ def decide(text, *, source, parsing_path='font-cmap', zawgyi_codepage=False,
 
 
 def apply_decision(text, decision):
+    """Apply the page decision, repairing legacy ASCII slots on the way.
+
+    The residue repair is a *decoding* repair and has to happen before the
+    conversion: Rabbit orders Myanmar letters, and it cannot order ``A``.
+    OCR text is not PDF-finished, so it is left exactly as delivered.
+    """
+    if decision == 'ocr':
+        return text
+    text, _residue = legacy_ascii.map_residue(text)
     if decision == 'rabbit':
         return Rabbit.zg2uni(text)
     if decision == 'zawcode':
         return arrange_zawcode_order(text)
-    if decision in ('ocr', 'legacy', 'aligned'):
+    if decision in ('legacy', 'aligned'):
         return text
     raise ValueError(f'Unknown Parser decision: {decision}')
 
@@ -93,7 +103,9 @@ def finish_pdf_page(text, *, parsing_path='font-cmap', zawgyi_codepage=False,
     decision = judgement.select_page_decision(evidence, parsing_path, zawgyi_codepage)
     if decision == 'legacy':
         # JS orders each legacy line once while finalizing the page spool.
-        finished = '\n'.join(clean(line, apply_cleanup=False) for line in text.split('\n'))
+        # The residue repair still applies: it is decoding, not ordering.
+        mapped, _residue = legacy_ascii.map_residue(text)
+        finished = '\n'.join(clean(line, apply_cleanup=False) for line in mapped.split('\n'))
     else:
         finished = apply_decision(text, decision)
         if decision == 'rabbit' and source_encoding != 'unicode':
@@ -103,4 +115,7 @@ def finish_pdf_page(text, *, parsing_path='font-cmap', zawgyi_codepage=False,
     base = finalize_pdf_output(finished, decision, False)
     cleaned = finalize_pdf_output(finished, decision, True)
     return {'decision': decision, 'category': category, 'finished': finished,
-            'base': base, 'clean': cleaned, 'scan': scan.scan_text(cleaned)}
+            'base': base, 'clean': cleaned, 'scan': scan.scan_text(cleaned),
+            # Latin slots found in Myanmar context, by letter: the evidence the
+            # diagnostics log reports as ``legacy-ascii-residue``.
+            'residue': legacy_ascii.scan(text)}

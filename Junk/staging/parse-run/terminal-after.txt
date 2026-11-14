@@ -1,0 +1,13 @@
+13:55:10.199 [BEAUTIFY] INFO    decision book=part-5.pdf pages=1-37 rule=rabbit
+13:55:10.247 [BEAUTIFY] INFO    decision book=part-5.pdf pages=38-39 rule=aligned
+13:55:11.763 [BEAUTIFY] INFO    decision book=part-5.pdf pages=40-78 rule=rabbit
+13:55:11.831 [BEAUTIFY] INFO    decision book=part-5.pdf pages=79-80 rule=aligned
+13:55:12.082 [BEAUTIFY] INFO    decision book=part-5.pdf pages=81-85 rule=rabbit
+13:55:12.082 [PDFDIAG] INFO    book book=part-5.pdf pages=85 ok=8 repaired=30 degraded=46 empty=1 symptom=legacy-ascii-residue severity=text-corrupted evidence=A:400,U:28,O:7,E:2 Latin slots in Myanmar context on 37 pages (font EJBJWX+Zawgyi-One) hint=a legacy ASCII layout (A=အ, U=ဥ, O=ဩ, E=ဧ) reached the text through a /ToUnicode bridge; proven slots are repaired in normalize/legacy_ascii.py, so add the layout table for the rest also=latin-fallback detail=residue_total=437; unmapped_codes=0; fallback_bytes=3464; replacement_chars=0; single_char_lines=54; duplicate_lines=0
+[+] part-5.pdf: 4,159,274 bytes -> .txt
+[+] PDF size: 4,159,274 bytes
+[+] Objects found: 710
+[+] Total pages: 85
+[+] PDF decoding: stem instructions and per-resource font maps
+[i] OCR unavailable (no 'tesseract' on PATH); image-only pages left empty
+[+] Saved: /home/user/Myangustis/Junk/Parser/output/txt/part-5-after.txt

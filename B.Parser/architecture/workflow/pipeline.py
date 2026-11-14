@@ -29,6 +29,7 @@ from myangustis_parser.extract.decrypt import (
     has_object_streams,
     is_encrypted_pdf,
 )
+from myangustis_parser.normalize import legacy_ascii
 from myangustis_parser.normalize.rabbit import Rabbit
 from myangustis_parser.normalize.detector import contains_myanmar, has_only_zawgyi_fonts
 from myangustis_parser.normalize.cleanup import cleanup_text, order_text
@@ -325,6 +326,9 @@ def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
     """
     lane_log = LaneLog(book_name or os.path.basename(pdf_path))
     diagnostic = diagnostics.enabled()
+    # One report per book: pages stream to the file, the verdict is stated
+    # once when the book is finished.
+    book_report = diagnostics.BookReport(lane_log) if diagnostic else None
     metadata, npages, pages = stream_pdf_pages(pdf_path, detector=detector, log=log,
                                                 text_layout=text_layout, source_encoding=source_encoding,
                                                 diagnostic=diagnostic)
@@ -334,6 +338,8 @@ def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
             yield from _reports()
         finally:
             lane_log.flush()
+            if book_report is not None:
+                book_report.flush()
 
     def _reports():
         for pg in pages:
@@ -365,7 +371,7 @@ def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
                 rep.update({'lines': lines, 'wh': pg['wh'], 'has_img': pg['has_img'],
                             'images': pg.get('images', [])})
             if diagnostic:
-                diagnostics.page_log(lane_log, idx + 1, pg, result, rep['text'], apply_cleanup)
+                diagnostics.page_log(book_report, idx + 1, pg, result, rep['text'], apply_cleanup)
             lane_log.finish_page(idx + 1, result['decision'])
             yield rep
 
@@ -391,7 +397,9 @@ def _cleanup_for(cat, text):
 def _convert_line(t, cat, apply_cleanup):
     """Apply the same per-page transform to one extracted line."""
     if cat == "ZAWGYI":
-        return order_text(Rabbit.zg2uni(t))     # ordered, never imposter-fixed
+        # Legacy ASCII slots are repaired before Rabbit: it orders Myanmar
+        # letters, and cannot order a Latin ``A`` standing in for အ.
+        return order_text(Rabbit.zg2uni(legacy_ascii.map_residue(t)[0]))  # ordered, never imposter-fixed
     if cat == "UNICODE":
         # Regional (Mon/extended) runs keep their marks: ordering and cleanup
         # are Burmese-only rules and must not rewrite them.

@@ -155,6 +155,7 @@ These are the 44 Python files under `architecture/`; each is mapped individually
 | `normalize/cleanup.py` | `@postprocess/beautify/clean.js`. |
 | `normalize/detector.py` | `@rule/detect.js`. |
 | `normalize/judgement.py` | `@rule/judgement.js`. |
+| `normalize/legacy_ascii.py` | Python repair for Latin letters standing in for Myanmar letters (legacy ASCII layouts); not ported to JS. |
 | `normalize/legacy_order.py` | Python legacy slot helper, not the pinned normal JS page route. |
 | `normalize/mm_score.py` | `@rule/mm-score.js`. |
 | `normalize/pos_scan.py` | Parts of `@postprocess/init.js` and Engine binding; Python Engine API differs. |

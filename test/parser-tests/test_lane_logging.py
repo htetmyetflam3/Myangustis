@@ -12,6 +12,10 @@ from myangustis_parser.extract.pdf_fonts import DocumentDecoding, FontDecoder
 from myangustis_parser.resources import paths
 from myangustis_parser.workflow import lane_log, pipeline
 
+# The python branch no longer ships Junk/fonts; tests that need a real Zawgyi
+# face skip instead of failing on a fixture that is not in the tree.
+ZAWGYI_FONT = Path(__file__).resolve().parents[2] / 'Junk/fonts/zawgyi one/ZAWGYI-ONE_V3.1.TTF'
+
 
 class TestLaneLogging(unittest.TestCase):
     def test_decoding_observes_actual_myanmar_font_and_ignores_latin(self):
@@ -155,6 +159,7 @@ class TestLaneLogging(unittest.TestCase):
             self.assertIsNone(logger.file)  # explicit process setting wins
             self.assertEqual(os.environ['PARSER_LOG_FILE'], 'from-env.log')
 
+    @unittest.skipUnless(ZAWGYI_FONT.exists(), 'Zawgyi font fixture not in this tree')
     def test_real_pdf_uses_filename_and_writes_single_decision(self):
         from fpdf import FPDF
         root = Path(__file__).resolve().parents[2]

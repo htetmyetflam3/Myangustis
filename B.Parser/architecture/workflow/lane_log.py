@@ -34,13 +34,34 @@ def make_logger():
 
 
 class LaneLog:
+    """Per-book parser decisions: page evidence to the file, one verdict to the console.
+
+    Two sinks on purpose. The console is for the operator watching a run and
+    gets one line per book; the file is for the post-mortem and gets every
+    page. ``Logen(batch=True)`` writes the file without touching the console,
+    so detail costs the operator nothing.
+    """
+
     def __init__(self, book, logger=None):
         # Do not expose a local path. Logen escapes control characters in console output.
         self.book = Path(str(book)).name
         self.logger = logger if logger is not None else make_logger()
+        # A caller may hand in any object with ``emit_log`` (tests, services);
+        # only a real Logen carries a file, and only then is there a file sink.
+        self.file_logger = Logen(batch=True, file=getattr(self.logger, 'file', None),
+                                 console=lambda message: None)
         self.stem_lane = None
         self.decision = None
         self.first = self.last = None
+
+    def file_event(self, event, data):
+        """Evidence for the file, silent on the console."""
+        if self.file_logger.file is not None:
+            self.file_logger.emit_log('PDFDIAG', 'info', event, data)
+
+    def verdict(self, data):
+        """The one line per book that says what happened to it."""
+        self.logger.emit_log('PDFDIAG', 'info', 'book', data)
 
     def stem(self, page, lanes):
         for lane in lanes:

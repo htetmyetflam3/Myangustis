@@ -215,6 +215,11 @@ class ParserEnvironmentTests(unittest.TestCase):
             self.assertEqual(Path(root), ROOT)
 
 
+# The python branch no longer ships the docx fixture these tests parse.
+DOCX_FIXTURE = ROOT / "Junk" / "Parser" / "upload" / "docx" / "zawgyi_fixture.docx"
+requires_docx = unittest.skipUnless(DOCX_FIXTURE.exists(), "docx fixture not in this tree")
+
+
 class CommandLineAnchoringTests(unittest.TestCase):
     """The CLI resolves env and argument paths the same way."""
 
@@ -225,6 +230,7 @@ class CommandLineAnchoringTests(unittest.TestCase):
             env={**os.environ, **env},
         )
 
+    @requires_docx
     def test_bare_filename_is_found_in_the_upload_folder(self):
         written = ROOT / "Junk" / "Parser" / "output" / "txt" / "zawgyi_fixture.docx"
         written.unlink(missing_ok=True)
@@ -233,6 +239,7 @@ class CommandLineAnchoringTests(unittest.TestCase):
         self.assertTrue(written.is_file(), proc.stdout + proc.stderr)
         written.unlink()
 
+    @requires_docx
     def test_env_input_directory_drives_a_batch_run(self):
         with tempfile.TemporaryDirectory() as temp:
             upload = Path(temp) / "upload"
@@ -246,6 +253,7 @@ class CommandLineAnchoringTests(unittest.TestCase):
             self.assertEqual(proc.returncode, 0, proc.stderr)
             self.assertTrue(any(output.rglob("*.docx")), proc.stdout + proc.stderr)
 
+    @requires_docx
     def test_slash_leading_output_never_escapes_to_the_filesystem_root(self):
         proc = self._run("parse", "zawgyi_fixture.docx", "/myangustis-anchor-output/")
         self.assertEqual(proc.returncode, 0, proc.stderr)
