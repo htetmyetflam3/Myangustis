@@ -258,6 +258,10 @@ def run_once(mode, convert, config=None, runtime=RUNTIME_ROOT):
                         raise ValueError('No text extracted')
                     from myangustis_engine.api import segment_text
                     segmented = segment_text(text)
+                    if mode == 'parse':
+                        from myangustis_parser.workflow import diagnostics
+                        if diagnostics.enabled():
+                            diagnostics.segmentation_log(PurePosixPath(source).name, text, segmented)
                     base = PurePosixPath(source).stem
                     # Stable source-based suffix prevents same-name collisions.
                     if db.execute('select 1 from books where book=?', (base,)).fetchone():
