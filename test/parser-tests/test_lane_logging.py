@@ -89,25 +89,24 @@ class TestLaneLogging(unittest.TestCase):
             tracker.flush()
             self.assertEqual(len(events), 2)
 
-    def test_pdf_stream_uses_real_name_not_temporary_file_and_draft(self):
+    def test_pdf_stream_uses_real_name_not_temporary_file(self):
         pages = [dict(idx=i, text='က', decode_kind='identity', font_names=set(),
-                      lane_trace=['unicode'] if i == 0 else ['legacy'],
-                      text_path='zawcode' if i == 1 else None)
+                      lane_trace=['unicode'] if i == 0 else ['legacy'])
                  for i in range(2)]
         class Detector:
             def detect(self, text): return 'UNICODE', 1
-        result = {'base': 'က', 'clean': 'က', 'decision': 'aligned', 'scan': {}}
+        result = {'base': 'က', 'clean': 'က', 'decision': 'aligned', 'category': 'UNICODE', 'finished': 'က', 'scan': {}}
         messages = []
         logger = Logen(console=messages.append)
         with patch.object(pipeline, 'stream_pdf_pages', return_value=({}, 2, iter(pages))), \
-             patch.object(pipeline.finish, 'finish_text', return_value=result), \
+             patch.object(pipeline.finish, 'finish_pdf_page', return_value=result), \
              patch('myangustis_parser.workflow.lane_log.make_logger', return_value=logger):
             _, _, reports = pipeline.process_pdf_stream('/tmp/random.pdf', Detector(), False, book_name='real.pdf')
             self.assertEqual(len(list(reports)), 2)
         self.assertEqual(sum('lane-switch' in m for m in messages), 1)
-        self.assertEqual(sum('decision' in m for m in messages), 2)
+        self.assertEqual(sum('decision' in m for m in messages), 1)
         self.assertTrue(all('real.pdf' in m for m in messages))
-        self.assertIn('rule=zawcode-draft', messages[-1])
+        self.assertIn('rule=aligned', messages[-1])
 
     def test_page_extraction_collects_probes_without_duplicate_switches(self):
         events = []
@@ -120,7 +119,7 @@ class TestLaneLogging(unittest.TestCase):
             for lane in (['unicode'] * 5 if num == 10 else ['unicode'] * 5 + ['legacy'] * 5):
                 doc.lane_observer(lane)
             return [(0, 0, 12, 'က')], 100, 100
-        finished = {'base': 'က', 'clean': 'က', 'decision': 'aligned', 'scan': {}}
+        finished = {'base': 'က', 'clean': 'က', 'decision': 'aligned', 'category': 'UNICODE', 'finished': 'က', 'scan': {}}
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / 'mixed.pdf'
             path.write_bytes(b'%PDF-1.7')
@@ -131,7 +130,7 @@ class TestLaneLogging(unittest.TestCase):
                  patch.object(pipeline, 'collect_pages', return_value=[(10, 0), (11, 0)]), \
                  patch.object(pipeline, 'page_has_images', return_value=False), \
                  patch.object(pipeline, 'extract_page_lines', side_effect=extract), \
-                 patch.object(pipeline.finish, 'finish_text', return_value=finished), \
+                 patch.object(pipeline.finish, 'finish_pdf_page', return_value=finished), \
                  patch('myangustis_parser.workflow.lane_log.make_logger', return_value=logger):
                 _, _, reports = pipeline.process_pdf_stream(path, Detector(), False, text_layout='off')
                 self.assertEqual(len(list(reports)), 2)

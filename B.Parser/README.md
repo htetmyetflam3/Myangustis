@@ -20,12 +20,15 @@ uv run --package myangustis-parser myangustis-parse --help
 The parser reads its bundled maps from `resources/maps_data/`; set
 `PRASER_MAP_DIR` to use an external directory. Plain JSON is read directly and
 sealed JSON/master data is read through `myangustis_engine.secure_data` in the
-same process. Supply the Engine master, key and prebuilt trees as documented in
+same process. An external map directory must also include the bundled
+`legacy-subset-profiles.json` when parsing legacy-font PDFs. Supply the Engine master, key and prebuilt trees as documented in
 `A.Engine/README.md`. No Node engine-data bridge is used.
 
-OCR uses the external Tesseract CLI (and may need Poppler for PDF page
-rendering); configure language data through `PRASER_OCR_LANG_PATH`. SVG helper
-scripts and their golden fixtures are in `tools/svg/`.
+OCR uses the external Tesseract CLI; configure language data through
+`PRASER_OCR_LANG_PATH`. PDF OCR renders the complete page with the installed
+PDFium Python package at scale 3 (216 DPI) before recognition. The former
+`PRASER_OCR_DPI` Poppler-fallback setting no longer changes PDF page OCR.
+SVG helper scripts and their golden fixtures are in `tools/svg/`.
 
 PDF decryption and object-stream expansion use the pure-Python `pypdf` library,
 not the qpdf executable. Password-protected files requiring a non-empty user
@@ -59,10 +62,8 @@ parsing. The log contains the book filename and page numbers, not page text.
   whole 100-page book using `zawcode` produces one entry; pages 1–20 using
   `rabbit` (Zawgyi conversion) and 21–100 using `zawcode` produce two. A
   later switch back starts a new range. `aligned`/`legacy` indicate no
-  ZawCode or Rabbit finishing conversion; `zawcode-draft` indicates the
-  font-scoped draft ordering used during extraction. A `+rabbit` suffix means
-  both draft ordering and Rabbit were applied. These are actual parser
-  decisions, not a guarantee that detection or conversion was correct.
+  ZawCode or Rabbit finishing conversion. These are actual parser decisions,
+  not a guarantee that detection or conversion was correct.
 
 A repeated parse creates new entries. The beautify range is emitted when it
 ends or the page iterator closes; an abruptly terminated process may lose the
@@ -128,3 +129,75 @@ scraper-side collection and ledger are **not migrated automatically**: keep them
 and plan a migration before removing them; the new queue may process the remote
 files again. This new SSH workflow does not send email. VPS/systemd and actual
 SSH deployment still need testing on the destination host.
+
+
+## PDF decoding and existing SSH results
+
+Normal PDF decoding builds page instructions and font verdicts at the stem
+before reading page content, then follows those instructions using each font
+resource's own ToUnicode, encoding and embedded cmap. It
+does not merge glyph IDs or ToUnicode mappings across the book. Unknown codes
+may remain visible as placeholders; this is not a guarantee of readable text.
+PDF parsing follows the JS instruction and finishing path without the older
+Python-only ZawCode draft probe. The old `text_layout="zawcode"` option and
+`PRASER_ZAWCODE_DRAFT=on` now raise an error instead of changing the runtime
+path; use automatic routing. Witnessed
+visual glyph recovery uses contradictory resource-local mappings plus exact
+embedded-outline evidence; changed or unresolved recovery is flagged for
+review. Known differences remain: Python still reads the PDF and page content
+into memory rather than using JS's file-backed object/page spools. Placed-image
+coverage is exposed in PDF page layout records. PDF OCR now renders the whole
+page as JS does, but Python uses PDFium and the Tesseract CLI while JS uses
+PDF.js/canvas and Tesseract.js, so rasterization and recognition can differ.
+Python page and stream limits also apply to workers, whereas JS owner workers
+can be uncapped. Python's preview reports still include precomputed PDF clean
+text, whereas the JS `parseDecoding` PDF reports use a null `clean` value.
+
+For image pages with fewer than eight trimmed UTF-16 characters, the pinned JS
+runtime invokes OCR but its final markup prefers existing extracted lines. As a
+result, a page with a short existing line can output that line instead of a
+successful OCR reading; Python now mirrors this behavior. `ocrPages` records
+successful recognition, not a guarantee that its text became the final output.
+Complete JS parity and the accuracy of particular books still need validation
+against real source pages.
+
+The parser tests include deterministic differential checks against the JS
+font decoder, GSUB logic, witnessed visual recovery, PDF finishing and
+end-to-end synthetic PDF pages at main commit `67f02845bcd266ff764fcc167a3337626eb1c75f`.
+These checks run Node only as a **test oracle**, never as part of the Python
+parser. They skip when Node or the pinned Git commit is unavailable (the
+font-decoder, visual and PDF checks require Node 22+). They cover synthetic
+cases and two bundled witness fonts, not every PDF or all parser behavior.
+Update the pinned reference deliberately when reviewing a newer JS version;
+a passing test is not proof of full parity. The optional PDF renderer
+comparison additionally needs `pdfjs-dist@6.4.299` and
+`@napi-rs/canvas@1.0.10` in an external Node modules directory, supplied via
+`JS_RENDER_NODE_MODULES`. It compares geometry and solid-color fixtures;
+PDFium and PDF.js can rasterize real documents differently.
+
+Previously committed SSH queue entries are not automatically re-parsed after
+an upgrade. Deleting `books.parquet` alone does not restart the queue: it is
+rebuilt from `Junk/Parser/state/ssh/parse/books.sqlite3`. Deleting the ledger
+and Parquet while leaving the old combined TXT also does not restart it: the
+new empty ledger refuses to overwrite that untracked TXT.
+
+To deliberately start a fresh parser collection, after checking the new
+parser on representative source pages:
+
+1. Stop every process that can run this parser queue: the independent parser
+   service, the combined service if used, and any foreground parser. Stopping
+   the combined service also stops its scraper child. Do not stop OCR solely
+   for this reset.
+2. Preserve the entire `Junk/Parser/state/ssh/parse/` directory (including
+   SQLite WAL files and staged inputs), `Junk/Parser/output/parquet/books.parquet`
+   and `Junk/Parser/output/txt/parsed-books.txt` together in a new backup
+   location. Keep the remote originals unchanged. Archiving these paths out of
+   their active locations is safer than deleting the only copy.
+3. Start the parser again. It creates a fresh ledger and outputs and scans the
+   PDFs currently available in the configured remote queue. Missing remote
+   sources cannot be reconstructed from the new queue. Compare the new output
+   with the preserved collection before deciding whether to discard the backup.
+
+The OCR queue and scraper state are separate; leave them untouched. The queue
+has no built-in versioned reprocessing command and its reading quality is not
+validated merely by a successful run.

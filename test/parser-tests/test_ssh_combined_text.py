@@ -47,6 +47,38 @@ class CombinedTextTests(unittest.TestCase):
                 self.assertEqual(len(pq.read_table(parquet).to_pylist()), 2)
                 self.assertEqual(dl.call_count, 2)
 
+    def test_reset_requires_archiving_txt_and_then_reprocesses(self):
+        import shutil
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            state = root / 'state/ssh/parse'
+            txt = root / 'output/txt/parsed-books.txt'
+            parquet = root / 'output/parquet/books.parquet'
+            backup = root / 'backup'
+            backup.mkdir()
+            with patch.object(queue, 'discover', return_value=['old/a.pdf']), \
+                 patch.object(queue, 'download', side_effect=download) as dl, \
+                 patch('myangustis_engine.api.segment_text', return_value='seg'), \
+                 redirect_stdout(io.StringIO()):
+                queue.run_once('parse', convert, CFG, root)
+                old_text = txt.read_bytes()
+                # Simulate a stopped worker and archive its complete state and
+                # parquet; leaving the text behind must block a fresh queue.
+                shutil.move(str(state), backup / 'parse-state')
+                shutil.move(str(parquet), backup / 'books.parquet')
+                with self.assertRaisesRegex(RuntimeError, 'untracked text'):
+                    queue.run_once('parse', convert, CFG, root)
+                self.assertEqual(txt.read_bytes(), old_text)
+                self.assertEqual(dl.call_count, 1)
+                # Also archive the old text. The empty queue re-downloads the
+                # still-available remote source and creates a new collection.
+                shutil.move(str(txt), backup / 'parsed-books.txt')
+                queue.run_once('parse', convert, CFG, root)
+                self.assertEqual(dl.call_count, 2)
+                self.assertEqual(txt.read_bytes(), old_text)
+                self.assertEqual((backup / 'parsed-books.txt').read_bytes(), old_text)
+                self.assertEqual(len(pq.read_table(parquet).to_pylist()), 1)
+
     def test_old_ledger_backfills_txt_without_reparsing(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

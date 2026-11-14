@@ -205,6 +205,13 @@ def ocr_pdf_job(data, filename="input.pdf", *, log=None):
     }
 
 
+# ECMAScript String.trim whitespace (Python str.strip differs for BOM and
+# several control characters). Used for JS OCR routing and success checks.
+_JS_TRIM_CHARS = ('\u0009\u000a\u000b\u000c\u000d\u0020\u00a0\u1680'
+                  '\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a'
+                  '\u2028\u2029\u202f\u205f\u3000\ufeff')
+
+
 def _ocr_pdf_image_pages(job, data, log):
     """OCR image-only PDF pages; returns the 1-based page numbers that worked.
 
@@ -213,8 +220,9 @@ def _ocr_pdf_image_pages(job, data, log):
     a failure leaves the page as it was.
     """
     pages = job.get("pages") or []
+    # JS String.length counts UTF-16 code units, not Unicode code points.
     targets = [i for i, page in enumerate(pages)
-               if page.get("has_img") and len(str(page.get("text") or "").strip()) < 8]
+               if page.get("has_img") and len(str(page.get("text") or "").strip(_JS_TRIM_CHARS).encode('utf-16-le', 'surrogatepass')) // 2 < 8]
     if not targets:
         return []
     if not _ocr_enabled():
@@ -243,17 +251,14 @@ def _ocr_pdf_image_pages(job, data, log):
         except Exception as exc:  # noqa: BLE001 - OCR never fails the parse
             log(f"    Page {index + 1}: OCR skipped ({exc})")
             continue
-        if text and text.strip():
-            finished = finish.finish_text(text, source='ocr')
-            pages[index]["text"] = finished['base']
-            pages[index]["lines"] = []  # old near-empty geometry is not OCR text
-            report = job["reports"][index]
-            report.update(base=finished['base'], clean=finished['clean'],
-                          decision='ocr', scan=finished['scan'])
+        if text and text.strip(_JS_TRIM_CHARS):
+            # JS replaces only page.text, leaving the PDF report and original
+            # lines unchanged. Its final markup prefers any existing nonempty
+            # lines over this text, even after successful OCR.
+            pages[index]["text"] = text
+            pages[index]["_ocr_supplied"] = True
             done.append(index + 1)
             log(f"    Page {index + 1}: OCR supplied the text (image-only page)")
-    if done:
-        job["changes"] = pipeline.collect_changes(job["reports"])
     return done
 
 
