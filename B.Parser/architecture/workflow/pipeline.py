@@ -29,7 +29,6 @@ from myangustis_parser.extract.decrypt import (
     has_object_streams,
     is_encrypted_pdf,
 )
-from myangustis_parser.normalize import legacy_ascii
 from myangustis_parser.normalize.rabbit import Rabbit
 from myangustis_parser.normalize.detector import contains_myanmar, has_only_zawgyi_fonts
 from myangustis_parser.normalize.cleanup import cleanup_text, order_text
@@ -397,9 +396,7 @@ def _cleanup_for(cat, text):
 def _convert_line(t, cat, apply_cleanup):
     """Apply the same per-page transform to one extracted line."""
     if cat == "ZAWGYI":
-        # Legacy ASCII slots are repaired before Rabbit: it orders Myanmar
-        # letters, and cannot order a Latin ``A`` standing in for အ.
-        return order_text(Rabbit.zg2uni(legacy_ascii.map_residue(t)[0]))  # ordered, never imposter-fixed
+        return order_text(Rabbit.zg2uni(t))     # ordered, never imposter-fixed
     if cat == "UNICODE":
         # Regional (Mon/extended) runs keep their marks: ordering and cleanup
         # are Burmese-only rules and must not rewrite them.

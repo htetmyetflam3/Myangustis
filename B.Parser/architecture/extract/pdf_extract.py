@@ -22,6 +22,7 @@ import zlib
 from myangustis_parser.normalize.mm_score import MARKS
 from myangustis_parser.normalize.detector import contains_myanmar
 from myangustis_parser.resources.font_names import is_unresolved_legacy_font
+from myangustis_parser.normalize import legacy_ascii
 from myangustis_parser.extract.pdf_fonts import (
     CMapEncoding,
     CmapIdentityMap,
@@ -1025,11 +1026,23 @@ def _join_visual_runs(pieces, doc):
 
 
 def _join_page_runs(pieces, doc):
+    """Join one page's glyph runs. The legacy-ASCII repair lives HERE.
+
+    A /ToUnicode that is a bridge back to a legacy ASCII layout hands the
+    Myanmar glyphs over as Latin letters (A=အ, U=ဥ, O=ဩ, E=ဧ). The slots can
+    only be recognised once every run of the page is in one string, because
+    the evidence is adjacency: a Latin letter that touches Myanmar text is a
+    slot, and the same letter inside a Latin word is text. Repairing at the
+    join -- the decode stage -- keeps the finish stage free of a second,
+    Python-only pass over the text.
+    """
     if doc.zawcode_order:
-        return _join_draft_runs(pieces, doc.zawcode_order)
-    if doc.kind == 'font' and doc.visual_unicode_enabled:
-        return _join_visual_runs(pieces, doc)
-    return ''.join(piece[2] for piece in pieces)
+        joined = _join_draft_runs(pieces, doc.zawcode_order)
+    elif doc.kind == 'font' and doc.visual_unicode_enabled:
+        joined = _join_visual_runs(pieces, doc)
+    else:
+        joined = ''.join(piece[2] for piece in pieces)
+    return legacy_ascii.map_residue(joined)[0]
 
 def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=False, *, used_myanmar_fonts=None, used_legacy_fonts=None, image_records=None, diagnostics=None):
     """Extract text lines WITH layout: ``(lines, page_w, page_h)``.

@@ -41,15 +41,14 @@ def decide(text, *, source, parsing_path='font-cmap', zawgyi_codepage=False,
 
 
 def apply_decision(text, decision):
-    """Apply the page decision, repairing legacy ASCII slots on the way.
+    """Apply the page decision to text the decode stage already repaired.
 
-    The residue repair is a *decoding* repair and has to happen before the
-    conversion: Rabbit orders Myanmar letters, and it cannot order ``A``.
-    OCR text is not PDF-finished, so it is left exactly as delivered.
+    Legacy ASCII slots are repaired where the page's runs are joined
+    (``extract.pdf_extract._join_page_runs``), not here: this stage orders and
+    cleans, and it must not carry a second, Python-only pass over the text.
     """
     if decision == 'ocr':
         return text
-    text, _residue = legacy_ascii.map_residue(text)
     if decision == 'rabbit':
         return Rabbit.zg2uni(text)
     if decision == 'zawcode':
@@ -103,9 +102,7 @@ def finish_pdf_page(text, *, parsing_path='font-cmap', zawgyi_codepage=False,
     decision = judgement.select_page_decision(evidence, parsing_path, zawgyi_codepage)
     if decision == 'legacy':
         # JS orders each legacy line once while finalizing the page spool.
-        # The residue repair still applies: it is decoding, not ordering.
-        mapped, _residue = legacy_ascii.map_residue(text)
-        finished = '\n'.join(clean(line, apply_cleanup=False) for line in mapped.split('\n'))
+        finished = '\n'.join(clean(line, apply_cleanup=False) for line in text.split('\n'))
     else:
         finished = apply_decision(text, decision)
         if decision == 'rabbit' and source_encoding != 'unicode':

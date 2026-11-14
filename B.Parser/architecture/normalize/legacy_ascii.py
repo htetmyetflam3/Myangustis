@@ -11,7 +11,6 @@ output:
 
     Aနိမ့်Aမြင့်      should read  အနိမ့်အမြင့်
     AကျU်းAကျယ်      should read  အကျဥ်းအကျယ်
-    Aံ့Oချီးကျူး       should read  အံ့ဩချီးကျူး
     Eကန်Eက           should read  ဧကန်ဧက
 
 (Zawgyi-One subsets of ``part-5.pdf``, 85 pages, 400 ``A`` / 28 ``U`` / 7
@@ -24,8 +23,11 @@ grep.
 The guard is what makes this safe to run on every page of every document:
 a slot is only rewritten when it sits *in Myanmar context* and is not part of
 a real Latin word, so English text, numbers and Latin labels survive. Only
-``A``, ``U``, ``O`` and ``E`` are proven, so only they are mapped; ``V`` and
-the rest of the layout stay visible as evidence until witnessed.
+``A``, ``U`` and ``E`` are proven, and each agrees with the repository's own
+Ayar code page (``AYAR_LEGACY_CODE_PAGE``: 0x41, 0x55, 0x45) -- so the layout
+family is identified, not guessed. ``O`` does NOT agree: the witnessed word is
+``အံ့ဩ`` while Ayar maps 0x4F to ``ှု``, so O stays unrepaired and visible until
+there is evidence for it. ``V`` is not in the table at all.
 """
 from __future__ import annotations
 
@@ -35,7 +37,6 @@ import re
 RESIDUE_SLOTS = {
     'A': '\u1021',   # အ
     'U': '\u1025',   # ဥ
-    'O': '\u1029',   # ဩ
     'E': '\u1027',   # ဧ
 }
 

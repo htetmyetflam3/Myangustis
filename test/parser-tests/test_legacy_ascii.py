@@ -16,7 +16,7 @@ class ResidueTests(unittest.TestCase):
         for source, expected in {
             'Aနိမ့်Aမြင့် Aသံလှိုင်းများ': 'အနိမ့်အမြင့် အသံလှိုင်းများ',
             'AကျU်းAကျယ်': 'အကျဥ်းအကျယ်',
-            'Aံ့Oချီးကျူးမိပါသည်။': 'အံ့ဩချီးကျူးမိပါသည်။',
+            'Aံ့Oချီးကျူးမိပါသည်။': 'အံ့Oချီးကျူးမိပါသည်။',
             'နှစ်Aကူးမှာ': 'နှစ်အကူးမှာ',
             'Eကန်Eက': 'ဧကန်ဧက',
         }.items():
@@ -36,14 +36,16 @@ class ResidueTests(unittest.TestCase):
         # ...but the scan still names the letter the layout would have to explain.
         self.assertEqual(legacy_ascii.scan('Aံ့Vများ'), {'A': 1, 'V': 1})
 
-    def test_rabbit_receives_myanmar_letters_not_latin(self):
-        converted = finish.apply_decision('AကျU်းAကျယ်', 'rabbit')
-        self.assertFalse(any(char.isascii() and char.isalpha() for char in converted), converted)
+    def test_the_finish_stage_does_not_carry_the_repair(self):
+        # The repair belongs to the decode stage (extract._join_page_runs);
+        # finish must not rewrite slots a second time.
+        self.assertIn('A', finish.apply_decision('AကျU်း', 'rabbit'))
 
     def test_pdf_finish_reports_the_residue_it_found(self):
+        # Evidence only: the finish stage reports slots it can still see, it
+        # does not rewrite them (that is the decode stage's job).
         result = finish.finish_pdf_page('Aံ့O AကျU်း', source_encoding='auto')
         self.assertEqual(result['residue'], {'A': 2, 'U': 1, 'O': 1})
-        self.assertIn('အ', result['finished'])
 
     def test_ocr_text_is_left_exactly_as_delivered(self):
         self.assertEqual(finish.apply_decision('Aံ့O', 'ocr'), 'Aံ့O')
