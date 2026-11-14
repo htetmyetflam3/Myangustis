@@ -240,45 +240,35 @@ file carries **no** `/ToUnicode` at all (see below).
 
 # Broken page collection
 
-Built by parsing all nine parts with this parser and measuring every page.
+Produced by the parser's own damage scanner, `normalize/scan.py` — the rules that
+found the real bugs before any score moved (`orphan`, `impossible`, `stray`,
+`repeat`; its docstring is explicit that `score_text` stays flat while these
+move). One log per part in `audit/scans/`:
+
+```bash
+python -m myangustis_parser.normalize.scan Junk/Parser/output/parts/part-N.txt \
+    -o B.Parser/audit/scans/part-N.scan.txt
+```
+
 Source PDFs live on branch `trash` at `pdf-parts/part-1.pdf` … `part-9.pdf`
 (33.3 / 47.0 / 41.7 / 9.2 / 4.2 / 20.3 / 20.0 / 10.0 / 12.5 MB); they are not
-included in this repository. Per page the collection records `chars`, `lines`,
-`short_share`, `mm`, `latin_in_mm`, `doubled`, `score`, `orphan`, `disorder`:
-`audit/broken-pages.jsonl`.
+included in this repository.
 
-| part | pages | rabbit |
-|---|---|---|
-| part-1 | 1359 | 1050 |
-| part-2 | 1360 | 731 |
-| part-3 | 1359 | 776 |
-| part-4 | 340 | 84 |
-| part-5 | 85 | 78 |
-| part-6 | 85 | 52 |
-| part-7 | 85 | 37 |
-| part-8 | 85 | 7 |
-| part-9 | 340 | 213 |
+| part | orphan | impossible | stray | repeat |
+|---|---|---|---|---|
+| part-1 | 10342 | 55 | 3632 | 783 |
+| part-2 | 23840 | 49 | 8397 | 68 |
+| part-3 | 11586 | 150 | 512 | 313 |
+| part-4 | 7624 | 114 | 74 | 7 |
+| part-5 | 460 | 0 | 1 | 6 |
+| part-6 | 4117 | 8 | 31 | 1 |
+| part-7 | 98 | 0 | 0 | 0 |
+| part-8 | 147 | 1 | 9 | 0 |
+| part-9 | 597 | 0 | 2 | 45 |
+| **all** | **58811** | **377** | **12658** | **1223** |
 
-The flag is **not** mine: every page carries the parser's own lane verdict from
-the same run (`[BEAUTIFY] decision … rule=`), and \`rabbit\` is the parser saying
-the page's mark order is violated. **3028 of 5098 pages are rabbit**;
-\`aligned\` 661, \`zawcode\` 1372, \`legacy\` 37. A separate threshold of my own
-(score < 0.9, Latin inside Myanmar, > 25 % short lines) fired on only 248 of
-those 3028 pages, so it described a different set and is kept in the records as
-a measurement, never as the flag.
-
-Worst pages:
-
-| part | page | score | latin_in_mm | short_share | doubled | mm |
-|---|---|---|---|---|---|---|
-| part-3 | 754 | 0.000 | 109 | 0.00 | 0 | 0.70 |
-| part-3 | 886 | 0.000 | 67 | 0.39 | 0 | 0.51 |
-| part-3 | 755 | 0.000 | 65 | 0.04 | 0 | 0.65 |
-| part-3 | 752 | 0.000 | 57 | 0.03 | 0 | 0.72 |
-| part-3 | 888 | 0.000 | 50 | 0.43 | 0 | 0.52 |
-| part-3 | 889 | 0.000 | 50 | 0.34 | 0 | 0.58 |
-| part-3 | 884 | 0.000 | 48 | 0.39 | 0 | 0.57 |
-| part-3 | 753 | 0.000 | 38 | 0.00 | 0 | 0.60 |
+`orphan` — a dependent mark with no base — is the dominant defect by an order of
+magnitude, and it is the same thing the worst pages show.
 
 ## What the worst page shows
 
