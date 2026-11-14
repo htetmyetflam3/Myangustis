@@ -1,0 +1,94 @@
+[17:14:13.156] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "1-37", "rule": "aligned"}
+[17:14:18.075] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "38-71", "rule": "rabbit"}
+[17:14:18.107] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "72-72", "rule": "aligned"}
+[17:14:20.774] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "73-112", "rule": "rabbit"}
+[17:14:21.092] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "113-116", "rule": "aligned"}
+[17:14:21.123] [STEM] info lane-switch {"book": "part-9.pdf", "page": 118, "from": "unicode", "to": "legacy"}
+[17:14:21.123] [STEM] info lane-switch {"book": "part-9.pdf", "page": 118, "from": "legacy", "to": "unicode"}
+[17:14:21.141] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "117-117", "rule": "rabbit"}
+[17:14:21.180] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "118-118", "rule": "zawcode"}
+[17:14:22.367] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "119-148", "rule": "rabbit"}
+[17:14:22.389] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "149-149", "rule": "aligned"}
+[17:14:22.451] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "150-153", "rule": "rabbit"}
+[17:14:22.964] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "154-161", "rule": "aligned"}
+[17:14:23.011] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "162-162", "rule": "rabbit"}
+[17:14:23.380] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "163-170", "rule": "aligned"}
+[17:14:23.739] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "171-178", "rule": "zawcode"}
+[17:14:23.771] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "179-179", "rule": "aligned"}
+[17:14:23.829] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "180-180", "rule": "rabbit"}
+[17:14:25.159] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "181-205", "rule": "zawcode"}
+[17:14:25.526] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "206-220", "rule": "aligned"}
+[17:14:25.531] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "221-221", "rule": "rabbit"}
+[17:14:25.567] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "222-222", "rule": "aligned"}
+[17:14:25.591] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "223-224", "rule": "rabbit"}
+[17:14:25.627] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "225-225", "rule": "aligned"}
+[17:14:25.653] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "226-227", "rule": "rabbit"}
+[17:14:25.685] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "228-228", "rule": "aligned"}
+[17:14:25.686] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "229-229", "rule": "rabbit"}
+[17:14:25.701] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "230-232", "rule": "aligned"}
+[17:14:25.706] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "233-234", "rule": "rabbit"}
+[17:14:25.710] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "235-235", "rule": "aligned"}
+[17:14:25.773] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "236-244", "rule": "rabbit"}
+[17:14:25.812] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "245-245", "rule": "aligned"}
+[17:14:26.107] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "246-259", "rule": "rabbit"}
+[17:14:26.130] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "260-260", "rule": "aligned"}
+[17:14:26.315] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "261-267", "rule": "zawcode"}
+[17:14:26.324] [STEM] info lane-switch {"book": "part-9.pdf", "page": 269, "from": "unicode", "to": "legacy"}
+[17:14:26.324] [STEM] info lane-switch {"book": "part-9.pdf", "page": 269, "from": "legacy", "to": "unicode"}
+[17:14:26.324] [STEM] info lane-switch {"book": "part-9.pdf", "page": 269, "from": "unicode", "to": "legacy"}
+[17:14:26.327] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "268-268", "rule": "aligned"}
+[17:14:26.335] [STEM] info lane-switch {"book": "part-9.pdf", "page": 270, "from": "legacy", "to": "unicode"}
+[17:14:26.335] [STEM] info lane-switch {"book": "part-9.pdf", "page": 270, "from": "unicode", "to": "legacy"}
+[17:14:26.335] [STEM] info lane-switch {"book": "part-9.pdf", "page": 270, "from": "legacy", "to": "unicode"}
+[17:14:26.952] [STEM] info lane-switch {"book": "part-9.pdf", "page": 285, "from": "unicode", "to": "legacy"}
+[17:14:26.953] [STEM] info lane-switch {"book": "part-9.pdf", "page": 285, "from": "legacy", "to": "unicode"}
+[17:14:28.011] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "269-308", "rule": "rabbit"}
+[17:14:28.041] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "309-309", "rule": "aligned"}
+[17:14:29.471] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "310-340", "rule": "rabbit"}
+[17:14:46.795] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "1-37", "rule": "aligned"}
+[17:14:51.184] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "38-71", "rule": "rabbit"}
+[17:14:51.215] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "72-72", "rule": "aligned"}
+[17:14:53.784] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "73-112", "rule": "rabbit"}
+[17:14:54.054] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "113-116", "rule": "aligned"}
+[17:14:54.082] [STEM] info lane-switch {"book": "part-9.pdf", "page": 118, "from": "unicode", "to": "legacy"}
+[17:14:54.082] [STEM] info lane-switch {"book": "part-9.pdf", "page": 118, "from": "legacy", "to": "unicode"}
+[17:14:54.099] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "117-117", "rule": "rabbit"}
+[17:14:54.129] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "118-118", "rule": "zawcode"}
+[17:14:55.182] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "119-148", "rule": "rabbit"}
+[17:14:55.203] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "149-149", "rule": "aligned"}
+[17:14:55.266] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "150-153", "rule": "rabbit"}
+[17:14:55.783] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "154-161", "rule": "aligned"}
+[17:14:55.825] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "162-162", "rule": "rabbit"}
+[17:14:56.193] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "163-170", "rule": "aligned"}
+[17:14:56.551] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "171-178", "rule": "zawcode"}
+[17:14:56.580] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "179-179", "rule": "aligned"}
+[17:14:56.634] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "180-180", "rule": "rabbit"}
+[17:14:57.916] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "181-205", "rule": "zawcode"}
+[17:14:58.289] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "206-220", "rule": "aligned"}
+[17:14:58.294] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "221-221", "rule": "rabbit"}
+[17:14:58.330] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "222-222", "rule": "aligned"}
+[17:14:58.353] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "223-224", "rule": "rabbit"}
+[17:14:58.390] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "225-225", "rule": "aligned"}
+[17:14:58.417] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "226-227", "rule": "rabbit"}
+[17:14:58.450] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "228-228", "rule": "aligned"}
+[17:14:58.451] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "229-229", "rule": "rabbit"}
+[17:14:58.466] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "230-232", "rule": "aligned"}
+[17:14:58.472] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "233-234", "rule": "rabbit"}
+[17:14:58.475] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "235-235", "rule": "aligned"}
+[17:14:58.543] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "236-244", "rule": "rabbit"}
+[17:14:58.582] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "245-245", "rule": "aligned"}
+[17:14:58.877] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "246-259", "rule": "rabbit"}
+[17:14:58.899] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "260-260", "rule": "aligned"}
+[17:14:59.104] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "261-267", "rule": "zawcode"}
+[17:14:59.117] [STEM] info lane-switch {"book": "part-9.pdf", "page": 269, "from": "unicode", "to": "legacy"}
+[17:14:59.117] [STEM] info lane-switch {"book": "part-9.pdf", "page": 269, "from": "legacy", "to": "unicode"}
+[17:14:59.118] [STEM] info lane-switch {"book": "part-9.pdf", "page": 269, "from": "unicode", "to": "legacy"}
+[17:14:59.122] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "268-268", "rule": "aligned"}
+[17:14:59.135] [STEM] info lane-switch {"book": "part-9.pdf", "page": 270, "from": "legacy", "to": "unicode"}
+[17:14:59.135] [STEM] info lane-switch {"book": "part-9.pdf", "page": 270, "from": "unicode", "to": "legacy"}
+[17:14:59.135] [STEM] info lane-switch {"book": "part-9.pdf", "page": 270, "from": "legacy", "to": "unicode"}
+[17:14:59.726] [STEM] info lane-switch {"book": "part-9.pdf", "page": 285, "from": "unicode", "to": "legacy"}
+[17:14:59.726] [STEM] info lane-switch {"book": "part-9.pdf", "page": 285, "from": "legacy", "to": "unicode"}
+[17:15:00.779] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "269-308", "rule": "rabbit"}
+[17:15:00.824] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "309-309", "rule": "aligned"}
+[17:15:02.262] [BEAUTIFY] info decision {"book": "part-9.pdf", "pages": "310-340", "rule": "rabbit"}

@@ -1,0 +1,152 @@
+[17:13:32.210] [STEM] info lane-switch {"book": "part-6.pdf", "page": 1, "from": "legacy", "to": "unicode"}
+[17:13:32.384] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "1-1", "rule": "zawcode"}
+[17:13:32.487] [STEM] info lane-switch {"book": "part-6.pdf", "page": 3, "from": "unicode", "to": "legacy"}
+[17:13:32.487] [STEM] info lane-switch {"book": "part-6.pdf", "page": 3, "from": "legacy", "to": "unicode"}
+[17:13:32.525] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "2-2", "rule": "rabbit"}
+[17:13:32.717] [STEM] info lane-switch {"book": "part-6.pdf", "page": 4, "from": "unicode", "to": "legacy"}
+[17:13:32.717] [STEM] info lane-switch {"book": "part-6.pdf", "page": 4, "from": "legacy", "to": "unicode"}
+[17:13:33.005] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "3-4", "rule": "zawcode"}
+[17:13:33.113] [STEM] info lane-switch {"book": "part-6.pdf", "page": 6, "from": "unicode", "to": "legacy"}
+[17:13:33.113] [STEM] info lane-switch {"book": "part-6.pdf", "page": 6, "from": "legacy", "to": "unicode"}
+[17:13:33.148] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "5-5", "rule": "rabbit"}
+[17:13:33.208] [STEM] info lane-switch {"book": "part-6.pdf", "page": 7, "from": "unicode", "to": "legacy"}
+[17:13:33.208] [STEM] info lane-switch {"book": "part-6.pdf", "page": 7, "from": "legacy", "to": "unicode"}
+[17:13:33.358] [STEM] info lane-switch {"book": "part-6.pdf", "page": 8, "from": "unicode", "to": "legacy"}
+[17:13:33.359] [STEM] info lane-switch {"book": "part-6.pdf", "page": 8, "from": "legacy", "to": "unicode"}
+[17:13:33.510] [STEM] info lane-switch {"book": "part-6.pdf", "page": 9, "from": "unicode", "to": "legacy"}
+[17:13:33.510] [STEM] info lane-switch {"book": "part-6.pdf", "page": 9, "from": "legacy", "to": "unicode"}
+[17:13:33.510] [STEM] info lane-switch {"book": "part-6.pdf", "page": 9, "from": "unicode", "to": "legacy"}
+[17:13:33.510] [STEM] info lane-switch {"book": "part-6.pdf", "page": 9, "from": "legacy", "to": "unicode"}
+[17:13:33.621] [STEM] info lane-switch {"book": "part-6.pdf", "page": 10, "from": "unicode", "to": "legacy"}
+[17:13:33.621] [STEM] info lane-switch {"book": "part-6.pdf", "page": 10, "from": "legacy", "to": "unicode"}
+[17:13:33.721] [STEM] info lane-switch {"book": "part-6.pdf", "page": 11, "from": "unicode", "to": "legacy"}
+[17:13:33.721] [STEM] info lane-switch {"book": "part-6.pdf", "page": 11, "from": "legacy", "to": "unicode"}
+[17:13:33.822] [STEM] info lane-switch {"book": "part-6.pdf", "page": 12, "from": "unicode", "to": "legacy"}
+[17:13:33.983] [STEM] info lane-switch {"book": "part-6.pdf", "page": 13, "from": "legacy", "to": "unicode"}
+[17:13:33.983] [STEM] info lane-switch {"book": "part-6.pdf", "page": 13, "from": "unicode", "to": "legacy"}
+[17:13:33.984] [STEM] info lane-switch {"book": "part-6.pdf", "page": 13, "from": "legacy", "to": "unicode"}
+[17:13:34.171] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "6-13", "rule": "zawcode"}
+[17:13:34.343] [STEM] info lane-switch {"book": "part-6.pdf", "page": 16, "from": "unicode", "to": "legacy"}
+[17:13:34.343] [STEM] info lane-switch {"book": "part-6.pdf", "page": 16, "from": "legacy", "to": "unicode"}
+[17:13:34.406] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "14-15", "rule": "rabbit"}
+[17:13:34.521] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "16-16", "rule": "zawcode"}
+[17:13:34.522] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "17-17", "rule": "rabbit"}
+[17:13:34.604] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "18-20", "rule": "aligned"}
+[17:13:34.640] [STEM] info lane-switch {"book": "part-6.pdf", "page": 22, "from": "unicode", "to": "legacy"}
+[17:13:34.641] [STEM] info lane-switch {"book": "part-6.pdf", "page": 22, "from": "legacy", "to": "unicode"}
+[17:13:34.651] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "21-21", "rule": "rabbit"}
+[17:13:34.700] [STEM] info lane-switch {"book": "part-6.pdf", "page": 23, "from": "unicode", "to": "legacy"}
+[17:13:34.700] [STEM] info lane-switch {"book": "part-6.pdf", "page": 23, "from": "legacy", "to": "unicode"}
+[17:13:34.806] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "22-23", "rule": "zawcode"}
+[17:13:34.841] [STEM] info lane-switch {"book": "part-6.pdf", "page": 25, "from": "unicode", "to": "legacy"}
+[17:13:34.841] [STEM] info lane-switch {"book": "part-6.pdf", "page": 25, "from": "legacy", "to": "unicode"}
+[17:13:34.867] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "24-24", "rule": "rabbit"}
+[17:13:34.963] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "25-25", "rule": "zawcode"}
+[17:13:35.037] [STEM] info lane-switch {"book": "part-6.pdf", "page": 27, "from": "unicode", "to": "legacy"}
+[17:13:35.037] [STEM] info lane-switch {"book": "part-6.pdf", "page": 27, "from": "legacy", "to": "unicode"}
+[17:13:35.081] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "26-26", "rule": "rabbit"}
+[17:13:35.130] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "27-27", "rule": "zawcode"}
+[17:13:35.293] [STEM] info lane-switch {"book": "part-6.pdf", "page": 30, "from": "unicode", "to": "legacy"}
+[17:13:35.294] [STEM] info lane-switch {"book": "part-6.pdf", "page": 30, "from": "legacy", "to": "unicode"}
+[17:13:35.322] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "28-29", "rule": "rabbit"}
+[17:13:35.469] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "30-30", "rule": "zawcode"}
+[17:13:35.501] [STEM] info lane-switch {"book": "part-6.pdf", "page": 32, "from": "unicode", "to": "legacy"}
+[17:13:35.514] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "31-31", "rule": "rabbit"}
+[17:13:35.561] [STEM] info lane-switch {"book": "part-6.pdf", "page": 33, "from": "legacy", "to": "unicode"}
+[17:13:35.675] [STEM] info lane-switch {"book": "part-6.pdf", "page": 34, "from": "unicode", "to": "legacy"}
+[17:13:35.675] [STEM] info lane-switch {"book": "part-6.pdf", "page": 34, "from": "legacy", "to": "unicode"}
+[17:13:35.840] [STEM] info lane-switch {"book": "part-6.pdf", "page": 35, "from": "unicode", "to": "legacy"}
+[17:13:35.840] [STEM] info lane-switch {"book": "part-6.pdf", "page": 35, "from": "legacy", "to": "unicode"}
+[17:13:35.996] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "32-35", "rule": "zawcode"}
+[17:13:36.034] [STEM] info lane-switch {"book": "part-6.pdf", "page": 37, "from": "unicode", "to": "legacy"}
+[17:13:36.034] [STEM] info lane-switch {"book": "part-6.pdf", "page": 37, "from": "legacy", "to": "unicode"}
+[17:13:36.060] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "36-36", "rule": "rabbit"}
+[17:13:36.137] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "37-37", "rule": "zawcode"}
+[17:13:36.140] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "38-38", "rule": "rabbit"}
+[17:13:36.190] [STEM] info lane-switch {"book": "part-6.pdf", "page": 42, "from": "unicode", "to": "legacy"}
+[17:13:36.190] [STEM] info lane-switch {"book": "part-6.pdf", "page": 42, "from": "legacy", "to": "unicode"}
+[17:13:36.219] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "39-41", "rule": "aligned"}
+[17:13:36.317] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "42-42", "rule": "zawcode"}
+[17:13:36.390] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "43-44", "rule": "rabbit"}
+[17:13:36.425] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "45-46", "rule": "aligned"}
+[17:13:36.832] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "47-51", "rule": "rabbit"}
+[17:13:36.990] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "52-53", "rule": "zawcode"}
+[17:13:37.250] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "54-56", "rule": "rabbit"}
+[17:13:37.350] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "57-57", "rule": "zawcode"}
+[17:13:41.144] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "58-85", "rule": "rabbit"}
+[17:14:08.670] [STEM] info lane-switch {"book": "part-6.pdf", "page": 1, "from": "legacy", "to": "unicode"}
+[17:14:08.840] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "1-1", "rule": "zawcode"}
+[17:14:08.952] [STEM] info lane-switch {"book": "part-6.pdf", "page": 3, "from": "unicode", "to": "legacy"}
+[17:14:08.953] [STEM] info lane-switch {"book": "part-6.pdf", "page": 3, "from": "legacy", "to": "unicode"}
+[17:14:08.992] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "2-2", "rule": "rabbit"}
+[17:14:09.196] [STEM] info lane-switch {"book": "part-6.pdf", "page": 4, "from": "unicode", "to": "legacy"}
+[17:14:09.196] [STEM] info lane-switch {"book": "part-6.pdf", "page": 4, "from": "legacy", "to": "unicode"}
+[17:14:09.463] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "3-4", "rule": "zawcode"}
+[17:14:09.571] [STEM] info lane-switch {"book": "part-6.pdf", "page": 6, "from": "unicode", "to": "legacy"}
+[17:14:09.571] [STEM] info lane-switch {"book": "part-6.pdf", "page": 6, "from": "legacy", "to": "unicode"}
+[17:14:09.608] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "5-5", "rule": "rabbit"}
+[17:14:09.668] [STEM] info lane-switch {"book": "part-6.pdf", "page": 7, "from": "unicode", "to": "legacy"}
+[17:14:09.669] [STEM] info lane-switch {"book": "part-6.pdf", "page": 7, "from": "legacy", "to": "unicode"}
+[17:14:09.822] [STEM] info lane-switch {"book": "part-6.pdf", "page": 8, "from": "unicode", "to": "legacy"}
+[17:14:09.823] [STEM] info lane-switch {"book": "part-6.pdf", "page": 8, "from": "legacy", "to": "unicode"}
+[17:14:09.972] [STEM] info lane-switch {"book": "part-6.pdf", "page": 9, "from": "unicode", "to": "legacy"}
+[17:14:09.972] [STEM] info lane-switch {"book": "part-6.pdf", "page": 9, "from": "legacy", "to": "unicode"}
+[17:14:09.972] [STEM] info lane-switch {"book": "part-6.pdf", "page": 9, "from": "unicode", "to": "legacy"}
+[17:14:09.972] [STEM] info lane-switch {"book": "part-6.pdf", "page": 9, "from": "legacy", "to": "unicode"}
+[17:14:10.086] [STEM] info lane-switch {"book": "part-6.pdf", "page": 10, "from": "unicode", "to": "legacy"}
+[17:14:10.086] [STEM] info lane-switch {"book": "part-6.pdf", "page": 10, "from": "legacy", "to": "unicode"}
+[17:14:10.179] [STEM] info lane-switch {"book": "part-6.pdf", "page": 11, "from": "unicode", "to": "legacy"}
+[17:14:10.180] [STEM] info lane-switch {"book": "part-6.pdf", "page": 11, "from": "legacy", "to": "unicode"}
+[17:14:10.271] [STEM] info lane-switch {"book": "part-6.pdf", "page": 12, "from": "unicode", "to": "legacy"}
+[17:14:10.429] [STEM] info lane-switch {"book": "part-6.pdf", "page": 13, "from": "legacy", "to": "unicode"}
+[17:14:10.429] [STEM] info lane-switch {"book": "part-6.pdf", "page": 13, "from": "unicode", "to": "legacy"}
+[17:14:10.429] [STEM] info lane-switch {"book": "part-6.pdf", "page": 13, "from": "legacy", "to": "unicode"}
+[17:14:10.609] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "6-13", "rule": "zawcode"}
+[17:14:10.791] [STEM] info lane-switch {"book": "part-6.pdf", "page": 16, "from": "unicode", "to": "legacy"}
+[17:14:10.791] [STEM] info lane-switch {"book": "part-6.pdf", "page": 16, "from": "legacy", "to": "unicode"}
+[17:14:10.838] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "14-15", "rule": "rabbit"}
+[17:14:10.910] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "16-16", "rule": "zawcode"}
+[17:14:10.912] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "17-17", "rule": "rabbit"}
+[17:14:10.999] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "18-20", "rule": "aligned"}
+[17:14:11.035] [STEM] info lane-switch {"book": "part-6.pdf", "page": 22, "from": "unicode", "to": "legacy"}
+[17:14:11.036] [STEM] info lane-switch {"book": "part-6.pdf", "page": 22, "from": "legacy", "to": "unicode"}
+[17:14:11.046] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "21-21", "rule": "rabbit"}
+[17:14:11.090] [STEM] info lane-switch {"book": "part-6.pdf", "page": 23, "from": "unicode", "to": "legacy"}
+[17:14:11.090] [STEM] info lane-switch {"book": "part-6.pdf", "page": 23, "from": "legacy", "to": "unicode"}
+[17:14:11.196] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "22-23", "rule": "zawcode"}
+[17:14:11.225] [STEM] info lane-switch {"book": "part-6.pdf", "page": 25, "from": "unicode", "to": "legacy"}
+[17:14:11.225] [STEM] info lane-switch {"book": "part-6.pdf", "page": 25, "from": "legacy", "to": "unicode"}
+[17:14:11.242] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "24-24", "rule": "rabbit"}
+[17:14:11.334] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "25-25", "rule": "zawcode"}
+[17:14:11.408] [STEM] info lane-switch {"book": "part-6.pdf", "page": 27, "from": "unicode", "to": "legacy"}
+[17:14:11.409] [STEM] info lane-switch {"book": "part-6.pdf", "page": 27, "from": "legacy", "to": "unicode"}
+[17:14:11.453] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "26-26", "rule": "rabbit"}
+[17:14:11.504] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "27-27", "rule": "zawcode"}
+[17:14:11.669] [STEM] info lane-switch {"book": "part-6.pdf", "page": 30, "from": "unicode", "to": "legacy"}
+[17:14:11.669] [STEM] info lane-switch {"book": "part-6.pdf", "page": 30, "from": "legacy", "to": "unicode"}
+[17:14:11.696] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "28-29", "rule": "rabbit"}
+[17:14:11.820] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "30-30", "rule": "zawcode"}
+[17:14:11.844] [STEM] info lane-switch {"book": "part-6.pdf", "page": 32, "from": "unicode", "to": "legacy"}
+[17:14:11.853] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "31-31", "rule": "rabbit"}
+[17:14:11.887] [STEM] info lane-switch {"book": "part-6.pdf", "page": 33, "from": "legacy", "to": "unicode"}
+[17:14:11.994] [STEM] info lane-switch {"book": "part-6.pdf", "page": 34, "from": "unicode", "to": "legacy"}
+[17:14:11.994] [STEM] info lane-switch {"book": "part-6.pdf", "page": 34, "from": "legacy", "to": "unicode"}
+[17:14:12.117] [STEM] info lane-switch {"book": "part-6.pdf", "page": 35, "from": "unicode", "to": "legacy"}
+[17:14:12.117] [STEM] info lane-switch {"book": "part-6.pdf", "page": 35, "from": "legacy", "to": "unicode"}
+[17:14:12.227] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "32-35", "rule": "zawcode"}
+[17:14:12.260] [STEM] info lane-switch {"book": "part-6.pdf", "page": 37, "from": "unicode", "to": "legacy"}
+[17:14:12.260] [STEM] info lane-switch {"book": "part-6.pdf", "page": 37, "from": "legacy", "to": "unicode"}
+[17:14:12.281] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "36-36", "rule": "rabbit"}
+[17:14:12.355] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "37-37", "rule": "zawcode"}
+[17:14:12.358] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "38-38", "rule": "rabbit"}
+[17:14:12.407] [STEM] info lane-switch {"book": "part-6.pdf", "page": 42, "from": "unicode", "to": "legacy"}
+[17:14:12.407] [STEM] info lane-switch {"book": "part-6.pdf", "page": 42, "from": "legacy", "to": "unicode"}
+[17:14:12.437] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "39-41", "rule": "aligned"}
+[17:14:12.530] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "42-42", "rule": "zawcode"}
+[17:14:12.604] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "43-44", "rule": "rabbit"}
+[17:14:12.632] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "45-46", "rule": "aligned"}
+[17:14:12.960] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "47-51", "rule": "rabbit"}
+[17:14:13.120] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "52-53", "rule": "zawcode"}
+[17:14:13.384] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "54-56", "rule": "rabbit"}
+[17:14:13.490] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "57-57", "rule": "zawcode"}
+[17:14:17.277] [BEAUTIFY] info decision {"book": "part-6.pdf", "pages": "58-85", "rule": "rabbit"}
