@@ -25,3 +25,26 @@ python /tmp/aggregate-pages.py                                 # refresh audit/b
 ```
 
 Source PDFs are on branch `trash` (`pdf-parts/part-1..9.pdf`), never in this repo.
+
+## Sources
+
+The nine parts live on branch `trash`, never here:
+
+| part | blob | size |
+|---|---|---|
+| `pdf-parts/part-1.pdf` | `48decf9d31c2` | 33.3 MB |
+| `pdf-parts/part-2.pdf` | `05449ff86223` | 47.0 MB |
+| `pdf-parts/part-3.pdf` | `02bac26d6d7a` | 41.7 MB |
+| `pdf-parts/part-4.pdf` | `26707f323f41` | 9.2 MB |
+| `pdf-parts/part-5.pdf` | `ecf079d6f075` | 4.2 MB |
+| `pdf-parts/part-6.pdf` | `c9f707041858` | 20.3 MB |
+| `pdf-parts/part-7.pdf` | `90758cabeffd` | 20.0 MB |
+| `pdf-parts/part-8.pdf` | `db9e8ad289b5` | 10.0 MB |
+| `pdf-parts/part-9.pdf` | `bdd5073b43b9` | 12.5 MB |
+
+A label page per source PDF inside each part is what attributes the log's
+`book`/`page` and the scan's line numbers to a book.
+
+Committed evidence: `B.Parser/audit/parts/part-N.log` and
+`B.Parser/audit/scans/part-N.scan.txt`. The decoded txt is regenerated with the
+command in `B.Parser/AUDIT.md`.

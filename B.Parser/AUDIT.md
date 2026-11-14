@@ -240,32 +240,44 @@ file carries **no** `/ToUnicode` at all (see below).
 
 # Broken page collection
 
-Produced by the parser's own damage scanner, `normalize/scan.py` — the rules that
-found the real bugs before any score moved (`orphan`, `impossible`, `stray`,
-`repeat`; its docstring is explicit that `score_text` stays flat while these
-move). One log per part in `audit/scans/`:
+Every part was run through the full parser with its own logging, then through
+the parser's own damage scanner (`normalize/scan.py`). This repository carries
+the **logs and the damage reports**; the decoded txt is 20 MB the same command
+regenerates, so it is not committed.
 
 ```bash
-python -m myangustis_parser.normalize.scan Junk/Parser/output/parts/part-N.txt \
-    -o B.Parser/audit/scans/part-N.scan.txt
+PARSER_LOG_ENABLED=1 PARSER_LOG_FILE=B.Parser/audit/parts/part-N.log \
+  python B.Parser/main.py parse pdf-parts/part-N.pdf parts/part-N.txt
+python -m myangustis_parser.normalize.scan parts/part-N.txt -o B.Parser/audit/scans/part-N.scan.txt
 ```
 
-Source PDFs live on branch `trash` at `pdf-parts/part-1.pdf` … `part-9.pdf`
-(33.3 / 47.0 / 41.7 / 9.2 / 4.2 / 20.3 / 20.0 / 10.0 / 12.5 MB); they are not
-included in this repository.
+## Source PDFs (branch `trash`, not in this repository)
 
-| part | orphan | impossible | stray | repeat |
-|---|---|---|---|---|
-| part-1 | 10342 | 55 | 3632 | 783 |
-| part-2 | 23840 | 49 | 8397 | 68 |
-| part-3 | 11586 | 150 | 512 | 313 |
-| part-4 | 7624 | 114 | 74 | 7 |
-| part-5 | 460 | 0 | 1 | 6 |
-| part-6 | 4117 | 8 | 31 | 1 |
-| part-7 | 98 | 0 | 0 | 0 |
-| part-8 | 147 | 1 | 9 | 0 |
-| part-9 | 597 | 0 | 2 | 45 |
-| **all** | **58811** | **377** | **12658** | **1223** |
+| path on `trash` | blob | size | orphan hits |
+|---|---|---|---|
+| `pdf-parts/part-1.pdf` | `48decf9d31c2` | 33.3 MB | 9,528 |
+| `pdf-parts/part-2.pdf` | `05449ff86223` | 47.0 MB | 26,798 |
+| `pdf-parts/part-3.pdf` | `02bac26d6d7a` | 41.7 MB | 11,075 |
+| `pdf-parts/part-4.pdf` | `26707f323f41` | 9.2 MB | 7,600 |
+| `pdf-parts/part-5.pdf` | `ecf079d6f075` | 4.2 MB | 430 |
+| `pdf-parts/part-6.pdf` | `c9f707041858` | 20.3 MB | 3,804 |
+| `pdf-parts/part-7.pdf` | `90758cabeffd` | 20.0 MB | 75 |
+| `pdf-parts/part-8.pdf` | `db9e8ad289b5` | 10.0 MB | 142 |
+| `pdf-parts/part-9.pdf` | `bdd5073b43b9` | 12.5 MB | 586 |
+
+Each part merges ~40 body pages of many source PDFs with one label page per
+source carrying its file name, so the log's `book`/`page` and the scan's line
+numbers attribute every defect to a book without extracting a PDF.
+
+## Where the evidence lives
+
+| file | what it is |
+|---|---|
+| `audit/parts/part-N.log` | the parser's per-page record: `book`, `page`, `lane`, `lane_reason`, `decision`, `category`, `residue`, `detached_marks`, `duplicate_lines`, `warnings`, `status` |
+| `audit/scans/part-N.scan.txt` | damage per part: `orphan` / `impossible` / `stray` / `repeat` / `digit` / `virama` — cluster, hit count, and the **line number** it came from |
+
+Totals across the nine parts: **orphan 60,038 · stray 12,592 · repeat 1,207 ·
+impossible 361**.
 
 `orphan` — a dependent mark with no base — is the dominant defect by an order of
 magnitude, and it is the same thing the worst pages show.
