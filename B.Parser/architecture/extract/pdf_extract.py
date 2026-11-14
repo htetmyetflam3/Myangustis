@@ -1026,6 +1026,43 @@ def _join_visual_runs(pieces, doc):
     return ''.join(transformed)
 
 
+
+_MARK_RANGE = ('\u102b-\u103e\u105e-\u1060\u1062-\u1064\u1067-\u106d'
+               '\u1071-\u1074\u1082-\u108d\u108f\u109a-\u109d')
+_BASE_RANGE = ('\u1000-\u1021\u1023-\u102a\u103f\u104c-\u104f'
+               '\ua9e0-\ua9ef\uaa60-\uaa7f')
+_MARKS = re.compile(f'[{_MARK_RANGE}]')
+_BASES = re.compile(f'[{_BASE_RANGE}]')
+_TOKEN_BREAK = ' \t\n\r\u00a0\u104a\u104b\u104c\u104d\u104e\u104f'
+
+
+def _bind_leading_marks(text):
+    """A mark run with nothing in front of it belongs to the base that follows.
+
+    These faces encode visual order, so a cluster can arrive as ``ိ`` then
+    ``က``: the mark has no base before it, which is what the scanner reports as
+    an orphan, and the base is the very next letter. Binding the marks behind
+    that base is the only reading that is Burmese. A mark that already has a
+    base in front of it is untouched, and so is a run with no base after it.
+    """
+    if not text:
+        return text
+    out, i, size = [], 0, len(text)
+    while i < size:
+        if _MARKS.match(text[i]) and (i == 0 or text[i - 1] in _TOKEN_BREAK):
+            j = i
+            while j < size and _MARKS.match(text[j]):
+                j += 1
+            if j < size and _BASES.match(text[j]):
+                out.append(text[j])
+                out.append(text[i:j])
+                i = j + 1
+                continue
+        out.append(text[i])
+        i += 1
+    return ''.join(out)
+
+
 def _join_page_runs(pieces, doc):
     """Join one page's glyph runs. The legacy-ASCII repair lives HERE.
 
@@ -1055,7 +1092,7 @@ def _join_page_runs(pieces, doc):
     # nothing in the file to identify it - is read from the text.
     if any((legacy_layout_for_font(name) or {}).get('known') for name in names):
         return joined
-    return legacy_ascii.resolve(joined)
+    return _bind_leading_marks(legacy_ascii.resolve(joined))
 
 def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=False, *, used_myanmar_fonts=None, used_legacy_fonts=None, image_records=None, diagnostics=None):
     """Extract text lines WITH layout: ``(lines, page_w, page_h)``.

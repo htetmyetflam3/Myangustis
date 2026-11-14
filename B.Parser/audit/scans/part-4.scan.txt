@@ -1,10 +1,10 @@
 ==============================================================================
-praser scan  Junk/Parser/output/parts/part-4.txt
-476,690 characters
+praser scan  B.Parser/audit/parts/part-4.txt
+476,648 characters
 ==============================================================================
 
 rule            hits  distinct   what it means
-orphan          7624      3719   a dependent mark with no base in front of it
+orphan          7600      3706   a dependent mark with no base in front of it
 impossible       114        87   a pair Burmese cannot write in one syllable
 stray             74        18   a token made only of marks (shadow-collapse debris)
 repeat             7         6   the same syllable printed 3+ times back to back
@@ -14,7 +14,7 @@ virama          6468      3640   U+1039 with nothing stacked after it
 
 ------------------------------------------------------------------------------
 ORPHAN  --  a dependent mark with no base in front of it
-7624 hits in 3719 distinct clusters
+7600 hits in 3706 distinct clusters
 ------------------------------------------------------------------------------
      75  နာမ၀ိသေသန
          line 7: ပစ္စည်း+ နာမ၀ိသေသန= ကြိယာ၀ိသေသန
@@ -82,7 +82,7 @@ IMPOSSIBLE  --  a pair Burmese cannot write in one syllable
       3  လှုပ်ရှားနိုင်သောစကားသံဖြစ်
          line 498: (ခ) လှုပ်ရှားနိုင်သောစကားသံဖြစ်အဂင်္ါ
       2  ဂောံ်ခ်းဟာ
-         line 4449: ဒါပေမယံး ခု စာတစးစောငးအတကြး ဂောံ်ခ်းဟာ တေားတေား ဦ့နွောကး ေျခာကးနေပဵုရတယး၈
+         line 4449: ဒါပေမယံး ခု စာတစးစောငးအတကြး ဂောံ်ခ်းဟာ တေားတေား ဦ့နွောကး ချောကးနေပဵုရတယး၈
       2  င်္ိ
          line 450: ၂၁။    အက္ခရာ ဤ ပြောင်းလဲပုံ။    ။အက္ခရာ ဤ သည် မူလက လှိုင်းတွန့်တစ်ခုနှင့် င်္ိ
       2  သံပြောင်းသကေင်္
@@ -118,7 +118,7 @@ IMPOSSIBLE  --  a pair Burmese cannot write in one syllable
       1  ဂောံ်ခ်းရဲ့
          line 4480: ဂောံ်ခ်းရဲ့ သူငယးခ်င့း ဂျနြးဘိလးက လိုခ်ငးတယး၈ သူကိုယးတိုငးကလည့း အင်္ဂလနးကို မလာ
       1  ဂောံ်ခ်းကို
-         line 4488: နိုငးတာမို့ ဂောံ်ခ်းကို ဘယးရြေ့ဘယးမွ် ပေ့ပါံမယး၇ ရအောငး ရွာယူပေ့ပါ မွာသတဲံ၈ စာရဲ့
+         line 4488: ငနိုးတာမို့ ဂောံ်ခ်းကို ဘယးရြေ့ဘယးမွ် ပေ့ပါံမယး၇ ရအောငး ရွာယူပေ့ပါ မွာသတဲံ၈ စာရဲ့
       1  ဂောံ်ခ်းပျောတာကို
          line 4502: ရောကးတောံ ဘီလးဟာ ဂောံ်ခ်းပျောတာကို က်ပးက်ပး စဥ့းစာ့လေ ဂနာမငြိမး ဖျစးလာပြီ့
 
