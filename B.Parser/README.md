@@ -71,6 +71,69 @@ last pending range. Neither this file nor the console log is a per-page or
 per-character dump.
 
 
+### Diagnosing garbled PDF text
+
+For a fresh parse of an affected PDF, set these in the root `.env` and restart
+the parser/combined service:
+
+```sh
+PARSER_DIAGNOSTICS=on
+PARSER_LOG_ENABLED=on
+# Optional: PARSER_LOG_FILE=/path/to/private/parser.log
+# Optional, sensitive: PARSER_DIAGNOSTIC_SAMPLES=on
+```
+
+Diagnostics are off by default. When enabled, `PDFDIAG page` records one event
+per page (one-based) in stderr/service journal and, if file logging is enabled,
+the same log file as lane decisions. Existing file permissions are not changed;
+protect and rotate both the log and journal. This can create substantial logs
+for large books. The SSH queue skips already processed books; test a copy with
+the local parser or reset/back up queue outputs and state together before
+reprocessing. Do not delete production output merely to collect diagnostics.
+
+Each page records the chosen decoding lane and reason, actual finishing rule,
+category, cleanup setting, image flag and warning codes. `extraction.fonts`
+contains up to 12 resource entries plus an `<other>` aggregate: base font,
+subtype, CID flag, ToUnicode/embedded glyph-map entry counts, encoding and
+legacy/visual flags, input bytes, runs, decoded characters, Myanmar characters,
+single-character runs, and exact unmapped-code, fallback-byte and dropped-control
+counts. A fallback byte can be normal for a simple Latin font; an unmapped code
+means this decoder emitted a hex placeholder, not necessarily why its map failed.
+Counters for `<unset>` use its separate fallback decoder. Resource facts for
+`<other>` describe only the first merged resource. `adjacent_duplicate_runs`
+counts identical consecutive decoded runs of 4–512 characters; legitimate
+repetition is possible. Piece counts and characters before/after overprint
+removal help identify layout loss; decoded counts are before piece assembly,
+visual recovery, ordering and layout, and are not directly comparable one to
+one with final text. Some fonts may have inaccurate maps without any unmapped
+codes. These are clues, not correctness scores.
+
+`layout`, `finished`, `base`, `clean` and `stream_output` contain character/line counts,
+Myanmar and replacement-character counts, single-character and consecutive
+identical line counts, and `[HEX]`-looking pattern counts (which can be literal
+text). The change flags show which finishing stages changed the page; `clean`
+is a candidate even when cleanup is off, while `stream_output` is the text
+selected by the streaming step. The CLI/SSH byte-based job initially selects
+base there but later exports `clean`; OCR-supplied pages may be replaced later.
+Compare symptoms stage by stage: if decoded runs already contain
+unmapped codes or an opt-in decoded sample is wrong, investigate font mapping;
+if runs look reasonable but layout breaks or repeats them, investigate assembly
+and positioning; if layout looks right but finished/base/clean differ, inspect
+the indicated conversion or cleanup. For SSH parse, a separate book-level
+`PDFDIAG segmentation` event compares exported `text` with `segmented`. The TXT
+collection and Parquet `text` contain the former, not the segmented field.
+
+By default diagnostics contain no page text or raw bytes, but filenames, font
+names and statistics may still be sensitive. Only if explicitly enabled,
+`PARSER_DIAGNOSTIC_SAMPLES=on` adds the first **160 characters per page per
+stage**, including pre-layout decoded runs, to both sinks; samples may contain
+private or copyrighted book content. Turn it off and handle/delete collected
+logs appropriately. A sample of the beginning of a page may miss a defect
+elsewhere; share an affected PDF, its page number, relevant logs and PDF.js
+output (if permissible) to verify the cause. These diagnostics do not make this
+parser PDF.js or prove that the extraction problem is fixed.
+
+
 ## Independent parser and OCR runner
 
 From `B.Parser`, use `uv run main.py parse ...` (`prase` is also accepted),

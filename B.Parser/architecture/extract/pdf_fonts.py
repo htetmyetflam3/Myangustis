@@ -1555,13 +1555,20 @@ class FontDecoder:
         return self._observe_lane(self._doc_lookup(key, cid),
                                   "legacy" if self.doc.kind == "legacy" and self.zawcode_glyphs is None else "unicode")
 
-    def decode(self, data, *, use_confirmed=True):
+    def decode(self, data, *, use_confirmed=True, stats=None):
         """Decode a shown string (``bytes``) with this font's rules."""
         if not data:
             return ""
         if is_unresolved_legacy_font(self.base_font):
             if self.is_cid:
-                return ''.join(f"[{code:04X}]" for code, _, _ in self.cmap.iter_codes(data))
+                def placeholders():
+                    for code, _, _ in self.cmap.iter_codes(data):
+                        if stats is not None:
+                            stats['unmapped_codes'] += 1
+                        yield f"[{code:04X}]"
+                return ''.join(placeholders())
+            if stats is not None:
+                stats['unmapped_codes'] += len(data)
             return ''.join(f"[{code:02X}]" for code in data)
         if self.zawcode_glyphs is not None and self.doc.zawcode_stats is not None:
             self.doc.zawcode_stats['glyphs'] += len(data) // 2
@@ -1569,6 +1576,8 @@ class FontDecoder:
         if self.is_cid:
             for code, cid, width in self.cmap.iter_codes(data):
                 text = self.decode_code(code, cid, width, use_confirmed) if cid is not None else None
+                if text is None and stats is not None:
+                    stats['unmapped_codes'] += 1
                 out.append(text if text is not None else f"[{code:0{width * 2}X}]")
             return "".join(out)
         index = 0
@@ -1582,12 +1591,18 @@ class FontDecoder:
                     index += len(run['bytes'])
                     continue
                 if code in self.confirmed_raw_runs['unresolved']:
+                    if stats is not None:
+                        stats['unmapped_codes'] += 1
                     out.append(f"[{code:02X}]")
                     index += 1
                     continue
             index += 1
             text = self.decode_code(code, use_confirmed=use_confirmed)
             if text is None:
+                if stats is not None:
+                    stats['fallback_bytes'] += 1
+                    if (code < 0x20 or 0x7F <= code <= 0x9F) and code not in (0x09, 0x0A, 0x0D):
+                        stats['dropped_controls'] += 1
                 # Unchanged byte — the behaviour simple fonts always had when
                 # nothing could decode them; never a placeholder, so no text
                 # is lost or invented. Control codes are the one exception:

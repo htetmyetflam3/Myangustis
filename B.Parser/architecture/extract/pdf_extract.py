@@ -910,7 +910,7 @@ class _UnsetFontDecoder(FontDecoder):
 
     __slots__ = ()
 
-    def decode(self, data, *, use_confirmed=True):
+    def decode(self, data, *, use_confirmed=True, stats=None):
         if not data:
             return ""
         if isinstance(data, HexString):
@@ -918,13 +918,19 @@ class _UnsetFontDecoder(FontDecoder):
             for i in range(0, len(data) - 1, 2):
                 code = (data[i] << 8) | data[i + 1]
                 text = self._doc_lookup(code)
+                if text is None and stats is not None:
+                    stats['unmapped_codes'] += 1
                 out.append(text if text is not None else f"[{code:04X}]")
             return "".join(out)
-        return "".join(
-            (self._doc_lookup(code) if self._doc_lookup(code) is not None
-             else chr(code))
-            for code in data
-        )
+        out = []
+        for code in data:
+            text = self._doc_lookup(code)
+            if text is None:
+                if stats is not None:
+                    stats['fallback_bytes'] += 1
+                text = chr(code)
+            out.append(text)
+        return "".join(out)
 
 
 def _document_loader(doc, objects):
@@ -1025,7 +1031,7 @@ def _join_page_runs(pieces, doc):
         return _join_visual_runs(pieces, doc)
     return ''.join(piece[2] for piece in pieces)
 
-def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=False, *, used_myanmar_fonts=None, used_legacy_fonts=None, image_records=None):
+def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=False, *, used_myanmar_fonts=None, used_legacy_fonts=None, image_records=None, diagnostics=None):
     """Extract text lines WITH layout: ``(lines, page_w, page_h)``.
 
     ``lines`` is a top-to-bottom list of ``(x, y, size, text, font)`` where x/y are
@@ -1069,6 +1075,7 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
 
     refs = list(content_refs(page.get('Contents') if isinstance(page, dict) else None))
     pieces = []  # list of (y, x, size, text, optional font runs)
+    previous_diagnostic_run = None
     # Contents arrays form one logical stream, including mid-token boundaries.
     content = b''.join(_page_content_stream(loader, ref) for ref in refs)
     image_collector = None
@@ -1244,7 +1251,36 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
                 # extraction; confirmed-run decoding remains available on
                 # FontDecoder itself. Its current legacy page store does not
                 # retain the confirmed alternative.
-                text = decoder.decode(shown, use_confirmed=False) if decoder.confirmed_raw_runs else decoder.decode(shown)
+                stats = None
+                if diagnostics is not None:
+                    fonts = diagnostics['fonts']
+                    # Resource names can be attacker-controlled; bound both count and length.
+                    key = str(decoder.name or '<unset>')[:80]
+                    if key not in fonts and len(fonts) >= 12:
+                        key = '<other>'
+                    stats = fonts.setdefault(key, {
+                        'resource': key, 'base_font': str(decoder.base_font or '')[:120],
+                        'subtype': str(decoder.subtype or '')[:40], 'cid': decoder.is_cid,
+                        'to_unicode_entries': len(decoder.to_unicode or {}),
+                        'encoding': decoder.has_encoding, 'own_gid_entries': len(decoder.own_gids or {}),
+                        'legacy_map': bool(decoder.font_legacy_code_page),
+                        'visual_recovery': bool(decoder.visual_unicode_glyphs),
+                        'runs': 0, 'bytes': 0, 'decoded_chars': 0, 'myanmar_chars': 0, 'single_char_runs': 0,
+                        'unmapped_codes': 0, 'fallback_bytes': 0, 'dropped_controls': 0})
+                    stats['runs'] += 1
+                    stats['bytes'] += len(shown)
+                text = decoder.decode(shown, use_confirmed=False, stats=stats) if stats is not None else (
+                    decoder.decode(shown, use_confirmed=False) if decoder.confirmed_raw_runs else decoder.decode(shown))
+                if stats is not None:
+                    stats['decoded_chars'] += len(text)
+                    stats['myanmar_chars'] += sum('\u1000' <= c <= '\u109f' or '\uaa60' <= c <= '\uaa7f' or '\ua9e0' <= c <= '\ua9ff' for c in text)
+                    stats['single_char_runs'] += len(text.strip()) == 1
+                    if 4 <= len(text) <= 512 and previous_diagnostic_run == text:
+                        diagnostics['adjacent_duplicate_runs'] += 1
+                    previous_diagnostic_run = text if len(text) <= 512 else None
+                    if diagnostics['sample_enabled']:
+                        sample = diagnostics.get('decoded_sample', '')
+                        diagnostics['decoded_sample'] = sample + text[:160 - len(sample)]
                 if block_xy is None:
                     block_xy = position()
                 effective_size = abs(font_size) * math.hypot(
@@ -1286,6 +1322,9 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
     # and assembled as အနက်မစပါးှာ instead of အနက်မှာ စပါး. The ±1pt box
     # still guards it: genuinely repeated text elsewhere on the line is
     # farther away than that.
+    if diagnostics is not None:
+        diagnostics['pieces_before_dedup'] = len(pieces)
+        diagnostics['piece_chars_before_dedup'] = sum(len(p[3]) for p in pieces)
     unique_pieces = []
     for piece in pieces:
         y, x, size, text = piece[:4]
@@ -1311,6 +1350,9 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
         if not drop:
             unique_pieces.append(piece)
     pieces = unique_pieces
+    if diagnostics is not None:
+        diagnostics['pieces_after_dedup'] = len(pieces)
+        diagnostics['piece_chars_after_dedup'] = sum(len(p[3]) for p in pieces)
 
     page_w, page_h = get_page_mediabox(objects, page_num, page_gen)
     if not pieces:
@@ -1383,6 +1425,9 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
                 if tot and 0.25 <= left / tot <= 0.75:
                     bounds = [c]
 
+    if diagnostics is not None:
+        diagnostics['columns'] = len(bounds) + 1
+        diagnostics['table_rules'] = has_table_rules
     if bounds:
         lines = []
         for c in range(len(bounds) + 1):
