@@ -1,0 +1,4 @@
+13:28:17.322 [SEGMENT] PROCESSING segmenting... lineCount=0
+13:28:17.351 [TAGGER] PROCESSING tagging...
+13:28:17.409 [SEGMENT] PROCESSING segmenting... lineCount=0
+13:28:17.412 [TAGGER] SUCCESS done tokenCount=50 wordCount=44 elapsedSec=0.1 elapsed=61

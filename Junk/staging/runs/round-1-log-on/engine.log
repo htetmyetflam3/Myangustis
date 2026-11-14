@@ -1,0 +1,4 @@
+[13:28:17.322] [SEGMENT] processing segmenting... {"lineCount": 0}
+[13:28:17.351] [TAGGER] processing tagging... {}
+[13:28:17.409] [SEGMENT] processing segmenting... {"lineCount": 0}
+[13:28:17.412] [TAGGER] success done {"tokenCount": 50, "wordCount": 44, "elapsedSec": "0.1", "elapsed": 61}
