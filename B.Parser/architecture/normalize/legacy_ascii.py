@@ -42,6 +42,12 @@ RESIDUE_SLOTS = {
 
 _LATIN_RUN = re.compile(r'[A-Za-z]+')
 
+#: A Latin letter with Myanmar text on one side of it - the cheap test that
+#: decides whether a page needs the layout read at all (one scan, no scoring).
+_SLOT_NEAR_MMYANMAR = re.compile(
+    r'[\u1000-\u109f\uaa60-\uaa7f\ua9e0-\ua9ff][A-Za-z]'
+    r'|[A-Za-z][\u1000-\u109f\uaa60-\uaa7f\ua9e0-\ua9ff]')
+
 
 def is_myanmar(char):
     """True for a Myanmar-script code point (letters, marks, digits)."""
@@ -94,24 +100,31 @@ def _apply_page(text, page):
 
 
 def resolve(text):
-    """Read lines slot-by-slot through the shared layout, per line.
+    """Read a page's slots through the shared layout, deciding per page.
 
-    ``mm_score`` is a character-level measure, so it can run here - before the
-    finish chain, on the line as it is being assembled - and it is evidence
-    only: the default path stands unless the alternative reading of the SAME
-    line measurably reads better. Ties keep the default.
+    Cost is bounded on purpose: lines with no slot next to Myanmar text are
+    returned untouched after one regex scan, and the layout is chosen with two
+    ``mm_score`` calls for the whole page - not two per line. ``mm_score`` is a
+    character-level measure, so it runs here, before the finish chain; it is
+    evidence only, so a page keeps the default path unless the alternative
+    reading of that same page measurably reads better.
     """
+    if _SLOT_NEAR_MMYANMAR.search(text) is None:
+        return text                       # nothing to read: no work at all
     from myangustis_parser.normalize import mm_score
     default, alternative = _code_pages()
-    out = []
+    preferred, other = [], []
     for line in text.split('\n'):
-        preferred = _apply_page(line, default)
-        other = _apply_page(line, alternative)
-        if other != preferred and mm_score.score_text(other)['score'] > mm_score.score_text(preferred)['score']:
-            out.append(other)
-        else:
-            out.append(preferred)
-    return '\n'.join(out)
+        if _SLOT_NEAR_MMYANMAR.search(line) is None:
+            preferred.append(line)
+            other.append(line)
+            continue
+        preferred.append(_apply_page(line, default))
+        other.append(_apply_page(line, alternative))
+    preferred_text, other_text = '\n'.join(preferred), '\n'.join(other)
+    if other_text != preferred_text and mm_score.score_text(other_text)['score'] > mm_score.score_text(preferred_text)['score']:
+        return other_text
+    return preferred_text
 
 
 def scan(text):

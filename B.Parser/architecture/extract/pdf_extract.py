@@ -23,7 +23,7 @@ from myangustis_parser.normalize.mm_score import MARKS
 from myangustis_parser.normalize.detector import contains_myanmar
 from myangustis_parser.resources.font_names import is_unresolved_legacy_font
 from myangustis_parser.normalize import legacy_ascii
-from myangustis_parser.resources.font_names import is_legacy_font_name
+from myangustis_parser.resources.font_names import is_legacy_font_name, legacy_layout_for_font
 from myangustis_parser.extract.pdf_fonts import (
     CMapEncoding,
     CmapIdentityMap,
@@ -1048,6 +1048,12 @@ def _join_page_runs(pieces, doc):
     # of plain Unicode text is never searched for them.
     names = [piece[4] for piece in pieces if len(piece) > 4 and piece[4]]
     if not any(is_legacy_font_name(name) or 'zawgyi' in name.lower() for name in names):
+        return joined
+    # A registered face names its own layout and the decode already read it
+    # (``known`` is the registry's word, not the guess from a layout prefix), so
+    # a real WinInnwa or Ayar book costs nothing here. Only an unnamed bridge -
+    # nothing in the file to identify it - is read from the text.
+    if any((legacy_layout_for_font(name) or {}).get('known') for name in names):
         return joined
     return legacy_ascii.resolve(joined)
 
