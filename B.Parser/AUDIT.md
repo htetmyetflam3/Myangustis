@@ -155,6 +155,7 @@ These are the 44 Python files under `architecture/`; each is mapped individually
 | `normalize/cleanup.py` | `@postprocess/beautify/clean.js`. |
 | `normalize/detector.py` | `@rule/detect.js`. |
 | `normalize/judgement.py` | `@rule/judgement.js`. |
+| `normalize/legacy_ascii.py` | Python repair for Latin letters standing in for Myanmar letters (legacy ASCII layouts); not ported to JS. |
 | `normalize/legacy_order.py` | Python legacy slot helper, not the pinned normal JS page route. |
 | `normalize/mm_score.py` | `@rule/mm-score.js`. |
 | `normalize/pos_scan.py` | Parts of `@postprocess/init.js` and Engine binding; Python Engine API differs. |
@@ -177,3 +178,135 @@ These are the 44 Python files under `architecture/`; each is mapped individually
 | `workflow/ocr.py` | `@core/ocr/ocr.js`, `@core/runtime/render.js`; different OCR and rendering engines. |
 | `workflow/pipeline.py` | `@core/runtime/source.js`, `@core/docx/source.js`, `@core/requested.js`; reports and storage differ. |
 | `workflow/remote_queue.py` | Python SSH queues, ledger and output collection; no one-to-one JS core file. |
+
+---
+
+# Legacy decoding: what the files actually contain
+
+Merged from the notes that used to live in `notes/bridge-order.md` and
+`architecture/PAUSED.md`; those files are gone and this is their only home.
+
+## The bridge is a key table, not text
+
+A legacy face's `/ToUnicode` is not Myanmar text: each value is the **keyboard
+key** of that glyph (`0x01 -> 'j'`, `0x0A -> 't'`, …). The layout turns a key
+into a letter. Measured on the sample books:
+
+| file | font | bridge entries | codes < 0x20 | wininnwa | ayar | zawcode |
+|---|---|---|---|---|---|---|
+| bg-mlc-1-1.pdf | `/EAAAAA+WinInnwa` | 105 | 31 | **104/104** | 89/104 | 0/104 |
+| bg-mlc-2-5.pdf | `/EAAAAA+WinInnwa` | 113 | 31 | **112/113** | 95/113 | 0/113 |
+| part-5.pdf | `/FCSSNP+Zawgyi-One` | 116 | 31 | 16/16 | 14/16 | 0/16 |
+
+So `code -> ToUnicode key -> layout glyph` reads every code, including the
+control range the hand-built tables skipped. The layout is chosen once per font
+by key coverage — evidence about the font, not a score over its output.
+
+## Two-byte tokens are visual order, not fused codes
+
+In the page streams (`bg-mlc-1-1.pdf`, 41 pages) a two-byte token such as
+`<0506>` is adjacency, and the order is visual:
+
+| kind | count | example |
+|---|---|---|
+| mark + consonant | 3859 | `<0506>` `'ာ'`+`'သ'` → reads သာ |
+| mark + mark | 3666 | `<0405>` `'်'`+`'ာ'` |
+| stack glyph first | 205 | `<0809>` `'္ဒ'`+`'ါ'` |
+| consonant + consonant | 17 | `<0607>` `'သ'`+`'ဒ'` |
+| consonant + mark | 15 | `<0B09>` `'တ'`+`'ါ'` |
+
+No byte arithmetic composes two codes into one; the relation is ordering, and
+every ordering stage in this parser (`normalize/cleanup.order_text`,
+`reorder_marks`) reorders *marks among themselves* only — none of them moves a
+leading mark behind its base, which is what 3859 of those pairs need. The
+stage that can know the base is the one that read the font.
+
+## Hand-built subset tables cannot generalise
+
+`resources/maps_data/legacy-subset-profiles.json` holds 22 observed profiles
+(20 ayar, 2 wininnwa) keyed by font SHA. Two findings limit them: the same font
+SHA disagrees between that file and JS's `raw-byte-map.json` (1 of 11 witnessed
+runs reproduce by concatenation), and both tables are printable-biased — the
+code that carries `္ဒ` (`0x08`) and the virama positions (`0x13` in part-5) sit
+below `0x20`, where the tables have almost nothing.
+
+## Pause note (was `architecture/PAUSED.md`)
+
+Ayar/WinInnwa layout selection is no longer paused for the bridge case — it is
+implemented per font by key coverage. What remains open is the class where the
+file carries **no** `/ToUnicode` at all (see below).
+
+---
+
+# Broken page collection
+
+Every part was run through the full parser with its own logging, then through
+the parser's own damage scanner (`normalize/scan.py`). This repository carries
+the **logs and the damage reports**; the decoded txt is 20 MB the same command
+regenerates, so it is not committed.
+
+```bash
+PARSER_LOG_ENABLED=1 PARSER_LOG_FILE=B.Parser/audit/parts/part-N.log \
+  python B.Parser/main.py parse pdf-parts/part-N.pdf parts/part-N.txt
+python -m myangustis_parser.normalize.scan parts/part-N.txt -o B.Parser/audit/scans/part-N.scan.txt
+```
+
+## Source PDFs (branch `trash`, not in this repository)
+
+| path on `trash` | blob | size | orphan hits |
+|---|---|---|---|
+| `pdf-parts/part-1.pdf` | `48decf9d31c2` | 33.3 MB | 9,528 |
+| `pdf-parts/part-2.pdf` | `05449ff86223` | 47.0 MB | 26,798 |
+| `pdf-parts/part-3.pdf` | `02bac26d6d7a` | 41.7 MB | 11,075 |
+| `pdf-parts/part-4.pdf` | `26707f323f41` | 9.2 MB | 7,600 |
+| `pdf-parts/part-5.pdf` | `ecf079d6f075` | 4.2 MB | 430 |
+| `pdf-parts/part-6.pdf` | `c9f707041858` | 20.3 MB | 3,804 |
+| `pdf-parts/part-7.pdf` | `90758cabeffd` | 20.0 MB | 75 |
+| `pdf-parts/part-8.pdf` | `db9e8ad289b5` | 10.0 MB | 142 |
+| `pdf-parts/part-9.pdf` | `bdd5073b43b9` | 12.5 MB | 586 |
+
+Each part merges ~40 body pages of many source PDFs with one label page per
+source carrying its file name, so the log's `book`/`page` and the scan's line
+numbers attribute every defect to a book without extracting a PDF.
+
+## Where the evidence lives
+
+| file | what it is |
+|---|---|
+| `audit/parts/part-N.log` | the parser's per-page record: `book`, `page`, `lane`, `lane_reason`, `decision`, `category`, `residue`, `detached_marks`, `duplicate_lines`, `warnings`, `status` |
+| `audit/scans/part-N.scan.txt` | damage per part: `orphan` / `impossible` / `stray` / `repeat` / `digit` / `virama` — cluster, hit count, and the **line number** it came from |
+
+Totals across the nine parts: **orphan 60,038 · stray 12,592 · repeat 1,207 ·
+impossible 361**.
+
+`orphan` — a dependent mark with no base — is the dominant defect by an order of
+magnitude, and it is the same thing the worst pages show.
+
+## What the worst page shows
+
+`part-3` page 754:
+
+```
+'-၂၃-'
+'ယခလလပဆငတ နရမ:လည မနမပညရ:ငတက သတစတpက"ကထငရ'
+'လပဆင လမရပgဘ။ အရ:တငအရ:ဘသစကက အထပ"လလထတ'
+```
+
+Consonants decode; marks do not, and mark positions arrive as ASCII
+punctuation (`:`, `"`, `p`, `g`). The fonts behind that part include several
+resources with **zero `/ToUnicode` entries** (`/ABCDEE+Zawgyi-One`,
+`/VNZQXL+WinYadanapon`, `/ABCDEE+Calibri`, `/ABCDEE+Times New Roman`). A font
+with neither `/ToUnicode` nor `/Encoding` leaves no per-glyph link in the file,
+so every mark outside the fallback is lost — that is the open root cause.
+
+## Root causes, in the order they should be fixed
+
+1. **No-bridge fonts lose their marks.** Recover per-glyph identity from the
+   embedded font program (glyph names, outlines) for faces the file gives no
+   mapping for. General rule: shape/name evidence, never a per-book rule.
+2. **Lines split inside a cluster.** The run join breaks a line on a gap that
+   falls between a base and its marks (`short_share` up to 0.43 on the flagged
+   pages). General rule: a gap never splits a cluster.
+3. **Zawgyi arrives unconverted** (`ခ်စ္` in the book collection). The ZawCode
+   call currently needs six matching slots *per page*; a page mixing Latin
+   drills with Zawgyi never reaches it. General rule: the evidence is per run.

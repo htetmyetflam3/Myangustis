@@ -1,6 +1,8 @@
 """Load bundled parser JSON or encrypted overrides through the Python engine.
 
-Set PRASER_MAP_DIR to use an external data directory.
+Set ``PRASER_MAP_DIR`` to use an external data directory. The value is anchored
+to the project root like every other .env path (``/maps/`` is ``<repo>/maps``),
+unless it names a directory that really exists on the host.
 """
 
 from __future__ import annotations
@@ -11,8 +13,11 @@ from functools import lru_cache
 from pathlib import Path
 
 # Shipped parser maps, with an optional external deployment override.
-from myangustis_parser.resources.paths import PARSER_ROOT
-_PRIMARY_DIR = Path(os.environ.get("PRASER_MAP_DIR") or (Path(__file__).resolve().parent / "maps_data"))
+from myangustis_parser.resources import paths
+_PRIMARY_DIR = paths.project_path(
+    os.environ.get("PRASER_MAP_DIR"),
+    default=Path(__file__).resolve().parent / "maps_data",
+)
 _SEARCH_DIRS = (_PRIMARY_DIR,)
 
 

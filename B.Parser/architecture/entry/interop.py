@@ -42,6 +42,7 @@ import os
 from pathlib import Path
 
 from myangustis_parser.entry import manager
+from myangustis_parser.resources import paths
 
 __all__ = ["JobError", "read_job", "run_job", "write_response", "run_job_file"]
 
@@ -58,7 +59,8 @@ def read_job(source):
         return source
     if hasattr(source, "read"):
         return json.load(source)
-    with open(source, encoding="utf-8") as stream:
+    # A job path is a project path unless it already exists on this host.
+    with open(manager.resolve_path(source), encoding="utf-8") as stream:
         return json.load(stream)
 
 
@@ -116,7 +118,7 @@ def run_job(request, *, caller=None, log=None):
 
 def write_response(path, payload):
     """Atomically write a result JSON; create the parent directory."""
-    target = Path(path)
+    target = manager.resolve_path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     tmp = target.with_name(f".{target.name}.{os.getpid()}.tmp")
     tmp.write_text(json.dumps(payload, ensure_ascii=False) + "\n", encoding="utf-8")

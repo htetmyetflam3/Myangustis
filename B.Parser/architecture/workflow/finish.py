@@ -13,6 +13,7 @@ from myangustis_parser.normalize import judgement, mm_score, scan
 from myangustis_parser.normalize.detector import contains_myanmar
 from myangustis_parser.normalize.beautify import arrange_zawcode_order
 from myangustis_parser.normalize.cleanup import cleanup_text, order_text
+from myangustis_parser.normalize import legacy_ascii
 from myangustis_parser.normalize.rabbit import Rabbit
 from myangustis_parser.normalize.unicode_evidence import preserve_regional_runs
 
@@ -40,11 +41,19 @@ def decide(text, *, source, parsing_path='font-cmap', zawgyi_codepage=False,
 
 
 def apply_decision(text, decision):
+    """Apply the page decision to text the decode stage already repaired.
+
+    Legacy ASCII slots are repaired where the page's runs are joined
+    (``extract.pdf_extract._join_page_runs``), not here: this stage orders and
+    cleans, and it must not carry a second, Python-only pass over the text.
+    """
+    if decision == 'ocr':
+        return text
     if decision == 'rabbit':
         return Rabbit.zg2uni(text)
     if decision == 'zawcode':
         return arrange_zawcode_order(text)
-    if decision in ('ocr', 'legacy', 'aligned'):
+    if decision in ('legacy', 'aligned'):
         return text
     raise ValueError(f'Unknown Parser decision: {decision}')
 
@@ -103,4 +112,7 @@ def finish_pdf_page(text, *, parsing_path='font-cmap', zawgyi_codepage=False,
     base = finalize_pdf_output(finished, decision, False)
     cleaned = finalize_pdf_output(finished, decision, True)
     return {'decision': decision, 'category': category, 'finished': finished,
-            'base': base, 'clean': cleaned, 'scan': scan.scan_text(cleaned)}
+            'base': base, 'clean': cleaned, 'scan': scan.scan_text(cleaned),
+            # Latin slots found in Myanmar context, by letter: the evidence the
+            # diagnostics log reports as ``legacy-ascii-residue``.
+            'residue': legacy_ascii.scan(text)}

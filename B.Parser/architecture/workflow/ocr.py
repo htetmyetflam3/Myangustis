@@ -50,9 +50,11 @@ __all__ = [
 ]
 
 # Optional local tessdata directory under B.Parser, if present.
+# PRASER_OCR_LANG_PATH is anchored to the project root like every other setting.
+from myangustis_parser.resources import paths
 from myangustis_parser.resources.paths import PARSER_ROOT
-MODEL_DIR = Path(os.environ.get("PRASER_OCR_LANG_PATH")
-                 or (PARSER_ROOT / "resources" / "ocr"))
+MODEL_DIR = paths.project_path(os.environ.get("PRASER_OCR_LANG_PATH"),
+                               default=PARSER_ROOT / "resources" / "ocr")
 
 
 class OcrError(RuntimeError):
@@ -71,15 +73,22 @@ def langs():
 
 
 def _binary() -> str:
-    return (os.environ.get("PRASER_TESSERACT_BIN")
-            or os.environ.get("PRASER_OCR_BIN") or "tesseract")
+    raw = (os.environ.get("PRASER_TESSERACT_BIN")
+           or os.environ.get("PRASER_OCR_BIN") or "tesseract")
+    # A bare name is looked up on PATH; a path with a separator is anchored to
+    # the project root so /bin/tesseract means <repo>/bin/tesseract.
+    if "/" in raw or "\\" in raw or raw.startswith("~"):
+        local = paths.project_path(raw)
+        if local is not None:
+            return str(local)
+    return raw
 
 
 def _tessdata_dir():
     """Directory holding ``<lang>.traineddata``, or ``None`` for the default."""
-    override = os.environ.get("PRASER_TESSDATA_DIR")
-    if override:
-        return Path(override)
+    override = paths.project_path(os.environ.get("PRASER_TESSDATA_DIR"))
+    if override is not None:
+        return override
     for lang in langs():
         for suffix in (".traineddata", ".traineddata.gz"):
             if (MODEL_DIR / f"{lang}{suffix}").is_file():

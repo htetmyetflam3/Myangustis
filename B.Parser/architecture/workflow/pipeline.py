@@ -325,6 +325,9 @@ def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
     """
     lane_log = LaneLog(book_name or os.path.basename(pdf_path))
     diagnostic = diagnostics.enabled()
+    # One report per book: pages stream to the file, the verdict is stated
+    # once when the book is finished.
+    book_report = diagnostics.BookReport(lane_log) if diagnostic else None
     metadata, npages, pages = stream_pdf_pages(pdf_path, detector=detector, log=log,
                                                 text_layout=text_layout, source_encoding=source_encoding,
                                                 diagnostic=diagnostic)
@@ -334,6 +337,8 @@ def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
             yield from _reports()
         finally:
             lane_log.flush()
+            if book_report is not None:
+                book_report.flush()
 
     def _reports():
         for pg in pages:
@@ -365,7 +370,7 @@ def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
                 rep.update({'lines': lines, 'wh': pg['wh'], 'has_img': pg['has_img'],
                             'images': pg.get('images', [])})
             if diagnostic:
-                diagnostics.page_log(lane_log, idx + 1, pg, result, rep['text'], apply_cleanup)
+                diagnostics.page_log(book_report, idx + 1, pg, result, rep['text'], apply_cleanup)
             lane_log.finish_page(idx + 1, result['decision'])
             yield rep
 

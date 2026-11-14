@@ -1,0 +1,50 @@
+[17:14:02.430] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "1-2", "rule": "aligned"}
+[17:14:02.544] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "3-4", "rule": "zawcode"}
+[17:14:02.686] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "5-5", "rule": "aligned"}
+[17:14:04.352] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "6-20", "rule": "zawcode"}
+[17:14:04.448] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "21-21", "rule": "aligned"}
+[17:14:05.061] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "22-29", "rule": "zawcode"}
+[17:14:05.204] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "30-30", "rule": "aligned"}
+[17:14:05.893] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "31-36", "rule": "zawcode"}
+[17:14:05.951] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "37-37", "rule": "aligned"}
+[17:14:06.032] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "38-39", "rule": "zawcode"}
+[17:14:06.072] [STEM] info lane-switch {"book": "part-8.pdf", "page": 42, "from": "unicode", "to": "legacy"}
+[17:14:06.077] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "40-41", "rule": "aligned"}
+[17:14:06.137] [STEM] info lane-switch {"book": "part-8.pdf", "page": 43, "from": "legacy", "to": "unicode"}
+[17:14:06.147] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "42-42", "rule": "zawcode"}
+[17:14:06.157] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "43-43", "rule": "rabbit"}
+[17:14:06.207] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "44-45", "rule": "aligned"}
+[17:14:06.298] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "46-47", "rule": "rabbit"}
+[17:14:06.571] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "48-54", "rule": "zawcode"}
+[17:14:06.632] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "55-55", "rule": "aligned"}
+[17:14:06.687] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "56-56", "rule": "zawcode"}
+[17:14:06.921] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "57-60", "rule": "rabbit"}
+[17:14:08.255] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "61-77", "rule": "zawcode"}
+[17:14:08.298] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "78-78", "rule": "aligned"}
+[17:14:08.324] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "79-80", "rule": "zawcode"}
+[17:14:08.392] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "81-85", "rule": "aligned"}
+[17:14:37.346] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "1-2", "rule": "aligned"}
+[17:14:37.457] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "3-4", "rule": "zawcode"}
+[17:14:37.593] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "5-5", "rule": "aligned"}
+[17:14:38.988] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "6-20", "rule": "zawcode"}
+[17:14:39.081] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "21-21", "rule": "aligned"}
+[17:14:39.663] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "22-29", "rule": "zawcode"}
+[17:14:39.788] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "30-30", "rule": "aligned"}
+[17:14:40.370] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "31-36", "rule": "zawcode"}
+[17:14:40.420] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "37-37", "rule": "aligned"}
+[17:14:40.489] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "38-39", "rule": "zawcode"}
+[17:14:40.526] [STEM] info lane-switch {"book": "part-8.pdf", "page": 42, "from": "unicode", "to": "legacy"}
+[17:14:40.530] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "40-41", "rule": "aligned"}
+[17:14:40.584] [STEM] info lane-switch {"book": "part-8.pdf", "page": 43, "from": "legacy", "to": "unicode"}
+[17:14:40.593] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "42-42", "rule": "zawcode"}
+[17:14:40.602] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "43-43", "rule": "rabbit"}
+[17:14:40.641] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "44-45", "rule": "aligned"}
+[17:14:40.718] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "46-47", "rule": "rabbit"}
+[17:14:40.939] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "48-54", "rule": "zawcode"}
+[17:14:40.995] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "55-55", "rule": "aligned"}
+[17:14:41.043] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "56-56", "rule": "zawcode"}
+[17:14:41.255] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "57-60", "rule": "rabbit"}
+[17:14:42.493] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "61-77", "rule": "zawcode"}
+[17:14:42.532] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "78-78", "rule": "aligned"}
+[17:14:42.556] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "79-80", "rule": "zawcode"}
+[17:14:42.621] [BEAUTIFY] info decision {"book": "part-8.pdf", "pages": "81-85", "rule": "aligned"}

@@ -100,6 +100,10 @@ class ParserPathsTests(unittest.TestCase):
 
     def test_env_overrides_work_for_upload_and_output(self):
         with tempfile.TemporaryDirectory() as tmp:
+            # An absolute directory that exists on this host is a deployment
+            # location and is used as written.
+            (Path(tmp) / "up").mkdir()
+            (Path(tmp) / "out").mkdir()
             env = {
                 **os.environ,
                 "PRASER_UPLOAD_DIR": str(Path(tmp) / "up"),

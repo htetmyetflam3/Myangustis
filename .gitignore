@@ -238,3 +238,11 @@ svgout/known/*.png
 /Junk/Parser/upload/
 /Junk/Parser/output/
 /Junk/Parser/state/
+
+# One-off staging area for branch-vs-branch runs: the extracted source copy is
+# ignored, the small run outputs (engine log rounds, notes) are kept.
+/Junk/staging/main/
+/Junk/staging/main-js/
+/Junk/staging/js-run/state/
+!/Junk/staging/runs/**/engine.log
+!/Junk/staging/js-run/runs/**/*.log

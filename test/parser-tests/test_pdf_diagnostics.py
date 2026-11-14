@@ -31,7 +31,8 @@ class DiagnosticTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / 'book.pdf'; path.write_bytes(pdf)
             events = []
-            logger = Logen(console=events.append)
+            log_file = Path(temp) / 'log' / 'lane-decisions.log'
+            logger = Logen(file=log_file, console=events.append)
             with patch('myangustis_parser.workflow.lane_log.make_logger', return_value=logger), \
                  patch.dict(os.environ, {'PARSER_DIAGNOSTICS': 'off', 'PARSER_DIAGNOSTIC_SAMPLES': 'off'}):
                 _, _, pages = pipeline.process_pdf_stream(path, None, False)
@@ -41,19 +42,29 @@ class DiagnosticTests(unittest.TestCase):
                  patch.dict(os.environ, {'PARSER_DIAGNOSTICS': 'on', 'PARSER_DIAGNOSTIC_SAMPLES': 'off'}):
                 _, _, pages = pipeline.process_pdf_stream(path, None, False)
                 actual = list(pages)
+                log_text = log_file.read_text()
             self.assertEqual(actual, expected)
-            page = next(m for m in events if '[PDFDIAG]' in m)
-            self.assertIn('book=book.pdf page=1', page)
-            self.assertIn('fallback_bytes', page)
-            self.assertIn('pieces_before_dedup', page)
-            self.assertIn('lane_reason', page)
-            self.assertNotIn('Hello secret', page)
+            # The console carries the verdict, not the pages: one line, and it
+            # names the symptom instead of dumping six counter blocks.
+            verdict = next(m for m in events if '[PDFDIAG]' in m)
+            self.assertIn('book=book.pdf', verdict)
+            self.assertIn('symptom=', verdict)
+            self.assertIn('hint=', verdict)
+            self.assertFalse(any('page=1' in event for event in events))
+            # The page evidence is in the file, compact and greppable.
+            self.assertIn('"page": 1', log_text)
+            self.assertIn('"lane_reason":', log_text)
+            self.assertIn('"fallback_bytes":', log_text)
+            self.assertNotIn('Hello secret', log_text)
+            self.assertNotIn('Hello secret', ' '.join(events))
             events.clear()
             with patch('myangustis_parser.workflow.lane_log.make_logger', return_value=logger), \
                  patch.dict(os.environ, {'PARSER_DIAGNOSTICS': 'on', 'PARSER_DIAGNOSTIC_SAMPLES': 'on'}):
                 _, _, pages = pipeline.process_pdf_stream(path, None, False)
                 self.assertEqual(list(pages), expected)
-            self.assertIn('Hello secret', next(m for m in events if '[PDFDIAG]' in m))
+                log_text = log_file.read_text()
+            self.assertIn('Hello secret', log_text)
+            self.assertIn('extraction', log_text)
 
     def test_ssh_queue_actual_pdf_conversion_emits_page_and_segmentation(self):
         from myangustis_parser.entry import index
@@ -70,7 +81,8 @@ class DiagnosticTests(unittest.TestCase):
              patch.object(remote_queue, 'discover', return_value=['old/example.pdf']), \
              patch.object(remote_queue, 'download', side_effect=download), \
              patch('myangustis_engine.api.segment_text', return_value='segment\n'), \
-             patch('myangustis_parser.workflow.lane_log.make_logger', return_value=Logen(console=events.append)), \
+             patch('myangustis_parser.workflow.lane_log.make_logger',
+                   return_value=Logen(file=Path(temp) / 'log' / 'lane-decisions.log', console=events.append)), \
              patch.dict(os.environ, {'PARSER_DIAGNOSTICS': 'on', 'PARSER_DIAGNOSTIC_SAMPLES': 'off'}), \
              contextlib.redirect_stdout(io.StringIO()):
             output = remote_queue.run_once('parse', lambda src, out, _: index.convert(src, out, include_text=True),
@@ -78,8 +90,10 @@ class DiagnosticTests(unittest.TestCase):
             row = pq.read_table(output).to_pylist()[0]
             self.assertEqual(row['text'], 'Sample text')
             self.assertEqual(row['segmented'], 'segment\n')
-        self.assertTrue(any('[PDFDIAG]' in event and 'page=1' in event and 'book=example.pdf' in event
-                            for event in events))
+            log_text = (Path(temp) / 'log' / 'lane-decisions.log').read_text()
+        self.assertIn('"page": 1', log_text)
+        self.assertIn('example.pdf', log_text)
+        self.assertTrue(any('[PDFDIAG]' in event and 'symptom=' in event for event in events))
         self.assertTrue(any('[PDFDIAG]' in event and 'segmentation' in event for event in events))
         self.assertFalse(any('Sample text' in event for event in events))
 
@@ -87,33 +101,51 @@ class DiagnosticTests(unittest.TestCase):
         from fpdf import FPDF
         root = Path(__file__).resolve().parents[2]
         font = root / 'Junk/fonts/zawgyi one/ZAWGYI-ONE_V3.1.TTF'
+        if not font.exists():
+            self.skipTest(f'font fixture not in this tree: {font.relative_to(root)}')
         with tempfile.TemporaryDirectory() as temp:
             pdf = FPDF(); pdf.add_font('Zawgyi-One', fname=str(font)); pdf.add_page()
             pdf.set_font('Zawgyi-One', size=14); pdf.cell(text='ေြက')
             path = Path(temp) / 'book.pdf'; pdf.output(str(path))
-            events = []
-            with patch('myangustis_parser.workflow.lane_log.make_logger', return_value=Logen(console=events.append)), \
-                 patch.dict(os.environ, {'PARSER_DIAGNOSTICS': 'on', 'PARSER_DIAGNOSTIC_SAMPLES': 'off'}):
+            log_file = Path(temp) / 'log' / 'lane-decisions.log'
+            with patch('myangustis_parser.workflow.lane_log.make_logger',
+                       return_value=Logen(file=log_file, console=lambda line: None)), \
+                 patch.dict(os.environ, {'PARSER_DIAGNOSTICS': 'on',
+                                         'PARSER_DIAGNOSTICS_VERBOSE': 'on',
+                                         'PARSER_DIAGNOSTIC_SAMPLES': 'off'}):
                 pipeline.process_pdf_bytes(path.read_bytes(), pipeline.load_detector(), filename='book.pdf')
-            page = next(event for event in events if '[PDFDIAG]' in event)
+            # Font-level evidence is the verbose payload, on request only.
+            page = log_file.read_text()
             self.assertIn('to_unicode_entries', page)
-            self.assertIn('cid', page)
-            self.assertIn('book=book.pdf page=1', page)
+            self.assertIn('"cid"', page)
+            self.assertIn('book.pdf', page)
 
-    def test_stage_metrics_and_changes(self):
-        events = []
-        tracker = LaneLog('test.pdf', Logen(console=events.append))
+    def test_page_record_is_compact_and_stage_metrics_need_verbose(self):
         pg = {'text': 'က\nခ\n[0041]', 'decode_kind': 'font', 'diagnostics': {}}
         result = {'decision': 'rabbit', 'category': 'UNICODE', 'finished': 'တစ်ခု',
                   'base': 'တစ်ခု', 'clean': 'တစ်ခုပြင်'}
-        with patch.dict(os.environ, {'PARSER_DIAGNOSTIC_SAMPLES': 'off'}):
-            diagnostics.page_log(tracker, 2, pg, result, result['base'], False)
-        line = events[0]
-        self.assertIn("'single_char_lines': 2", line)
-        self.assertIn("'hex_placeholder_patterns': 1", line)
-        self.assertIn('layout_to_finished_changed=True', line)
-        self.assertIn('base_to_clean_changed=True', line)
-        self.assertNotIn('တစ်ခု', line)
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / 'log' / 'lane-decisions.log'
+            tracker = LaneLog('test.pdf', Logen(file=path, console=lambda line: None))
+            with patch.dict(os.environ, {'PARSER_DIAGNOSTIC_SAMPLES': 'off',
+                                         'PARSER_DIAGNOSTICS_VERBOSE': 'off'}):
+                record = diagnostics.page_log(tracker, 2, pg, result, result['base'], False)
+            line = path.read_text()
+            self.assertEqual(record['single_char_lines'], 2)
+            self.assertEqual(record['chars'], len('က\nခ\n[0041]'))
+            self.assertIn('"page": 2', line)
+            self.assertIn('"single_char_lines": 2', line)
+            self.assertNotIn('"layout"', line)      # stage blocks are verbose-only
+            self.assertNotIn('တစ်ခု', line)
+            path.unlink()
+            tracker = LaneLog('test.pdf', Logen(file=path, console=lambda line: None))
+            with patch.dict(os.environ, {'PARSER_DIAGNOSTIC_SAMPLES': 'off',
+                                         'PARSER_DIAGNOSTICS_VERBOSE': 'on'}):
+                diagnostics.page_log(tracker, 2, pg, result, result['base'], False)
+            line = path.read_text()
+            self.assertIn('"single_char_lines": 2', line)
+            self.assertIn('"hex_placeholder_patterns": 1', line)
+            self.assertIn('"layout"', line)
 
     def test_ssh_queue_logs_separate_segmentation(self):
         import pyarrow.parquet as pq

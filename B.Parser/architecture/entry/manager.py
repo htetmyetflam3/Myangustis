@@ -29,6 +29,7 @@ import tempfile
 from functools import lru_cache
 from pathlib import Path
 
+from myangustis_parser.resources import paths
 from myangustis_parser.workflow import ocr
 from myangustis_parser.workflow import pipeline, finish
 from myangustis_parser.output import render
@@ -57,6 +58,18 @@ _IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".tif", ".tiff",
 
 class ManagerError(RuntimeError):
     """A conversion failed in this parser."""
+
+
+def resolve_path(value):
+    """Anchor a caller-supplied input/output path to the project root.
+
+    Relative and slash-leading values live in the checkout, so ``out.txt`` and
+    ``/out/out.txt`` are project paths rather than filesystem ones. An
+    absolute path that already exists (a temp dir, a deployment mount) and a
+    ``~/`` or ``abs:`` prefixed value are used exactly as given.
+    """
+    resolved = paths.project_path(str(value))
+    return resolved if resolved is not None else Path(value)
 
 
 @lru_cache(maxsize=1)
@@ -373,6 +386,7 @@ def _convert(data, filename, out_path, *, kind, method=None,
     if not isinstance(data, (bytes, bytearray, memoryview)):
         raise TypeError("data must be bytes")
     data = bytes(data)
+    out_path = resolve_path(out_path)
 
     log(f"[+] {name}: {len(data):,} bytes -> .{out_format}")
     job = prepare_job(data, name, kind=kind, source_encoding=source_encoding,
@@ -418,7 +432,7 @@ def dispatch_path(in_path, out_path, *, kind=None, filename=None, method=None,
                   source_encoding="auto", caller="site", text_layout=None,
                   log=None):
     """Convert one file, by this parser's own pipeline."""
-    source = Path(in_path)
+    source = resolve_path(in_path)
     if not source.is_file():
         raise ManagerError(f"Input not found: {source}")
     return _convert(source.read_bytes(), filename or source.name, out_path,
@@ -475,7 +489,7 @@ def dispatch_ocr(in_path, out_path, *, filename=None,
                  include_text=True, include_preview=False, caller="local",
                  log=None):
     """Run the OCR lane across a PDF or image file and write the requested output."""
-    source = Path(in_path)
+    source = resolve_path(in_path)
     if not source.is_file():
         raise ManagerError(f"Input not found: {source}")
     log = log or (lambda _m: None)
@@ -531,7 +545,8 @@ def dispatch_ocr(in_path, out_path, *, filename=None,
 
 def render_text(in_path, out_path):
     """Render an already-parsed ``.txt`` as ``.docx`` (no re-parsing)."""
-    source = Path(in_path)
+    source = resolve_path(in_path)
+    out_path = resolve_path(out_path)
     if not source.is_file():
         raise ManagerError(f"Input not found: {source}")
     if Path(out_path).suffix.lower() != ".docx":

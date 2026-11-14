@@ -22,6 +22,8 @@ import zlib
 from myangustis_parser.normalize.mm_score import MARKS
 from myangustis_parser.normalize.detector import contains_myanmar
 from myangustis_parser.resources.font_names import is_unresolved_legacy_font
+from myangustis_parser.normalize import legacy_ascii
+from myangustis_parser.resources.font_names import is_legacy_font_name, legacy_layout_for_font
 from myangustis_parser.extract.pdf_fonts import (
     CMapEncoding,
     CmapIdentityMap,
@@ -1024,12 +1026,73 @@ def _join_visual_runs(pieces, doc):
     return ''.join(transformed)
 
 
+
+_MARK_RANGE = ('\u102b-\u103e\u105e-\u1060\u1062-\u1064\u1067-\u106d'
+               '\u1071-\u1074\u1082-\u108d\u108f\u109a-\u109d')
+_BASE_RANGE = ('\u1000-\u1021\u1023-\u102a\u103f\u104c-\u104f'
+               '\ua9e0-\ua9ef\uaa60-\uaa7f')
+_MARKS = re.compile(f'[{_MARK_RANGE}]')
+_BASES = re.compile(f'[{_BASE_RANGE}]')
+_TOKEN_BREAK = ' \t\n\r\u00a0\u104a\u104b\u104c\u104d\u104e\u104f'
+
+
+def _bind_leading_marks(text):
+    """A mark run with nothing in front of it belongs to the base that follows.
+
+    These faces encode visual order, so a cluster can arrive as ``ိ`` then
+    ``က``: the mark has no base before it, which is what the scanner reports as
+    an orphan, and the base is the very next letter. Binding the marks behind
+    that base is the only reading that is Burmese. A mark that already has a
+    base in front of it is untouched, and so is a run with no base after it.
+    """
+    if not text:
+        return text
+    out, i, size = [], 0, len(text)
+    while i < size:
+        if _MARKS.match(text[i]) and (i == 0 or text[i - 1] in _TOKEN_BREAK):
+            j = i
+            while j < size and _MARKS.match(text[j]):
+                j += 1
+            if j < size and _BASES.match(text[j]):
+                out.append(text[j])
+                out.append(text[i:j])
+                i = j + 1
+                continue
+        out.append(text[i])
+        i += 1
+    return ''.join(out)
+
+
 def _join_page_runs(pieces, doc):
+    """Join one page's glyph runs. The legacy-ASCII repair lives HERE.
+
+    A /ToUnicode that is a bridge back to a legacy ASCII layout hands the
+    Myanmar glyphs over as Latin letters (A=အ, U=ဥ, O=ဩ, E=ဧ). The slots can
+    only be recognised once every run of the page is in one string, because
+    the evidence is adjacency: a Latin letter that touches Myanmar text is a
+    slot, and the same letter inside a Latin word is text. Repairing at the
+    join -- the decode stage -- keeps the finish stage free of a second,
+    Python-only pass over the text.
+    """
     if doc.zawcode_order:
-        return _join_draft_runs(pieces, doc.zawcode_order)
-    if doc.kind == 'font' and doc.visual_unicode_enabled:
-        return _join_visual_runs(pieces, doc)
-    return ''.join(piece[2] for piece in pieces)
+        joined = _join_draft_runs(pieces, doc.zawcode_order)
+    elif doc.kind == 'font' and doc.visual_unicode_enabled:
+        joined = _join_visual_runs(pieces, doc)
+    else:
+        joined = ''.join(piece[2] for piece in pieces)
+    # Scope it the way the design scopes the code page: only a page that
+    # carries a legacy Myanmar face can be reading that face's slots. A page
+    # of plain Unicode text is never searched for them.
+    names = [piece[4] for piece in pieces if len(piece) > 4 and piece[4]]
+    if not any(is_legacy_font_name(name) or 'zawgyi' in name.lower() for name in names):
+        return joined
+    # A registered face names its own layout and the decode already read it
+    # (``known`` is the registry's word, not the guess from a layout prefix), so
+    # a real WinInnwa or Ayar book costs nothing here. Only an unnamed bridge -
+    # nothing in the file to identify it - is read from the text.
+    if any((legacy_layout_for_font(name) or {}).get('known') for name in names):
+        return joined
+    return _bind_leading_marks(legacy_ascii.resolve(joined))
 
 def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=False, *, used_myanmar_fonts=None, used_legacy_fonts=None, image_records=None, diagnostics=None):
     """Extract text lines WITH layout: ``(lines, page_w, page_h)``.

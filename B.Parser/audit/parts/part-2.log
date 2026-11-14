@@ -1,0 +1,796 @@
+[17:06:39.392] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1-7", "rule": "rabbit"}
+[17:06:39.406] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "8-8", "rule": "aligned"}
+[17:06:43.096] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "9-48", "rule": "rabbit"}
+[17:06:43.161] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "49-49", "rule": "aligned"}
+[17:06:52.097] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "50-89", "rule": "rabbit"}
+[17:06:52.182] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "90-90", "rule": "aligned"}
+[17:06:59.455] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "91-130", "rule": "rabbit"}
+[17:06:59.518] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "131-132", "rule": "aligned"}
+[17:07:04.276] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "133-171", "rule": "rabbit"}
+[17:07:04.424] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "172-172", "rule": "aligned"}
+[17:07:04.974] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "173-178", "rule": "rabbit"}
+[17:07:05.066] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "179-179", "rule": "aligned"}
+[17:07:07.733] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "180-209", "rule": "zawcode"}
+[17:07:07.752] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "210-210", "rule": "aligned"}
+[17:07:07.869] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "211-211", "rule": "legacy"}
+[17:07:08.801] [STEM] info lane-switch {"book": "part-2.pdf", "page": 223, "from": "unicode", "to": "legacy"}
+[17:07:08.832] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "212-222", "rule": "rabbit"}
+[17:07:08.908] [STEM] info lane-switch {"book": "part-2.pdf", "page": 224, "from": "legacy", "to": "unicode"}
+[17:07:08.926] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "223-223", "rule": "zawcode"}
+[17:07:10.580] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "224-238", "rule": "rabbit"}
+[17:07:10.704] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "239-239", "rule": "legacy"}
+[17:07:10.711] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "240-240", "rule": "rabbit"}
+[17:07:10.824] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "241-241", "rule": "legacy"}
+[17:07:11.481] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "242-250", "rule": "rabbit"}
+[17:07:11.626] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "251-251", "rule": "aligned"}
+[17:07:17.282] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "252-285", "rule": "zawcode"}
+[17:07:17.461] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "286-286", "rule": "aligned"}
+[17:07:18.794] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "287-295", "rule": "zawcode"}
+[17:07:18.935] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "296-296", "rule": "aligned"}
+[17:07:19.547] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "297-301", "rule": "zawcode"}
+[17:07:19.721] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "302-302", "rule": "aligned"}
+[17:07:22.221] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "303-321", "rule": "zawcode"}
+[17:07:23.663] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "322-340", "rule": "aligned"}
+[17:07:25.973] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "341-352", "rule": "zawcode"}
+[17:07:26.129] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "353-353", "rule": "aligned"}
+[17:07:28.280] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "354-370", "rule": "zawcode"}
+[17:07:28.467] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "371-371", "rule": "aligned"}
+[17:07:29.944] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "372-384", "rule": "zawcode"}
+[17:07:30.021] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "385-386", "rule": "aligned"}
+[17:07:32.991] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "387-425", "rule": "rabbit"}
+[17:07:33.083] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "426-429", "rule": "aligned"}
+[17:07:33.416] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "430-437", "rule": "zawcode"}
+[17:07:33.485] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "438-438", "rule": "aligned"}
+[17:07:34.426] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "439-456", "rule": "zawcode"}
+[17:07:34.479] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "457-457", "rule": "aligned"}
+[17:07:34.917] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "458-466", "rule": "zawcode"}
+[17:07:34.963] [STEM] info lane-switch {"book": "part-2.pdf", "page": 469, "from": "unicode", "to": "legacy"}
+[17:07:34.963] [STEM] info lane-switch {"book": "part-2.pdf", "page": 469, "from": "legacy", "to": "unicode"}
+[17:07:35.008] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "467-468", "rule": "aligned"}
+[17:07:35.052] [STEM] info lane-switch {"book": "part-2.pdf", "page": 470, "from": "unicode", "to": "legacy"}
+[17:07:35.052] [STEM] info lane-switch {"book": "part-2.pdf", "page": 470, "from": "legacy", "to": "unicode"}
+[17:07:35.052] [STEM] info lane-switch {"book": "part-2.pdf", "page": 470, "from": "unicode", "to": "legacy"}
+[17:07:35.052] [STEM] info lane-switch {"book": "part-2.pdf", "page": 470, "from": "legacy", "to": "unicode"}
+[17:07:35.052] [STEM] info lane-switch {"book": "part-2.pdf", "page": 470, "from": "unicode", "to": "legacy"}
+[17:07:35.052] [STEM] info lane-switch {"book": "part-2.pdf", "page": 470, "from": "legacy", "to": "unicode"}
+[17:07:35.127] [STEM] info lane-switch {"book": "part-2.pdf", "page": 471, "from": "unicode", "to": "legacy"}
+[17:07:35.127] [STEM] info lane-switch {"book": "part-2.pdf", "page": 471, "from": "legacy", "to": "unicode"}
+[17:07:35.128] [STEM] info lane-switch {"book": "part-2.pdf", "page": 471, "from": "unicode", "to": "legacy"}
+[17:07:35.128] [STEM] info lane-switch {"book": "part-2.pdf", "page": 471, "from": "legacy", "to": "unicode"}
+[17:07:35.187] [STEM] info lane-switch {"book": "part-2.pdf", "page": 472, "from": "unicode", "to": "legacy"}
+[17:07:35.187] [STEM] info lane-switch {"book": "part-2.pdf", "page": 472, "from": "legacy", "to": "unicode"}
+[17:07:35.187] [STEM] info lane-switch {"book": "part-2.pdf", "page": 472, "from": "unicode", "to": "legacy"}
+[17:07:35.187] [STEM] info lane-switch {"book": "part-2.pdf", "page": 472, "from": "legacy", "to": "unicode"}
+[17:07:35.187] [STEM] info lane-switch {"book": "part-2.pdf", "page": 472, "from": "unicode", "to": "legacy"}
+[17:07:35.187] [STEM] info lane-switch {"book": "part-2.pdf", "page": 472, "from": "legacy", "to": "unicode"}
+[17:07:35.213] [STEM] info lane-switch {"book": "part-2.pdf", "page": 473, "from": "unicode", "to": "legacy"}
+[17:07:35.213] [STEM] info lane-switch {"book": "part-2.pdf", "page": 473, "from": "legacy", "to": "unicode"}
+[17:07:35.213] [STEM] info lane-switch {"book": "part-2.pdf", "page": 473, "from": "unicode", "to": "legacy"}
+[17:07:35.213] [STEM] info lane-switch {"book": "part-2.pdf", "page": 473, "from": "legacy", "to": "unicode"}
+[17:07:35.213] [STEM] info lane-switch {"book": "part-2.pdf", "page": 473, "from": "unicode", "to": "legacy"}
+[17:07:35.213] [STEM] info lane-switch {"book": "part-2.pdf", "page": 473, "from": "legacy", "to": "unicode"}
+[17:07:35.255] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "unicode", "to": "legacy"}
+[17:07:35.255] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "legacy", "to": "unicode"}
+[17:07:35.255] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "unicode", "to": "legacy"}
+[17:07:35.255] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "legacy", "to": "unicode"}
+[17:07:35.256] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "unicode", "to": "legacy"}
+[17:07:35.256] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "legacy", "to": "unicode"}
+[17:07:35.256] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "unicode", "to": "legacy"}
+[17:07:35.256] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "legacy", "to": "unicode"}
+[17:07:35.256] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "unicode", "to": "legacy"}
+[17:07:35.256] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "legacy", "to": "unicode"}
+[17:07:35.287] [STEM] info lane-switch {"book": "part-2.pdf", "page": 475, "from": "unicode", "to": "legacy"}
+[17:07:35.287] [STEM] info lane-switch {"book": "part-2.pdf", "page": 475, "from": "legacy", "to": "unicode"}
+[17:07:35.288] [STEM] info lane-switch {"book": "part-2.pdf", "page": 475, "from": "unicode", "to": "legacy"}
+[17:07:35.288] [STEM] info lane-switch {"book": "part-2.pdf", "page": 475, "from": "legacy", "to": "unicode"}
+[17:07:35.288] [STEM] info lane-switch {"book": "part-2.pdf", "page": 475, "from": "unicode", "to": "legacy"}
+[17:07:35.288] [STEM] info lane-switch {"book": "part-2.pdf", "page": 475, "from": "legacy", "to": "unicode"}
+[17:07:35.288] [STEM] info lane-switch {"book": "part-2.pdf", "page": 475, "from": "unicode", "to": "legacy"}
+[17:07:35.288] [STEM] info lane-switch {"book": "part-2.pdf", "page": 475, "from": "legacy", "to": "unicode"}
+[17:07:35.317] [STEM] info lane-switch {"book": "part-2.pdf", "page": 476, "from": "unicode", "to": "legacy"}
+[17:07:35.317] [STEM] info lane-switch {"book": "part-2.pdf", "page": 476, "from": "legacy", "to": "unicode"}
+[17:07:35.317] [STEM] info lane-switch {"book": "part-2.pdf", "page": 476, "from": "unicode", "to": "legacy"}
+[17:07:35.317] [STEM] info lane-switch {"book": "part-2.pdf", "page": 476, "from": "legacy", "to": "unicode"}
+[17:07:35.318] [STEM] info lane-switch {"book": "part-2.pdf", "page": 476, "from": "unicode", "to": "legacy"}
+[17:07:35.318] [STEM] info lane-switch {"book": "part-2.pdf", "page": 476, "from": "legacy", "to": "unicode"}
+[17:07:35.342] [STEM] info lane-switch {"book": "part-2.pdf", "page": 477, "from": "unicode", "to": "legacy"}
+[17:07:35.342] [STEM] info lane-switch {"book": "part-2.pdf", "page": 477, "from": "legacy", "to": "unicode"}
+[17:07:35.342] [STEM] info lane-switch {"book": "part-2.pdf", "page": 477, "from": "unicode", "to": "legacy"}
+[17:07:35.342] [STEM] info lane-switch {"book": "part-2.pdf", "page": 477, "from": "legacy", "to": "unicode"}
+[17:07:35.342] [STEM] info lane-switch {"book": "part-2.pdf", "page": 477, "from": "unicode", "to": "legacy"}
+[17:07:35.342] [STEM] info lane-switch {"book": "part-2.pdf", "page": 477, "from": "legacy", "to": "unicode"}
+[17:07:35.383] [STEM] info lane-switch {"book": "part-2.pdf", "page": 478, "from": "unicode", "to": "legacy"}
+[17:07:35.383] [STEM] info lane-switch {"book": "part-2.pdf", "page": 478, "from": "legacy", "to": "unicode"}
+[17:07:35.383] [STEM] info lane-switch {"book": "part-2.pdf", "page": 478, "from": "unicode", "to": "legacy"}
+[17:07:35.383] [STEM] info lane-switch {"book": "part-2.pdf", "page": 478, "from": "legacy", "to": "unicode"}
+[17:07:35.383] [STEM] info lane-switch {"book": "part-2.pdf", "page": 478, "from": "unicode", "to": "legacy"}
+[17:07:35.384] [STEM] info lane-switch {"book": "part-2.pdf", "page": 478, "from": "legacy", "to": "unicode"}
+[17:07:35.431] [STEM] info lane-switch {"book": "part-2.pdf", "page": 479, "from": "unicode", "to": "legacy"}
+[17:07:35.431] [STEM] info lane-switch {"book": "part-2.pdf", "page": 479, "from": "legacy", "to": "unicode"}
+[17:07:35.431] [STEM] info lane-switch {"book": "part-2.pdf", "page": 479, "from": "unicode", "to": "legacy"}
+[17:07:35.431] [STEM] info lane-switch {"book": "part-2.pdf", "page": 479, "from": "legacy", "to": "unicode"}
+[17:07:35.431] [STEM] info lane-switch {"book": "part-2.pdf", "page": 479, "from": "unicode", "to": "legacy"}
+[17:07:35.431] [STEM] info lane-switch {"book": "part-2.pdf", "page": 479, "from": "legacy", "to": "unicode"}
+[17:07:35.468] [STEM] info lane-switch {"book": "part-2.pdf", "page": 480, "from": "unicode", "to": "legacy"}
+[17:07:35.468] [STEM] info lane-switch {"book": "part-2.pdf", "page": 480, "from": "legacy", "to": "unicode"}
+[17:07:35.468] [STEM] info lane-switch {"book": "part-2.pdf", "page": 480, "from": "unicode", "to": "legacy"}
+[17:07:35.469] [STEM] info lane-switch {"book": "part-2.pdf", "page": 480, "from": "legacy", "to": "unicode"}
+[17:07:35.469] [STEM] info lane-switch {"book": "part-2.pdf", "page": 480, "from": "unicode", "to": "legacy"}
+[17:07:35.469] [STEM] info lane-switch {"book": "part-2.pdf", "page": 480, "from": "legacy", "to": "unicode"}
+[17:07:35.503] [STEM] info lane-switch {"book": "part-2.pdf", "page": 481, "from": "unicode", "to": "legacy"}
+[17:07:35.511] [STEM] info lane-switch {"book": "part-2.pdf", "page": 481, "from": "legacy", "to": "unicode"}
+[17:07:35.511] [STEM] info lane-switch {"book": "part-2.pdf", "page": 481, "from": "unicode", "to": "legacy"}
+[17:07:35.511] [STEM] info lane-switch {"book": "part-2.pdf", "page": 481, "from": "legacy", "to": "unicode"}
+[17:07:35.511] [STEM] info lane-switch {"book": "part-2.pdf", "page": 481, "from": "unicode", "to": "legacy"}
+[17:07:35.511] [STEM] info lane-switch {"book": "part-2.pdf", "page": 481, "from": "legacy", "to": "unicode"}
+[17:07:35.544] [STEM] info lane-switch {"book": "part-2.pdf", "page": 482, "from": "unicode", "to": "legacy"}
+[17:07:35.544] [STEM] info lane-switch {"book": "part-2.pdf", "page": 482, "from": "legacy", "to": "unicode"}
+[17:07:35.544] [STEM] info lane-switch {"book": "part-2.pdf", "page": 482, "from": "unicode", "to": "legacy"}
+[17:07:35.544] [STEM] info lane-switch {"book": "part-2.pdf", "page": 482, "from": "legacy", "to": "unicode"}
+[17:07:35.544] [STEM] info lane-switch {"book": "part-2.pdf", "page": 482, "from": "unicode", "to": "legacy"}
+[17:07:35.544] [STEM] info lane-switch {"book": "part-2.pdf", "page": 482, "from": "legacy", "to": "unicode"}
+[17:07:35.577] [STEM] info lane-switch {"book": "part-2.pdf", "page": 483, "from": "unicode", "to": "legacy"}
+[17:07:35.578] [STEM] info lane-switch {"book": "part-2.pdf", "page": 483, "from": "legacy", "to": "unicode"}
+[17:07:35.578] [STEM] info lane-switch {"book": "part-2.pdf", "page": 483, "from": "unicode", "to": "legacy"}
+[17:07:35.578] [STEM] info lane-switch {"book": "part-2.pdf", "page": 483, "from": "legacy", "to": "unicode"}
+[17:07:35.578] [STEM] info lane-switch {"book": "part-2.pdf", "page": 483, "from": "unicode", "to": "legacy"}
+[17:07:35.578] [STEM] info lane-switch {"book": "part-2.pdf", "page": 483, "from": "legacy", "to": "unicode"}
+[17:07:35.578] [STEM] info lane-switch {"book": "part-2.pdf", "page": 483, "from": "unicode", "to": "legacy"}
+[17:07:35.578] [STEM] info lane-switch {"book": "part-2.pdf", "page": 483, "from": "legacy", "to": "unicode"}
+[17:07:35.620] [STEM] info lane-switch {"book": "part-2.pdf", "page": 484, "from": "unicode", "to": "legacy"}
+[17:07:35.621] [STEM] info lane-switch {"book": "part-2.pdf", "page": 484, "from": "legacy", "to": "unicode"}
+[17:07:35.621] [STEM] info lane-switch {"book": "part-2.pdf", "page": 484, "from": "unicode", "to": "legacy"}
+[17:07:35.621] [STEM] info lane-switch {"book": "part-2.pdf", "page": 484, "from": "legacy", "to": "unicode"}
+[17:07:35.621] [STEM] info lane-switch {"book": "part-2.pdf", "page": 484, "from": "unicode", "to": "legacy"}
+[17:07:35.621] [STEM] info lane-switch {"book": "part-2.pdf", "page": 484, "from": "legacy", "to": "unicode"}
+[17:07:35.645] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "unicode", "to": "legacy"}
+[17:07:35.645] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "legacy", "to": "unicode"}
+[17:07:35.645] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "unicode", "to": "legacy"}
+[17:07:35.645] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "legacy", "to": "unicode"}
+[17:07:35.645] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "unicode", "to": "legacy"}
+[17:07:35.645] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "legacy", "to": "unicode"}
+[17:07:35.645] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "unicode", "to": "legacy"}
+[17:07:35.645] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "legacy", "to": "unicode"}
+[17:07:35.645] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "unicode", "to": "legacy"}
+[17:07:35.645] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "legacy", "to": "unicode"}
+[17:07:35.678] [STEM] info lane-switch {"book": "part-2.pdf", "page": 486, "from": "unicode", "to": "legacy"}
+[17:07:35.679] [STEM] info lane-switch {"book": "part-2.pdf", "page": 486, "from": "legacy", "to": "unicode"}
+[17:07:35.687] [STEM] info lane-switch {"book": "part-2.pdf", "page": 486, "from": "unicode", "to": "legacy"}
+[17:07:35.687] [STEM] info lane-switch {"book": "part-2.pdf", "page": 486, "from": "legacy", "to": "unicode"}
+[17:07:35.687] [STEM] info lane-switch {"book": "part-2.pdf", "page": 486, "from": "unicode", "to": "legacy"}
+[17:07:35.687] [STEM] info lane-switch {"book": "part-2.pdf", "page": 486, "from": "legacy", "to": "unicode"}
+[17:07:35.687] [STEM] info lane-switch {"book": "part-2.pdf", "page": 486, "from": "unicode", "to": "legacy"}
+[17:07:35.687] [STEM] info lane-switch {"book": "part-2.pdf", "page": 486, "from": "legacy", "to": "unicode"}
+[17:07:35.720] [STEM] info lane-switch {"book": "part-2.pdf", "page": 487, "from": "unicode", "to": "legacy"}
+[17:07:35.720] [STEM] info lane-switch {"book": "part-2.pdf", "page": 487, "from": "legacy", "to": "unicode"}
+[17:07:35.721] [STEM] info lane-switch {"book": "part-2.pdf", "page": 487, "from": "unicode", "to": "legacy"}
+[17:07:35.721] [STEM] info lane-switch {"book": "part-2.pdf", "page": 487, "from": "legacy", "to": "unicode"}
+[17:07:35.721] [STEM] info lane-switch {"book": "part-2.pdf", "page": 487, "from": "unicode", "to": "legacy"}
+[17:07:35.721] [STEM] info lane-switch {"book": "part-2.pdf", "page": 487, "from": "legacy", "to": "unicode"}
+[17:07:35.721] [STEM] info lane-switch {"book": "part-2.pdf", "page": 487, "from": "unicode", "to": "legacy"}
+[17:07:35.721] [STEM] info lane-switch {"book": "part-2.pdf", "page": 487, "from": "legacy", "to": "unicode"}
+[17:07:35.754] [STEM] info lane-switch {"book": "part-2.pdf", "page": 488, "from": "unicode", "to": "legacy"}
+[17:07:35.754] [STEM] info lane-switch {"book": "part-2.pdf", "page": 488, "from": "legacy", "to": "unicode"}
+[17:07:35.754] [STEM] info lane-switch {"book": "part-2.pdf", "page": 488, "from": "unicode", "to": "legacy"}
+[17:07:35.754] [STEM] info lane-switch {"book": "part-2.pdf", "page": 488, "from": "legacy", "to": "unicode"}
+[17:07:35.754] [STEM] info lane-switch {"book": "part-2.pdf", "page": 488, "from": "unicode", "to": "legacy"}
+[17:07:35.754] [STEM] info lane-switch {"book": "part-2.pdf", "page": 488, "from": "legacy", "to": "unicode"}
+[17:07:35.785] [STEM] info lane-switch {"book": "part-2.pdf", "page": 489, "from": "unicode", "to": "legacy"}
+[17:07:35.785] [STEM] info lane-switch {"book": "part-2.pdf", "page": 489, "from": "legacy", "to": "unicode"}
+[17:07:35.785] [STEM] info lane-switch {"book": "part-2.pdf", "page": 489, "from": "unicode", "to": "legacy"}
+[17:07:35.785] [STEM] info lane-switch {"book": "part-2.pdf", "page": 489, "from": "legacy", "to": "unicode"}
+[17:07:35.785] [STEM] info lane-switch {"book": "part-2.pdf", "page": 489, "from": "unicode", "to": "legacy"}
+[17:07:35.785] [STEM] info lane-switch {"book": "part-2.pdf", "page": 489, "from": "legacy", "to": "unicode"}
+[17:07:35.786] [STEM] info lane-switch {"book": "part-2.pdf", "page": 489, "from": "unicode", "to": "legacy"}
+[17:07:35.786] [STEM] info lane-switch {"book": "part-2.pdf", "page": 489, "from": "legacy", "to": "unicode"}
+[17:07:35.818] [STEM] info lane-switch {"book": "part-2.pdf", "page": 490, "from": "unicode", "to": "legacy"}
+[17:07:35.827] [STEM] info lane-switch {"book": "part-2.pdf", "page": 490, "from": "legacy", "to": "unicode"}
+[17:07:35.827] [STEM] info lane-switch {"book": "part-2.pdf", "page": 490, "from": "unicode", "to": "legacy"}
+[17:07:35.827] [STEM] info lane-switch {"book": "part-2.pdf", "page": 490, "from": "legacy", "to": "unicode"}
+[17:07:35.827] [STEM] info lane-switch {"book": "part-2.pdf", "page": 490, "from": "unicode", "to": "legacy"}
+[17:07:35.827] [STEM] info lane-switch {"book": "part-2.pdf", "page": 490, "from": "legacy", "to": "unicode"}
+[17:07:35.827] [STEM] info lane-switch {"book": "part-2.pdf", "page": 490, "from": "unicode", "to": "legacy"}
+[17:07:35.827] [STEM] info lane-switch {"book": "part-2.pdf", "page": 490, "from": "legacy", "to": "unicode"}
+[17:07:35.852] [STEM] info lane-switch {"book": "part-2.pdf", "page": 491, "from": "unicode", "to": "legacy"}
+[17:07:35.852] [STEM] info lane-switch {"book": "part-2.pdf", "page": 491, "from": "legacy", "to": "unicode"}
+[17:07:35.852] [STEM] info lane-switch {"book": "part-2.pdf", "page": 491, "from": "unicode", "to": "legacy"}
+[17:07:35.853] [STEM] info lane-switch {"book": "part-2.pdf", "page": 491, "from": "legacy", "to": "unicode"}
+[17:07:35.853] [STEM] info lane-switch {"book": "part-2.pdf", "page": 491, "from": "unicode", "to": "legacy"}
+[17:07:35.853] [STEM] info lane-switch {"book": "part-2.pdf", "page": 491, "from": "legacy", "to": "unicode"}
+[17:07:35.853] [STEM] info lane-switch {"book": "part-2.pdf", "page": 491, "from": "unicode", "to": "legacy"}
+[17:07:35.853] [STEM] info lane-switch {"book": "part-2.pdf", "page": 491, "from": "legacy", "to": "unicode"}
+[17:07:35.895] [STEM] info lane-switch {"book": "part-2.pdf", "page": 492, "from": "unicode", "to": "legacy"}
+[17:07:35.895] [STEM] info lane-switch {"book": "part-2.pdf", "page": 492, "from": "legacy", "to": "unicode"}
+[17:07:35.895] [STEM] info lane-switch {"book": "part-2.pdf", "page": 492, "from": "unicode", "to": "legacy"}
+[17:07:35.895] [STEM] info lane-switch {"book": "part-2.pdf", "page": 492, "from": "legacy", "to": "unicode"}
+[17:07:35.895] [STEM] info lane-switch {"book": "part-2.pdf", "page": 492, "from": "unicode", "to": "legacy"}
+[17:07:35.895] [STEM] info lane-switch {"book": "part-2.pdf", "page": 492, "from": "legacy", "to": "unicode"}
+[17:07:35.930] [STEM] info lane-switch {"book": "part-2.pdf", "page": 493, "from": "unicode", "to": "legacy"}
+[17:07:35.930] [STEM] info lane-switch {"book": "part-2.pdf", "page": 493, "from": "legacy", "to": "unicode"}
+[17:07:35.930] [STEM] info lane-switch {"book": "part-2.pdf", "page": 493, "from": "unicode", "to": "legacy"}
+[17:07:35.930] [STEM] info lane-switch {"book": "part-2.pdf", "page": 493, "from": "legacy", "to": "unicode"}
+[17:07:35.930] [STEM] info lane-switch {"book": "part-2.pdf", "page": 493, "from": "unicode", "to": "legacy"}
+[17:07:35.930] [STEM] info lane-switch {"book": "part-2.pdf", "page": 493, "from": "legacy", "to": "unicode"}
+[17:07:35.972] [STEM] info lane-switch {"book": "part-2.pdf", "page": 494, "from": "unicode", "to": "legacy"}
+[17:07:35.973] [STEM] info lane-switch {"book": "part-2.pdf", "page": 494, "from": "legacy", "to": "unicode"}
+[17:07:35.973] [STEM] info lane-switch {"book": "part-2.pdf", "page": 494, "from": "unicode", "to": "legacy"}
+[17:07:35.973] [STEM] info lane-switch {"book": "part-2.pdf", "page": 494, "from": "legacy", "to": "unicode"}
+[17:07:35.973] [STEM] info lane-switch {"book": "part-2.pdf", "page": 494, "from": "unicode", "to": "legacy"}
+[17:07:35.973] [STEM] info lane-switch {"book": "part-2.pdf", "page": 494, "from": "legacy", "to": "unicode"}
+[17:07:35.973] [STEM] info lane-switch {"book": "part-2.pdf", "page": 494, "from": "unicode", "to": "legacy"}
+[17:07:35.973] [STEM] info lane-switch {"book": "part-2.pdf", "page": 494, "from": "legacy", "to": "unicode"}
+[17:07:35.998] [STEM] info lane-switch {"book": "part-2.pdf", "page": 495, "from": "unicode", "to": "legacy"}
+[17:07:35.998] [STEM] info lane-switch {"book": "part-2.pdf", "page": 495, "from": "legacy", "to": "unicode"}
+[17:07:35.998] [STEM] info lane-switch {"book": "part-2.pdf", "page": 495, "from": "unicode", "to": "legacy"}
+[17:07:35.999] [STEM] info lane-switch {"book": "part-2.pdf", "page": 495, "from": "legacy", "to": "unicode"}
+[17:07:35.999] [STEM] info lane-switch {"book": "part-2.pdf", "page": 495, "from": "unicode", "to": "legacy"}
+[17:07:36.007] [STEM] info lane-switch {"book": "part-2.pdf", "page": 495, "from": "legacy", "to": "unicode"}
+[17:07:36.040] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "unicode", "to": "legacy"}
+[17:07:36.040] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "legacy", "to": "unicode"}
+[17:07:36.040] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "unicode", "to": "legacy"}
+[17:07:36.041] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "legacy", "to": "unicode"}
+[17:07:36.041] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "unicode", "to": "legacy"}
+[17:07:36.041] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "legacy", "to": "unicode"}
+[17:07:36.041] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "unicode", "to": "legacy"}
+[17:07:36.041] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "legacy", "to": "unicode"}
+[17:07:36.041] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "unicode", "to": "legacy"}
+[17:07:36.041] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "legacy", "to": "unicode"}
+[17:07:36.072] [STEM] info lane-switch {"book": "part-2.pdf", "page": 497, "from": "unicode", "to": "legacy"}
+[17:07:36.072] [STEM] info lane-switch {"book": "part-2.pdf", "page": 497, "from": "legacy", "to": "unicode"}
+[17:07:36.072] [STEM] info lane-switch {"book": "part-2.pdf", "page": 497, "from": "unicode", "to": "legacy"}
+[17:07:36.072] [STEM] info lane-switch {"book": "part-2.pdf", "page": 497, "from": "legacy", "to": "unicode"}
+[17:07:36.072] [STEM] info lane-switch {"book": "part-2.pdf", "page": 497, "from": "unicode", "to": "legacy"}
+[17:07:36.072] [STEM] info lane-switch {"book": "part-2.pdf", "page": 497, "from": "legacy", "to": "unicode"}
+[17:07:36.101] [STEM] info lane-switch {"book": "part-2.pdf", "page": 498, "from": "unicode", "to": "legacy"}
+[17:07:36.101] [STEM] info lane-switch {"book": "part-2.pdf", "page": 498, "from": "legacy", "to": "unicode"}
+[17:07:36.101] [STEM] info lane-switch {"book": "part-2.pdf", "page": 498, "from": "unicode", "to": "legacy"}
+[17:07:36.101] [STEM] info lane-switch {"book": "part-2.pdf", "page": 498, "from": "legacy", "to": "unicode"}
+[17:07:36.101] [STEM] info lane-switch {"book": "part-2.pdf", "page": 498, "from": "unicode", "to": "legacy"}
+[17:07:36.101] [STEM] info lane-switch {"book": "part-2.pdf", "page": 498, "from": "legacy", "to": "unicode"}
+[17:07:36.124] [STEM] info lane-switch {"book": "part-2.pdf", "page": 499, "from": "unicode", "to": "legacy"}
+[17:07:36.124] [STEM] info lane-switch {"book": "part-2.pdf", "page": 499, "from": "legacy", "to": "unicode"}
+[17:07:36.124] [STEM] info lane-switch {"book": "part-2.pdf", "page": 499, "from": "unicode", "to": "legacy"}
+[17:07:36.124] [STEM] info lane-switch {"book": "part-2.pdf", "page": 499, "from": "legacy", "to": "unicode"}
+[17:07:36.124] [STEM] info lane-switch {"book": "part-2.pdf", "page": 499, "from": "unicode", "to": "legacy"}
+[17:07:36.124] [STEM] info lane-switch {"book": "part-2.pdf", "page": 499, "from": "legacy", "to": "unicode"}
+[17:07:36.156] [STEM] info lane-switch {"book": "part-2.pdf", "page": 500, "from": "unicode", "to": "legacy"}
+[17:07:36.157] [STEM] info lane-switch {"book": "part-2.pdf", "page": 500, "from": "legacy", "to": "unicode"}
+[17:07:36.157] [STEM] info lane-switch {"book": "part-2.pdf", "page": 500, "from": "unicode", "to": "legacy"}
+[17:07:36.157] [STEM] info lane-switch {"book": "part-2.pdf", "page": 500, "from": "legacy", "to": "unicode"}
+[17:07:36.157] [STEM] info lane-switch {"book": "part-2.pdf", "page": 500, "from": "unicode", "to": "legacy"}
+[17:07:36.157] [STEM] info lane-switch {"book": "part-2.pdf", "page": 500, "from": "legacy", "to": "unicode"}
+[17:07:36.189] [STEM] info lane-switch {"book": "part-2.pdf", "page": 501, "from": "unicode", "to": "legacy"}
+[17:07:36.189] [STEM] info lane-switch {"book": "part-2.pdf", "page": 501, "from": "legacy", "to": "unicode"}
+[17:07:36.189] [STEM] info lane-switch {"book": "part-2.pdf", "page": 501, "from": "unicode", "to": "legacy"}
+[17:07:36.189] [STEM] info lane-switch {"book": "part-2.pdf", "page": 501, "from": "legacy", "to": "unicode"}
+[17:07:36.189] [STEM] info lane-switch {"book": "part-2.pdf", "page": 501, "from": "unicode", "to": "legacy"}
+[17:07:36.189] [STEM] info lane-switch {"book": "part-2.pdf", "page": 501, "from": "legacy", "to": "unicode"}
+[17:07:36.231] [STEM] info lane-switch {"book": "part-2.pdf", "page": 502, "from": "unicode", "to": "legacy"}
+[17:07:36.231] [STEM] info lane-switch {"book": "part-2.pdf", "page": 502, "from": "legacy", "to": "unicode"}
+[17:07:36.231] [STEM] info lane-switch {"book": "part-2.pdf", "page": 502, "from": "unicode", "to": "legacy"}
+[17:07:36.231] [STEM] info lane-switch {"book": "part-2.pdf", "page": 502, "from": "legacy", "to": "unicode"}
+[17:07:36.231] [STEM] info lane-switch {"book": "part-2.pdf", "page": 502, "from": "unicode", "to": "legacy"}
+[17:07:36.232] [STEM] info lane-switch {"book": "part-2.pdf", "page": 502, "from": "legacy", "to": "unicode"}
+[17:07:36.266] [STEM] info lane-switch {"book": "part-2.pdf", "page": 503, "from": "unicode", "to": "legacy"}
+[17:07:36.266] [STEM] info lane-switch {"book": "part-2.pdf", "page": 503, "from": "legacy", "to": "unicode"}
+[17:07:36.267] [STEM] info lane-switch {"book": "part-2.pdf", "page": 503, "from": "unicode", "to": "legacy"}
+[17:07:36.275] [STEM] info lane-switch {"book": "part-2.pdf", "page": 503, "from": "legacy", "to": "unicode"}
+[17:07:36.275] [STEM] info lane-switch {"book": "part-2.pdf", "page": 503, "from": "unicode", "to": "legacy"}
+[17:07:36.275] [STEM] info lane-switch {"book": "part-2.pdf", "page": 503, "from": "legacy", "to": "unicode"}
+[17:07:36.275] [STEM] info lane-switch {"book": "part-2.pdf", "page": 503, "from": "unicode", "to": "legacy"}
+[17:07:36.275] [STEM] info lane-switch {"book": "part-2.pdf", "page": 503, "from": "legacy", "to": "unicode"}
+[17:07:36.300] [STEM] info lane-switch {"book": "part-2.pdf", "page": 504, "from": "unicode", "to": "legacy"}
+[17:07:36.300] [STEM] info lane-switch {"book": "part-2.pdf", "page": 504, "from": "legacy", "to": "unicode"}
+[17:07:36.300] [STEM] info lane-switch {"book": "part-2.pdf", "page": 504, "from": "unicode", "to": "legacy"}
+[17:07:36.300] [STEM] info lane-switch {"book": "part-2.pdf", "page": 504, "from": "legacy", "to": "unicode"}
+[17:07:36.300] [STEM] info lane-switch {"book": "part-2.pdf", "page": 504, "from": "unicode", "to": "legacy"}
+[17:07:36.300] [STEM] info lane-switch {"book": "part-2.pdf", "page": 504, "from": "legacy", "to": "unicode"}
+[17:07:36.300] [STEM] info lane-switch {"book": "part-2.pdf", "page": 504, "from": "unicode", "to": "legacy"}
+[17:07:36.300] [STEM] info lane-switch {"book": "part-2.pdf", "page": 504, "from": "legacy", "to": "unicode"}
+[17:07:36.346] [STEM] info lane-switch {"book": "part-2.pdf", "page": 505, "from": "unicode", "to": "legacy"}
+[17:07:36.346] [STEM] info lane-switch {"book": "part-2.pdf", "page": 505, "from": "legacy", "to": "unicode"}
+[17:07:36.346] [STEM] info lane-switch {"book": "part-2.pdf", "page": 505, "from": "unicode", "to": "legacy"}
+[17:07:36.346] [STEM] info lane-switch {"book": "part-2.pdf", "page": 505, "from": "legacy", "to": "unicode"}
+[17:07:36.346] [STEM] info lane-switch {"book": "part-2.pdf", "page": 505, "from": "unicode", "to": "legacy"}
+[17:07:36.346] [STEM] info lane-switch {"book": "part-2.pdf", "page": 505, "from": "legacy", "to": "unicode"}
+[17:07:36.389] [STEM] info lane-switch {"book": "part-2.pdf", "page": 506, "from": "unicode", "to": "legacy"}
+[17:07:36.389] [STEM] info lane-switch {"book": "part-2.pdf", "page": 506, "from": "legacy", "to": "unicode"}
+[17:07:36.389] [STEM] info lane-switch {"book": "part-2.pdf", "page": 506, "from": "unicode", "to": "legacy"}
+[17:07:36.389] [STEM] info lane-switch {"book": "part-2.pdf", "page": 506, "from": "legacy", "to": "unicode"}
+[17:07:36.389] [STEM] info lane-switch {"book": "part-2.pdf", "page": 506, "from": "unicode", "to": "legacy"}
+[17:07:36.389] [STEM] info lane-switch {"book": "part-2.pdf", "page": 506, "from": "legacy", "to": "unicode"}
+[17:07:36.389] [STEM] info lane-switch {"book": "part-2.pdf", "page": 506, "from": "unicode", "to": "legacy"}
+[17:07:36.389] [STEM] info lane-switch {"book": "part-2.pdf", "page": 506, "from": "legacy", "to": "unicode"}
+[17:07:36.424] [STEM] info lane-switch {"book": "part-2.pdf", "page": 507, "from": "unicode", "to": "legacy"}
+[17:07:36.424] [STEM] info lane-switch {"book": "part-2.pdf", "page": 507, "from": "legacy", "to": "unicode"}
+[17:07:36.424] [STEM] info lane-switch {"book": "part-2.pdf", "page": 507, "from": "unicode", "to": "legacy"}
+[17:07:36.425] [STEM] info lane-switch {"book": "part-2.pdf", "page": 507, "from": "legacy", "to": "unicode"}
+[17:07:36.425] [STEM] info lane-switch {"book": "part-2.pdf", "page": 507, "from": "unicode", "to": "legacy"}
+[17:07:36.425] [STEM] info lane-switch {"book": "part-2.pdf", "page": 507, "from": "legacy", "to": "unicode"}
+[17:07:36.425] [STEM] info lane-switch {"book": "part-2.pdf", "page": 507, "from": "unicode", "to": "legacy"}
+[17:07:36.425] [STEM] info lane-switch {"book": "part-2.pdf", "page": 507, "from": "legacy", "to": "unicode"}
+[17:07:36.446] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "469-507", "rule": "zawcode"}
+[17:07:36.580] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "508-508", "rule": "aligned"}
+[17:07:39.866] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "509-536", "rule": "zawcode"}
+[17:07:40.211] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "537-538", "rule": "aligned"}
+[17:07:42.775] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "539-577", "rule": "rabbit"}
+[17:07:42.902] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "578-580", "rule": "aligned"}
+[17:07:44.357] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "581-618", "rule": "rabbit"}
+[17:07:44.441] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "619-619", "rule": "aligned"}
+[17:07:48.317] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "620-659", "rule": "zawcode"}
+[17:07:48.330] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "660-660", "rule": "aligned"}
+[17:07:48.382] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "661-661", "rule": "rabbit"}
+[17:07:48.686] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "662-668", "rule": "zawcode"}
+[17:07:48.751] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "669-669", "rule": "aligned"}
+[17:07:49.605] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "670-686", "rule": "zawcode"}
+[17:07:49.644] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1-7", "rule": "rabbit"}
+[17:07:49.668] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "687-687", "rule": "aligned"}
+[17:07:49.673] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "8-8", "rule": "aligned"}
+[17:07:49.727] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "688-689", "rule": "zawcode"}
+[17:07:49.782] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "690-690", "rule": "aligned"}
+[17:07:49.906] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "691-694", "rule": "zawcode"}
+[17:07:49.959] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "695-695", "rule": "aligned"}
+[17:07:49.961] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "696-696", "rule": "zawcode"}
+[17:07:50.024] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "697-698", "rule": "aligned"}
+[17:07:50.073] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "699-700", "rule": "zawcode"}
+[17:07:50.218] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "701-701", "rule": "aligned"}
+[17:07:53.146] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "9-48", "rule": "rabbit"}
+[17:07:53.206] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "49-49", "rule": "aligned"}
+[17:07:55.112] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "702-741", "rule": "rabbit"}
+[17:07:55.146] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "742-743", "rule": "aligned"}
+[17:07:58.491] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "744-782", "rule": "rabbit"}
+[17:07:58.599] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "783-783", "rule": "aligned"}
+[17:07:58.663] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "784-784", "rule": "zawcode"}
+[17:07:58.965] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "785-796", "rule": "aligned"}
+[17:07:58.974] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "797-797", "rule": "rabbit"}
+[17:08:00.045] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "798-822", "rule": "aligned"}
+[17:08:02.641] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "50-89", "rule": "rabbit"}
+[17:08:02.727] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "90-90", "rule": "aligned"}
+[17:08:06.104] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "823-861", "rule": "rabbit"}
+[17:08:06.180] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "862-863", "rule": "aligned"}
+[17:08:08.180] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "864-902", "rule": "rabbit"}
+[17:08:08.352] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "903-904", "rule": "aligned"}
+[17:08:10.328] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "91-130", "rule": "rabbit"}
+[17:08:10.386] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "131-132", "rule": "aligned"}
+[17:08:10.841] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "905-943", "rule": "rabbit"}
+[17:08:11.084] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "944-945", "rule": "aligned"}
+[17:08:13.111] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "946-961", "rule": "zawcode"}
+[17:08:13.253] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "962-965", "rule": "aligned"}
+[17:08:14.054] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "966-972", "rule": "zawcode"}
+[17:08:14.295] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "973-975", "rule": "aligned"}
+[17:08:15.281] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "133-171", "rule": "rabbit"}
+[17:08:15.433] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "172-172", "rule": "aligned"}
+[17:08:16.004] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "173-178", "rule": "rabbit"}
+[17:08:16.071] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "179-179", "rule": "aligned"}
+[17:08:17.524] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "976-1003", "rule": "zawcode"}
+[17:08:17.943] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1004-1005", "rule": "aligned"}
+[17:08:18.846] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1006-1011", "rule": "rabbit"}
+[17:08:19.006] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "180-209", "rule": "zawcode"}
+[17:08:19.033] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "210-210", "rule": "aligned"}
+[17:08:19.147] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "211-211", "rule": "legacy"}
+[17:08:20.031] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1012-1022", "rule": "aligned"}
+[17:08:20.122] [STEM] info lane-switch {"book": "part-2.pdf", "page": 223, "from": "unicode", "to": "legacy"}
+[17:08:20.128] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1023-1023", "rule": "zawcode"}
+[17:08:20.154] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "212-222", "rule": "rabbit"}
+[17:08:20.209] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1024-1027", "rule": "aligned"}
+[17:08:20.232] [STEM] info lane-switch {"book": "part-2.pdf", "page": 224, "from": "legacy", "to": "unicode"}
+[17:08:20.259] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "223-223", "rule": "zawcode"}
+[17:08:21.856] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "224-238", "rule": "rabbit"}
+[17:08:21.984] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "239-239", "rule": "legacy"}
+[17:08:21.999] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "240-240", "rule": "rabbit"}
+[17:08:22.120] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "241-241", "rule": "legacy"}
+[17:08:22.957] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "242-250", "rule": "rabbit"}
+[17:08:23.101] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "251-251", "rule": "aligned"}
+[17:08:28.035] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1028-1067", "rule": "rabbit"}
+[17:08:28.124] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1068-1068", "rule": "aligned"}
+[17:08:28.444] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "252-285", "rule": "zawcode"}
+[17:08:28.602] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "286-286", "rule": "aligned"}
+[17:08:29.725] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "287-295", "rule": "zawcode"}
+[17:08:29.852] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "296-296", "rule": "aligned"}
+[17:08:30.458] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "297-301", "rule": "zawcode"}
+[17:08:30.604] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "302-302", "rule": "aligned"}
+[17:08:31.054] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1069-1108", "rule": "rabbit"}
+[17:08:31.117] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1109-1109", "rule": "aligned"}
+[17:08:33.259] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "303-321", "rule": "zawcode"}
+[17:08:34.816] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "322-340", "rule": "aligned"}
+[17:08:35.059] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1110-1149", "rule": "rabbit"}
+[17:08:35.191] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1150-1150", "rule": "aligned"}
+[17:08:36.923] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "341-352", "rule": "zawcode"}
+[17:08:37.101] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "353-353", "rule": "aligned"}
+[17:08:39.332] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "354-370", "rule": "zawcode"}
+[17:08:39.499] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "371-371", "rule": "aligned"}
+[17:08:40.958] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "372-384", "rule": "zawcode"}
+[17:08:41.034] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "385-386", "rule": "aligned"}
+[17:08:43.871] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "387-425", "rule": "rabbit"}
+[17:08:43.953] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "426-429", "rule": "aligned"}
+[17:08:44.285] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "430-437", "rule": "zawcode"}
+[17:08:44.350] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "438-438", "rule": "aligned"}
+[17:08:44.494] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1151-1190", "rule": "rabbit"}
+[17:08:45.171] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "439-456", "rule": "zawcode"}
+[17:08:45.233] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "457-457", "rule": "aligned"}
+[17:08:45.656] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "458-466", "rule": "zawcode"}
+[17:08:45.700] [STEM] info lane-switch {"book": "part-2.pdf", "page": 469, "from": "unicode", "to": "legacy"}
+[17:08:45.700] [STEM] info lane-switch {"book": "part-2.pdf", "page": 469, "from": "legacy", "to": "unicode"}
+[17:08:45.742] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "467-468", "rule": "aligned"}
+[17:08:45.778] [STEM] info lane-switch {"book": "part-2.pdf", "page": 470, "from": "unicode", "to": "legacy"}
+[17:08:45.778] [STEM] info lane-switch {"book": "part-2.pdf", "page": 470, "from": "legacy", "to": "unicode"}
+[17:08:45.778] [STEM] info lane-switch {"book": "part-2.pdf", "page": 470, "from": "unicode", "to": "legacy"}
+[17:08:45.778] [STEM] info lane-switch {"book": "part-2.pdf", "page": 470, "from": "legacy", "to": "unicode"}
+[17:08:45.778] [STEM] info lane-switch {"book": "part-2.pdf", "page": 470, "from": "unicode", "to": "legacy"}
+[17:08:45.778] [STEM] info lane-switch {"book": "part-2.pdf", "page": 470, "from": "legacy", "to": "unicode"}
+[17:08:45.857] [STEM] info lane-switch {"book": "part-2.pdf", "page": 471, "from": "unicode", "to": "legacy"}
+[17:08:45.857] [STEM] info lane-switch {"book": "part-2.pdf", "page": 471, "from": "legacy", "to": "unicode"}
+[17:08:45.857] [STEM] info lane-switch {"book": "part-2.pdf", "page": 471, "from": "unicode", "to": "legacy"}
+[17:08:45.857] [STEM] info lane-switch {"book": "part-2.pdf", "page": 471, "from": "legacy", "to": "unicode"}
+[17:08:45.916] [STEM] info lane-switch {"book": "part-2.pdf", "page": 472, "from": "unicode", "to": "legacy"}
+[17:08:45.916] [STEM] info lane-switch {"book": "part-2.pdf", "page": 472, "from": "legacy", "to": "unicode"}
+[17:08:45.917] [STEM] info lane-switch {"book": "part-2.pdf", "page": 472, "from": "unicode", "to": "legacy"}
+[17:08:45.917] [STEM] info lane-switch {"book": "part-2.pdf", "page": 472, "from": "legacy", "to": "unicode"}
+[17:08:45.917] [STEM] info lane-switch {"book": "part-2.pdf", "page": 472, "from": "unicode", "to": "legacy"}
+[17:08:45.917] [STEM] info lane-switch {"book": "part-2.pdf", "page": 472, "from": "legacy", "to": "unicode"}
+[17:08:45.950] [STEM] info lane-switch {"book": "part-2.pdf", "page": 473, "from": "unicode", "to": "legacy"}
+[17:08:45.951] [STEM] info lane-switch {"book": "part-2.pdf", "page": 473, "from": "legacy", "to": "unicode"}
+[17:08:45.959] [STEM] info lane-switch {"book": "part-2.pdf", "page": 473, "from": "unicode", "to": "legacy"}
+[17:08:45.959] [STEM] info lane-switch {"book": "part-2.pdf", "page": 473, "from": "legacy", "to": "unicode"}
+[17:08:45.959] [STEM] info lane-switch {"book": "part-2.pdf", "page": 473, "from": "unicode", "to": "legacy"}
+[17:08:45.960] [STEM] info lane-switch {"book": "part-2.pdf", "page": 473, "from": "legacy", "to": "unicode"}
+[17:08:45.993] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "unicode", "to": "legacy"}
+[17:08:45.993] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "legacy", "to": "unicode"}
+[17:08:45.993] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "unicode", "to": "legacy"}
+[17:08:45.993] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "legacy", "to": "unicode"}
+[17:08:45.993] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "unicode", "to": "legacy"}
+[17:08:45.993] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "legacy", "to": "unicode"}
+[17:08:45.993] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "unicode", "to": "legacy"}
+[17:08:45.994] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "legacy", "to": "unicode"}
+[17:08:45.994] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "unicode", "to": "legacy"}
+[17:08:45.994] [STEM] info lane-switch {"book": "part-2.pdf", "page": 474, "from": "legacy", "to": "unicode"}
+[17:08:46.025] [STEM] info lane-switch {"book": "part-2.pdf", "page": 475, "from": "unicode", "to": "legacy"}
+[17:08:46.025] [STEM] info lane-switch {"book": "part-2.pdf", "page": 475, "from": "legacy", "to": "unicode"}
+[17:08:46.025] [STEM] info lane-switch {"book": "part-2.pdf", "page": 475, "from": "unicode", "to": "legacy"}
+[17:08:46.025] [STEM] info lane-switch {"book": "part-2.pdf", "page": 475, "from": "legacy", "to": "unicode"}
+[17:08:46.025] [STEM] info lane-switch {"book": "part-2.pdf", "page": 475, "from": "unicode", "to": "legacy"}
+[17:08:46.025] [STEM] info lane-switch {"book": "part-2.pdf", "page": 475, "from": "legacy", "to": "unicode"}
+[17:08:46.026] [STEM] info lane-switch {"book": "part-2.pdf", "page": 475, "from": "unicode", "to": "legacy"}
+[17:08:46.026] [STEM] info lane-switch {"book": "part-2.pdf", "page": 475, "from": "legacy", "to": "unicode"}
+[17:08:46.047] [STEM] info lane-switch {"book": "part-2.pdf", "page": 476, "from": "unicode", "to": "legacy"}
+[17:08:46.047] [STEM] info lane-switch {"book": "part-2.pdf", "page": 476, "from": "legacy", "to": "unicode"}
+[17:08:46.047] [STEM] info lane-switch {"book": "part-2.pdf", "page": 476, "from": "unicode", "to": "legacy"}
+[17:08:46.047] [STEM] info lane-switch {"book": "part-2.pdf", "page": 476, "from": "legacy", "to": "unicode"}
+[17:08:46.047] [STEM] info lane-switch {"book": "part-2.pdf", "page": 476, "from": "unicode", "to": "legacy"}
+[17:08:46.047] [STEM] info lane-switch {"book": "part-2.pdf", "page": 476, "from": "legacy", "to": "unicode"}
+[17:08:46.080] [STEM] info lane-switch {"book": "part-2.pdf", "page": 477, "from": "unicode", "to": "legacy"}
+[17:08:46.080] [STEM] info lane-switch {"book": "part-2.pdf", "page": 477, "from": "legacy", "to": "unicode"}
+[17:08:46.080] [STEM] info lane-switch {"book": "part-2.pdf", "page": 477, "from": "unicode", "to": "legacy"}
+[17:08:46.080] [STEM] info lane-switch {"book": "part-2.pdf", "page": 477, "from": "legacy", "to": "unicode"}
+[17:08:46.080] [STEM] info lane-switch {"book": "part-2.pdf", "page": 477, "from": "unicode", "to": "legacy"}
+[17:08:46.080] [STEM] info lane-switch {"book": "part-2.pdf", "page": 477, "from": "legacy", "to": "unicode"}
+[17:08:46.113] [STEM] info lane-switch {"book": "part-2.pdf", "page": 478, "from": "unicode", "to": "legacy"}
+[17:08:46.113] [STEM] info lane-switch {"book": "part-2.pdf", "page": 478, "from": "legacy", "to": "unicode"}
+[17:08:46.113] [STEM] info lane-switch {"book": "part-2.pdf", "page": 478, "from": "unicode", "to": "legacy"}
+[17:08:46.113] [STEM] info lane-switch {"book": "part-2.pdf", "page": 478, "from": "legacy", "to": "unicode"}
+[17:08:46.113] [STEM] info lane-switch {"book": "part-2.pdf", "page": 478, "from": "unicode", "to": "legacy"}
+[17:08:46.113] [STEM] info lane-switch {"book": "part-2.pdf", "page": 478, "from": "legacy", "to": "unicode"}
+[17:08:46.155] [STEM] info lane-switch {"book": "part-2.pdf", "page": 479, "from": "unicode", "to": "legacy"}
+[17:08:46.156] [STEM] info lane-switch {"book": "part-2.pdf", "page": 479, "from": "legacy", "to": "unicode"}
+[17:08:46.156] [STEM] info lane-switch {"book": "part-2.pdf", "page": 479, "from": "unicode", "to": "legacy"}
+[17:08:46.156] [STEM] info lane-switch {"book": "part-2.pdf", "page": 479, "from": "legacy", "to": "unicode"}
+[17:08:46.156] [STEM] info lane-switch {"book": "part-2.pdf", "page": 479, "from": "unicode", "to": "legacy"}
+[17:08:46.156] [STEM] info lane-switch {"book": "part-2.pdf", "page": 479, "from": "legacy", "to": "unicode"}
+[17:08:46.199] [STEM] info lane-switch {"book": "part-2.pdf", "page": 480, "from": "unicode", "to": "legacy"}
+[17:08:46.199] [STEM] info lane-switch {"book": "part-2.pdf", "page": 480, "from": "legacy", "to": "unicode"}
+[17:08:46.199] [STEM] info lane-switch {"book": "part-2.pdf", "page": 480, "from": "unicode", "to": "legacy"}
+[17:08:46.199] [STEM] info lane-switch {"book": "part-2.pdf", "page": 480, "from": "legacy", "to": "unicode"}
+[17:08:46.199] [STEM] info lane-switch {"book": "part-2.pdf", "page": 480, "from": "unicode", "to": "legacy"}
+[17:08:46.199] [STEM] info lane-switch {"book": "part-2.pdf", "page": 480, "from": "legacy", "to": "unicode"}
+[17:08:46.225] [STEM] info lane-switch {"book": "part-2.pdf", "page": 481, "from": "unicode", "to": "legacy"}
+[17:08:46.225] [STEM] info lane-switch {"book": "part-2.pdf", "page": 481, "from": "legacy", "to": "unicode"}
+[17:08:46.225] [STEM] info lane-switch {"book": "part-2.pdf", "page": 481, "from": "unicode", "to": "legacy"}
+[17:08:46.225] [STEM] info lane-switch {"book": "part-2.pdf", "page": 481, "from": "legacy", "to": "unicode"}
+[17:08:46.225] [STEM] info lane-switch {"book": "part-2.pdf", "page": 481, "from": "unicode", "to": "legacy"}
+[17:08:46.225] [STEM] info lane-switch {"book": "part-2.pdf", "page": 481, "from": "legacy", "to": "unicode"}
+[17:08:46.262] [STEM] info lane-switch {"book": "part-2.pdf", "page": 482, "from": "unicode", "to": "legacy"}
+[17:08:46.262] [STEM] info lane-switch {"book": "part-2.pdf", "page": 482, "from": "legacy", "to": "unicode"}
+[17:08:46.262] [STEM] info lane-switch {"book": "part-2.pdf", "page": 482, "from": "unicode", "to": "legacy"}
+[17:08:46.262] [STEM] info lane-switch {"book": "part-2.pdf", "page": 482, "from": "legacy", "to": "unicode"}
+[17:08:46.262] [STEM] info lane-switch {"book": "part-2.pdf", "page": 482, "from": "unicode", "to": "legacy"}
+[17:08:46.262] [STEM] info lane-switch {"book": "part-2.pdf", "page": 482, "from": "legacy", "to": "unicode"}
+[17:08:46.303] [STEM] info lane-switch {"book": "part-2.pdf", "page": 483, "from": "unicode", "to": "legacy"}
+[17:08:46.303] [STEM] info lane-switch {"book": "part-2.pdf", "page": 483, "from": "legacy", "to": "unicode"}
+[17:08:46.303] [STEM] info lane-switch {"book": "part-2.pdf", "page": 483, "from": "unicode", "to": "legacy"}
+[17:08:46.303] [STEM] info lane-switch {"book": "part-2.pdf", "page": 483, "from": "legacy", "to": "unicode"}
+[17:08:46.303] [STEM] info lane-switch {"book": "part-2.pdf", "page": 483, "from": "unicode", "to": "legacy"}
+[17:08:46.303] [STEM] info lane-switch {"book": "part-2.pdf", "page": 483, "from": "legacy", "to": "unicode"}
+[17:08:46.303] [STEM] info lane-switch {"book": "part-2.pdf", "page": 483, "from": "unicode", "to": "legacy"}
+[17:08:46.303] [STEM] info lane-switch {"book": "part-2.pdf", "page": 483, "from": "legacy", "to": "unicode"}
+[17:08:46.330] [STEM] info lane-switch {"book": "part-2.pdf", "page": 484, "from": "unicode", "to": "legacy"}
+[17:08:46.330] [STEM] info lane-switch {"book": "part-2.pdf", "page": 484, "from": "legacy", "to": "unicode"}
+[17:08:46.330] [STEM] info lane-switch {"book": "part-2.pdf", "page": 484, "from": "unicode", "to": "legacy"}
+[17:08:46.330] [STEM] info lane-switch {"book": "part-2.pdf", "page": 484, "from": "legacy", "to": "unicode"}
+[17:08:46.330] [STEM] info lane-switch {"book": "part-2.pdf", "page": 484, "from": "unicode", "to": "legacy"}
+[17:08:46.330] [STEM] info lane-switch {"book": "part-2.pdf", "page": 484, "from": "legacy", "to": "unicode"}
+[17:08:46.362] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "unicode", "to": "legacy"}
+[17:08:46.362] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "legacy", "to": "unicode"}
+[17:08:46.362] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "unicode", "to": "legacy"}
+[17:08:46.362] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "legacy", "to": "unicode"}
+[17:08:46.362] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "unicode", "to": "legacy"}
+[17:08:46.362] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "legacy", "to": "unicode"}
+[17:08:46.362] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "unicode", "to": "legacy"}
+[17:08:46.362] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "legacy", "to": "unicode"}
+[17:08:46.362] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "unicode", "to": "legacy"}
+[17:08:46.363] [STEM] info lane-switch {"book": "part-2.pdf", "page": 485, "from": "legacy", "to": "unicode"}
+[17:08:46.403] [STEM] info lane-switch {"book": "part-2.pdf", "page": 486, "from": "unicode", "to": "legacy"}
+[17:08:46.403] [STEM] info lane-switch {"book": "part-2.pdf", "page": 486, "from": "legacy", "to": "unicode"}
+[17:08:46.403] [STEM] info lane-switch {"book": "part-2.pdf", "page": 486, "from": "unicode", "to": "legacy"}
+[17:08:46.403] [STEM] info lane-switch {"book": "part-2.pdf", "page": 486, "from": "legacy", "to": "unicode"}
+[17:08:46.403] [STEM] info lane-switch {"book": "part-2.pdf", "page": 486, "from": "unicode", "to": "legacy"}
+[17:08:46.403] [STEM] info lane-switch {"book": "part-2.pdf", "page": 486, "from": "legacy", "to": "unicode"}
+[17:08:46.403] [STEM] info lane-switch {"book": "part-2.pdf", "page": 486, "from": "unicode", "to": "legacy"}
+[17:08:46.403] [STEM] info lane-switch {"book": "part-2.pdf", "page": 486, "from": "legacy", "to": "unicode"}
+[17:08:46.436] [STEM] info lane-switch {"book": "part-2.pdf", "page": 487, "from": "unicode", "to": "legacy"}
+[17:08:46.437] [STEM] info lane-switch {"book": "part-2.pdf", "page": 487, "from": "legacy", "to": "unicode"}
+[17:08:46.437] [STEM] info lane-switch {"book": "part-2.pdf", "page": 487, "from": "unicode", "to": "legacy"}
+[17:08:46.437] [STEM] info lane-switch {"book": "part-2.pdf", "page": 487, "from": "legacy", "to": "unicode"}
+[17:08:46.437] [STEM] info lane-switch {"book": "part-2.pdf", "page": 487, "from": "unicode", "to": "legacy"}
+[17:08:46.437] [STEM] info lane-switch {"book": "part-2.pdf", "page": 487, "from": "legacy", "to": "unicode"}
+[17:08:46.437] [STEM] info lane-switch {"book": "part-2.pdf", "page": 487, "from": "unicode", "to": "legacy"}
+[17:08:46.437] [STEM] info lane-switch {"book": "part-2.pdf", "page": 487, "from": "legacy", "to": "unicode"}
+[17:08:46.470] [STEM] info lane-switch {"book": "part-2.pdf", "page": 488, "from": "unicode", "to": "legacy"}
+[17:08:46.470] [STEM] info lane-switch {"book": "part-2.pdf", "page": 488, "from": "legacy", "to": "unicode"}
+[17:08:46.470] [STEM] info lane-switch {"book": "part-2.pdf", "page": 488, "from": "unicode", "to": "legacy"}
+[17:08:46.470] [STEM] info lane-switch {"book": "part-2.pdf", "page": 488, "from": "legacy", "to": "unicode"}
+[17:08:46.470] [STEM] info lane-switch {"book": "part-2.pdf", "page": 488, "from": "unicode", "to": "legacy"}
+[17:08:46.470] [STEM] info lane-switch {"book": "part-2.pdf", "page": 488, "from": "legacy", "to": "unicode"}
+[17:08:46.501] [STEM] info lane-switch {"book": "part-2.pdf", "page": 489, "from": "unicode", "to": "legacy"}
+[17:08:46.501] [STEM] info lane-switch {"book": "part-2.pdf", "page": 489, "from": "legacy", "to": "unicode"}
+[17:08:46.501] [STEM] info lane-switch {"book": "part-2.pdf", "page": 489, "from": "unicode", "to": "legacy"}
+[17:08:46.501] [STEM] info lane-switch {"book": "part-2.pdf", "page": 489, "from": "legacy", "to": "unicode"}
+[17:08:46.501] [STEM] info lane-switch {"book": "part-2.pdf", "page": 489, "from": "unicode", "to": "legacy"}
+[17:08:46.501] [STEM] info lane-switch {"book": "part-2.pdf", "page": 489, "from": "legacy", "to": "unicode"}
+[17:08:46.501] [STEM] info lane-switch {"book": "part-2.pdf", "page": 489, "from": "unicode", "to": "legacy"}
+[17:08:46.501] [STEM] info lane-switch {"book": "part-2.pdf", "page": 489, "from": "legacy", "to": "unicode"}
+[17:08:46.535] [STEM] info lane-switch {"book": "part-2.pdf", "page": 490, "from": "unicode", "to": "legacy"}
+[17:08:46.543] [STEM] info lane-switch {"book": "part-2.pdf", "page": 490, "from": "legacy", "to": "unicode"}
+[17:08:46.543] [STEM] info lane-switch {"book": "part-2.pdf", "page": 490, "from": "unicode", "to": "legacy"}
+[17:08:46.543] [STEM] info lane-switch {"book": "part-2.pdf", "page": 490, "from": "legacy", "to": "unicode"}
+[17:08:46.543] [STEM] info lane-switch {"book": "part-2.pdf", "page": 490, "from": "unicode", "to": "legacy"}
+[17:08:46.543] [STEM] info lane-switch {"book": "part-2.pdf", "page": 490, "from": "legacy", "to": "unicode"}
+[17:08:46.543] [STEM] info lane-switch {"book": "part-2.pdf", "page": 490, "from": "unicode", "to": "legacy"}
+[17:08:46.543] [STEM] info lane-switch {"book": "part-2.pdf", "page": 490, "from": "legacy", "to": "unicode"}
+[17:08:46.568] [STEM] info lane-switch {"book": "part-2.pdf", "page": 491, "from": "unicode", "to": "legacy"}
+[17:08:46.568] [STEM] info lane-switch {"book": "part-2.pdf", "page": 491, "from": "legacy", "to": "unicode"}
+[17:08:46.568] [STEM] info lane-switch {"book": "part-2.pdf", "page": 491, "from": "unicode", "to": "legacy"}
+[17:08:46.568] [STEM] info lane-switch {"book": "part-2.pdf", "page": 491, "from": "legacy", "to": "unicode"}
+[17:08:46.568] [STEM] info lane-switch {"book": "part-2.pdf", "page": 491, "from": "unicode", "to": "legacy"}
+[17:08:46.568] [STEM] info lane-switch {"book": "part-2.pdf", "page": 491, "from": "legacy", "to": "unicode"}
+[17:08:46.568] [STEM] info lane-switch {"book": "part-2.pdf", "page": 491, "from": "unicode", "to": "legacy"}
+[17:08:46.568] [STEM] info lane-switch {"book": "part-2.pdf", "page": 491, "from": "legacy", "to": "unicode"}
+[17:08:46.602] [STEM] info lane-switch {"book": "part-2.pdf", "page": 492, "from": "unicode", "to": "legacy"}
+[17:08:46.602] [STEM] info lane-switch {"book": "part-2.pdf", "page": 492, "from": "legacy", "to": "unicode"}
+[17:08:46.602] [STEM] info lane-switch {"book": "part-2.pdf", "page": 492, "from": "unicode", "to": "legacy"}
+[17:08:46.602] [STEM] info lane-switch {"book": "part-2.pdf", "page": 492, "from": "legacy", "to": "unicode"}
+[17:08:46.602] [STEM] info lane-switch {"book": "part-2.pdf", "page": 492, "from": "unicode", "to": "legacy"}
+[17:08:46.602] [STEM] info lane-switch {"book": "part-2.pdf", "page": 492, "from": "legacy", "to": "unicode"}
+[17:08:46.648] [STEM] info lane-switch {"book": "part-2.pdf", "page": 493, "from": "unicode", "to": "legacy"}
+[17:08:46.648] [STEM] info lane-switch {"book": "part-2.pdf", "page": 493, "from": "legacy", "to": "unicode"}
+[17:08:46.648] [STEM] info lane-switch {"book": "part-2.pdf", "page": 493, "from": "unicode", "to": "legacy"}
+[17:08:46.648] [STEM] info lane-switch {"book": "part-2.pdf", "page": 493, "from": "legacy", "to": "unicode"}
+[17:08:46.649] [STEM] info lane-switch {"book": "part-2.pdf", "page": 493, "from": "unicode", "to": "legacy"}
+[17:08:46.649] [STEM] info lane-switch {"book": "part-2.pdf", "page": 493, "from": "legacy", "to": "unicode"}
+[17:08:46.691] [STEM] info lane-switch {"book": "part-2.pdf", "page": 494, "from": "unicode", "to": "legacy"}
+[17:08:46.691] [STEM] info lane-switch {"book": "part-2.pdf", "page": 494, "from": "legacy", "to": "unicode"}
+[17:08:46.691] [STEM] info lane-switch {"book": "part-2.pdf", "page": 494, "from": "unicode", "to": "legacy"}
+[17:08:46.691] [STEM] info lane-switch {"book": "part-2.pdf", "page": 494, "from": "legacy", "to": "unicode"}
+[17:08:46.691] [STEM] info lane-switch {"book": "part-2.pdf", "page": 494, "from": "unicode", "to": "legacy"}
+[17:08:46.691] [STEM] info lane-switch {"book": "part-2.pdf", "page": 494, "from": "legacy", "to": "unicode"}
+[17:08:46.691] [STEM] info lane-switch {"book": "part-2.pdf", "page": 494, "from": "unicode", "to": "legacy"}
+[17:08:46.691] [STEM] info lane-switch {"book": "part-2.pdf", "page": 494, "from": "legacy", "to": "unicode"}
+[17:08:46.725] [STEM] info lane-switch {"book": "part-2.pdf", "page": 495, "from": "unicode", "to": "legacy"}
+[17:08:46.725] [STEM] info lane-switch {"book": "part-2.pdf", "page": 495, "from": "legacy", "to": "unicode"}
+[17:08:46.725] [STEM] info lane-switch {"book": "part-2.pdf", "page": 495, "from": "unicode", "to": "legacy"}
+[17:08:46.725] [STEM] info lane-switch {"book": "part-2.pdf", "page": 495, "from": "legacy", "to": "unicode"}
+[17:08:46.725] [STEM] info lane-switch {"book": "part-2.pdf", "page": 495, "from": "unicode", "to": "legacy"}
+[17:08:46.725] [STEM] info lane-switch {"book": "part-2.pdf", "page": 495, "from": "legacy", "to": "unicode"}
+[17:08:46.758] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "unicode", "to": "legacy"}
+[17:08:46.758] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "legacy", "to": "unicode"}
+[17:08:46.758] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "unicode", "to": "legacy"}
+[17:08:46.758] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "legacy", "to": "unicode"}
+[17:08:46.758] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "unicode", "to": "legacy"}
+[17:08:46.759] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "legacy", "to": "unicode"}
+[17:08:46.767] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "unicode", "to": "legacy"}
+[17:08:46.767] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "legacy", "to": "unicode"}
+[17:08:46.767] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "unicode", "to": "legacy"}
+[17:08:46.767] [STEM] info lane-switch {"book": "part-2.pdf", "page": 496, "from": "legacy", "to": "unicode"}
+[17:08:46.792] [STEM] info lane-switch {"book": "part-2.pdf", "page": 497, "from": "unicode", "to": "legacy"}
+[17:08:46.792] [STEM] info lane-switch {"book": "part-2.pdf", "page": 497, "from": "legacy", "to": "unicode"}
+[17:08:46.792] [STEM] info lane-switch {"book": "part-2.pdf", "page": 497, "from": "unicode", "to": "legacy"}
+[17:08:46.792] [STEM] info lane-switch {"book": "part-2.pdf", "page": 497, "from": "legacy", "to": "unicode"}
+[17:08:46.793] [STEM] info lane-switch {"book": "part-2.pdf", "page": 497, "from": "unicode", "to": "legacy"}
+[17:08:46.793] [STEM] info lane-switch {"book": "part-2.pdf", "page": 497, "from": "legacy", "to": "unicode"}
+[17:08:46.821] [STEM] info lane-switch {"book": "part-2.pdf", "page": 498, "from": "unicode", "to": "legacy"}
+[17:08:46.821] [STEM] info lane-switch {"book": "part-2.pdf", "page": 498, "from": "legacy", "to": "unicode"}
+[17:08:46.821] [STEM] info lane-switch {"book": "part-2.pdf", "page": 498, "from": "unicode", "to": "legacy"}
+[17:08:46.822] [STEM] info lane-switch {"book": "part-2.pdf", "page": 498, "from": "legacy", "to": "unicode"}
+[17:08:46.822] [STEM] info lane-switch {"book": "part-2.pdf", "page": 498, "from": "unicode", "to": "legacy"}
+[17:08:46.822] [STEM] info lane-switch {"book": "part-2.pdf", "page": 498, "from": "legacy", "to": "unicode"}
+[17:08:46.852] [STEM] info lane-switch {"book": "part-2.pdf", "page": 499, "from": "unicode", "to": "legacy"}
+[17:08:46.853] [STEM] info lane-switch {"book": "part-2.pdf", "page": 499, "from": "legacy", "to": "unicode"}
+[17:08:46.853] [STEM] info lane-switch {"book": "part-2.pdf", "page": 499, "from": "unicode", "to": "legacy"}
+[17:08:46.853] [STEM] info lane-switch {"book": "part-2.pdf", "page": 499, "from": "legacy", "to": "unicode"}
+[17:08:46.853] [STEM] info lane-switch {"book": "part-2.pdf", "page": 499, "from": "unicode", "to": "legacy"}
+[17:08:46.853] [STEM] info lane-switch {"book": "part-2.pdf", "page": 499, "from": "legacy", "to": "unicode"}
+[17:08:46.885] [STEM] info lane-switch {"book": "part-2.pdf", "page": 500, "from": "unicode", "to": "legacy"}
+[17:08:46.886] [STEM] info lane-switch {"book": "part-2.pdf", "page": 500, "from": "legacy", "to": "unicode"}
+[17:08:46.886] [STEM] info lane-switch {"book": "part-2.pdf", "page": 500, "from": "unicode", "to": "legacy"}
+[17:08:46.886] [STEM] info lane-switch {"book": "part-2.pdf", "page": 500, "from": "legacy", "to": "unicode"}
+[17:08:46.886] [STEM] info lane-switch {"book": "part-2.pdf", "page": 500, "from": "unicode", "to": "legacy"}
+[17:08:46.886] [STEM] info lane-switch {"book": "part-2.pdf", "page": 500, "from": "legacy", "to": "unicode"}
+[17:08:46.928] [STEM] info lane-switch {"book": "part-2.pdf", "page": 501, "from": "unicode", "to": "legacy"}
+[17:08:46.929] [STEM] info lane-switch {"book": "part-2.pdf", "page": 501, "from": "legacy", "to": "unicode"}
+[17:08:46.929] [STEM] info lane-switch {"book": "part-2.pdf", "page": 501, "from": "unicode", "to": "legacy"}
+[17:08:46.929] [STEM] info lane-switch {"book": "part-2.pdf", "page": 501, "from": "legacy", "to": "unicode"}
+[17:08:46.929] [STEM] info lane-switch {"book": "part-2.pdf", "page": 501, "from": "unicode", "to": "legacy"}
+[17:08:46.929] [STEM] info lane-switch {"book": "part-2.pdf", "page": 501, "from": "legacy", "to": "unicode"}
+[17:08:46.978] [STEM] info lane-switch {"book": "part-2.pdf", "page": 502, "from": "unicode", "to": "legacy"}
+[17:08:46.978] [STEM] info lane-switch {"book": "part-2.pdf", "page": 502, "from": "legacy", "to": "unicode"}
+[17:08:46.978] [STEM] info lane-switch {"book": "part-2.pdf", "page": 502, "from": "unicode", "to": "legacy"}
+[17:08:46.979] [STEM] info lane-switch {"book": "part-2.pdf", "page": 502, "from": "legacy", "to": "unicode"}
+[17:08:46.979] [STEM] info lane-switch {"book": "part-2.pdf", "page": 502, "from": "unicode", "to": "legacy"}
+[17:08:46.979] [STEM] info lane-switch {"book": "part-2.pdf", "page": 502, "from": "legacy", "to": "unicode"}
+[17:08:47.028] [STEM] info lane-switch {"book": "part-2.pdf", "page": 503, "from": "unicode", "to": "legacy"}
+[17:08:47.028] [STEM] info lane-switch {"book": "part-2.pdf", "page": 503, "from": "legacy", "to": "unicode"}
+[17:08:47.028] [STEM] info lane-switch {"book": "part-2.pdf", "page": 503, "from": "unicode", "to": "legacy"}
+[17:08:47.028] [STEM] info lane-switch {"book": "part-2.pdf", "page": 503, "from": "legacy", "to": "unicode"}
+[17:08:47.028] [STEM] info lane-switch {"book": "part-2.pdf", "page": 503, "from": "unicode", "to": "legacy"}
+[17:08:47.028] [STEM] info lane-switch {"book": "part-2.pdf", "page": 503, "from": "legacy", "to": "unicode"}
+[17:08:47.028] [STEM] info lane-switch {"book": "part-2.pdf", "page": 503, "from": "unicode", "to": "legacy"}
+[17:08:47.028] [STEM] info lane-switch {"book": "part-2.pdf", "page": 503, "from": "legacy", "to": "unicode"}
+[17:08:47.061] [STEM] info lane-switch {"book": "part-2.pdf", "page": 504, "from": "unicode", "to": "legacy"}
+[17:08:47.061] [STEM] info lane-switch {"book": "part-2.pdf", "page": 504, "from": "legacy", "to": "unicode"}
+[17:08:47.061] [STEM] info lane-switch {"book": "part-2.pdf", "page": 504, "from": "unicode", "to": "legacy"}
+[17:08:47.061] [STEM] info lane-switch {"book": "part-2.pdf", "page": 504, "from": "legacy", "to": "unicode"}
+[17:08:47.061] [STEM] info lane-switch {"book": "part-2.pdf", "page": 504, "from": "unicode", "to": "legacy"}
+[17:08:47.061] [STEM] info lane-switch {"book": "part-2.pdf", "page": 504, "from": "legacy", "to": "unicode"}
+[17:08:47.061] [STEM] info lane-switch {"book": "part-2.pdf", "page": 504, "from": "unicode", "to": "legacy"}
+[17:08:47.061] [STEM] info lane-switch {"book": "part-2.pdf", "page": 504, "from": "legacy", "to": "unicode"}
+[17:08:47.103] [STEM] info lane-switch {"book": "part-2.pdf", "page": 505, "from": "unicode", "to": "legacy"}
+[17:08:47.104] [STEM] info lane-switch {"book": "part-2.pdf", "page": 505, "from": "legacy", "to": "unicode"}
+[17:08:47.104] [STEM] info lane-switch {"book": "part-2.pdf", "page": 505, "from": "unicode", "to": "legacy"}
+[17:08:47.104] [STEM] info lane-switch {"book": "part-2.pdf", "page": 505, "from": "legacy", "to": "unicode"}
+[17:08:47.104] [STEM] info lane-switch {"book": "part-2.pdf", "page": 505, "from": "unicode", "to": "legacy"}
+[17:08:47.104] [STEM] info lane-switch {"book": "part-2.pdf", "page": 505, "from": "legacy", "to": "unicode"}
+[17:08:47.140] [STEM] info lane-switch {"book": "part-2.pdf", "page": 506, "from": "unicode", "to": "legacy"}
+[17:08:47.140] [STEM] info lane-switch {"book": "part-2.pdf", "page": 506, "from": "legacy", "to": "unicode"}
+[17:08:47.140] [STEM] info lane-switch {"book": "part-2.pdf", "page": 506, "from": "unicode", "to": "legacy"}
+[17:08:47.140] [STEM] info lane-switch {"book": "part-2.pdf", "page": 506, "from": "legacy", "to": "unicode"}
+[17:08:47.140] [STEM] info lane-switch {"book": "part-2.pdf", "page": 506, "from": "unicode", "to": "legacy"}
+[17:08:47.140] [STEM] info lane-switch {"book": "part-2.pdf", "page": 506, "from": "legacy", "to": "unicode"}
+[17:08:47.140] [STEM] info lane-switch {"book": "part-2.pdf", "page": 506, "from": "unicode", "to": "legacy"}
+[17:08:47.140] [STEM] info lane-switch {"book": "part-2.pdf", "page": 506, "from": "legacy", "to": "unicode"}
+[17:08:47.174] [STEM] info lane-switch {"book": "part-2.pdf", "page": 507, "from": "unicode", "to": "legacy"}
+[17:08:47.183] [STEM] info lane-switch {"book": "part-2.pdf", "page": 507, "from": "legacy", "to": "unicode"}
+[17:08:47.183] [STEM] info lane-switch {"book": "part-2.pdf", "page": 507, "from": "unicode", "to": "legacy"}
+[17:08:47.183] [STEM] info lane-switch {"book": "part-2.pdf", "page": 507, "from": "legacy", "to": "unicode"}
+[17:08:47.183] [STEM] info lane-switch {"book": "part-2.pdf", "page": 507, "from": "unicode", "to": "legacy"}
+[17:08:47.183] [STEM] info lane-switch {"book": "part-2.pdf", "page": 507, "from": "legacy", "to": "unicode"}
+[17:08:47.183] [STEM] info lane-switch {"book": "part-2.pdf", "page": 507, "from": "unicode", "to": "legacy"}
+[17:08:47.183] [STEM] info lane-switch {"book": "part-2.pdf", "page": 507, "from": "legacy", "to": "unicode"}
+[17:08:47.192] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "469-507", "rule": "zawcode"}
+[17:08:47.333] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "508-508", "rule": "aligned"}
+[17:08:48.263] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1191-1232", "rule": "aligned"}
+[17:08:48.421] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1233-1233", "rule": "rabbit"}
+[17:08:48.652] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1234-1235", "rule": "zawcode"}
+[17:08:48.763] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1236-1236", "rule": "rabbit"}
+[17:08:49.017] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1237-1238", "rule": "zawcode"}
+[17:08:49.530] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1239-1242", "rule": "rabbit"}
+[17:08:49.690] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1243-1243", "rule": "zawcode"}
+[17:08:49.851] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1244-1244", "rule": "rabbit"}
+[17:08:50.061] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1245-1245", "rule": "zawcode"}
+[17:08:50.577] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "509-536", "rule": "zawcode"}
+[17:08:50.882] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1246-1253", "rule": "rabbit"}
+[17:08:50.884] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "537-538", "rule": "aligned"}
+[17:08:50.976] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1254-1254", "rule": "zawcode"}
+[17:08:51.200] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1255-1256", "rule": "rabbit"}
+[17:08:51.309] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1257-1257", "rule": "zawcode"}
+[17:08:51.800] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1258-1261", "rule": "rabbit"}
+[17:08:52.053] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1262-1263", "rule": "zawcode"}
+[17:08:52.299] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1264-1265", "rule": "rabbit"}
+[17:08:52.410] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1266-1266", "rule": "zawcode"}
+[17:08:52.684] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1267-1269", "rule": "rabbit"}
+[17:08:52.932] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1270-1271", "rule": "zawcode"}
+[17:08:52.933] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1272-1272", "rule": "rabbit"}
+[17:08:52.954] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1273-1273", "rule": "aligned"}
+[17:08:53.476] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "539-577", "rule": "rabbit"}
+[17:08:53.637] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "578-580", "rule": "aligned"}
+[17:08:55.028] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "581-618", "rule": "rabbit"}
+[17:08:55.107] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "619-619", "rule": "aligned"}
+[17:08:57.148] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1274-1313", "rule": "rabbit"}
+[17:08:57.294] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1314-1314", "rule": "aligned"}
+[17:08:58.739] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "620-659", "rule": "zawcode"}
+[17:08:58.753] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "660-660", "rule": "aligned"}
+[17:08:58.799] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "661-661", "rule": "rabbit"}
+[17:08:59.116] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "662-668", "rule": "zawcode"}
+[17:08:59.178] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "669-669", "rule": "aligned"}
+[17:08:59.503] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1315-1329", "rule": "zawcode"}
+[17:08:59.567] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1330-1330", "rule": "aligned"}
+[17:08:59.586] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1331-1331", "rule": "zawcode"}
+[17:08:59.628] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1332-1332", "rule": "aligned"}
+[17:08:59.782] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1333-1335", "rule": "zawcode"}
+[17:08:59.853] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1336-1336", "rule": "aligned"}
+[17:09:00.100] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "670-686", "rule": "zawcode"}
+[17:09:00.166] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "687-687", "rule": "aligned"}
+[17:09:00.229] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "688-689", "rule": "zawcode"}
+[17:09:00.304] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "690-690", "rule": "aligned"}
+[17:09:00.426] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "691-694", "rule": "zawcode"}
+[17:09:00.487] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "695-695", "rule": "aligned"}
+[17:09:00.488] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "696-696", "rule": "zawcode"}
+[17:09:00.554] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "697-698", "rule": "aligned"}
+[17:09:00.602] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "699-700", "rule": "zawcode"}
+[17:09:00.606] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1337-1351", "rule": "zawcode"}
+[17:09:00.670] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1352-1352", "rule": "aligned"}
+[17:09:00.759] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "701-701", "rule": "aligned"}
+[17:09:00.947] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1353-1358", "rule": "zawcode"}
+[17:09:00.949] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1359-1360", "rule": "aligned"}
+[17:09:05.455] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "702-741", "rule": "rabbit"}
+[17:09:05.465] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "742-743", "rule": "aligned"}
+[17:09:08.670] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "744-782", "rule": "rabbit"}
+[17:09:08.761] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "783-783", "rule": "aligned"}
+[17:09:08.816] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "784-784", "rule": "zawcode"}
+[17:09:09.095] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "785-796", "rule": "aligned"}
+[17:09:09.113] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "797-797", "rule": "rabbit"}
+[17:09:10.170] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "798-822", "rule": "aligned"}
+[17:09:15.490] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "823-861", "rule": "rabbit"}
+[17:09:15.559] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "862-863", "rule": "aligned"}
+[17:09:17.444] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "864-902", "rule": "rabbit"}
+[17:09:17.617] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "903-904", "rule": "aligned"}
+[17:09:20.212] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "905-943", "rule": "rabbit"}
+[17:09:20.447] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "944-945", "rule": "aligned"}
+[17:09:22.411] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "946-961", "rule": "zawcode"}
+[17:09:22.542] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "962-965", "rule": "aligned"}
+[17:09:23.411] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "966-972", "rule": "zawcode"}
+[17:09:23.653] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "973-975", "rule": "aligned"}
+[17:09:26.641] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "976-1003", "rule": "zawcode"}
+[17:09:26.961] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1004-1005", "rule": "aligned"}
+[17:09:27.815] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1006-1011", "rule": "rabbit"}
+[17:09:28.807] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1012-1022", "rule": "aligned"}
+[17:09:28.889] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1023-1023", "rule": "zawcode"}
+[17:09:28.968] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1024-1027", "rule": "aligned"}
+[17:09:36.912] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1028-1067", "rule": "rabbit"}
+[17:09:37.008] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1068-1068", "rule": "aligned"}
+[17:09:40.060] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1069-1108", "rule": "rabbit"}
+[17:09:40.124] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1109-1109", "rule": "aligned"}
+[17:09:43.921] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1110-1149", "rule": "rabbit"}
+[17:09:44.042] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1150-1150", "rule": "aligned"}
+[17:09:53.422] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1151-1190", "rule": "rabbit"}
+[17:09:57.109] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1191-1232", "rule": "aligned"}
+[17:09:57.280] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1233-1233", "rule": "rabbit"}
+[17:09:57.536] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1234-1235", "rule": "zawcode"}
+[17:09:57.637] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1236-1236", "rule": "rabbit"}
+[17:09:57.881] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1237-1238", "rule": "zawcode"}
+[17:09:58.464] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1239-1242", "rule": "rabbit"}
+[17:09:58.617] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1243-1243", "rule": "zawcode"}
+[17:09:58.836] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1244-1244", "rule": "rabbit"}
+[17:09:58.979] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1245-1245", "rule": "zawcode"}
+[17:09:59.891] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1246-1253", "rule": "rabbit"}
+[17:10:00.017] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1254-1254", "rule": "zawcode"}
+[17:10:00.244] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1255-1256", "rule": "rabbit"}
+[17:10:00.356] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1257-1257", "rule": "zawcode"}
+[17:10:00.898] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1258-1261", "rule": "rabbit"}
+[17:10:01.157] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1262-1263", "rule": "zawcode"}
+[17:10:01.395] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1264-1265", "rule": "rabbit"}
+[17:10:01.503] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1266-1266", "rule": "zawcode"}
+[17:10:01.765] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1267-1269", "rule": "rabbit"}
+[17:10:02.001] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1270-1271", "rule": "zawcode"}
+[17:10:02.002] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1272-1272", "rule": "rabbit"}
+[17:10:02.022] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1273-1273", "rule": "aligned"}
+[17:10:06.156] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1274-1313", "rule": "rabbit"}
+[17:10:06.307] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1314-1314", "rule": "aligned"}
+[17:10:08.483] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1315-1329", "rule": "zawcode"}
+[17:10:08.544] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1330-1330", "rule": "aligned"}
+[17:10:08.554] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1331-1331", "rule": "zawcode"}
+[17:10:08.590] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1332-1332", "rule": "aligned"}
+[17:10:08.727] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1333-1335", "rule": "zawcode"}
+[17:10:08.798] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1336-1336", "rule": "aligned"}
+[17:10:09.514] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1337-1351", "rule": "zawcode"}
+[17:10:09.575] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1352-1352", "rule": "aligned"}
+[17:10:09.850] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1353-1358", "rule": "zawcode"}
+[17:10:09.860] [BEAUTIFY] info decision {"book": "part-2.pdf", "pages": "1359-1360", "rule": "aligned"}

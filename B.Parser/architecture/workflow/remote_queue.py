@@ -12,6 +12,7 @@ import subprocess
 import tempfile
 import time
 
+from myangustis_parser.resources import paths
 from myangustis_parser.resources.paths import RUNTIME_ROOT
 
 DISK_FLOOR = 5 * 1024**3
@@ -36,7 +37,12 @@ def remote_config(mode):
               or ('scanned' if mode == 'ocr' else 'convertable')).strip().strip('/')
     if not folder or folder in ('.', '..') or '/' in folder or '\\' in folder or any(ord(c) < 32 for c in folder):
         raise ValueError('Remote queue must be one direct child of SSH_DIR.')
-    return {'host': host, 'user': user, 'port': port, 'key': os.environ.get('SSH_KEY', ''),
+    # SSH_KEY is a path on THIS machine, so it is anchored to the project root
+    # like every other local .env path (``/secret/id_ed25519`` lives in the tree).
+    key = paths.project_path(os.environ.get('SSH_KEY'))
+    return {'host': host, 'user': user, 'port': port, 'key': str(key) if key else '',
+            # SSH_DIR and the queue folders are paths on the REMOTE host and are
+            # deliberately not anchored locally.
             'directory': os.environ.get('SSH_DIR') or 'pdfs', 'folder': folder}
 
 
@@ -44,7 +50,7 @@ def ssh_args(config, command):
     args = ['ssh', '-p', str(config['port']), '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=20',
             '-o', 'ServerAliveInterval=30', '-o', 'ServerAliveCountMax=6']
     if config['key']:
-        args += ['-i', os.path.expanduser(config['key']), '-o', 'IdentitiesOnly=yes']
+        args += ['-i', config['key'], '-o', 'IdentitiesOnly=yes']
     return args + [config['user'] + '@' + config['host'], command]
 
 

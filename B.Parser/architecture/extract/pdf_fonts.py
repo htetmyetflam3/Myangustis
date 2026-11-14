@@ -71,8 +71,8 @@ from myangustis_parser.normalize.detector import contains_myanmar
 from myangustis_parser.extract.ttf_gsub import resolve_shaped_glyphs
 from myangustis_parser.extract.pdf_visual import match_visual_unicode_glyphs
 from myangustis_parser.resources import maps
-from myangustis_parser.resources.font_names import (is_unresolved_legacy_font,
-    legacy_layout_for_font, normalise_font_name)
+from myangustis_parser.resources.font_names import (is_legacy_font_name,
+    is_unresolved_legacy_font, legacy_layout_for_font, normalise_font_name)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -951,6 +951,8 @@ ZAWCODE_LEGACY_CODE_PAGE = {
 
 
 # layout name -> code page.  Add an entry to support another legacy face.
+_UNSET = object()
+
 LEGACY_CODE_PAGES = {
     "ayar": AYAR_LEGACY_CODE_PAGE,
     "wininnwa": WININNWA_LEGACY_CODE_PAGE,
@@ -1380,7 +1382,8 @@ class FontDecoder:
 
     __slots__ = ("name", "subtype", "is_cid", "cmap", "to_unicode", "encoding",
                  "has_encoding", "own_gids", "doc", "_cid_to_gid", "base_font",
-                 "zawcode_glyphs", "font_legacy_code_page", "confirmed_raw_runs", "encoding_has_differences", "selected_legacy", "unicode_cid_legacy", "conflicting_space_map", "padded_simple_to_unicode", "visual_unicode_glyphs", "_space_gids")
+                 "zawcode_glyphs", "font_legacy_code_page", "confirmed_raw_runs", "encoding_has_differences", "selected_legacy", "unicode_cid_legacy", "conflicting_space_map", "padded_simple_to_unicode", "visual_unicode_glyphs", "_space_gids",
+                 "_bridge_page_cache")
 
     def __init__(self, name, subtype="", base_font="", is_cid=False, cmap=None,
                  to_unicode=None, encoding=None, has_encoding=False,
@@ -1405,6 +1408,7 @@ class FontDecoder:
         self.selected_legacy = selected_legacy
         self.visual_unicode_glyphs = None
         self._space_gids = None
+        self._bridge_page_cache = _UNSET
         groups = getattr(to_unicode, 'by_width', None)
         self.padded_simple_to_unicode = bool(not is_cid and groups and set(groups) == {2}
                                              and all(c <= 0xff for c in groups[2]))
@@ -1431,6 +1435,44 @@ class FontDecoder:
         return self.to_unicode if (self.to_unicode and
                                    (self.doc.trust_font_tounicode or self.unicode_cid_legacy or
                                     (self.doc.kind == "legacy" and not self.selected_legacy))) else None
+
+    @property
+    def _bridge_page(self):
+        """The legacy code page this font's /ToUnicode keys belong to.
+
+        On these faces the /ToUnicode table is not Myanmar text: it is the
+        keyboard key of each glyph (0x01 -> 'j', 0x0A -> 't').  The layout then
+        turns a key into a letter, and WHICH layout is decided by how many of
+        this font's keys it defines - evidence about the font, so it is settled
+        once per font, not scored per page and not guessed per book.
+        """
+        if self._bridge_page_cache is not _UNSET:
+            return self._bridge_page_cache
+        self._bridge_page_cache = None
+        name = str(self.base_font or "")
+        if not (is_legacy_font_name(name) or 'zawgyi' in name.lower()):
+            return None            # a Latin face's keys are letters, not Myanmar
+        mapping = self.to_unicode
+        groups = getattr(mapping, 'by_width', None)
+        values = []
+        if groups:
+            for group in groups.values():
+                values.extend(group.values())
+        elif isinstance(mapping, dict):
+            values.extend(mapping.values())
+        keys = [v for v in values if isinstance(v, str) and len(v) == 1]
+        if len(keys) < 16 or sum(1 for v in keys if v.isascii()) / len(keys) < .9:
+            return None                       # not a key bridge; leave it alone
+        keyed = {ord(v) for v in keys if v.isascii()}
+        best, best_cover = None, 0
+        for name in ("wininnwa", "ayar"):
+            page = LEGACY_CODE_PAGES.get(name) or {}
+            cover = sum(1 for k in keyed if k in page) / len(keyed)
+            if cover > best_cover:
+                best, best_cover = page, cover
+        if best_cover >= .95:
+            self._bridge_page_cache = best
+        return self._bridge_page_cache
 
     def _to_unicode_for_code(self, mapping, code, width):
         if not mapping:
@@ -1535,6 +1577,11 @@ class FontDecoder:
         if tu is not None:
             hit = self._to_unicode_for_code(tu, code, width or (2 if self.is_cid else 1))
             if hit is not None:
+                page = self._bridge_page
+                if page is not None and len(hit) == 1 and hit.isascii():
+                    mapped = page.get(ord(hit))
+                    if mapped is not None:
+                        return self._observe_lane(mapped, "legacy")
                 return self._observe_lane(hit, "unicode")
         if not self.is_cid:
             bridged = self._legacy_lookup(code)

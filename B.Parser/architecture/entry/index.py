@@ -28,6 +28,7 @@ import sys
 from pathlib import Path
 
 from myangustis_parser.workflow import pipeline
+from myangustis_parser.entry import manager
 from myangustis_parser.entry.manager import (ManagerError, dispatch_bytes, dispatch_ocr,
                                              dispatch_path, ocr_pdf_job, prepare_job,
                                              render_text)
@@ -62,7 +63,7 @@ def convert(source, out_path, *, kind=None, filename=None, method=None,
                               include_text=include_text,
                               source_encoding=source_encoding,
                               text_layout=text_layout, log=log)
-    path = Path(source)
+    path = manager.resolve_path(source)
     if not path.is_file():
         raise ManagerError(f"Input not found: {path}")
     return dispatch_path(path, out_path, kind=kind, filename=filename,
@@ -83,7 +84,7 @@ def parse_decoding(source, *, kind=None, filename=None,
         data = bytes(source)
         name = filename or "input.pdf"
     else:
-        path = Path(source)
+        path = manager.resolve_path(source)
         if not path.is_file():
             raise ManagerError(f"Input not found: {path}")
         data = path.read_bytes()
