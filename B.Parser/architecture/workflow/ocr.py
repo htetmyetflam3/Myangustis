@@ -6,9 +6,8 @@ empty page. This module is the Python mirror of
 
 * a page qualifies when it **carries an image and has almost no extractable
   text** — a page with real text is never OCR'd;
-* the page's own raster image is extracted from the PDF and handed to the
-  engine at native resolution. Rendering the page again would resample a scan
-  and blur it *before* recognition;
+* PDF pages are rendered as a whole before recognition, including placed
+  images, clipping and vector content, at JS's default scale of 3;
 * an OCR failure leaves the page exactly as it was, and is logged, never
   raised into the parse;
 * Safety: ``LOCAL_MAX_OCR_PIXELS`` (default 25,000,000).
@@ -20,7 +19,6 @@ OCR runtime or language model is bundled in this Python package.
     PRASER_TESSERACT_BIN=/usr/bin/tesseract
     PRASER_OCR_LANG=mya
     PRASER_OCR_LANG_PATH=<dir with mya.traineddata>   (otherwise system tessdata)
-    PRASER_OCR_DPI=200                                 (poppler fallback only)
 
 No tesseract installed? :func:`available` is false, the parser logs one line
 and behaves exactly as before — text lanes are unaffected.
@@ -28,6 +26,8 @@ and behaves exactly as before — text lanes are unaffected.
 
 from __future__ import annotations
 
+import io
+import math
 import os
 import shutil
 import struct
@@ -57,18 +57,6 @@ MODEL_DIR = Path(os.environ.get("PRASER_OCR_LANG_PATH")
 
 class OcrError(RuntimeError):
     """OCR could not run for this page/image."""
-
-
-def _env_int(name, default, *, low=0, high=None):
-    raw = (os.environ.get(name) or "").strip()
-    if not raw:
-        return default
-    try:
-        value = int(raw)
-    except ValueError:
-        return default
-    value = max(low, value)
-    return min(high, value) if high is not None else value
 
 
 def max_pixels() -> float:
@@ -114,8 +102,8 @@ def describe() -> str:
 
 # ── recognising one image ────────────────────────────────────────────────
 def _clean_text(text: str) -> str:
-    # Tesseract ends each page with a form feed; blank lines are the layout.
-    return text.replace("\r\n", "\n").replace("\f", "").strip("\n")
+    # Remove the CLI form feed, but preserve line breaks in the OCR result.
+    return text.replace("\r\n", "\n").replace("\f", "")
 
 
 def ocr_image(data, *, suffix: str = ".png") -> str:
@@ -188,92 +176,125 @@ def image_size(data):
     return 0, 0
 
 
-# ── recognising one PDF page ─────────────────────────────────────────────
-def _poppler_render(pdf_bytes, page_number, dpi):
-    """Render one page with ``pdftoppm`` when the page image cannot be read."""
-    binary = shutil.which(os.environ.get("PRASER_PDFTOPPM_BIN") or "pdftoppm")
-    if binary is None:
-        raise OcrError(
-            "page image could not be decoded and pdftoppm is not installed "
-            "(install poppler-utils, or supply a DCT/Flate scan)")
-    work = Path(tempfile.mkdtemp(prefix="myangustis-ocr-render-"))
-    try:
-        source = work / "input.pdf"
-        source.write_bytes(pdf_bytes)
-        prefix = work / "page"
-        command = [binary, "-f", str(page_number), "-l", str(page_number),
-                   "-r", str(dpi), "-png", str(source), str(prefix)]
-        proc = subprocess.run(command, capture_output=True, text=True,
-                              timeout=int(os.environ.get("PRASER_OCR_TIMEOUT_SECONDS", "600")),
-                              check=False)
-        if proc.returncode != 0:
-            detail = (proc.stderr or proc.stdout or "").strip().splitlines()
-            raise OcrError(detail[-1] if detail else "pdftoppm failed")
-        rendered = sorted(work.glob("page*.png"))
-        if not rendered:
-            raise OcrError("pdftoppm produced no page image")
-        return rendered[0].read_bytes(), ".png"
-    finally:
-        shutil.rmtree(work, ignore_errors=True)
+# ── recognising PDF pages and regions ─────────────────────────────────────
+def _user_unit(pdf_bytes, page_number, objects):
+    """Read the optional page-local UserUnit; PDFium does not apply it itself."""
+    if objects is None and b'/ObjStm' in pdf_bytes:
+        # Page dictionaries can themselves be in compressed object streams.
+        from pypdf import PdfReader
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        value = reader.pages[page_number - 1].get('/UserUnit')
+    else:
+        if b'/UserUnit' not in pdf_bytes:
+            return 1.0
+        from myangustis_parser.extract.pdf_fonts import Ref, parse_object
+        if objects is None:
+            objects = pdf_extract.parse_pdf_objects(pdf_bytes)
+        pages = pdf_extract.collect_pages(objects, pdf_extract.find_root_pages(objects))
+        if page_number > len(pages):
+            return 1.0
+        num, gen = pages[page_number - 1]
+        page = parse_object(objects.get((num, gen), b''))
+        value = page.get('UserUnit') if isinstance(page, dict) else None
+        # UserUnit may be indirect, just as other dictionary numbers can be.
+        seen = set()
+        while isinstance(value, Ref) and value not in seen and len(seen) < 32:
+            seen.add(value)
+            value = parse_object(objects.get((value.num, value.gen), b''))
+    if (isinstance(value, (int, float)) and not isinstance(value, bool)
+            and math.isfinite(value) and value > 0):
+        return float(value)
+    return 1.0
 
 
-def ocr_pdf_page(pdf_bytes, page_number, *, objects=None, log=lambda _m: None):
-    """OCR one 1-based PDF page: its own embedded image, else a render."""
-    number = int(page_number)
-    if number < 1:
+def _region_pixels(box, rotation, scale, bbox, width, height):
+    """Convert PDF coordinates to an outward-rounded, clipped viewport crop."""
+    left, bottom, right, top = box
+    def viewport(x, y):
+        if rotation == 90:
+            return (y - bottom) * scale, (x - left) * scale
+        if rotation == 180:
+            return (right - x) * scale, (y - bottom) * scale
+        if rotation == 270:
+            return (top - y) * scale, (right - x) * scale
+        return (x - left) * scale, (top - y) * scale
+    x0, y0, x1, y1 = bbox
+    points = [viewport(x, y) for x, y in ((x0, y0), (x0, y1), (x1, y0), (x1, y1))]
+    crop = (max(0, math.floor(min(p[0] for p in points))),
+            max(0, math.floor(min(p[1] for p in points))),
+            min(width, math.ceil(max(p[0] for p in points))),
+            min(height, math.ceil(max(p[1] for p in points))))
+    if crop[2] <= crop[0] or crop[3] <= crop[1]:
+        raise OcrError("PDF image region is outside the visible page")
+    return crop
+
+
+def _render_pdf_png(pdf_bytes, page_number, *, scale=3, bbox=None, objects=None):
+    """Render the complete visible page, optionally cropping in PDF coordinates.
+
+    JS uses PDF.js plus canvas. Python uses PDFium, so rasterization is not
+    necessarily pixel-identical; placement, rotation, page scale and the
+    pre-allocation pixel guard follow the same runtime path.
+    """
+    if not isinstance(scale, (int, float)) or isinstance(scale, bool) or not math.isfinite(scale) or not 0 < scale <= 4:
+        raise OcrError("OCR scale must be greater than zero and at most 4")
+    if not isinstance(page_number, int) or isinstance(page_number, bool) or page_number < 1:
         raise OcrError("page numbers start at 1")
-    if objects is None:
-        objects = pdf_extract.parse_pdf_objects(pdf_bytes)
-    pages = pdf_extract.collect_pages(
-        objects, pdf_extract.find_root_pages(objects))
-    if number > len(pages):
-        raise OcrError(f"page {number} is past the last page ({len(pages)})")
-    num, gen = pages[number - 1]
-
-    decoded = None
+    if bbox is not None and (not isinstance(bbox, (list, tuple)) or len(bbox) != 4
+                             or any(not isinstance(v, (int, float)) or isinstance(v, bool)
+                                    or not math.isfinite(v) for v in bbox)):
+        raise OcrError("PDF image region must be a four-number bounding box")
     try:
-        decoded = pdf_extract.page_image_bytes(
-            objects, num, gen, max_pixels=max_pixels(), log=log)
-    except ValueError:
+        import pypdfium2 as pdfium
+    except ImportError as exc:
+        raise OcrError("PDF page rendering requires pypdfium2 and Pillow") from exc
+    doc = None
+    page = None
+    bitmap = None
+    try:
+        doc = pdfium.PdfDocument(bytes(pdf_bytes))
+        if page_number > len(doc):
+            raise OcrError(f"page {page_number} is past the last page ({len(doc)})")
+        page = doc[page_number - 1]
+        factor = scale * _user_unit(bytes(pdf_bytes), page_number, objects)
+        page_width, page_height = page.get_size()
+        if not all(math.isfinite(v) and v > 0 for v in (factor, page_width, page_height)):
+            raise OcrError("Invalid PDF page dimensions")
+        width = max(1, math.ceil(page_width * factor))
+        height = max(1, math.ceil(page_height * factor))
+        if width * height > max_pixels():
+            raise OcrError(f"PDF render exceeds the {max_pixels()} pixel cap")
+        # Check the entire page, even when only a small region was requested.
+        crop = _region_pixels(page.get_bbox(), page.get_rotation(), factor, bbox, width, height) if bbox is not None else None
+        bitmap = page.render(scale=factor, draw_annots=True)
+        image = bitmap.to_pil()
+        if crop is not None:
+            image = image.crop(crop)
+        out = io.BytesIO()
+        image.save(out, format='PNG')
+        return out.getvalue(), (image.width, image.height)
+    except OcrError:
         raise
-    if decoded is None:
-        dpi = _env_int("PRASER_OCR_DPI", 200, low=50, high=600)
-        decoded = _poppler_render(pdf_bytes, number, dpi)
-    data, suffix = decoded
-    width, height = image_size(data)
-    if width and height and width * height > max_pixels():
-        raise OcrError(f"{width}x{height} exceeds the {max_pixels()} pixel cap")
-    return ocr_image(data, suffix=suffix)
-
-
-def ocr_pdf_region(pdf_bytes, page_number, bbox, *, dpi=None):
-    """OCR a region of a page (``(x0, y0, x1, y1)`` in page points)."""
-    binary = shutil.which(os.environ.get("PRASER_PDFTOPPM_BIN") or "pdftoppm")
-    if binary is None:
-        raise OcrError("region OCR needs pdftoppm (poppler-utils)")
-    x0, y0, x1, y1 = (float(v) for v in bbox)
-    if x1 <= x0 or y1 <= y0:
-        raise OcrError("empty OCR region")
-    work = Path(tempfile.mkdtemp(prefix="myangustis-ocr-region-"))
-    try:
-        source = work / "input.pdf"
-        source.write_bytes(pdf_bytes)
-        # pdftoppm's crop box is in points, origin top-left.
-        crop = f"{x0},{y0},{x1 - x0},{y1 - y0}"
-        prefix = work / "region"
-        command = [binary, "-f", str(int(page_number)), "-l", str(int(page_number)),
-                   "-r", str(dpi or _env_int("PRASER_OCR_DPI", 200, low=50, high=600)),
-                   "-x", str(int(x0)), "-y", str(int(y0)),
-                   "-W", str(int(x1 - x0)), "-H", str(int(y1 - y0)),
-                   "-png", str(source), str(prefix)]
-        proc = subprocess.run(command, capture_output=True, text=True,
-                              timeout=int(os.environ.get("PRASER_OCR_TIMEOUT_SECONDS", "600")),
-                              check=False)
-        if proc.returncode != 0:
-            raise OcrError(f"pdftoppm region crop failed ({crop})")
-        rendered = sorted(work.glob("region*.png"))
-        if not rendered:
-            raise OcrError("pdftoppm produced no region image")
-        return ocr_image(rendered[0].read_bytes(), suffix=".png")
+    except Exception as exc:
+        raise OcrError(f"PDF page render failed: {exc}") from exc
     finally:
-        shutil.rmtree(work, ignore_errors=True)
+        if bitmap is not None:
+            bitmap.close()
+        if page is not None:
+            page.close()
+        if doc is not None:
+            doc.close()
+
+
+def ocr_pdf_page(pdf_bytes, page_number, *, objects=None, log=lambda _m: None, scale=3):
+    """OCR a rendered 1-based PDF page (not a single embedded image)."""
+    data, _ = _render_pdf_png(pdf_bytes, page_number, scale=scale, objects=objects)
+    return ocr_image(data, suffix='.png')
+
+
+def ocr_pdf_region(pdf_bytes, page_number, bbox, *, scale=3, dpi=None):
+    """OCR a PDF-coordinate region; ``dpi`` is a legacy scale alias."""
+    if dpi is not None:
+        scale = dpi / 72
+    data, _ = _render_pdf_png(pdf_bytes, page_number, scale=scale, bbox=bbox)
+    return ocr_image(data, suffix='.png')

@@ -40,17 +40,18 @@ Simple fonts (``/Type1``, ``/TrueType``, ``/Type3``, ``/MMType1``):
   2. the font's declared ``/Encoding``: ``/WinAnsiEncoding``,
      ``/MacRomanEncoding``, ``/StandardEncoding`` or an encoding dictionary
      with ``/BaseEncoding`` + ``/Differences`` (glyph names),
-  3. the document-level fallback map (legacy code map / reversed embedded
-     ``cmap`` / merged ToUnicode+sidecar) — reached only by fonts that declare
-     NO encoding, i.e. the symbolic legacy faces this parser was written for,
-  4. the raw byte as a character (unchanged, as before this module existed).
+  3. this resource's reversed embedded ``cmap`` if available,
+  4. the raw byte when no resource-local mapping is available.
+
+The legacy page lane first bridges selected resources through their own
+ToUnicode or Differences and their selected legacy layout.
 
 Composite fonts (``/Type0``):
 
   1. the font's OWN ``/ToUnicode`` map (same trust rule),
   2. CID -> GID through ``/CIDToGIDMap``, then the reversed ``cmap`` of the
-     font's OWN embedded program, then the document-level map,
-  3. ``[XXXX]`` placeholder.
+     font's OWN embedded program,
+  3. ``[XXXX]`` placeholder. Production never uses another font's mapping.
 
 Code widths come from the ``/Encoding`` CMap (``/Identity-H`` and embedded CMap
 streams: ``codespacerange`` + ``cidrange`` / ``cidchar``), never assumed.
@@ -64,11 +65,41 @@ import hashlib
 import re
 import struct
 import unicodedata
+from collections import OrderedDict
+
+from myangustis_parser.normalize.detector import contains_myanmar
+from myangustis_parser.extract.ttf_gsub import resolve_shaped_glyphs
+from myangustis_parser.extract.pdf_visual import match_visual_unicode_glyphs
+from myangustis_parser.resources import maps
+from myangustis_parser.resources.font_names import (is_unresolved_legacy_font,
+    legacy_layout_for_font, normalise_font_name)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  1. Minimal PDF object syntax (shared by object bodies and content streams)
 # ═══════════════════════════════════════════════════════════════════════════
+
+class ResourceCache(OrderedDict):
+    """Bounded least-recently-used cache, matching the JS resource cache."""
+    def __init__(self, limit):
+        super().__init__()
+        self.limit = limit
+
+    def __getitem__(self, key):
+        value = super().__getitem__(key)
+        self.move_to_end(key)
+        return value
+
+    def get(self, key, default=None):
+        return self[key] if key in self else default
+
+    def __setitem__(self, key, value):
+        if key in self:
+            super().__delitem__(key)
+        super().__setitem__(key, value)
+        if len(self) > self.limit:
+            self.popitem(last=False)
+
 
 class Name(str):
     """A PDF ``/Name`` (kept distinct from a string object)."""
@@ -551,57 +582,55 @@ def build_simple_encoding(encoding_obj, resolve):
 # ═══════════════════════════════════════════════════════════════════════════
 
 class CMapEncoding:
-    """Code-space ranges plus code -> CID mapping of a ``/Encoding`` CMap.
+    """Code spaces and width-sensitive code-to-CID mappings for one font."""
 
-    ``/Identity-H`` / ``/Identity-V`` (and any CMap we cannot read) behave as
-    two-byte identity, which is what every Identity-keyed PDF uses; embedded
-    CMap streams contribute their real ``codespacerange`` widths and
-    ``cidrange`` / ``cidchar`` mappings.
-    """
-
-    __slots__ = ("widths", "single", "ranges", "identity")
+    __slots__ = ("widths", "spaces", "single", "single_by_width", "ranges", "identity")
 
     def __init__(self, identity=True):
         self.identity = identity
         self.widths = set()
+        self.spaces = []
         self.single = {}
+        self.single_by_width = {}
         self.ranges = []
 
     def code_lengths(self):
         return sorted(self.widths) if self.widths else [2]
 
-    def cid_for(self, code):
+    def cid_for(self, code, width=None):
         if self.identity:
             return code
-        cid = self.single.get(code)
+        cid = (self.single_by_width.get(width, {}).get(code)
+               if width is not None and self.single_by_width else self.single.get(code))
         if cid is not None:
             return cid
-        for lo, hi, base in self.ranges:
-            if lo <= code <= hi:
+        for lo, hi, base, range_width in self.ranges:
+            if (width is None or width == range_width) and lo <= code <= hi:
                 return base + (code - lo)
         return code
 
+    def _in_space(self, code, width):
+        if not self.spaces:
+            return width in self.widths if self.widths else width == 2
+        return any(w == width and lo <= code <= hi for w, lo, hi in self.spaces)
+
     def iter_codes(self, data):
-        """Yield ``(code, cid, nbytes)`` for a shown string."""
+        """Yield (code, CID or None for invalid bytes, source width)."""
         lengths = self.code_lengths()
         i = 0
-        n = len(data)
-        while i < n:
+        while i < len(data):
             for width in lengths:
-                if i + width <= n:
+                if i + width <= len(data):
                     code = int.from_bytes(data[i:i + width], "big")
-                    if self.identity or width == lengths[-1] or self._in_space(code, width):
-                        yield code, self.cid_for(code), width
+                    if self._in_space(code, width):
+                        yield code, self.cid_for(code, width), width
                         i += width
                         break
             else:
-                width = lengths[-1]
-                code = int.from_bytes(data[i:i + width].ljust(width, b"\x00"), "big")
-                yield code, self.cid_for(code), width
-                i += width
-
-    def _in_space(self, code, width):
-        return width in self.widths
+                # A truncated or out-of-space byte must not be padded into a
+                # different CID. Keep it visible as its own unknown code.
+                yield data[i], None, 1
+                i += 1
 
 
 _CODESPACE_RE = re.compile(
@@ -614,19 +643,30 @@ _HEXINT_RE = re.compile(rb"<([0-9A-Fa-f]+)>\s*(\d+)")
 
 
 def parse_cmap_stream(data):
-    """Parse an embedded CMap stream into a :class:`CMapEncoding`."""
+    """Parse an embedded CMap, retaining code width and code-space bounds."""
     enc = CMapEncoding(identity=False)
     for m in _CODESPACE_RE.finditer(data):
         for p in _HEXPAIR_RE.finditer(m.group(1)):
-            enc.widths.add(max(1, len(p.group(1)) // 2))
+            lo, hi = p.group(1), p.group(2)
+            if len(lo) != len(hi) or len(lo) % 2 or not 2 <= len(lo) <= 8:
+                continue
+            width = len(lo) // 2
+            enc.widths.add(width)
+            enc.spaces.append((width, int(lo, 16), int(hi, 16)))
     for m in _CIDRANGE_RE.finditer(data):
         for p in _HEXNUM_RE.finditer(m.group(1)):
-            lo = int(p.group(1), 16)
-            hi = int(p.group(2), 16)
-            enc.ranges.append((lo, hi, int(p.group(3))))
+            lo, hi = p.group(1), p.group(2)
+            if len(lo) != len(hi) or len(lo) % 2 or not 2 <= len(lo) <= 8:
+                continue
+            enc.ranges.append((int(lo, 16), int(hi, 16), int(p.group(3)), len(lo) // 2))
     for m in _CIDCHAR_RE.finditer(data):
         for p in _HEXINT_RE.finditer(m.group(1)):
-            enc.single[int(p.group(1), 16)] = int(p.group(2))
+            raw = p.group(1)
+            if len(raw) % 2 or not 2 <= len(raw) <= 8:
+                continue
+            width, code, cid = len(raw) // 2, int(raw, 16), int(p.group(2))
+            enc.single_by_width.setdefault(width, {})[code] = cid
+            enc.single[code] = cid
     if not enc.widths:
         enc.widths.add(2)
     if not enc.ranges and not enc.single:
@@ -1061,42 +1101,40 @@ def usable_tounicode(mapping):
         return None
     spaces = sum(1 for v in mapping.values() if v == " ")
     if spaces / len(mapping) > 0.9:
-        mapping = {k: v for k, v in mapping.items() if v != " "}
+        if hasattr(mapping, 'by_width'):
+            filtered = type(mapping)()
+            for width, entries in mapping.by_width.items():
+                for code, value in entries.items():
+                    if value != ' ':
+                        filtered[code] = value
+                        filtered.by_width.setdefault(width, {})[code] = value
+            mapping = filtered
+        else:
+            mapping = {k: v for k, v in mapping.items() if v != " "}
     return mapping or None
 
 
 class DocumentDecoding:
-    """The document-wide decoding *fallback*, plus a per-resource decoder cache.
+    """Per-lane state and font-resource caches for PDF decoding.
 
-    This is what used to be passed to the extractor as a single map applied to
-    every text run. It is still the parser's model-verified truth for the
-    symbolic Myanmar faces these books embed, but it is now only ONE input to
-    the per-font decoders — fonts that declare a real encoding never touch it.
-
-    ``kind``:
-      ``identity``   direct decode, the code is the code point;
-      ``cmap``       reversed embedded ``cmap``; the map is keyed by GLYPH ID;
-      ``legacy``     legacy character-code map (Arlarwade/Ayar);
-      ``tounicode``  merged ``/ToUnicode`` (+ cross-volume sidecar), keyed by code;
-      ``none``       nothing available.
+    Production uses ``font`` and ``legacy`` with empty maps; historical
+    mapping-based strategies remain available to direct API callers.
     """
 
     __slots__ = ("kind", "map", "key_kind", "trust_font_tounicode",
                  "legacy_text_fix", "legacy_code_page", "loader", "_decoders",
                  "_page_fonts", "zawcode_profiles", "zawcode_templates", "zawcode_order", "zawcode_stats",
-                 "lane_observer")
+                 "lane_observer", "stem_fonts", "visual_unicode_enabled", "visual_unicode_observer")
 
     def __init__(self, kind, mapping=None, legacy_code_page=None):
         self.kind = kind
         self.map = IDENTITY if kind == "identity" else (mapping or {})
         # A reversed font cmap is keyed by glyph id; every other source is
         # keyed by the content-stream code itself.
-        self.key_kind = "gid" if kind == "cmap" else "code"
-        # 'legacy' and 'cmap' were chosen precisely BECAUSE the document's
-        # ToUnicode maps failed verification (copy-protection decoys), and
-        # 'identity' means the codes are already code points. In those modes a
-        # font's own ToUnicode must not override the verified source.
-        self.trust_font_tounicode = kind in ("tounicode", "none")
+        self.key_kind = "gid" if kind in ("cmap", "font") else "code"
+        # Legacy treats a selected resource's ToUnicode as a slot bridge;
+        # font mode first uses that resource's own Unicode mapping.
+        self.trust_font_tounicode = kind in ("tounicode", "none", "font")
         self.legacy_text_fix = kind == "legacy"
         # Source-byte -> Unicode table for a legacy layout. When present, a
         # simple font that declares no encoding is decoded through its OWN
@@ -1106,13 +1144,16 @@ class DocumentDecoding:
         # Filled in by the extractor: one FontResourceLoader per document, so
         # font programs and ToUnicode streams are parsed once, not per page.
         self.loader = None
-        self._decoders = {}
+        self._decoders = ResourceCache(64)
         self._page_fonts = {}
         self.zawcode_profiles = None
         self.zawcode_templates = None
         self.zawcode_order = None
         self.zawcode_stats = None
         self.lane_observer = None
+        self.stem_fonts = {}
+        self.visual_unicode_enabled = False
+        self.visual_unicode_observer = None
 
     def reset_font_cache(self):
         """Drop cached decoders.
@@ -1146,6 +1187,14 @@ def as_document_decoding(decoding):
     return DocumentDecoding("tounicode", decoding)
 
 
+class ReversedFontCmap(dict):
+    """First cmap reading plus unambiguous readings for contradiction checks."""
+    def __init__(self):
+        super().__init__()
+        self.direct = {}
+        self.ambiguous = set()
+
+
 class FontResourceLoader:
     """Reads fonts out of a parsed PDF.
 
@@ -1158,9 +1207,10 @@ class FontResourceLoader:
         self._get_stream = get_stream
         self._parse_ttf_cmap = parse_ttf_cmap
         self._parse_tounicode = parse_tounicode_stream
-        self._obj_cache = {}
-        self._gid_cache = {}
-        self._tu_cache = {}
+        self._obj_cache = ResourceCache(512)
+        self._gid_cache = ResourceCache(32)
+        self._tu_cache = ResourceCache(32)
+        self._cid_cache = ResourceCache(32)
 
     # -- object access ----------------------------------------------------
     def object_value(self, ref):
@@ -1199,25 +1249,32 @@ class FontResourceLoader:
             if cache_key in self._gid_cache:
                 return self._gid_cache[cache_key]
             data = self.stream_of(ref)
-            table = {}
+            table = ReversedFontCmap()
             if data:
                 for uni, gid in (self._parse_ttf_cmap(data) or {}).items():
                     if gid:
-                        table.setdefault(gid, uni)
+                        if gid not in table or uni < table[gid]:
+                            table[gid] = uni
+                        if gid in table.direct and table.direct[gid] != uni:
+                            del table.direct[gid]
+                            table.ambiguous.add(gid)
+                        elif gid not in table.ambiguous:
+                            table.direct[gid] = uni
+                resolve_shaped_glyphs(data, table)
             self._gid_cache[cache_key] = table
             return table
         return {}
 
-    def tounicode_of(self, font_dict):
+    def tounicode_of(self, font_dict, preserve_spaces=False):
         """The font's OWN ``/ToUnicode`` map, decoy-filtered (or ``None``)."""
         ref = font_dict.get("ToUnicode")
         if not isinstance(ref, Ref):
             return None
-        cache_key = (ref.num, ref.gen)
+        cache_key = (ref.num, ref.gen, preserve_spaces)
         if cache_key in self._tu_cache:
             return self._tu_cache[cache_key]
         data = self.stream_of(ref)
-        mapping = usable_tounicode(self._parse_tounicode(data)) if data else None
+        mapping = (self._parse_tounicode(data) if preserve_spaces else usable_tounicode(self._parse_tounicode(data))) if data else None
         self._tu_cache[cache_key] = mapping
         return mapping
 
@@ -1225,6 +1282,9 @@ class FontResourceLoader:
         """Return a callable CID -> GID for a descendant CIDFont."""
         entry = descendant.get("CIDToGIDMap")
         if isinstance(entry, Ref):
+            key = (entry.num, entry.gen)
+            if key in self._cid_cache:
+                return self._cid_cache[key]
             data = self.stream_of(entry)
             if data:
                 count = len(data) // 2
@@ -1232,6 +1292,7 @@ class FontResourceLoader:
 
                 def lookup(cid, _gids=gids):
                     return _gids[cid] if 0 <= cid < len(_gids) else 0
+                self._cid_cache[key] = lookup
                 return lookup
         return None                                  # /Identity (the default)
 
@@ -1319,11 +1380,13 @@ class FontDecoder:
 
     __slots__ = ("name", "subtype", "is_cid", "cmap", "to_unicode", "encoding",
                  "has_encoding", "own_gids", "doc", "_cid_to_gid", "base_font",
-                 "zawcode_glyphs")
+                 "zawcode_glyphs", "font_legacy_code_page", "confirmed_raw_runs", "encoding_has_differences", "selected_legacy", "unicode_cid_legacy", "conflicting_space_map", "padded_simple_to_unicode", "visual_unicode_glyphs", "_space_gids")
 
     def __init__(self, name, subtype="", base_font="", is_cid=False, cmap=None,
                  to_unicode=None, encoding=None, has_encoding=False,
-                 own_gids=None, doc=None, cid_to_gid=None, zawcode_glyphs=None):
+                 own_gids=None, doc=None, cid_to_gid=None, zawcode_glyphs=None,
+                 font_legacy_code_page=None, confirmed_raw_runs=None,
+                 encoding_has_differences=False, selected_legacy=True):
         self.name = name
         self.subtype = subtype
         self.base_font = base_font
@@ -1336,12 +1399,49 @@ class FontDecoder:
         self.zawcode_glyphs = zawcode_glyphs
         self.doc = doc if doc is not None else DocumentDecoding("none")
         self._cid_to_gid = cid_to_gid
+        self.font_legacy_code_page = font_legacy_code_page
+        self.confirmed_raw_runs = confirmed_raw_runs
+        self.encoding_has_differences = encoding_has_differences
+        self.selected_legacy = selected_legacy
+        self.visual_unicode_glyphs = None
+        self._space_gids = None
+        groups = getattr(to_unicode, 'by_width', None)
+        self.padded_simple_to_unicode = bool(not is_cid and groups and set(groups) == {2}
+                                             and all(c <= 0xff for c in groups[2]))
+        values = list((to_unicode or {}).values())
+        mm = sum(any('\u1000' <= ch <= '\u109f' for ch in v) for v in values)
+        spaces = sum(v == ' ' for v in values)
+        self.unicode_cid_legacy = (self.doc.kind == 'legacy' and is_cid and
+            zawcode_glyphs is None and len(values) >= 8 and mm >= 4 and
+            mm * 2 >= len(values) and spaces * 2 < len(values))
+        self.conflicting_space_map = False
+        if self.doc.kind == 'font' and is_cid and values:
+            direct = getattr(self.own_gids, 'direct', self.own_gids)
+            space_codes = {0x09, 0x20, 0xa0, 0x1680, *range(0x2000, 0x200b), 0x2028, 0x2029, 0x202f, 0x205f, 0x3000}
+            groups = getattr(to_unicode, 'by_width', None) or {2: to_unicode}
+            contradictions = sum(1 for width, entries in groups.items()
+                for code, value in entries.items()
+                if value == ' ' and self.gid_for(self.cmap.cid_for(code, width)) in direct
+                and direct[self.gid_for(self.cmap.cid_for(code, width))] not in space_codes)
+            self.conflicting_space_map = contradictions >= 4 and contradictions / len(values) >= .08
 
     # -- helpers ----------------------------------------------------------
     @property
     def _trusted_tounicode(self):
         return self.to_unicode if (self.to_unicode and
-                                   self.doc.trust_font_tounicode) else None
+                                   (self.doc.trust_font_tounicode or self.unicode_cid_legacy or
+                                    (self.doc.kind == "legacy" and not self.selected_legacy))) else None
+
+    def _to_unicode_for_code(self, mapping, code, width):
+        if not mapping:
+            return None
+        groups = getattr(mapping, 'by_width', None)
+        if groups is None:
+            return mapping.get(code)
+        hit = groups.get(width, {}).get(code)
+        if hit is None and width == 1 and self.padded_simple_to_unicode:
+            return groups[2].get(code)
+        return hit
 
     def _legacy_lookup(self, code):
         """Decode `code` through this resource's own subset numbering.
@@ -1355,13 +1455,17 @@ class FontDecoder:
         each resource with its own numbering instead of borrowing another
         subset's.
 
-        Returns ``None`` when this font cannot be bridged, so the caller can
-        fall back to the document-wide map.
+        Returns ``None`` when this resource cannot be bridged. The active
+        pipeline does not borrow a map from another font.
         """
-        page = self.doc.legacy_code_page
-        if not page or not self.to_unicode:
+        page = self.font_legacy_code_page or self.doc.legacy_code_page
+        if not page or not self.selected_legacy:
             return None
-        src = self.to_unicode.get(code)
+        if not self.to_unicode and not self.encoding_has_differences:
+            if page is WININNWA_LEGACY_CODE_PAGE and code in WININNWA_UNRESOLVED_SLOTS:
+                return chr(code)
+            return page.get(code)
+        src = self._to_unicode_for_code(self.to_unicode, code, 1) if self.to_unicode else self.encoding.get(code)
         if not src:
             return None
         out = []
@@ -1377,7 +1481,7 @@ class FontDecoder:
             out.append(hit)
         return "".join(out)
 
-    def _doc_lookup(self, key):
+    def _doc_lookup(self, key, cid=None):
         """Document-level map lookup, own-font glyph map first."""
         if self.zawcode_glyphs is not None:
             return self.zawcode_glyphs.get(key)
@@ -1387,6 +1491,12 @@ class FontDecoder:
             hit = self.own_gids.get(key)
             if hit is not None:
                 return chr(hit) if isinstance(hit, int) else hit
+            own = self.to_unicode.get(cid) if cid is not None and self.to_unicode else None
+            if own:
+                if self._space_gids is None:
+                    space_codes = {0x09, 0x20, 0xa0, 0x1680, *range(0x2000, 0x200b), 0x2028, 0x2029, 0x202f, 0x205f, 0x3000}
+                    self._space_gids = {g for g, cp in self.own_gids.items() if isinstance(cp, int) and cp in space_codes}
+                return own if own.strip() or not self._space_gids or cid in self._space_gids else ''
         return map_code(self.doc.map, key)
 
     def gid_for(self, cid):
@@ -1405,14 +1515,31 @@ class FontDecoder:
             self.doc.lane_observer(lane)
         return text
 
-    def decode_code(self, code, cid=None):
+    def decode_code(self, code, cid=None, width=None, use_confirmed=True):
         """Decode ONE character code to text (``None`` when unmapped)."""
+        if is_unresolved_legacy_font(self.base_font):
+            return None
+        if use_confirmed and self.confirmed_raw_runs:
+            if code in self.confirmed_raw_runs['unresolved']:
+                return None
+            confirmed = self.confirmed_raw_runs['bytes'].get(code)
+            if confirmed is not None:
+                return self._observe_lane(confirmed, "legacy")
         tu = self._trusted_tounicode
+        if self.conflicting_space_map:
+            gid = self.gid_for(code if cid is None else cid)
+            if gid not in getattr(self.own_gids, 'ambiguous', set()):
+                local = self._doc_lookup(gid, code if cid is None else cid)
+                if local is not None:
+                    return self._observe_lane(local, 'unicode')
         if tu is not None:
-            hit = tu.get(code)
+            hit = self._to_unicode_for_code(tu, code, width or (2 if self.is_cid else 1))
             if hit is not None:
                 return self._observe_lane(hit, "unicode")
         if not self.is_cid:
+            bridged = self._legacy_lookup(code)
+            if bridged is not None:
+                return self._observe_lane(bridged, "legacy")
             if self.has_encoding:
                 # The font DECLARED what its codes mean. Never fall through to
                 # the document-level glyph map here: that is exactly how a
@@ -1420,31 +1547,46 @@ class FontDecoder:
                 # Myanmar glyph ids when it shared a font program with the
                 # Myanmar resource.
                 return self._observe_lane(self.encoding.get(code), "unicode")
-            bridged = self._legacy_lookup(code)
-            if bridged is not None:
-                return self._observe_lane(bridged, "legacy")
             return self._observe_lane(self._doc_lookup(code),
                                       "legacy" if self.doc.kind == "legacy" else "unicode")
         cid = code if cid is None else cid
         key = cid if (self.doc.key_kind == "code" or self.doc.map is IDENTITY) \
             else self.gid_for(cid)
-        return self._observe_lane(self._doc_lookup(key),
+        return self._observe_lane(self._doc_lookup(key, cid),
                                   "legacy" if self.doc.kind == "legacy" and self.zawcode_glyphs is None else "unicode")
 
-    def decode(self, data):
+    def decode(self, data, *, use_confirmed=True):
         """Decode a shown string (``bytes``) with this font's rules."""
         if not data:
             return ""
+        if is_unresolved_legacy_font(self.base_font):
+            if self.is_cid:
+                return ''.join(f"[{code:04X}]" for code, _, _ in self.cmap.iter_codes(data))
+            return ''.join(f"[{code:02X}]" for code in data)
         if self.zawcode_glyphs is not None and self.doc.zawcode_stats is not None:
             self.doc.zawcode_stats['glyphs'] += len(data) // 2
         out = []
         if self.is_cid:
-            for code, cid, _width in self.cmap.iter_codes(data):
-                text = self.decode_code(code, cid)
-                out.append(text if text is not None else f"[{code:04X}]")
+            for code, cid, width in self.cmap.iter_codes(data):
+                text = self.decode_code(code, cid, width, use_confirmed) if cid is not None else None
+                out.append(text if text is not None else f"[{code:0{width * 2}X}]")
             return "".join(out)
-        for code in data:
-            text = self.decode_code(code)
+        index = 0
+        while index < len(data):
+            code = data[index]
+            if use_confirmed and self.confirmed_raw_runs:
+                run = next((r for r in self.confirmed_raw_runs['runs']
+                            if data[index:index + len(r['bytes'])] == r['bytes']), None)
+                if run:
+                    out.append(self._observe_lane(run['text'], "legacy"))
+                    index += len(run['bytes'])
+                    continue
+                if code in self.confirmed_raw_runs['unresolved']:
+                    out.append(f"[{code:02X}]")
+                    index += 1
+                    continue
+            index += 1
+            text = self.decode_code(code, use_confirmed=use_confirmed)
             if text is None:
                 # Unchanged byte — the behaviour simple fonts always had when
                 # nothing could decode them; never a placeholder, so no text
@@ -1506,20 +1648,61 @@ def build_font_decoder(loader, name, entry, doc):
                     else:
                         zawcode_glyphs[key] = slot
         # The matching resource bypasses ToUnicode. Other fonts keep their own.
-        to_unicode = loader.tounicode_of(font) if zawcode_glyphs is None else None
+        to_unicode = loader.tounicode_of(font, preserve_spaces=doc.kind == "font") if zawcode_glyphs is None else None
         own_gids = loader.reversed_font_cmap(descriptor) if zawcode_glyphs is None else {}
-        return FontDecoder(
+        decoder = FontDecoder(
             name, subtype=subtype, base_font=base_font, is_cid=True, cmap=cmap,
             to_unicode=to_unicode, own_gids=own_gids, doc=doc, zawcode_glyphs=zawcode_glyphs,
-            cid_to_gid=loader.cid_to_gid(descendant))
+            cid_to_gid=loader.cid_to_gid(descendant), selected_legacy=False)
+        if doc.kind == 'font' and doc.visual_unicode_enabled and zawcode_glyphs is None:
+            resolved = loader.resolve(descriptor)
+            program = loader.stream_of(resolved.get('FontFile2')) if isinstance(resolved, dict) else None
+            decoder.visual_unicode_glyphs = match_visual_unicode_glyphs(decoder, program)
+        return decoder
 
     encoding, declared = build_simple_encoding(font.get("Encoding"), loader.resolve)
+    encoding_dict = loader.resolve(font.get("Encoding"))
+    differences = isinstance(encoding_dict, dict) and isinstance(loader.resolve(encoding_dict.get("Differences")), list)
     own_gids = loader.reversed_font_cmap(font.get("FontDescriptor"))
-    to_unicode = loader.tounicode_of(font)
+    to_unicode = loader.tounicode_of(font, preserve_spaces=doc.kind == "font")
+    profile = None
+    # JS recognises Unicode resources by their own multi-character Myanmar
+    # ToUnicode clusters, not by the face name. Explicit source encoding is
+    # already handled at the page gate and never enters this legacy lane.
+    # JS evaluates the shared resource's unfiltered ToUnicode for this
+    # classification, even when the legacy decoder filters space decoys.
+    shared_mapping = loader.tounicode_of(font, preserve_spaces=True) if doc.kind == 'legacy' else to_unicode
+    clusters = sum(len(value) > 1 and contains_myanmar(value)
+                   for value in (shared_mapping or {}).values())
+    selected = clusters < 4
+    if doc.kind == 'legacy' and selected:
+        descriptor = loader.resolve(font.get('FontDescriptor'))
+        program = loader.stream_of(descriptor.get('FontFile2')) if isinstance(descriptor, dict) else None
+        tu_data = loader.stream_of(font.get('ToUnicode'))
+        digest = hashlib.sha256(program).hexdigest() if program else None
+        candidate = maps.load_map('legacy-subset-profiles.json')['profiles'].get(digest)
+        if candidate and 'Encoding' not in font and candidate['baseFont'] == normalise_font_name(base_font) and \
+                candidate['firstChar'] == font.get('FirstChar') and candidate['lastChar'] == font.get('LastChar') and \
+                tu_data and candidate['toUnicodeSha256'] == hashlib.sha256(tu_data).hexdigest():
+            profile = candidate
+    page = None
+    raw_runs = None
+    if doc.kind == 'legacy' and selected and not doc.map:
+        verdict = doc.stem_fonts.get(entry) if isinstance(entry, Ref) else None
+        layout = (profile['codePage'] if profile else (verdict or {}).get('family')
+                  or legacy_layout_for_font(base_font)['layout'])
+        page = LEGACY_CODE_PAGES[layout]
+        if profile and profile['rawRuns']:
+            raw = profile['rawRuns']
+            raw_runs = {'bytes': {int(k): v for k, v in raw['bytes'].items()},
+                        'runs': [{'bytes': bytes(run['bytes']), 'text': run['text']} for run in raw['runs']],
+                        'unresolved': set(raw['unresolved'])}
     return FontDecoder(
         name, subtype=subtype, base_font=base_font, is_cid=False,
         to_unicode=to_unicode, encoding=encoding, has_encoding=declared,
-        own_gids=own_gids, doc=doc)
+        own_gids=own_gids, doc=doc, font_legacy_code_page=page,
+        confirmed_raw_runs=raw_runs, encoding_has_differences=differences,
+        selected_legacy=selected)
 
 
 def page_font_decoders(loader, page_num, page_gen, doc):

@@ -15,6 +15,7 @@ def document(run_properties):
            '<w:t>ေကာင္းကင္</w:t></w:r></w:p></w:body></w:document>')
     buf = BytesIO()
     with ZipFile(buf, 'w') as archive:
+        archive.writestr('[Content_Types].xml', '<Types/>')
         archive.writestr('word/document.xml', xml)
     return buf.getvalue()
 
@@ -38,7 +39,9 @@ class DocxFontEvidenceTests(unittest.TestCase):
                     'base': 'raw', 'clean': 'raw', 'decision': 'aligned', 'scan': {}}) as finish:
                     job = pipeline.process_docx_bytes(document(props), ZawgyiDetector())
                 self.assertEqual(job['counts']['UNKNOWN'], 1)
-                self.assertEqual(finish.call_args.kwargs['source_encoding'], 'auto')
+                finish.assert_not_called()
+                self.assertEqual(job['reports'][0]['base'], 'ေကာင္းကင္')
+                self.assertIsNone(job['reports'][0]['clean'])
 
     def test_ascii_only_run_does_not_supply_myanmar_font_evidence(self):
         xml = ('<w:p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'

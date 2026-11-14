@@ -16,10 +16,12 @@ That is what keeps a Latin ``/WinAnsiEncoding`` resource and a Myanmar
 
 import re
 import os
+import math
 import zlib
 
 from myangustis_parser.normalize.mm_score import MARKS
 from myangustis_parser.normalize.detector import contains_myanmar
+from myangustis_parser.resources.font_names import is_unresolved_legacy_font
 from myangustis_parser.extract.pdf_fonts import (
     CMapEncoding,
     CmapIdentityMap,
@@ -68,7 +70,15 @@ __all__ = [
 # The praser is the ONLY component that opens containers, so it is the
 # one that carries the cap: a tiny compressed stream must never be able
 # to expand into gigabytes inside this process. Env-tunable.
-MAX_STREAM_MB = int(os.environ.get("PRASER_MAX_STREAM_MB", "256"))
+def _positive_limit(name, default, maximum):
+    raw = os.environ.get(name, str(default))
+    if not re.fullmatch(r'[0-9]+', raw) or not 1 <= int(raw) <= maximum:
+        raise ValueError(f'{name} must be between 1 and {maximum}')
+    return int(raw)
+
+
+MAX_STREAM_MB = _positive_limit('PRASER_MAX_STREAM_MB', 128, 512)
+MAX_PDF_OBJECTS = _positive_limit('PRASER_MAX_OBJECTS', 250_000, 10_000_000)
 
 
 def zlib_decompress_capped(b, limit_mb=None):
@@ -107,6 +117,8 @@ def parse_pdf_objects(raw):
         if end == -1:
             continue
         objects[(n, g)] = raw[start:end].strip()
+        if len(objects) > MAX_PDF_OBJECTS:
+            raise ValueError(f'PDF exceeds the {MAX_PDF_OBJECTS} object cap')
     return objects
 
 
@@ -133,6 +145,51 @@ def get_stream(objects, num, gen=0):
             return None
     return b
 
+
+
+def _page_content_stream(loader, ref):
+    """Decode a content stream using its exact declared byte length.
+
+    Other font/ToUnicode stream readers intentionally keep JS getStream's
+    delimiter behavior, because subset-profile hashes depend on those bytes.
+    """
+    dictionary = loader.object_value(ref)
+    raw = loader.objects.get((ref.num, ref.gen))
+    if not isinstance(dictionary, dict) or raw is None:
+        raise ValueError(f'Missing PDF content stream {ref.num} {ref.gen} R')
+    length = loader.resolve(dictionary.get('Length'))
+    if not isinstance(length, int) or length < 0:
+        raise ValueError(f'Invalid PDF content stream length for {ref.num} {ref.gen} R')
+    marker = raw.find(b'stream')
+    if marker < 0:
+        raise ValueError(f'Missing PDF content stream {ref.num} {ref.gen} R')
+    start = marker + 6
+    if raw[start:start + 1] == b'\r':
+        start += 1
+    if raw[start:start + 1] == b'\n':
+        start += 1
+    if start + length > len(raw):
+        raise ValueError(f'Invalid PDF content stream length for {ref.num} {ref.gen} R')
+    filters = loader.resolve(dictionary.get('Filter'))
+    filters = filters if isinstance(filters, list) else ([] if filters is None else [filters])
+    filters = [loader.resolve(item) for item in filters]
+    if len(filters) > 1 or any(not isinstance(item, Name) or str(item) not in ('FlateDecode', 'Fl') for item in filters):
+        raise ValueError(f'PDF content stream {ref.num} {ref.gen} R uses an unsupported filter')
+    params = loader.resolve(dictionary.get('DecodeParms'))
+    params = params if isinstance(params, list) else [params]
+    for item in params:
+        item = loader.resolve(item)
+        predictor = loader.resolve(item.get('Predictor')) if isinstance(item, dict) else None
+        if predictor is not None and predictor != 1:
+            raise ValueError(f'PDF content stream {ref.num} {ref.gen} R uses an unsupported predictor')
+    data = raw[start:start + length]
+    if filters:
+        if not data:
+            raise ValueError(f'Invalid compressed PDF content stream {ref.num} {ref.gen} R')
+        data = zlib_decompress_capped(data)
+    if len(data) > MAX_STREAM_MB * 1024 * 1024:
+        raise ValueError(f'PDF content stream exceeds the {MAX_STREAM_MB} MB cap')
+    return data
 
 def extract_metadata(objects):
     metadata = {}
@@ -185,6 +242,13 @@ def _utf16be_to_str(hexstr):
     return raw.decode('utf-16-be', errors='replace')
 
 
+class ToUnicodeMap(dict):
+    """ToUnicode entries retain source-code width as in the JS parser."""
+    def __init__(self):
+        super().__init__()
+        self.by_width = {}
+
+
 def parse_tounicode_stream(data):
     """Parse a PDF ``/ToUnicode`` CMap stream into ``{int code: str unicode}``.
 
@@ -198,22 +262,23 @@ def parse_tounicode_stream(data):
     except Exception:
         return {}
 
-    mapping = {}
+    mapping = ToUnicodeMap()
 
     # One book in the wild carries a bfrange wide enough to fill memory
     # (ယဲ့နင်: the uncapped loop got the process OOM-killed). The caps match
     # the JS parser's (read/pdf-extract.mjs): no range may mint more than
     # 0x10000 codes and one CMap may not mint more than 1<<20 entries.
-    def _put(code, value):
+    def _put(code, value, width):
         if len(mapping) >= (1 << 20):
             return False
         mapping[code] = value
+        mapping.by_width.setdefault(width, {})[code] = value
         return True
 
     # bfchar: <src> <dst>  (dst is UTF-16BE)
     for m in re.finditer(r'beginbfchar(.*?)endbfchar', text, re.DOTALL):
         for p in re.finditer(r'<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>', m.group(1)):
-            if not _put(int(p.group(1), 16), _utf16be_to_str(p.group(2))):
+            if not _put(int(p.group(1), 16), _utf16be_to_str(p.group(2)), (len(p.group(1)) + 1) // 2):
                 return mapping
 
     # bfrange, scalar form: <lo> <hi> <start>
@@ -234,7 +299,7 @@ def parse_tounicode_stream(data):
                 dst_hex += '0'
             dst = bytearray(bytes.fromhex(dst_hex))
             for code in range(lo, hi + 1):
-                if not _put(code, bytes(dst).decode('utf-16-be', errors='replace')):
+                if not _put(code, bytes(dst).decode('utf-16-be', errors='replace'), (len(p.group(1)) + 1) // 2):
                     return mapping
                 if code < hi:
                     for i in range(len(dst) - 1, -1, -1):
@@ -254,7 +319,7 @@ def parse_tounicode_stream(data):
             items = re.findall(r'<([0-9A-Fa-f]+)>', p.group(3))
             for i, code in enumerate(range(lo, hi + 1)):
                 if i < len(items):
-                    if not _put(code, _utf16be_to_str(items[i])):
+                    if not _put(code, _utf16be_to_str(items[i]), (len(p.group(1)) + 1) // 2):
                         return mapping
 
     return mapping
@@ -328,7 +393,8 @@ def get_page_mediabox(objects, page_num, page_gen):
         m = re.search(rb'/MediaBox\s*\[\s*([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s*\]', d)
         if m:
             x0, y0, x1, y1 = (float(v) for v in m.groups())
-            return abs(x1 - x0), abs(y1 - y0)
+            if all(math.isfinite(v) for v in (x0, y0, x1, y1)) and x0 != x1 and y0 != y1:
+                return abs(x1 - x0), abs(y1 - y0)
         pm = re.search(rb'/Parent\s+(\d+)\s+(\d+)\s+R', d)
         if not pm:
             break
@@ -400,116 +466,133 @@ def pick_embedded_font(objects, refs, log=lambda m: None):
 
 
 def parse_ttf_cmap(data):
+    """Read the highest-ranked usable cmap subtable, as current JS does."""
     if len(data) < 12:
         return {}
-    num_tables = struct.unpack('>H', data[4:6])[0]
-    tbls = {}
-    off = 12
-    for _ in range(num_tables):
-        if off + 16 > len(data):
+    num_tables = struct.unpack_from('>H', data, 4)[0]
+    tables = {}
+    for index in range(num_tables):
+        offset = 12 + index * 16
+        if offset + 16 > len(data):
             break
-        tag = data[off:off+4].decode('ascii', errors='replace')
-        tbl_offset = struct.unpack('>I', data[off+8:off+12])[0]
-        tbls[tag] = tbl_offset
-        off += 16
-    if 'cmap' not in tbls:
-        return {}
-    cmap_off = tbls['cmap']
-    if cmap_off + 4 > len(data):
+        tables[data[offset:offset + 4]] = struct.unpack_from('>I', data, offset + 8)[0]
+    cmap_off = tables.get(b'cmap')
+    if cmap_off is None or cmap_off + 4 > len(data):
         return {}
     cmap = data[cmap_off:]
-    num_sub = struct.unpack('>H', cmap[2:4])[0]
-    mappings = {}
-    off = 4
-    for _ in range(num_sub):
-        if off + 8 > len(cmap):
+    count = struct.unpack_from('>H', cmap, 2)[0]
+    ranks = {(3, 10): 100, (0, 4): 95, (0, 6): 90, (3, 1): 85,
+             (0, 3): 80, (0, 0): 70, (0, 1): 70, (0, 2): 70,
+             (3, 0): 60, (1, 0): 30}
+    subtables = []
+    for index in range(count):
+        pos = 4 + 8 * index
+        if pos + 8 > len(cmap):
             break
-        plat, enc = struct.unpack('>HH', cmap[off:off+4])
-        sub_off = struct.unpack('>I', cmap[off+4:off+8])[0]
-        off += 8
-        if sub_off + 2 > len(cmap):
-            continue
+        platform, encoding, sub_off = struct.unpack_from('>HHI', cmap, pos)
+        if sub_off + 2 <= len(cmap):
+            subtables.append((-ranks.get((platform, encoding), 10), index, sub_off))
+    for _, _, sub_off in sorted(subtables):
         sub = cmap[sub_off:]
-        if len(sub) < 2:
-            continue
-        fmt = struct.unpack('>H', sub[0:2])[0]
-        if fmt == 4:
-            if len(sub) < 14:
+        fmt = struct.unpack_from('>H', sub)[0]
+        mapping = {}
+        if fmt == 4 and len(sub) >= 14:
+            count = struct.unpack_from('>H', sub, 6)[0] // 2
+            if len(sub) < 14 + count * 8:
                 continue
-            seg_count = struct.unpack('>H', sub[6:8])[0] // 2
-            if len(sub) < 14 + seg_count * 8:
-                continue
-            ends = [struct.unpack('>H', sub[14+i*2:16+i*2])[0] for i in range(seg_count)]
-            so = 14 + seg_count * 2 + 2
-            starts = [struct.unpack('>H', sub[so+i*2:so+2+i*2])[0] for i in range(seg_count)]
-            do = so + seg_count * 2
-            deltas = [struct.unpack('>h', sub[do+i*2:do+2+i*2])[0] for i in range(seg_count)]
-            ro = do + seg_count * 2
-            ranges = [struct.unpack('>H', sub[ro+i*2:ro+2+i*2])[0] for i in range(seg_count)]
-            for j in range(seg_count):
-                if starts[j] == 0xFFFF:
+            so, do = 14 + count * 2 + 2, 14 + count * 4 + 2
+            ro = do + count * 2
+            for i in range(count):
+                end = struct.unpack_from('>H', sub, 14 + i * 2)[0]
+                start = struct.unpack_from('>H', sub, so + i * 2)[0]
+                delta = struct.unpack_from('>h', sub, do + i * 2)[0]
+                offset = struct.unpack_from('>H', sub, ro + i * 2)[0]
+                if start == 0xffff:
                     continue
-                for c in range(starts[j], ends[j] + 1):
-                    if ranges[j] == 0:
-                        gid = (c + deltas[j]) & 0xFFFF
+                for code in range(start, end + 1):
+                    if offset == 0:
+                        gid = (code + delta) & 0xffff
                     else:
-                        idx = ranges[j] // 2 + (c - starts[j]) + j - seg_count
-                        if ro + idx * 2 + 2 > len(sub):
+                        at = ro + offset + (code - start + i) * 2
+                        if at + 2 > len(sub):
                             continue
-                        gid = struct.unpack('>H', sub[ro + idx*2:ro + idx*2 + 2])[0]
+                        gid = struct.unpack_from('>H', sub, at)[0]
                         if gid:
-                            gid = (gid + deltas[j]) & 0xFFFF
+                            gid = (gid + delta) & 0xffff
                     if gid:
-                        mappings[c] = gid
-        elif fmt == 6:
-            if len(sub) < 10:
-                continue
-            first_code = struct.unpack('>H', sub[6:8])[0]
-            entry_count = struct.unpack('>H', sub[8:10])[0]
-            for j in range(entry_count):
-                if 10 + j * 2 + 2 > len(sub):
-                    break
-                gid = struct.unpack('>H', sub[10+j*2:12+j*2])[0]
+                        mapping[code] = gid
+        elif fmt == 0 and len(sub) >= 14:
+            for code, gid in enumerate(sub[6:6 + min(256, len(sub) - 6)]):
                 if gid:
-                    mappings[first_code + j] = gid
-        elif fmt == 12:
-            if len(sub) < 16:
-                continue
-            num_groups = struct.unpack('>I', sub[12:16])[0]
-            go = 16
-            for _ in range(num_groups):
-                if go + 12 > len(sub):
+                    mapping[code] = gid
+        elif fmt == 6 and len(sub) >= 10:
+            first, count = struct.unpack_from('>HH', sub, 6)
+            for i in range(count):
+                if 12 + i * 2 > len(sub):
                     break
-                sc, ec, sg = struct.unpack('>III', sub[go:go+12])
-                go += 12
-                for c in range(sc, ec + 1):
-                    mappings[c] = sg + (c - sc)
-    return mappings
+                gid = struct.unpack_from('>H', sub, 10 + i * 2)[0]
+                if gid:
+                    mapping[first + i] = gid
+        elif fmt == 12 and len(sub) >= 16:
+            groups = struct.unpack_from('>I', sub, 12)[0]
+            for i in range(groups):
+                pos = 16 + i * 12
+                if pos + 12 > len(sub):
+                    break
+                start, end, gid = struct.unpack_from('>III', sub, pos)
+                # Unicode scalars cannot exceed 10FFFF. Reject absurd ranges
+                # rather than exhaust resources on malformed untrusted fonts.
+                if end < start or end > 0x10ffff or end - start > 0x100000:
+                    continue
+                for code in range(start, end + 1):
+                    mapping[code] = gid + code - start
+        if mapping:
+            return mapping
+    return {}
 
 
 def collect_pages(objects, page_num, gen=0):
-    d = objects.get((page_num, gen), b'')
-    d_str = d.decode('latin-1', errors='replace')
-    if re.search(r'/Type\s*/Page(?!s)', d_str):
-        return [(page_num, gen)]
-    if re.search(r'/Type\s*/Pages', d_str):
-        pages = []
-        km = re.search(rb'/Kids\s*\[(.*?)\]', d, re.DOTALL)
-        if km:
-            kids_text = km.group(1).decode('latin-1', errors='replace')
-            for ref in re.findall(r'(\d+)\s+\d+\s+R', kids_text):
-                pages.extend(collect_pages(objects, int(ref)))
-        return pages
-    return []
+    """Walk instruction-page references in order, retaining generations.
+
+    A repeated leaf is emitted once; a cycle in the page tree is an error.
+    """
+    if isinstance(page_num, tuple):
+        page_num, gen = page_num
+    limit = _positive_limit('LOCAL_MAX_PAGES', 20_000, 1_000_000)
+    pages, seen, visiting = [], set(), set()
+    def walk(key):
+        data = objects.get(key, b'')
+        if re.search(rb'/Type\s*/Page(?!s)', data):
+            if key not in seen:
+                seen.add(key)
+                pages.append(key)
+                if len(pages) > limit:
+                    raise ValueError(f'PDF exceeds the {limit} page cap')
+            return
+        if key in visiting:
+            raise ValueError('Cycle found in PDF page tree')
+        visiting.add(key)
+        try:
+            match = re.search(rb'/Kids\s*\[(.*?)\]', data, re.DOTALL)
+            if match:
+                for num, generation in re.findall(rb'(\d+)\s+(\d+)\s+R', match.group(1)):
+                    walk((int(num), int(generation)))
+        finally:
+            visiting.remove(key)
+    if page_num is not None:
+        walk((page_num, gen))
+    return pages
 
 
 def find_root_pages(objects):
-    for (n, g), d in objects.items():
-        d_str = d.decode('latin-1', errors='replace')
-        if re.search(r'/Type\s*/Catalog', d_str):
-            pm = re.search(r'/Pages\s+(\d+)\s+\d+\s+R', d_str)
-            if pm:
-                return int(pm.group(1))
+    for key in sorted(objects):
+        data = objects[key]
+        if re.search(rb'/Type\s*/Catalog', data):
+            match = re.search(rb'/Pages\s+(\d+)\s+(\d+)\s+R', data)
+            if match:
+                num, gen = int(match.group(1)), int(match.group(2))
+                # Preserve the historical int return for generation zero.
+                return num if gen == 0 else (num, gen)
     return None
 
 
@@ -827,7 +910,7 @@ class _UnsetFontDecoder(FontDecoder):
 
     __slots__ = ()
 
-    def decode(self, data):
+    def decode(self, data, *, use_confirmed=True):
         if not data:
             return ""
         if isinstance(data, HexString):
@@ -901,7 +984,48 @@ def _join_draft_runs(pieces, order):
     return ''.join(out)
 
 
-def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=False, *, used_myanmar_fonts=None):
+
+def _join_visual_runs(pieces, doc):
+    """Join adjacent font runs before any witnessed visual reconstruction."""
+    from myangustis_parser.extract.pdf_visual import decode_visual_unicode_run
+    transformed, pending, raw_parts = [], [], []
+    decoder, has_raw = None, True
+    def flush():
+        if decoder is None:
+            if pending:
+                transformed.append(''.join(pending))
+            return
+        text = ''.join(pending)
+        if decoder.visual_unicode_glyphs and has_raw and raw_parts:
+            unresolved = []
+            actual = decode_visual_unicode_run(decoder, raw_parts,
+                starts_at_boundary=not transformed, on_unresolved=lambda: unresolved.append(True))
+            if doc.visual_unicode_observer and (actual != text or unresolved):
+                doc.visual_unicode_observer(actual != text, bool(unresolved))
+            text = actual
+        transformed.append(text)
+    for piece in pieces:
+        for font, part, raw in (piece[3] if piece[3] is not None else [(None, piece[2], None)]):
+            if font is not decoder:
+                flush()
+                decoder, pending, raw_parts, has_raw = font, [], [], True
+            pending.append(part)
+            if raw is None:
+                has_raw = False
+            else:
+                raw_parts.append(raw)
+    flush()
+    return ''.join(transformed)
+
+
+def _join_page_runs(pieces, doc):
+    if doc.zawcode_order:
+        return _join_draft_runs(pieces, doc.zawcode_order)
+    if doc.kind == 'font' and doc.visual_unicode_enabled:
+        return _join_visual_runs(pieces, doc)
+    return ''.join(piece[2] for piece in pieces)
+
+def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=False, *, used_myanmar_fonts=None, used_legacy_fonts=None, image_records=None):
     """Extract text lines WITH layout: ``(lines, page_w, page_h)``.
 
     ``lines`` is a top-to-bottom list of ``(x, y, size, text, font)`` where x/y are
@@ -929,138 +1053,223 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
     decoders = page_font_decoders(loader, page_num, page_gen, doc)
     unset_font = _UnsetFontDecoder("", doc=doc)
 
-    pd = objects.get((page_num, page_gen), b'')
-    pd_str = pd.decode('latin-1', errors='replace')
-    streams = []
-    cm = re.search(r'/Contents\s+(\d+)\s+\d+\s+R', pd_str)
-    if cm:
-        streams = [int(cm.group(1))]
-    else:
-        ca = re.search(r'/Contents\s*\[(.*?)\]', pd_str, re.DOTALL)
-        if ca:
-            streams = [int(x) for x in re.findall(r'(\d+)\s+\d+\s+R', ca.group(1))]
+    page = loader.resolve(Ref(page_num, page_gen))
+    def content_refs(value, depth=0):
+        if depth > 32:
+            raise ValueError('PDF contents reference nesting is too deep')
+        if isinstance(value, Ref):
+            item = loader.object_value(value)
+            if isinstance(item, list):
+                yield from content_refs(item, depth + 1)
+            else:
+                yield value
+        elif isinstance(value, list):
+            for item in value:
+                yield from content_refs(item, depth + 1)
 
+    refs = list(content_refs(page.get('Contents') if isinstance(page, dict) else None))
     pieces = []  # list of (y, x, size, text, optional font runs)
-
-    # The active text font survives BT/ET boundaries and, because a page's
-    # content streams are one stream logically, the stream boundary too. The
-    # title of the sample book is drawn in a BT...ET block that contains no Tf
-    # at all and inherits the Latin resource selected several blocks earlier —
-    # which is precisely what a per-block regex cannot see.
+    # Contents arrays form one logical stream, including mid-token boundaries.
+    content = b''.join(_page_content_stream(loader, ref) for ref in refs)
+    image_collector = None
+    if image_records is not None:
+        from myangustis_parser.extract.pdf_image_coverage import PageImageCollector
+        image_collector = PageImageCollector(loader, page_num, page_gen, iter_content_operations)
+    in_block = False
     active = None
+    font_size = 12.0
+    leading = 0.0
+    line_matrix = (1., 0., 0., 1., 0., 0.)
+    graphics = (1., 0., 0., 1., 0., 0.)
+    saved_states = []
+    block_texts, block_runs = [], []
+    block_font = block_xy = block_size = None
+    page_w, page_h = get_page_mediabox(objects, page_num, page_gen)
+    media = page
+    seen = set()
+    page_left = 0.0
+    for _ in range(32):
+        if not isinstance(media, dict):
+            break
+        box = loader.resolve(media.get('MediaBox'))
+        if (isinstance(box, list) and len(box) == 4
+                and all(isinstance(v, (int, float)) for v in box)
+                and box[0] != box[2] and box[1] != box[3]):
+            page_left = min(box[0], box[2])
+            break
+        parent = media.get('Parent')
+        if not isinstance(parent, Ref) or parent in seen:
+            break
+        seen.add(parent)
+        media = loader.resolve(parent)
+    grid_current, grid_pending, grid_rules = None, [], []
+    has_table_rules = False
 
-    for sn in streams:
-        s = get_stream(objects, sn)
-        if not s:
+    def add_rule(target, a, b):
+        low, high = sorted((a[1], b[1]))
+        x = (a[0] + b[0]) / 2
+        if (abs(a[0] - b[0]) <= 3 and high - low >= page_h * .2
+                and page_left <= x <= page_left + page_w and len(target) < 32
+                and not any(abs(rule[0] - x) < 3 for rule in target)):
+            target.append((x, low, high))
+
+    def consume_grid(op, operands):
+        nonlocal grid_current, grid_pending, has_table_rules
+        if has_table_rules or page_h <= 0 or page_w < page_h * 1.25:
+            return
+        def point(x, y):
+            return (graphics[0]*x + graphics[2]*y + graphics[4],
+                    graphics[1]*x + graphics[3]*y + graphics[5])
+        if op == 're' and len(operands) >= 4 and all(isinstance(v, (int, float)) for v in operands[-4:]):
+            x, y, w, h = operands[-4:]
+            points = [point(x,y), point(x+w,y), point(x,y+h), point(x+w,y+h)]
+            xs, ys = zip(*points)
+            if max(xs) - min(xs) <= 3:
+                add_rule(grid_pending, (min(xs), min(ys)), (max(xs), max(ys)))
+        elif op in ('m', 'l') and len(operands) >= 2 and all(isinstance(v, (int, float)) for v in operands[-2:]):
+            target = point(*operands[-2:])
+            if op == 'l' and grid_current is not None:
+                add_rule(grid_pending, grid_current, target)
+            grid_current = target
+        elif op in ('c', 'v', 'y'):
+            grid_current = None
+        elif op in ('n', 'S', 's', 'f', 'F', 'f*', 'B', 'B*', 'b', 'b*'):
+            if op != 'n':
+                for x, low, high in grid_pending:
+                    add_rule(grid_rules, (x, low), (x, high))
+                has_table_rules = any(sum(min(high, other[2]) - max(low, other[1]) >= page_h * .15
+                                          for other in grid_rules) >= 4
+                                      for _, low, high in grid_rules)
+            grid_pending, grid_current = [], None
+
+    def multiply(m, n):
+        return (m[0]*n[0] + m[2]*n[1], m[1]*n[0] + m[3]*n[1],
+                m[0]*n[2] + m[2]*n[3], m[1]*n[2] + m[3]*n[3],
+                m[0]*n[4] + m[2]*n[5] + m[4], m[1]*n[4] + m[3]*n[5] + m[5])
+
+    def position(matrix=None):
+        matrix = line_matrix if matrix is None else matrix
+        return (graphics[0]*matrix[4] + graphics[2]*matrix[5] + graphics[4],
+                graphics[1]*matrix[4] + graphics[3]*matrix[5] + graphics[5])
+
+    def flush_piece():
+        nonlocal block_texts, block_runs, block_font, block_xy, block_size
+        if block_texts and block_xy is not None:
+            text = ''.join(block_texts)
+            if doc.legacy_text_fix:
+                text = _collapse_overprint(text)
+            pieces.append((block_xy[1], block_xy[0], 12.0 if block_size is None else block_size,
+                           text, block_runs if doc.zawcode_order or
+                           (doc.kind == 'font' and doc.visual_unicode_enabled) else None,
+                           block_font))
+        block_texts, block_runs = [], []
+        block_font = block_xy = block_size = None
+
+    def move_line(next_matrix):
+        nonlocal line_matrix
+        if block_xy is not None:
+            x, y = position(next_matrix)
+            crosses_spread = (page_h > 0 and page_w >= page_h * 1.25
+                              and (block_xy[0] < page_left + page_w / 2) != (x < page_left + page_w / 2))
+            if abs(y - block_xy[1]) > 3 or crosses_spread:
+                flush_piece()
+        line_matrix = next_matrix
+
+    def translate_line(dx, dy):
+        a, b, c, d, e, f = line_matrix
+        move_line((a, b, c, d, e + dx*a + dy*c, f + dx*b + dy*d))
+
+    for op, operands in iter_content_operations(content):
+        consume_grid(op, operands)
+        if image_collector is not None:
+            image_collector.consume(op, operands)
+        # Flush before changing the graphics matrix, so old ink keeps its
+        # original coordinates, just as in the JS content walker.
+        if in_block and op in ('Q', 'cm'):
+            flush_piece()
+        if op == 'q':
+            saved_states.append((graphics, active, font_size, leading))
             continue
-
-        in_block = False
-        block_texts = []
-        block_runs = []
-        block_font = None
-        block_xy = None
-        block_size = None
-        text_xy = (0.0, 0.0)
-        leading = 0.0
-
-        for op, operands in iter_content_operations(s):
-            if op == "Tf":
-                if len(operands) >= 2 and isinstance(operands[-2], Name):
-                    active = decoders.get(str(operands[-2]))
-                if in_block and operands and isinstance(operands[-1], (int, float)):
-                    # Font size of the block: the last Tf inside it, as before.
-                    block_size = float(operands[-1])
-                continue
-
-            if op == "BT":
-                if not in_block:
-                    in_block = True
-                    block_texts = []
-                    block_runs = []
-                    block_font = None
-                    block_xy = None
-                    block_size = None
-                    # BT resets the text matrix to the identity, i.e. the
-                    # origin. Everything below tracks the line matrix from
-                    # there.
-                    text_xy = (0.0, 0.0)
-                    leading = 0.0
-                continue
-
+        if op == 'Q':
+            if saved_states:
+                graphics, active, font_size, leading = saved_states.pop()
+            continue
+        if op == 'cm':
+            if len(operands) >= 6 and all(isinstance(v, (int, float)) for v in operands[-6:]):
+                graphics = multiply(graphics, tuple(float(v) for v in operands[-6:]))
+            continue
+        if op == 'Tf':
+            if len(operands) >= 2 and isinstance(operands[-2], Name):
+                active = decoders.get(str(operands[-2]))
+            if operands and isinstance(operands[-1], (int, float)):
+                font_size = float(operands[-1])
+            continue
+        if op == 'BT':
             if not in_block:
-                continue
-
-            if op == "Tm":
-                if len(operands) >= 6 \
-                        and all(isinstance(v, (int, float)) for v in operands[-6:]):
-                    text_xy = (float(operands[-2]), float(operands[-1]))
-                    if block_xy is None:
-                        block_xy = text_xy
-                continue
-
-            # Td/TD/T* position text just as legitimately as Tm, and some
-            # producers never emit Tm at all. Tracking only Tm left block_xy
-            # as None for those, and the block was then dropped at ET -- the
-            # whole document came out empty even though every glyph decoded
-            # correctly.
-            if op in ("Td", "TD"):
-                if len(operands) >= 2 \
-                        and all(isinstance(v, (int, float)) for v in operands[-2:]):
-                    dx, dy = float(operands[-2]), float(operands[-1])
-                    # Both translate the LINE matrix, so they are relative to
-                    # the start of the current line, not the current point.
-                    text_xy = (text_xy[0] + dx, text_xy[1] + dy)
-                    if op == "TD":
-                        leading = -dy
-                    if block_xy is None:
-                        block_xy = text_xy
-                continue
-
-            if op == "TL":
-                if operands and isinstance(operands[-1], (int, float)):
-                    leading = float(operands[-1])
-                continue
-
-            if op == "T*":
-                text_xy = (text_xy[0], text_xy[1] - leading)
+                in_block = True
+                block_texts, block_runs = [], []
+                block_font = block_xy = block_size = None
+                line_matrix = (1., 0., 0., 1., 0., 0.)
+            continue
+        if not in_block:
+            continue
+        if op == 'Tm':
+            if len(operands) >= 6 and all(isinstance(v, (int, float)) for v in operands[-6:]):
+                move_line(tuple(float(v) for v in operands[-6:]))
+            continue
+        if op in ('Td', 'TD'):
+            if len(operands) >= 2 and all(isinstance(v, (int, float)) for v in operands[-2:]):
+                dx, dy = float(operands[-2]), float(operands[-1])
+                if op == 'TD':
+                    leading = -dy
+                translate_line(dx, dy)
+            continue
+        if op == 'TL':
+            if operands and isinstance(operands[-1], (int, float)):
+                leading = float(operands[-1])
+            continue
+        if op == 'T*':
+            translate_line(0, -leading)
+            continue
+        if op == 'ET':
+            in_block = False
+            flush_piece()
+            continue
+        if op in ('Tj', 'TJ', "'", '"'):
+            if op in ("'", '"'):
+                translate_line(0, -leading)
+            decoder = active if active is not None else unset_font
+            for shown in _shown_strings(op, operands):
+                # JS records the original (unconfirmed) reading during
+                # extraction; confirmed-run decoding remains available on
+                # FontDecoder itself. Its current legacy page store does not
+                # retain the confirmed alternative.
+                text = decoder.decode(shown, use_confirmed=False) if decoder.confirmed_raw_runs else decoder.decode(shown)
                 if block_xy is None:
-                    block_xy = text_xy
-                continue
+                    block_xy = position()
+                effective_size = abs(font_size) * math.hypot(
+                    graphics[0]*line_matrix[2] + graphics[2]*line_matrix[3],
+                    graphics[1]*line_matrix[2] + graphics[3]*line_matrix[3])
+                block_size = max(block_size or 0, effective_size)
+                if (used_legacy_fonts is not None and text and
+                        (decoder.font_legacy_code_page or decoder.confirmed_raw_runs
+                         or is_unresolved_legacy_font(decoder.base_font))):
+                    name = decoder.base_font or ''
+                    if name not in used_legacy_fonts:
+                        used_legacy_fonts.append(name)
+                if used_myanmar_fonts is not None and (contains_myanmar(text)
+                        or decoder.font_legacy_code_page or decoder.confirmed_raw_runs):
+                    used_myanmar_fonts.add(decoder.base_font or '')
+                if block_font is None and decoder.base_font:
+                    block_font = decoder.base_font
+                block_texts.append(text)
+                if doc.zawcode_order:
+                    block_runs.append((decoder.zawcode_glyphs is not None, text))
+                elif doc.kind == 'font' and doc.visual_unicode_enabled:
+                    block_runs.append((decoder, text, shown if decoder.visual_unicode_glyphs else None))
 
-            if op == "ET":
-                in_block = False
-                if block_texts and block_xy is not None:
-                    # NOT rewritten here. A legacy fix needs the characters
-                    # on either side, and this PDF splits words across
-                    # pieces constantly -- 4,666 pieces begin with a bare
-                    # dependent mark. Per-piece, every rule that looks at a
-                    # neighbour fails silently at the seam: the preposed
-                    # vowel finds no base, the kinzi finds no consonant, and
-                    # \u1040 keeps its digit form because its mark is in the NEXT
-                    # piece. The fix runs once the line is assembled.
-                    text = ''.join(block_texts)
-                    if doc.legacy_text_fix:
-                        text = _collapse_overprint(text)
-                    pieces.append((block_xy[1], block_xy[0],
-                                   12.0 if block_size is None else block_size,
-                                   text, block_runs if doc.zawcode_order else None,
-                                   block_font))
-                block_texts = []
-                block_runs = []
-                block_font = None
-                continue
-
-            if op in ("Tj", "TJ", "'", '"'):
-                decoder = active if active is not None else unset_font
-                for shown in _shown_strings(op, operands):
-                    text = decoder.decode(shown)
-                    if used_myanmar_fonts is not None and contains_myanmar(text):
-                        used_myanmar_fonts.add(decoder.base_font or "")
-                    if block_font is None and decoder.base_font:
-                        block_font = decoder.base_font
-                    block_texts.append(text)
-                    if doc.zawcode_order:
-                        block_runs.append((decoder.zawcode_glyphs is not None, text))
+    if image_collector is not None:
+        image_records.extend(image_collector.images)
 
     # PDF producers often draw the same glyph run several times with tiny
     # sub-point offsets to create a faux-bold/outline effect.  Those are visual
@@ -1081,14 +1290,20 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
     for piece in pieces:
         y, x, size, text = piece[:4]
         drop = False
+        # Empty but witnessed marks must survive deduplication.
+        empty_visual = (not text and doc.kind == 'font' and doc.visual_unicode_enabled
+                        and piece[4] and any(font.visual_unicode_glyphs and raw
+                                             for font, _, raw in piece[4]))
         for k, existing in enumerate(unique_pieces):
+            if empty_visual:
+                break
             old_y, old_x, old_size, old_text = existing[:4]
             if abs(x - old_x) > 1.0 or abs(y - old_y) > 1.0:
                 continue
             if text == old_text or text in old_text:
                 drop = True            # same ink, or a fragment of it
                 break
-            if old_text in text:
+            if old_text and old_text in text:
                 # the shadow arrived first: keep the longer, fuller run
                 unique_pieces[k] = piece
                 drop = True
@@ -1116,7 +1331,23 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
     # the two cannot be told apart reliably (test.pdf regressed). See the
     # docstring.
     bounds = []
-    if detect_columns:
+    if not has_table_rules and page_h > 0 and page_w >= page_h * 1.25:
+        middle = page_left + page_w / 2
+        halves = [[], []]
+        for piece in sorted(pieces, key=lambda p: (-p[0], p[1])):
+            y, x, _, text = piece[:4]
+            chars = len(text.strip(' '))
+            if chars and page_left <= x <= page_left + page_w:
+                half = halves[0 if x < middle else 1]
+                if not half or abs(y - half[-1][0]) > 3:
+                    half.append([y, 0])
+                half[-1][1] += chars
+        qualifying = [[y for y, chars in half if chars >= 20] for half in halves]
+        if all(len(half) >= 5 and max(half) - min(half) >= page_h * .2 for half in qualifying):
+            overlap = min(max(half) for half in qualifying) - max(min(half) for half in qualifying)
+            if overlap >= page_h * .15:
+                bounds = [middle]
+    if detect_columns and not bounds:
         pieces.sort(key=lambda p: (-p[0], p[1]))
         mixed_bands = []
         cur, cur_y = [], pieces[0][0]
@@ -1152,35 +1383,33 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
                 if tot and 0.25 <= left / tot <= 0.75:
                     bounds = [c]
 
-        if bounds:
-            lines = []
-            for c in range(len(bounds) + 1):
-                col_pieces = [p for p in pieces if sum(1 for b in bounds if p[1] >= b) == c]
-                col_pieces.sort(key=lambda p: (-p[0], p[1]))
-                cur_line, cur_y = [], None
-                for y, x, size, text, runs, font in col_pieces:
-                    if cur_y is None or abs(y - cur_y) > 3:
-                        if cur_line:
-                            cur_line.sort(key=lambda p: p[0])   # x only; stable = stream order
-                            _j = (_join_draft_runs(cur_line, doc.zawcode_order) if doc.zawcode_order
-                                  else ''.join(p[2] for p in cur_line))
-                            if doc.legacy_text_fix:
-                                _j = legacy_ayar_to_unicode(_j, apply_aa_vowel_rule=_aa_vowel_rule_for_legacy(doc))
-                            lines.append((cur_line[0][0], cur_y,
-                                          max(p[1] for p in cur_line), _j,
-                                          _line_font(cur_line)))
-                        cur_line, cur_y = [], y
-                    cur_line.append((x, size, text, runs, font))
-                if cur_line:
-                    cur_line.sort(key=lambda p: p[0])   # x only; stable = stream order
-                    joined = (_join_draft_runs(cur_line, doc.zawcode_order) if doc.zawcode_order
-                              else ''.join(p[2] for p in cur_line))
-                    if doc.legacy_text_fix:
-                        joined = legacy_ayar_to_unicode(joined, apply_aa_vowel_rule=_aa_vowel_rule_for_legacy(doc))
-                    lines.append((cur_line[0][0], cur_y,
-                                  max(p[1] for p in cur_line), joined,
-                                  _line_font(cur_line)))
-            return lines, page_w, page_h
+    if bounds:
+        lines = []
+        for c in range(len(bounds) + 1):
+            col_pieces = [p for p in pieces if sum(1 for b in bounds if p[1] >= b) == c]
+            col_pieces.sort(key=lambda p: (-p[0], p[1]))
+            cur_line, cur_y = [], None
+            for y, x, size, text, runs, font in col_pieces:
+                if cur_y is None or abs(y - cur_y) > 3:
+                    if cur_line:
+                        cur_line.sort(key=lambda p: p[0])   # x only; stable = stream order
+                        _j = _join_page_runs(cur_line, doc)
+                        if doc.legacy_text_fix:
+                            _j = legacy_ayar_to_unicode(_j, apply_aa_vowel_rule=_aa_vowel_rule_for_legacy(doc))
+                        lines.append((cur_line[0][0], cur_y,
+                                      max(p[1] for p in cur_line), _j,
+                                      _line_font(cur_line)))
+                    cur_line, cur_y = [], y
+                cur_line.append((x, size, text, runs, font))
+            if cur_line:
+                cur_line.sort(key=lambda p: p[0])   # x only; stable = stream order
+                joined = _join_page_runs(cur_line, doc)
+                if doc.legacy_text_fix:
+                    joined = legacy_ayar_to_unicode(joined, apply_aa_vowel_rule=_aa_vowel_rule_for_legacy(doc))
+                lines.append((cur_line[0][0], cur_y,
+                              max(p[1] for p in cur_line), joined,
+                              _line_font(cur_line)))
+        return lines, page_w, page_h
 
     pieces.sort(key=lambda p: (-p[0], p[1]))
 
@@ -1201,8 +1430,7 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
         # stranding the ha at the end of the line: 'ရိသည်။ှ'. Stream order
         # puts it back on its base: 'ရှိသည်။'.
         ordered = sorted(current_line, key=lambda p: p[0])
-        joined = (_join_draft_runs(ordered, doc.zawcode_order) if doc.zawcode_order
-                  else ''.join(p[2] for p in ordered))
+        joined = _join_page_runs(ordered, doc)
         if doc.legacy_text_fix:
             joined = legacy_ayar_to_unicode(joined, apply_aa_vowel_rule=_aa_vowel_rule_for_legacy(doc))
         lines.append((ordered[0][0], current_y,

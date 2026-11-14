@@ -53,6 +53,27 @@ class SharedFinishTests(unittest.TestCase):
         self.assertEqual(cleanup.order_text('ကေုု'), 'ကေုု')
 
 
+class PdfOutputLayoutTests(unittest.TestCase):
+    def test_legacy_layout_is_not_cleaned_a_second_time(self):
+        from myangustis_parser.workflow import pipeline
+        job = {'kind': 'pdf', 'pages': [{'text': 'ကေ', 'lines': [(0, 0, 12, 'ကေ', None)],
+                                       'wh': (100, 100), 'has_img': False}],
+               'reports': [{'base': 'ကေ', 'clean': 'ကေ', 'decision': 'legacy'}]}
+        with patch.object(pipeline, 'cleanup_text', side_effect=AssertionError('unexpected cleanup')):
+            self.assertEqual(pipeline.build_final_pages(job)[0]['lines'][0][3], 'ကေ')
+
+    def test_pdf_layout_uses_cleanup_without_reordering_again(self):
+        from myangustis_parser.workflow import pipeline
+        job = {'kind': 'pdf', 'pages': [{'text': 'ကေ', 'lines': [(0, 0, 12, 'ကေ', None)],
+                                       'wh': (100, 100), 'has_img': False}],
+               'reports': [{'base': 'ကေ', 'clean': 'ခေ', 'decision': 'aligned'}]}
+        with patch.object(pipeline.finish, 'clean', side_effect=AssertionError('unexpected reorder')), \
+             patch.object(pipeline, 'cleanup_text', return_value='ခေ'):
+            result = pipeline.build_final_pages(job)[0]
+        self.assertEqual(result['lines'][0][3], 'ခေ')
+        self.assertEqual(result['text'], 'ခေ')
+
+
 class AtomicOutputTests(unittest.TestCase):
     def test_pos_failure_does_not_publish_or_replace_output(self):
         from myangustis_parser.workflow import pipeline

@@ -33,8 +33,8 @@ def build_parser():
     parser.add_argument("--source-encoding", choices=["auto", "unicode", "zawgyi-one"],
                         default="auto",
                         help="Declare the input encoding when the font is not labelled")
-    parser.add_argument("--text-layout", choices=["auto", "off", "zawcode"], default=None,
-                        help="ZawCode draft-glyph profile selection (default: auto)")
+    parser.add_argument("--text-layout", choices=["auto", "off"], default=None,
+                        help="Compatibility setting; PDF uses instruction-based routing")
     parser.add_argument("--content", action="store_true", help="Print only the extracted body")
     parser.add_argument("--quiet", action="store_true",
                         help="Accepted for compatibility; this parser has no advisories")

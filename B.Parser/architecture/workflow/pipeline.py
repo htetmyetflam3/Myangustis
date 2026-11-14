@@ -19,11 +19,9 @@ Two execution modes share the same building blocks:
 
 import os
 import re
-import hashlib
 import difflib
 import math
 import tempfile
-from functools import lru_cache
 
 from myangustis_parser.extract.decrypt import (
     decrypt_pdf,
@@ -34,22 +32,13 @@ from myangustis_parser.extract.decrypt import (
 from myangustis_parser.normalize.rabbit import Rabbit
 from myangustis_parser.normalize.detector import contains_myanmar, has_only_zawgyi_fonts
 from myangustis_parser.normalize.cleanup import cleanup_text, order_text
-from myangustis_parser.normalize.legacy_order import count_zawcode_evidence, reorder_zawcode_text
 from myangustis_parser.extract.docx_extract import extract_docx_paragraphs, strip_image_markers
 from myangustis_parser.normalize.mm_score import score_text
+from myangustis_parser.normalize.judgement import instruction_lane
+from myangustis_parser.extract.pdf_fonts import FontResourceLoader, Ref, page_font_decoders
 from myangustis_parser.extract.pdf_extract import (
-    CmapIdentityMap,
     DocumentDecoding,
-    IDENTITY,
-    ARLARWADE_AYAR_MAP,
-    LegacyAyarMap,
-    LEGACY_CODE_PAGES,
-    detect_legacy_layout_fonts,
     parse_pdf_objects,
-    find_font_streams,
-    find_tounicode_maps,
-    load_sidecar_map,
-    pick_embedded_font,
     get_stream,
     parse_tounicode_stream,
     parse_ttf_cmap,
@@ -57,36 +46,13 @@ from myangustis_parser.extract.pdf_extract import (
     collect_pages,
     extract_page_lines,
     page_has_images,
-    get_page_mediabox,
 )
 from myangustis_parser.output.render import _write_docx_layout, _write_pdf, write_docx_markup
-from myangustis_parser.resources import maps
-from myangustis_parser.resources.font_names import has_only_unicode_fonts
+from myangustis_parser.resources.font_names import has_only_unicode_fonts, legacy_font_family, legacy_layout_for_font
 from myangustis_parser.output import markup
 from myangustis_parser.normalize.unicode_evidence import preserve_regional_runs
 from myangustis_parser.workflow import finish
 from myangustis_parser.workflow.lane_log import LaneLog
-
-# Pages probed with direct Identity-H decoding before deciding whether the
-# document needs the ToUnicode / embedded-font-cmap fallback path.
-_DETECT_PROBE_PAGES = 20
-
-
-@lru_cache(maxsize=1)
-def _zawcode_data():
-    """ZawCode draft profiles — read from the shared JSON map, nothing else."""
-    return maps.load_map('zawcode-draft-glyphs.json')
-
-
-def _has_zawcode_profile(objects, profiles):
-    for num, gen in find_font_streams(objects):
-        try:
-            data = get_stream(objects, num, gen)
-        except Exception:  # an unrelated malformed font is not a draft match
-            continue
-        if data and hashlib.sha256(data).hexdigest() in profiles:
-            return True
-    return False
 
 
 def _norm_category(category):
@@ -104,63 +70,6 @@ def _safe_prob(prob):
     """JSON-safe probability: detector returns -inf for UNKNOWN pages, which
     Flask would serialize as -Infinity (invalid strict JSON for browsers)."""
     return prob if math.isfinite(prob) else 0.0
-
-
-# A layout this document actually uses scores ~0.97; one it does not scores
-# ~0.58 (measured on a 445-page legacy grammar, correct table vs wrong table).
-# The floor sits between them, well clear of both.
-LEGACY_QUALITY_FLOOR = 0.85
-
-# Pages sampled when ranking layouts. Enough Myanmar to be decisive, few
-# enough that trying every registered layout stays cheap.
-_CODE_PAGE_PROBE_PAGES = 6
-
-
-
-def _choose_code_page(objects, all_pages, legacy_map):
-    """Pick the legacy layout that decodes this document best.
-
-    A legacy code page belongs to a keyboard layout, not to a typeface, and
-    nothing in the PDF records which one was used -- the font names lie. So
-    every registered layout is tried on a sample of pages and scored on
-    whether the result reads like Burmese (marks attached to bases, in a
-    possible order). The winner is returned with its score, so the caller can
-    warn when even the best one does not fit.
-
-    Returns ``(table, name, score, ranking)``.
-
-    The ZawCode slot table is deliberately absent: it is not a legacy
-    byte-table candidate and must never be gated in by a font calling
-    itself ZawCode (font names lie). ZawCode-stored text is identified by
-    the readable result of the Unicode/cmap reading instead; the JS
-    worker performs that split today (see TODO for the Python mirror).
-    """
-    candidates = dict(LEGACY_CODE_PAGES)
-    ranking = []
-    for name, table in candidates.items():
-        strategy = DocumentDecoding("legacy", legacy_map, table)
-        chunks = []
-        for pnum, pgen in all_pages[:_CODE_PAGE_PROBE_PAGES]:
-            try:
-                plines, _, _ = extract_page_lines(objects, pnum, pgen, strategy)
-            except Exception:
-                continue
-            chunks.append("\n".join(x[3] for x in plines))
-        sample = "\n".join(chunks)
-        # Score what the pipeline actually delivers. Reorder-by-priority is
-        # no longer done at parse time -- it runs on every page later, in
-        # order_text -- so a layout has to be judged on its ORDERED text or
-        # every candidate is penalised for a typing order that is about to
-        # be fixed. Imposter cleanup is deliberately not applied here: it is
-        # the Unicode branch's step and the category is not known yet.
-        result = score_text(order_text(sample))
-        # A sample with almost no marks cannot be judged; treat it as unfit
-        # rather than letting a near-empty decode win by default.
-        ranking.append((name, result["score"] if result["marks"] >= 50 else 0.0))
-    ranking.sort(key=lambda r: -r[1])
-    best_name, best_score = ranking[0]
-    return candidates[best_name], best_name, best_score, ranking
-
 
 
 def _is_myanmar_category(category):
@@ -184,7 +93,7 @@ def load_detector():
 #  STREAMING path — one page at a time, flat memory, single pass
 # ═══════════════════════════════════════════════════════════════════════════
 
-def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout=None):
+def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout=None, source_encoding="auto"):
     """Stream per-page layout: returns ``(metadata, npages, iterator)``.
 
     The iterator yields one dict per page, ONE PAGE AT A TIME:
@@ -195,25 +104,17 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
     ``metadata`` is always ``{}`` — the final pipeline does not scan PDF
     metadata (that full-object regex pass was pure overhead).
 
-    Decoding strategy (direct text first, then embedded font maps):
-
-    1. When a ``detector`` is supplied, the first ``_DETECT_PROBE_PAGES``
-       pages are decoded directly (Identity-H: the content-stream code IS the
-       code point) and scored. If any probe page is Myanmar, every page is
-       streamed with direct decoding — no font file and no CMap are touched.
-
-    2. Otherwise (subset/custom-encoded fonts, or no Burmese text at all) the
-       PDF's ``/ToUnicode`` CMaps (blanked copy-protection decoys skipped)
-       plus the cross-volume sidecar map, and if needed the embedded font's
-       ``cmap`` table, are built ONCE and then every page is streamed through
-       them.
+    Build page instructions and font verdicts at the stem before reading
+    page content, then follow them when decoding each font resource. No
+    mapping is borrowed from a different resource.
     """
-    setting = os.environ.get('PRASER_ZAWCODE_DRAFT', '').lower()
-    layout = text_layout if text_layout is not None else (
-        'zawcode' if setting in ('1', 'true', 'yes', 'on') else
-        'off' if setting in ('0', 'false', 'no', 'off') else 'auto')
-    if layout not in ('auto', 'off', 'zawcode'):
-        raise ValueError(f'Unsupported text layout: {layout}')
+    # Older Python-only draft profiles bypass the JS instruction path. Do not
+    # silently run them when an old configuration is still present.
+    setting = os.environ.get('PRASER_ZAWCODE_DRAFT', '').strip().lower()
+    if text_layout == 'zawcode' or (text_layout is None and setting in ('1', 'true', 'yes', 'on')):
+        raise ValueError('The Python-only ZawCode draft was removed; use automatic instruction routing')
+    if text_layout not in (None, 'auto', 'off'):
+        raise ValueError(f'Unsupported text layout: {text_layout}')
     with open(pdf_path, "rb") as f:
         raw = f.read()
     # Byte-level pre-processing (modules/decrypt.py, mirroring the JS
@@ -237,7 +138,7 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
     npages = len(all_pages)
     log(f"[+] Total pages: {npages}")
 
-    def _page(idx, code_to_uni, text_path=None):
+    def _page(idx, code_to_uni):
         pnum, pgen = all_pages[idx]
         # A page carrying an /Image XObject used to be emitted EMPTY, on the
         # assumption that it was a scan. That is the wrong test: a page with a
@@ -248,261 +149,125 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
         # Extract the text either way and keep the flag for the DOCX writer;
         # a genuine scan simply yields no text and is unaffected.
         has_img = page_has_images(objects, pnum, pgen)
-        stats = getattr(code_to_uni, 'zawcode_stats', None)
-        before = stats['glyphs'] if stats is not None else 0
         font_names = set()
-        # Probes may decode the same page more than once. Record locally, and
-        # emit only if this particular page is yielded by the chosen strategy.
+        used_legacy_fonts = []
+        images = []
+        # Record only this page's actual resource decoding.
         lane_trace = []
+        visual_state = {'changed': False, 'unresolved': False}
+        def observe_visual(changed, unresolved):
+            visual_state['changed'] |= changed
+            visual_state['unresolved'] |= unresolved
         def observe(lane):
             if not lane_trace or lane_trace[-1] != lane:
                 lane_trace.append(lane)
         previous_observer = code_to_uni.lane_observer
+        previous_visual_observer = code_to_uni.visual_unicode_observer
         code_to_uni.lane_observer = observe
+        code_to_uni.visual_unicode_observer = observe_visual
         try:
             lines, w, h = extract_page_lines(objects, pnum, pgen, code_to_uni,
-                                             used_myanmar_fonts=font_names)
+                                             used_myanmar_fonts=font_names,
+                                             used_legacy_fonts=used_legacy_fonts,
+                                             image_records=images)
         finally:
             code_to_uni.lane_observer = previous_observer
-        used_draft_font = stats is not None and stats['glyphs'] > before
+            code_to_uni.visual_unicode_observer = previous_visual_observer
         return {
             "idx": idx,
             "lines": lines,
             "wh": (w, h),
             "text": "\n".join(line[3] for line in lines),
-            "has_img": has_img,
+            "has_img": bool(images) or has_img,
+            "images": images,
             # How the glyph ids became characters, carried to the report
             # because the cmap fork below needs it (JS: pg.decodeKind).
             "decode_kind": getattr(code_to_uni, "kind", None),
             "font_names": font_names,
+            "used_legacy_fonts": used_legacy_fonts,
             "lane_trace": lane_trace,
-            "text_path": None if text_path == 'zawcode' and not used_draft_font else text_path,
+            "warnings": ([{'code': 'unicode-glyph-recovery-needs-review', 'page': idx + 1}] if visual_state['changed'] else [])
+                        + ([{'code': 'unicode-glyph-mapping-needs-review', 'page': idx + 1}] if visual_state['unresolved'] else []),
         }
 
+    # Match the JS instruction/stem pass: collect dictionary facts for the
+    # whole page tree before reading any page content, then settle the known
+    # indirect font objects once. Inline fonts fall back to their own facts.
+    instruction_loader = FontResourceLoader(objects, get_stream, parse_ttf_cmap, parse_tounicode_stream)
+    page_instructions = []
+    for pnum, pgen in all_pages:
+        fonts = []
+        for entry in instruction_loader.page_font_resources(pnum, pgen).values():
+            font = instruction_loader.resolve(entry)
+            if isinstance(font, dict):
+                fonts.append({'baseFont': str(instruction_loader.resolve(font.get('BaseFont')) or ''),
+                              'subtype': str(instruction_loader.resolve(font.get('Subtype')) or ''),
+                              'toUnicode': isinstance(font.get('ToUnicode'), Ref),
+                              'entry': entry})
+        page_instructions.append({'fonts': fonts})
+
+    stem_fonts = {}
+    for instruction in page_instructions:
+        for fact in instruction['fonts']:
+            entry = fact['entry']
+            if not isinstance(entry, Ref) or entry in stem_fonts:
+                continue
+            to_unicode = 'none'
+            try:
+                font = instruction_loader.resolve(entry)
+                mapping = instruction_loader.tounicode_of(font, preserve_spaces=True)
+                if mapping:
+                    to_unicode = 'myanmar' if any(
+                        any('\u1000' <= ch <= '\u109f' for ch in value)
+                        for value in mapping.values()) else 'latin'
+            except Exception:
+                # Like JS, an unreadable map supplies no stem verdict; the
+                # resource decoder still follows its own normal error path.
+                pass
+            family = legacy_font_family(fact['baseFont'])
+            stem_fonts[entry] = {'baseFont': fact['baseFont'], 'toUnicode': to_unicode,
+                                 'family': family, 'known': family is not None}
+
+    shared = DocumentDecoding('font')
+    shared.visual_unicode_enabled = source_encoding != 'zawgyi-one'
+    legacy = DocumentDecoding('legacy')
+    for strategy in (shared, legacy):
+        strategy.loader = instruction_loader
+        strategy.stem_fonts = stem_fonts
+    # Current JS leaves legacy extraction untouched; its shared finish stage
+    # orders the decoded text. Keep the old helper only for direct API callers.
+    legacy.legacy_text_fix = False
+
+    def normal_page(idx):
+        choice = instruction_lane(page_instructions[idx], source_encoding)
+        strategy = legacy if choice['parser'] == 'legacy' else shared
+        page_key = all_pages[idx]
+        unknown_fonts = []
+        if strategy is legacy:
+            shared_fonts = page_font_decoders(instruction_loader, *page_key, shared)
+            for name, font in shared_fonts.items():
+                clusters = sum(len(value) > 1 and contains_myanmar(value)
+                               for value in (font.to_unicode or {}).values()) if not font.conflicting_space_map else 0
+                if not font.is_cid and not legacy_layout_for_font(font.base_font)['known'] and clusters < 4:
+                    unknown_fonts.append(font.base_font or name)
+        try:
+            item = _page(idx, strategy)
+        finally:
+            strategy._page_fonts.pop(page_key, None)
+            shared._page_fonts.pop(page_key, None)
+        if strategy is shared and item['used_legacy_fonts']:
+            item['warnings'].append({'code': 'legacy-font-on-shared-page', 'page': idx + 1,
+                                     'fonts': item['used_legacy_fonts']})
+        if unknown_fonts:
+            item['warnings'].append({'code': 'legacy-unknown-font', 'page': idx + 1,
+                                     'fonts': unknown_fonts})
+        item['lane_reason'] = choice['reason']
+        return item
+
     def gen():
-        if layout != 'off':
-            data = _zawcode_data()
-            profiles = data['profiles']
-            profile_present = _has_zawcode_profile(objects, profiles)
-            if not profile_present and layout == 'zawcode':
-                raise RuntimeError('ZawCode draft has no matching embedded-font profile for this PDF')
-            if profile_present:
-                stats = {'glyphs': 0, 'strong': 0, 'page': 0, 'pages': set(), 'collecting': True}
-                decoding = DocumentDecoding('cmap', {})
-                decoding.trust_font_tounicode = True
-                decoding.zawcode_profiles = profiles
-                decoding.zawcode_templates = data.get('templates', {})
-                decoding.zawcode_stats = stats
-
-                def order_draft(text):
-                    if stats['collecting']:
-                        count = count_zawcode_evidence(text)
-                        stats['strong'] += count
-                        if count:
-                            stats['pages'].add(stats['page'])
-                    return reorder_zawcode_text(text)
-
-                decoding.zawcode_order = order_draft
-                probe_n = min(_DETECT_PROBE_PAGES, npages)
-                probe = []
-                for idx in range(probe_n):
-                    stats['page'] = idx
-                    probe.append(_page(idx, decoding, 'zawcode'))
-                if layout == 'zawcode' and not stats['glyphs']:
-                    raise RuntimeError('ZawCode draft profile is not used in the first probe pages')
-                if stats['glyphs'] and (layout == 'zawcode' or
-                                        (stats['strong'] >= 2 and len(stats['pages']) >= 2)):
-                    stats['collecting'] = False
-                    log('[+] ZawCode draft: font-scoped glyphs; unknown codes remain visible')
-                    fallback, fallback_index = None, 0
-
-                    def fallback_page(index):
-                        nonlocal fallback, fallback_index
-                        if fallback is None:
-                            _, _, fallback = stream_pdf_pages(pdf_path, detector=detector,
-                                                              text_layout='off')
-                        current = None
-                        while fallback_index <= index:
-                            current = next(fallback)
-                            fallback_index += 1
-                        return current
-
-                    for item in probe:
-                        yield item if item['text_path'] else fallback_page(item['idx'])
-                    for idx in range(probe_n, npages):
-                        item = _page(idx, decoding, 'zawcode')
-                        yield item if item['text_path'] else fallback_page(idx)
-                    return
-
-        # --- Pass 1: direct (Identity-H) decoding -------------------------
-        # The codes ARE the code points; simple fonts on the same page still
-        # go through their own declared encoding, so Latin resources are not
-        # read as Myanmar code points.
-        direct = DocumentDecoding("identity")
-        if detector is not None:
-            probe_n = min(_DETECT_PROBE_PAGES, npages)
-            probe = [_page(idx, direct) for idx in range(probe_n)]
-            has_myanmar = any(
-                contains_myanmar(p["text"]) for p in probe
-            )
-            if has_myanmar:
-                log("[+] Identity-H direct decode — no font/CMap lookup needed")
-                for p in probe:
-                    yield p
-                for idx in range(probe_n, npages):
-                    yield _page(idx, direct)
-                    if (idx + 1) % 500 == 0:
-                        log(f"    ... extracted {idx + 1}/{npages} pages")
-                return
-            log("[i] No Myanmar found via direct decode; trying ToUnicode/font cmap")
-
-        # --- Pass 2: truth-first decoding sources --------------------------
-        # (a) Embedded font cmap, reversed (the original v1 "peek the font"
-        #     method). For these books the font cmap is the GLYPH TRUTH; the
-        #     /ToUnicode streams are copy-protection decoys (blanked or with
-        #     scrubbed codepoints) and must never win while a cmap decodes.
-        # (b) ToUnicode CMaps (+ cross-volume sidecar fill) — fallback for
-        #     CFF/OpenType fonts with no usable cmap.
-        # Each source is probed for Myanmar-script characters.
-        #
-        # None of them is a page-wide decoder any more: a source is the
-        # document-level FALLBACK that the per-resource decoders in pdf_fonts
-        # consult for the symbolic Myanmar faces. A font resource that
-        # declares a real encoding (/WinAnsiEncoding, /MacRomanEncoding, an
-        # /Encoding dict) never reaches it, which is what stops Latin
-        # character codes from being read as Myanmar glyph ids.
-        probe_n2 = min(_DETECT_PROBE_PAGES, npages)
-
-        def _decodes_myanmar(strategy):
-            for i in range(probe_n2):
-                pnum, pgen = all_pages[i]
-                plines, _, _ = extract_page_lines(objects, pnum, pgen, strategy)
-                t = "\n".join(x[3] for x in plines)
-                if contains_myanmar(t):
-                    return True
-            return False
-
-        cmap_map = {}
-        conflicts = 0
-        font_refs = find_font_streams(objects)
-        if font_refs:
-            log(f"[+] Embedded font-stream candidates: {len(font_refs)}")
-            # Merge the cmap reversal of EVERY embedded font — the book
-            # subsets the same base font per page batch, so glyph IDs are
-            # shared but each subset's cmap only covers its own glyphs.
-            # The Myanmar-glyph font goes first and wins any gid conflict.
-            # Each font resource still prefers the cmap of the font program
-            # IT points at; this merge only fills what that cannot cover.
-            ff_ref, ttf0, cmap0 = pick_embedded_font(objects, font_refs)
-            ordered = ([ff_ref] if ff_ref else []) + \
-                      [r for r in font_refs if r != ff_ref]
-            used = 0
-            for ref in ordered:
-                if ff_ref and ref == ff_ref:
-                    ttf, cmap = ttf0, cmap0
-                else:
-                    ttf = get_stream(objects, *ref)
-                    cmap = parse_ttf_cmap(ttf) if ttf else {}
-                if not cmap:
-                    continue
-                used += 1
-                for uni, gid in cmap.items():
-                    if not gid:
-                        continue
-                    if gid in cmap_map:
-                        if cmap_map[gid] != uni:
-                            conflicts += 1
-                        continue
-                    cmap_map[gid] = uni
-            log(f"[+] Merged font cmap entries: {len(cmap_map)} "
-                f"from {used} font stream(s)"
-                + (f"; {conflicts} gid conflict(s) (first font wins)"
-                   if conflicts else ""))
-
-        # Arlarwade subsets are old Ayar-compatible fonts.  Their cmap maps
-        # the PDF character code to a *renumbered glyph id*, so reversing it
-        # (the generic cmap path above) cannot recover the legacy code.  The
-        # stable character-code table is the authoritative path for this
-        # family and is checked before the generic glyph-id fallback.
-        # Identification is structural, not by name: a simple font with no
-        # /Encoding whose /ToUnicode returns non-Myanmar characters is an
-        # ASCII-slot legacy face, whatever /BaseFont claims.
-        legacy_fonts = detect_legacy_layout_fonts(
-            objects, get_stream, parse_tounicode_stream)
-        legacy_map = LegacyAyarMap(ARLARWADE_AYAR_MAP) if legacy_fonts else {}
-        legacy_page = None
-        if legacy_map:
-            log(f"[+] Legacy-layout fonts: {len(legacy_fonts)}")
-            legacy_page, legacy_page_name, legacy_quality, ranking = \
-                _choose_code_page(objects, all_pages, legacy_map)
-            for nm, sc in ranking:
-                log(f"    layout {nm!r}: {sc:.3f}"
-                    + ("  <- chosen" if nm == legacy_page_name else ""))
-            if legacy_quality < LEGACY_QUALITY_FLOOR:
-                # No registered layout fits, so do not decode as legacy at
-                # all. The legacy strategy exists for faces whose /ToUnicode
-                # is a copy-protection decoy, and it distrusts those maps
-                # document-wide. Applying it to a document we cannot actually
-                # decode throws away /ToUnicode maps that may be perfectly
-                # genuine -- and because legacy subsets number their glyphs
-                # from 0x01, the undecoded bytes are then dropped as control
-                # characters and the page comes out EMPTY. Falling back costs
-                # nothing when the layout is unknown and recovers the whole
-                # document when the maps are real.
-                log(f"[!] No registered legacy layout fits this document "
-                    f"(best {legacy_page_name!r} scores {legacy_quality:.3f}, "
-                    f"expected >= {LEGACY_QUALITY_FLOOR:.2f}). Falling back to "
-                    f"each font's own /ToUnicode. If the Myanmar text is wrong, "
-                    f"add this layout's code page to LEGACY_CODE_PAGES in "
-                    f"pdf_fonts.py.")
-                legacy_map = {}
-                legacy_page = None
-
-        # Document-wide ToUnicode merge (+ the cross-volume sidecar cipher).
-        # Fonts consult their OWN /ToUnicode first; this merge is only the
-        # last-resort fill for the codes their own map does not cover.
-        tu_map = find_tounicode_maps(objects)
-        own_tu = len(tu_map)
-        sidecar = load_sidecar_map()
-        for code, uni in sidecar.items():
-            tu_map.setdefault(code, uni)
-        if tu_map:
-            log(f"[+] ToUnicode mappings: {own_tu}"
-                + (f" (+{len(tu_map) - own_tu} from sidecar cipher map)" if sidecar else ""))
-
-        decoding = None
-        if detector is not None:
-            if legacy_map and _decodes_myanmar(DocumentDecoding("legacy", legacy_map, legacy_page)):
-                decoding = DocumentDecoding("legacy", legacy_map, legacy_page)
-                log("[+] Decoding via Arlarwade/Ayar legacy character map")
-            elif cmap_map and _decodes_myanmar(
-                    DocumentDecoding("cmap", CmapIdentityMap(cmap_map))):
-                # cmap is the glyph truth; CmapIdentityMap adds the two
-                # decode truths: 0x0000 = tab/space, unmapped valid code
-                # points = exact-Unicode fonts. ToUnicode NEVER fills gaps
-                # here — it is the copy-protection decoy.
-                decoding = DocumentDecoding("cmap", CmapIdentityMap(cmap_map))
-                log("[+] Decoding via embedded font cmap (glyph truth) "
-                    "+ identity fallback for exact-Unicode fonts")
-            elif tu_map and _decodes_myanmar(DocumentDecoding("tounicode", tu_map)):
-                decoding = DocumentDecoding("tounicode", tu_map)
-                log("[+] Decoding via ToUnicode/sidecar map")
-        if decoding is None:
-            if legacy_map:
-                decoding = DocumentDecoding("legacy", legacy_map, legacy_page)
-            elif cmap_map:
-                decoding = DocumentDecoding("cmap", cmap_map)
-            elif tu_map:
-                decoding = DocumentDecoding("tounicode", tu_map)
-            else:
-                decoding = DocumentDecoding("none")
-
-        if decoding.kind == "none":
-            log("[!] No font cmap and no ToUnicode map; "
-                "unmapped codes will appear as [XXXX] placeholders")
-
+        log('[+] PDF decoding: stem instructions and per-resource font maps')
         for idx in range(npages):
-            yield _page(idx, decoding)
+            yield normal_page(idx)
             if (idx + 1) % 500 == 0:
                 log(f"    ... extracted {idx + 1}/{npages} pages")
 
@@ -556,7 +321,7 @@ def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
     exactly; for .txt/.pdf those fields are dropped to keep memory minimal.
     """
     metadata, npages, pages = stream_pdf_pages(pdf_path, detector=detector, log=log,
-                                                text_layout=text_layout)
+                                                text_layout=text_layout, source_encoding=source_encoding)
 
     lane_log = LaneLog(book_name or os.path.basename(pdf_path))
 
@@ -572,33 +337,30 @@ def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
             raw = pg["text"]
             lane_log.stem(idx + 1, pg.get("lane_trace", ()))
             named_zawgyi = has_only_zawgyi_fonts(pg.get("font_names"))
-            category, prob = ("ZAWGYI", 1.0) if named_zawgyi else detector.detect(raw)
-            cat = _norm_category(category)
             parsing_path = 'legacy' if pg.get('decode_kind') == 'legacy' else 'font-cmap'
-            result = finish.finish_text(raw, source='parse', parsing_path=parsing_path,
-                                        zawgyi_codepage=named_zawgyi,
-                                        already_zawcode=pg.get('text_path') == 'zawcode',
-                                        source_encoding=source_encoding)
+            result = finish.finish_pdf_page(raw, parsing_path=parsing_path,
+                                            zawgyi_codepage=named_zawgyi,
+                                            source_encoding=source_encoding)
             base, cleaned = result['base'], result['clean']
-            rep = {'page': idx + 1, 'category': cat, 'prob': _safe_prob(prob),
+            cat = result['category']
+            rep = {'page': idx + 1, 'category': cat, 'prob': 1.0 if cat == 'ZAWGYI' else 0.0,
                    'text': cleaned if apply_cleanup else base,
                    'base': base, 'clean': cleaned, 'decision': result['decision'],
                    'scan': result['scan'], 'n_changes': _count_diff_lines(base, cleaned)}
-            if pg.get('text_path'):
-                rep['text_path'] = pg['text_path']
+            if result['decision'] == 'zawcode':
+                rep['text_path'] = 'zawcode'
+            if pg.get('warnings'):
+                rep['warnings'] = pg['warnings']
             if want_layout:
                 lines = []
-                for line in pg['lines']:
-                    raw_line = line[3]
-                    converted = finish.apply_decision(raw_line, result['decision'])
-                    value = finish.clean(converted, apply_cleanup=apply_cleanup)
-                    lines.append((*line[:3], value, line[4] if len(line) > 4 else None))
-                rep.update({'lines': lines, 'wh': pg['wh'], 'has_img': pg['has_img']})
-            decision = result['decision']
-            if pg.get('text_path') == 'zawcode':
-                decision = ('zawcode-draft' if decision == 'aligned'
-                            else f"zawcode-draft+{decision}")
-            lane_log.finish_page(idx + 1, decision)
+                finished_lines = result['finished'].split('\n')
+                if len(finished_lines) == len(pg['lines']):
+                    for line, finished_line in zip(pg['lines'], finished_lines):
+                        value = finish.finalize_pdf_output(finished_line, result['decision'], apply_cleanup)
+                        lines.append((*line[:3], value, line[4] if len(line) > 4 else None))
+                rep.update({'lines': lines, 'wh': pg['wh'], 'has_img': pg['has_img'],
+                            'images': pg.get('images', [])})
+            lane_log.finish_page(idx + 1, result['decision'])
             yield rep
 
     return metadata, npages, reports()
@@ -691,7 +453,7 @@ def collect_stream_results(pdf_path, detector, apply_cleanup, log=lambda m: None
     total_changes = 0
     for rep in reports:
         counts[rep["category"]] = counts.get(rep["category"], 0) + 1
-        page = {k: rep[k] for k in ("text", "lines", "wh", "has_img") if k in rep}
+        page = {k: rep[k] for k in ("text", "lines", "wh", "has_img", "images") if k in rep}
         page["marked"] = page_markup(page)
         pages.append(page)
         total_changes += rep["n_changes"]
@@ -746,8 +508,13 @@ def build_content(job, apply_cleanup=True, kind=None):
     kind = (kind or job.get("kind") or "pdf").lower()
     sep = "\n" if kind == "docx" else "\n\n"
     parts = []
-    for pg, rep in zip(job["pages"], job["reports"]):
-        if apply_cleanup and rep.get("clean") is not None:
+    finished_pages = (build_final_pages(job, apply_cleanup)
+                      if kind == 'docx' or (kind == 'pdf' and any(pg.get('_ocr_supplied') for pg in job['pages']))
+                      else None)
+    for index, (pg, rep) in enumerate(zip(job["pages"], job["reports"])):
+        if finished_pages is not None and (kind == 'docx' or pg.get('_ocr_supplied')):
+            parts.append(finished_pages[index]['text'])
+        elif apply_cleanup and rep.get("clean") is not None:
             parts.append(rep["clean"])
         else:
             parts.append(pg["text"])
@@ -782,7 +549,8 @@ def render_texts(out_path, pages, counts, pdf_path):
 
     texts = [p["text"] if isinstance(p, dict) else p for p in pages]
     header = build_meta_header(pdf_path, texts, counts, {})
-    marked = [page_markup(page, text) if isinstance(page, dict) else markup.text_to_markup(text)
+    marked = [(page['marked'] if isinstance(page.get('marked'), str) else page_markup(page, text))
+              if isinstance(page, dict) else markup.text_to_markup(text)
               for page, text in zip(pages, texts)]
 
     if ext == ".txt":
@@ -866,9 +634,10 @@ def process_pdf_bytes(data, detector, filename="upload.pdf", log=lambda m: None,
             reports.append({"page": rep["page"], "category": cat,
                             "prob": rep["prob"], "base": base, "clean": clean,
                             "decision": rep["decision"], "scan": rep["scan"],
+                            **({'warnings': rep['warnings']} if rep.get('warnings') else {}),
                             **({'text_path': path} if path else {})})
             pages.append({"text": base, "lines": rep["lines"], "wh": rep["wh"],
-                          "has_img": rep["has_img"]})
+                          "has_img": rep["has_img"], "images": rep.get("images", [])})
             counts[cat] = counts.get(cat, 0) + 1
         changes = collect_changes(reports)
     finally:
@@ -907,17 +676,12 @@ def _chunk_paragraphs(paragraphs, per_chunk=_DOCX_CHUNK_PARAGRAPHS):
 
 def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: None,
                        *, image_dir=None, source_encoding="auto"):
-    """Run the SAME detect -> Rabbit -> cleanup pipeline on raw DOCX bytes.
+    """Extract DOCX chunks, classify from encoding/font evidence, and finish.
 
-    With ``image_dir`` set, embedded pictures are extracted there and replaced
-    by OCR markers; the returned job carries ``image_files`` so the manager can
-    recognise them and swap the text back in (the JS branch does the same).
-
-
-    The docx container only stores text, so extraction is trivial (see
-    :mod:`docx_extract`); the ENCODING work is what the browser could never
-    do and the reason .docx is parsed server-side. No layout is kept — DOCX
-    finalize supports txt output only.
+    With ``image_dir`` set, embedded pictures are extracted and replaced by
+    OCR markers for the manager. Unknown text stays in stored order; direct
+    run bold/italic marks are retained. Coordinates are not retained, but
+    finished pages can be written as TXT, DOCX or PDF.
     """
     with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
         tmp.write(data)
@@ -953,12 +717,27 @@ def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: Non
         # or mixed font declarations never count as a Zawgyi face.
         chosen = ('zawgyi-one' if cat == 'ZAWGYI' else
                   'unicode' if cat == 'UNICODE' else source_encoding)
-        finished = finish.finish_text(chunk, source='parse', source_encoding=chosen)
-        base, clean = finished['base'], finished['clean']
+        if cat == 'UNKNOWN':
+            # DOCX source.js does not infer a page decision or reorder unknown
+            # text; missing/mixed font evidence leaves the stored text alone.
+            base, clean, decision = chunk, None, 'unknown'
+            scan_result = finish.scan.scan_text(base)
+        elif cat == 'UNICODE' and source_encoding == 'auto' and has_only_unicode_fonts(fonts):
+            # A direct known Unicode face keeps the stored base text; JS's
+            # cleanup follow-up does not perform pre-base mark movement.
+            base, clean, decision = chunk, preserve_regional_runs(chunk, cleanup_text), 'aligned'
+            scan_result = finish.scan.scan_text(clean)
+        else:
+            # The pinned JS currently throws ReferenceError in these two
+            # branches (missing orderZawgyi/orderUnicode bindings). Keep the
+            # existing Python conversion operational; this is a known gap.
+            finished = finish.finish_text(chunk, source='parse', source_encoding=chosen)
+            base, clean, decision, scan_result = (finished['base'], finished['clean'],
+                                                   finished['decision'], finished['scan'])
         reports.append({"page": idx + 1, "category": cat,
                         "prob": _safe_prob(prob), "base": base, "clean": clean,
-                        "decision": finished['decision'], "scan": finished['scan']})
-        pages.append({"text": base})
+                        "decision": decision, "scan": scan_result})
+        pages.append({"text": base, "marked": True})
         counts[cat] = counts.get(cat, 0) + 1
 
     job = {
@@ -995,25 +774,40 @@ def build_final_pages(job, apply_cleanup=True):
     """
     out = []
     for pg, rep in zip(job["pages"], job["reports"]):
+        if job.get('kind') == 'pdf' and pg.get('_ocr_supplied'):
+            # JS finalizes the original geometry ahead of OCR text when any
+            # extractable lines remain; OCR text itself is not PDF-finished.
+            page = {"text": pg["text"], "lines": pg.get("lines", []),
+                    "wh": pg["wh"], "has_img": pg["has_img"], "images": pg.get("images", [])}
+            page["marked"] = page_markup(page)
+            page["text"] = markup.strip_markup(page["marked"])
+            out.append(page)
+            continue
         if "lines" not in pg:
             text = (rep["clean"]
                     if (apply_cleanup and rep.get("clean") is not None)
                     else pg["text"])
-            page = {"text": text}
-            page["marked"] = page_markup(page)
+            marked = (markup.marked_text_to_markup(text) if pg.get('marked')
+                      else markup.text_to_markup(text))
+            page = {"text": markup.strip_markup(marked), "marked": marked}
             out.append(page)
             continue
-        # ``clean`` is only ever set for a UNICODE page, so this per-line
-        # pass cannot reach a Rabbit-converted (ZAWGYI) one.
         if apply_cleanup and rep["clean"] is not None:
-            lines = [(line[0], line[1], line[2], finish.clean(line[3]),
+            if job.get('kind') == 'pdf':
+                # PDF base lines have already passed the one output ordering.
+                # Legacy pages must not receive Unicode cleanup at all.
+                transform = ((lambda value: value) if rep.get('decision') == 'legacy'
+                             else lambda value: preserve_regional_runs(value, cleanup_text))
+            else:
+                transform = finish.clean
+            lines = [(line[0], line[1], line[2], transform(line[3]),
                       line[4] if len(line) > 4 else None) for line in pg["lines"]]
             text = rep["clean"]
         else:
             lines = pg["lines"]
             text = pg["text"]
         page = {"text": text, "lines": lines,
-                "wh": pg["wh"], "has_img": pg["has_img"]}
+                "wh": pg["wh"], "has_img": pg["has_img"], "images": pg.get("images", [])}
         page["marked"] = page_markup(page)
         out.append(page)
     return out

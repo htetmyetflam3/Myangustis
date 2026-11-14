@@ -663,21 +663,21 @@ class ExistingBehaviourTest(unittest.TestCase):
         self.assertEqual(lines[0][2], 14.04)
         self.assertEqual(lines[1][2], 9.0)
 
-    def test_block_without_tf_keeps_the_default_size(self):
+    def test_block_without_tf_inherits_the_previous_font_size(self):
         fonts = _simple_font(20)
         content = (b"BT /F2 14.04 Tf 1 0 0 1 72 720 Tm (a) Tj ET\n"
                    b"BT 1 0 0 1 72 700 Tm (b) Tj ET\n")
         pdf = simple_page_pdf({"F2": 20}, content, fonts=fonts)
         lines = lines_of(pdf, cmap_strategy())
         self.assertEqual(lines[0][2], 14.04)
-        self.assertEqual(lines[1][2], 12.0)
+        self.assertEqual(lines[1][2], 14.04)
 
-    def test_block_without_tm_is_skipped(self):
+    def test_block_without_tm_uses_identity_origin(self):
         fonts = _simple_font(20)
         content = (b"BT /F2 12 Tf (ignored) Tj ET\n"
                    b"BT /F2 12 Tf 1 0 0 1 72 700 Tm (kept) Tj ET\n")
         pdf = simple_page_pdf({"F2": 20}, content, fonts=fonts)
-        self.assertEqual(extract(pdf, cmap_strategy()), "kept")
+        self.assertEqual(extract(pdf, cmap_strategy()), "kept\nignored")
 
     def test_shadow_duplicates_are_collapsed(self):
         fonts = _simple_font(20)
@@ -889,8 +889,7 @@ class DigitConsonantConfusionTests(unittest.TestCase):
 
 
 class LegacyLayoutSelectionTests(unittest.TestCase):
-    """A legacy code page belongs to a keyboard layout, and the PDF does not
-    say which one was used. So every registered layout is tried and scored."""
+    """Legacy layout registries remain independent of PDF subset numbering."""
 
     def _shuffled(self, table, seed=7):
         import random
@@ -906,12 +905,6 @@ class LegacyLayoutSelectionTests(unittest.TestCase):
                           "\u1000\u102d\u102f\u101e\u100a\u103a")
         bad = score_text("\u102c\u1019\u103a\u102d\u1038\u102f\u1014\u1005")
         self.assertGreater(good["score"], bad["score"])
-
-    def test_quality_floor_sits_between_a_fitting_and_a_wrong_layout(self):
-        # Measured: a layout the document uses scores ~0.97, one it does not
-        # scores ~0.58-0.67. The floor must separate those two populations.
-        self.assertGreater(pipeline.LEGACY_QUALITY_FLOOR, 0.70)
-        self.assertLess(pipeline.LEGACY_QUALITY_FLOOR, 0.95)
 
     def test_registry_is_keyed_by_layout_not_typeface(self):
         # Unrelated typefaces share one layout, so the registry must not be
