@@ -509,10 +509,10 @@ def build_content(job, apply_cleanup=True, kind=None):
     sep = "\n" if kind == "docx" else "\n\n"
     parts = []
     finished_pages = (build_final_pages(job, apply_cleanup)
-                      if kind == 'pdf' and any(pg.get('_ocr_supplied') for pg in job['pages'])
+                      if kind == 'docx' or (kind == 'pdf' and any(pg.get('_ocr_supplied') for pg in job['pages']))
                       else None)
     for index, (pg, rep) in enumerate(zip(job["pages"], job["reports"])):
-        if pg.get('_ocr_supplied') and finished_pages is not None:
+        if finished_pages is not None and (kind == 'docx' or pg.get('_ocr_supplied')):
             parts.append(finished_pages[index]['text'])
         elif apply_cleanup and rep.get("clean") is not None:
             parts.append(rep["clean"])
@@ -549,7 +549,8 @@ def render_texts(out_path, pages, counts, pdf_path):
 
     texts = [p["text"] if isinstance(p, dict) else p for p in pages]
     header = build_meta_header(pdf_path, texts, counts, {})
-    marked = [page_markup(page, text) if isinstance(page, dict) else markup.text_to_markup(text)
+    marked = [(page['marked'] if isinstance(page.get('marked'), str) else page_markup(page, text))
+              if isinstance(page, dict) else markup.text_to_markup(text)
               for page, text in zip(pages, texts)]
 
     if ext == ".txt":
@@ -675,17 +676,12 @@ def _chunk_paragraphs(paragraphs, per_chunk=_DOCX_CHUNK_PARAGRAPHS):
 
 def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: None,
                        *, image_dir=None, source_encoding="auto"):
-    """Run the SAME detect -> Rabbit -> cleanup pipeline on raw DOCX bytes.
+    """Extract DOCX chunks, classify from encoding/font evidence, and finish.
 
-    With ``image_dir`` set, embedded pictures are extracted there and replaced
-    by OCR markers; the returned job carries ``image_files`` so the manager can
-    recognise them and swap the text back in (the JS branch does the same).
-
-
-    The docx container only stores text, so extraction is trivial (see
-    :mod:`docx_extract`); the ENCODING work is what the browser could never
-    do and the reason .docx is parsed server-side. No layout is kept — DOCX
-    finalize supports txt output only.
+    With ``image_dir`` set, embedded pictures are extracted and replaced by
+    OCR markers for the manager. Unknown text stays in stored order; direct
+    run bold/italic marks are retained. Coordinates are not retained, but
+    finished pages can be written as TXT, DOCX or PDF.
     """
     with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
         tmp.write(data)
@@ -721,12 +717,27 @@ def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: Non
         # or mixed font declarations never count as a Zawgyi face.
         chosen = ('zawgyi-one' if cat == 'ZAWGYI' else
                   'unicode' if cat == 'UNICODE' else source_encoding)
-        finished = finish.finish_text(chunk, source='parse', source_encoding=chosen)
-        base, clean = finished['base'], finished['clean']
+        if cat == 'UNKNOWN':
+            # DOCX source.js does not infer a page decision or reorder unknown
+            # text; missing/mixed font evidence leaves the stored text alone.
+            base, clean, decision = chunk, None, 'unknown'
+            scan_result = finish.scan.scan_text(base)
+        elif cat == 'UNICODE' and source_encoding == 'auto' and has_only_unicode_fonts(fonts):
+            # A direct known Unicode face keeps the stored base text; JS's
+            # cleanup follow-up does not perform pre-base mark movement.
+            base, clean, decision = chunk, preserve_regional_runs(chunk, cleanup_text), 'aligned'
+            scan_result = finish.scan.scan_text(clean)
+        else:
+            # The pinned JS currently throws ReferenceError in these two
+            # branches (missing orderZawgyi/orderUnicode bindings). Keep the
+            # existing Python conversion operational; this is a known gap.
+            finished = finish.finish_text(chunk, source='parse', source_encoding=chosen)
+            base, clean, decision, scan_result = (finished['base'], finished['clean'],
+                                                   finished['decision'], finished['scan'])
         reports.append({"page": idx + 1, "category": cat,
                         "prob": _safe_prob(prob), "base": base, "clean": clean,
-                        "decision": finished['decision'], "scan": finished['scan']})
-        pages.append({"text": base})
+                        "decision": decision, "scan": scan_result})
+        pages.append({"text": base, "marked": True})
         counts[cat] = counts.get(cat, 0) + 1
 
     job = {
@@ -776,8 +787,9 @@ def build_final_pages(job, apply_cleanup=True):
             text = (rep["clean"]
                     if (apply_cleanup and rep.get("clean") is not None)
                     else pg["text"])
-            page = {"text": text}
-            page["marked"] = page_markup(page)
+            marked = (markup.marked_text_to_markup(text) if pg.get('marked')
+                      else markup.text_to_markup(text))
+            page = {"text": markup.strip_markup(marked), "marked": marked}
             out.append(page)
             continue
         if apply_cleanup and rep["clean"] is not None:

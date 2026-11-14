@@ -159,7 +159,14 @@ result, a page with a short existing line can output that line instead of a
 successful OCR reading; Python now mirrors this behavior. `ocrPages` records
 successful recognition, not a guarantee that its text became the final output.
 Complete JS parity and the accuracy of particular books still need validation
-against real source pages.
+against real source pages. A file-by-file scope and evidence inventory is in
+[`JS-MIRROR-AUDIT.md`](JS-MIRROR-AUDIT.md).
+
+For DOCX, unknown-font text is left in its stored order and direct bold/italic
+run marks are retained. In the pinned JS reference, DOCX Zawgyi and explicitly
+Unicode conversion branches currently throw because `orderZawgyi` and
+`orderUnicode` are undefined. Python retains working conversions for those
+branches rather than reproducing those errors; this is a known divergence.
 
 The parser tests include deterministic differential checks against the JS
 font decoder, GSUB logic, witnessed visual recovery, PDF finishing and

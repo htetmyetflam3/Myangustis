@@ -49,7 +49,7 @@ __all__ = [
 def convert(source, out_path, *, kind=None, filename=None, method=None,
             include_text=False, source_encoding="auto",
             text_layout=None, log=None):
-    """Convert one document, exactly like ``convert()`` in ``index.js``.
+    """Convert one document through Python's parser and writer.
 
     ``source`` is a path or raw ``bytes``. Returns the result dict documented
     in :mod:`manager` (``file``, ``from``, ``to``, ``pages``, ``counts``,

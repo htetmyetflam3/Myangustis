@@ -296,9 +296,10 @@ def _ocr_docx_images(job, log):
         try:
             data = Path(item["path"]).read_bytes()
             text = ocr.ocr_image(data, suffix=Path(item["path"]).suffix)
-            finished = finish.finish_text(text or '', source='ocr')
-            replacements[item['marker']] = finished['base'].strip()
-            clean_replacements[item['marker']] = finished['clean'].strip()
+            # JS inserts the trimmed OCR reading directly, without a separate
+            # parsing or cleanup pass for the embedded image.
+            replacements[item['marker']] = (text or '').strip(_JS_TRIM_CHARS)
+            clean_replacements[item['marker']] = replacements[item['marker']]
             if replacements[item["marker"]]:
                 recognized.append(item["id"])
                 log(f"    DOCX image {item['id']}: OCR supplied the text")

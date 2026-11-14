@@ -19,6 +19,7 @@ import re
 import uuid
 import zipfile
 import xml.etree.ElementTree as ET
+from urllib.parse import unquote
 
 # Same bomb guard as the PDF side: a docx is a zip container, and one
 # member ("42.zip" style) must never be allowed to explode in memory.
@@ -40,6 +41,7 @@ W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
 V = "{urn:schemas-microsoft-com:vml}"
 R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+R_STRICT = "{http://purl.oclc.org/ooxml/officeDocument/relationships}"
 MARKER_OPEN = "\uE000OCR-"
 MARKER_CLOSE = "\uE001"
 _MARKER_RE = re.compile(MARKER_OPEN + r"[0-9a-f-]{36}-\d+" + MARKER_CLOSE)
@@ -72,9 +74,9 @@ def _read_member(z, name):
 def _paragraphs_from_xml(xml_bytes, resolve_image=None, font_names_by_paragraph=None):
     """Paragraphs from one wordprocessingml part (document/header/footer/notes).
 
-    Within a paragraph, ``<w:t>`` runs are concatenated in order; ``<w:br/>``
-    becomes a newline and ``<w:tab/>`` a tab. Empty paragraphs are kept —
-    they carry the document's spacing.
+    Within a paragraph, ``<w:t>`` runs are concatenated in order with direct
+    bold/italic marks; ``<w:br/>`` becomes a newline and ``<w:tab/>`` a tab.
+    Empty paragraphs are kept — they carry the document's spacing.
 
     ``resolve_image(rel_id)`` returns an OCR placeholder for a picture run.
     The placeholder is a private-use marker, so it survives detection and
@@ -84,15 +86,36 @@ def _paragraphs_from_xml(xml_bytes, resolve_image=None, font_names_by_paragraph=
     paragraphs = []
     for p in root.iter(f"{W}p"):
         parts = []
+        # JS preserves direct bold/italic run marks through the markup stage.
+        run_marks = {}
+        for run in p.iter(f"{W}r"):
+            bold = italic = False
+            for item in run.iter():
+                if item.tag in (f"{W}b", f"{W}bCs", f"{W}i", f"{W}iCs"):
+                    val = item.get(f"{W}val")
+                    enabled = val is None or val.lower() not in ("false", "0", "off", "none")
+                    if item.tag in (f"{W}b", f"{W}bCs"):
+                        bold = enabled
+                    else:
+                        italic = enabled
+            for item in run.iter(f"{W}t"):
+                run_marks[id(item)] = (bold, italic)
         for node in p.iter():
             if node.tag == f"{W}t":
-                parts.append(node.text or "")
+                text = node.text or ""
+                bold, italic = run_marks.get(id(node), (False, False))
+                if text and italic:
+                    text = f"<i>{text}</i>"
+                if text and bold:
+                    text = f"<b>{text}</b>"
+                parts.append(text)
             elif node.tag == f"{W}br":
                 parts.append("\n")
             elif node.tag == f"{W}tab":
                 parts.append("\t")
             elif resolve_image is not None and node.tag in (f"{A}blip", f"{V}imagedata"):
-                rel = node.get(f"{R}embed") or node.get(f"{R}id")
+                rel = (node.get(f"{R}embed") or node.get(f"{R}id")
+                       or node.get(f"{R_STRICT}embed") or node.get(f"{R_STRICT}id"))
                 if rel:
                     marker = resolve_image(rel)
                     if marker:
@@ -148,6 +171,14 @@ def _image_relationships(z, part):
         if "://" in target or "\\" in target or "\0" in target:
             continue
         target = target.split("#", 1)[0]
+        if re.search(r"%(?![0-9A-Fa-f]{2})", target):
+            continue
+        try:
+            target = unquote(target, encoding="utf-8", errors="strict")
+        except UnicodeDecodeError:
+            continue
+        if "://" in target or "\\" in target or "\0" in target:
+            continue
         member = (posixpath.normpath(target).lstrip("/") if target.startswith("/")
                   else posixpath.normpath(posixpath.join(posixpath.dirname(part), target)))
         if member.startswith("../") or member not in z.namelist():
@@ -197,6 +228,21 @@ def extract_docx_paragraphs(docx_path, *, image_dir=None, image_files=None,
         if len(infos) > MAX_ENTRIES:
             raise ValueError(
                 f"docx has {len(infos)} entries; the cap is {MAX_ENTRIES}")
+        names = {info.filename for info in infos}
+        if '[Content_Types].xml' not in names or DOCUMENT_XML not in names:
+            raise ValueError('ZIP package is not a valid DOCX document')
+        for info in infos:
+            name = info.orig_filename
+            if '\\' in name or '\0' in name or name.startswith('/') or '..' in name.split('/'):
+                raise ValueError(f"DOCX contains an unsafe member name {name!r}")
+            if info.flag_bits & 1:
+                raise ValueError(f"DOCX member {name!r} is encrypted")
+            if info.compress_type not in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED):
+                raise ValueError(f"DOCX member {name!r} uses unsupported compression")
+            if info.file_size > MAX_MEMBER_MB * 1024 * 1024:
+                raise ValueError(f"DOCX member {name!r} exceeds the {MAX_MEMBER_MB} MB cap")
+            if info.file_size / max(info.compress_size, 1) > MAX_MEMBER_RATIO:
+                raise ValueError(f"DOCX member {name!r} exceeds the {MAX_MEMBER_RATIO}x compression-ratio cap")
         total = sum(info.file_size for info in infos)
         if total > MAX_TOTAL_MB * 1024 * 1024:
             raise ValueError(
