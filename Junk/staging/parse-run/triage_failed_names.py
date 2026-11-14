@@ -30,16 +30,19 @@ from myangustis_parser.workflow import diagnostics            # noqa: E402
 def sections(text):
     """``===== name =====`` -> ``{name: body}``."""
     out, name, body = {}, None, []
+    def flush():
+        if name is not None:
+            # The same name can appear more than once (a retried job, a book
+            # split across parts); merge instead of overwriting the first half.
+            out.setdefault(name, []).append('\n'.join(body))
     for line in text.splitlines():
         if line.startswith('===== ') and line.rstrip().endswith(' ====='):
-            if name is not None:
-                out[name] = '\n'.join(body)
+            flush()
             name, body = line.strip('= ').strip(), []
         elif name is not None:
             body.append(line)
-    if name is not None:
-        out[name] = '\n'.join(body)
-    return out
+    flush()
+    return {key: '\n\f\n'.join(chunks) for key, chunks in out.items()}
 
 
 def record(page, name, body):
@@ -54,9 +57,13 @@ def record(page, name, body):
         'residue': diagnostics._slot_counts(proven), 'residue_unproven': diagnostics._slot_counts(unproven),
         'residue_total': sum(residue.values()), 'unmapped_codes': 0, 'fallback_bytes': 0,
         'replacement_chars': found['replacement_chars'], 'duplicate_lines': found['adjacent_duplicate_lines'],
+        'hex_placeholders': found['hex_placeholder_patterns'], 'repeated_lines': found['repeated_lines'],
+        'detached_marks': found['detached_marks'],
         'image_present': False,
-        'status': ('empty' if not found['chars'] else 'degraded' if (unproven or found['replacement_chars'])
-                   else 'repaired' if proven else 'ok'),
+        'status': ('empty' if not found['chars'] else
+                   'degraded' if (unproven or found['replacement_chars'] or found['hex_placeholder_patterns']
+                                  or found['detached_marks']) else
+                   'repaired' if proven else 'ok'),
     }
 
 

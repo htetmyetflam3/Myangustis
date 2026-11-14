@@ -54,7 +54,7 @@ def _record(**values):
               'nonempty_lines': 4, 'single_char_lines': 0, 'residue': '', 'residue_total': 0,
               'residue_unproven': '', 'unmapped_codes': 0, 'fallback_bytes': 0,
               'replacement_chars': 0, 'duplicate_lines': 0,
-              'hex_placeholders': 0, 'repeated_lines': 0,
+              'hex_placeholders': 0, 'repeated_lines': 0, 'detached_marks': 0,
               'image_present': True, 'status': 'ok'}
     record.update(values)
     return record
@@ -102,6 +102,12 @@ class VerdictTests(unittest.TestCase):
         verdict = self.report(_record(fallback_bytes=12), _record(page=2, fallback_bytes=0))
         self.assertEqual(verdict['symptom'], 'latin-fallback')
         self.assertEqual(verdict['degraded'], 1)
+
+    def test_a_mark_alone_is_named_before_the_text_is_blamed(self):
+        verdict = self.report(_record(detached_marks=660))
+        self.assertEqual(verdict['symptom'], 'detached-marks')
+        self.assertIn('နှင့်', verdict['evidence'])
+        self.assertIn('joined', verdict['hint'])
 
     def test_code_dump_is_named_as_a_code_dump(self):
         verdict = self.report(_record(hex_placeholders=120))

@@ -71,11 +71,15 @@ no PDF copied, nothing extracted from the parquet. Output:
 
 What it found, matching the report:
 
-| book | what the text shows |
-| --- | --- |
-| `-1759341726906` | `နှင် ့` **660 times** — the dot is detached from its base and sits after a space. Second half is ZawCode (rules never fire). |
-| `-1708528931770` | `စကပ\t/ရ/၊` fragment repeated — not text; the worst case, 0 readable words. |
-| `-1758614468061` | first half, Zawgyi run never fires; text is `ပ[00E5]ပ[00E2]…` code dumps. |
+| book | syndrome the tool assigns | the text shows |
+| --- | --- | --- |
+| `-1759341726906` | `detached-marks`, 662 | `နှင် ့` — the dot is detached from its base and sits after a space. Second half is ZawCode (rules never fire). |
+| `-1758614468061` | `hex-placeholders`, 23 | first half, Zawgyi run never fires; text is `ပ[00E5]ပ[00E2]…` code dumps. |
+| `-1708528931770` | `legacy-ascii-residue` + `repeated-text` | `စကပ\t/ရ/၊` fragment repeated — not text; the worst case, 0 readable words. |
+
+Across the 21 books with Python output: `detached-marks` 6, `legacy-ascii-residue` 3,
+`repeated-text` 2, `hex-placeholders` 1, `duplicated-text` 1. All of these are now
+named from the text alone, which is what the log format has to do live.
 
 The JS output for these is the reference, not these files: they predate the JS
 fix.

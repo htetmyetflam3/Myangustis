@@ -69,7 +69,13 @@ def text_metrics(text):
         # This is a visual pattern, not necessarily a decoder-generated placeholder.
         'hex_placeholder_patterns': len(re.findall(r'\[[0-9A-F]{2,8}\]', text)),
         'control_chars': sum(ord(c) < 32 and c not in '\n\r\t' for c in text),
+        'detached_marks': len(_DETACHED_MARKS.findall(text)),
     }
+
+
+#: A combining mark alone between spaces lost its base. ``နှင့်`` becoming
+#: ``နှင် ့`` is the shape of it: the mark is right, its host run is gone.
+_DETACHED_MARKS = re.compile(r'(?<=[\s\u200b])[\u102b-\u103e]+(?=[\s\u200b]|$)')
 
 
 # ── page record ────────────────────────────────────────────────────────────
@@ -116,7 +122,7 @@ def page_record(page, pg, result, output, cleanup):
     # book was Myanmar (see BookReport._status).
     status = ('empty' if not metrics['chars'] else
               'degraded' if (unproven or metrics['replacement_chars'] or unmapped or
-                             found['hex_placeholder_patterns'] or
+                             found['hex_placeholder_patterns'] or found['detached_marks'] or
                              (found['repeated_lines'] * 2 > found['nonempty_lines'] and
                               found['nonempty_lines'] >= 10)) else
               'repaired' if proven else 'ok')
@@ -133,6 +139,7 @@ def page_record(page, pg, result, output, cleanup):
         'unmapped_codes': unmapped, 'fallback_bytes': fallback,
         'replacement_chars': metrics['replacement_chars'],
         'hex_placeholders': found['hex_placeholder_patterns'],
+        'detached_marks': found['detached_marks'],
         'duplicate_lines': metrics['adjacent_duplicate_lines'],
         'repeated_lines': found['repeated_lines'],
         'warnings': ','.join(warnings), 'cleanup_applied': bool(cleanup),
@@ -200,6 +207,13 @@ def syndrome(totals):
             f'(fonts {totals["fallback_fonts"] or "?"})',
             'check whether those runs are Latin labels; if a page should be '
             'Myanmar, its text is unrecoverable without a font map'))
+    if totals['detached_marks']:
+        found.append((
+            'detached-marks', 'text-corrupted',
+            f'{totals["detached_marks"]} combining marks sit alone between spaces '
+            f'(the shape of "နှင့်" written as "နှင် ့")',
+            'a mark lost the run it was drawn with; the fault is in how pieces '
+            'are joined, not in the ordering that follows it'))
     if totals['hex_placeholders']:
         found.append((
             'hex-placeholders', 'text-corrupted',
@@ -310,6 +324,7 @@ class BookReport:
             'duplicate_lines': sum(record['duplicate_lines'] for record in records),
             'repeated_lines': sum(record.get('repeated_lines') or 0 for record in records),
             'hex_placeholders': sum(record.get('hex_placeholders') or 0 for record in records),
+            'detached_marks': sum(record.get('detached_marks') or 0 for record in records),
             'repeated_pages': sum(
                 (record.get('repeated_lines') or 0) * 2 > (record.get('nonempty_lines') or 0)
                 and (record.get('nonempty_lines') or 0) >= 10 for record in records),
