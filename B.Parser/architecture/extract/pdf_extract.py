@@ -23,6 +23,7 @@ from myangustis_parser.normalize.mm_score import MARKS
 from myangustis_parser.normalize.detector import contains_myanmar
 from myangustis_parser.resources.font_names import is_unresolved_legacy_font
 from myangustis_parser.normalize import legacy_ascii
+from myangustis_parser.resources.font_names import is_legacy_font_name
 from myangustis_parser.extract.pdf_fonts import (
     CMapEncoding,
     CmapIdentityMap,
@@ -1042,6 +1043,12 @@ def _join_page_runs(pieces, doc):
         joined = _join_visual_runs(pieces, doc)
     else:
         joined = ''.join(piece[2] for piece in pieces)
+    # Scope it the way the design scopes the code page: only a page that
+    # carries a legacy Myanmar face can be reading that face's slots. A page
+    # of plain Unicode text is never searched for them.
+    names = [piece[4] for piece in pieces if len(piece) > 4 and piece[4]]
+    if not any(is_legacy_font_name(name) or 'zawgyi' in name.lower() for name in names):
+        return joined
     return legacy_ascii.map_residue(joined)[0]
 
 def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=False, *, used_myanmar_fonts=None, used_legacy_fonts=None, image_records=None, diagnostics=None):
