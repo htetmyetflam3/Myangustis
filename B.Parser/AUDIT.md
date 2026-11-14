@@ -247,20 +247,25 @@ included in this repository. Per page the collection records `chars`, `lines`,
 `short_share`, `mm`, `latin_in_mm`, `doubled`, `score`, `orphan`, `disorder`:
 `audit/broken-pages.jsonl`.
 
-| part | pages | flagged |
+| part | pages | rabbit |
 |---|---|---|
-| part-1 | 1359 | 304 |
-| part-2 | 1360 | 330 |
-| part-3 | 1359 | 297 |
-| part-4 | 340 | 121 |
-| part-5 | 85 | 6 |
-| part-6 | 85 | 28 |
-| part-7 | 85 | 12 |
-| part-8 | 85 | 13 |
-| part-9 | 340 | 81 |
+| part-1 | 1359 | 1050 |
+| part-2 | 1360 | 731 |
+| part-3 | 1359 | 776 |
+| part-4 | 340 | 84 |
+| part-5 | 85 | 78 |
+| part-6 | 85 | 52 |
+| part-7 | 85 | 37 |
+| part-8 | 85 | 7 |
+| part-9 | 340 | 213 |
 
-**1192 of 5098 pages are flagged** (score < 0.9, or Latin letters
-inside Myanmar text, or > 25 % of lines under four characters).
+The flag is **not** mine: every page carries the parser's own lane verdict from
+the same run (`[BEAUTIFY] decision … rule=`), and \`rabbit\` is the parser saying
+the page's mark order is violated. **3028 of 5098 pages are rabbit**;
+\`aligned\` 661, \`zawcode\` 1372, \`legacy\` 37. A separate threshold of my own
+(score < 0.9, Latin inside Myanmar, > 25 % short lines) fired on only 248 of
+those 3028 pages, so it described a different set and is kept in the records as
+a measurement, never as the flag.
 
 Worst pages:
 
