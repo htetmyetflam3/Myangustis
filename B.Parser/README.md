@@ -18,7 +18,7 @@ uv run --package myangustis-parser myangustis-parse --help
 ```
 
 The parser reads its bundled maps from `resources/maps_data/`; set
-`PRASER_MAP_DIR` to use an external directory. Plain JSON is read directly and
+`PRASER_MAP_DIR` to use an external directory (see [Path anchoring](#path-anchoring)). Plain JSON is read directly and
 sealed JSON/master data is read through `myangustis_engine.secure_data` in the
 same process. An external map directory must also include the bundled
 `legacy-subset-profiles.json` when parsing legacy-font PDFs. Supply the Engine master, key and prebuilt trees as documented in
@@ -41,11 +41,54 @@ share code points. For known Zawgyi content without direct font evidence, use
 depends on the scans and traineddata; no accuracy guarantee is implied.
 
 
+## Path anchoring
+
+Every path read from the root `.env` is anchored to the **project root**, never
+to the filesystem root. A leading `/` or `./` means the checkout, so these
+values work as written:
+
+```ini
+PARSER_LOG_ENABLED=on
+PARSER_LOG_FILE=/log/                    # <repo>/log/lane-decisions.log
+PARSER_INPUT_DIR=/Junk/Parser/upload/    # <repo>/Junk/Parser/upload
+PRASER_UPLOAD_DIR=./upload/              # <repo>/Junk/upload
+PRASER_OUTPUT_DIR=/output/               # <repo>/Junk/output
+```
+
+The rule, applied to `PARSER_INPUT_DIR`, `PARSER_OCR_INPUT_DIR`,
+`PRASER_UPLOAD_DIR`, `PRASER_OUTPUT_DIR`, `PARSER_LOG_FILE`, `PRASER_MAP_DIR`,
+`PRASER_FONT_DIR`, `PRASER_OUTPUT_FONT_DIR`, `PRASER_OCR_LANG_PATH`,
+`PRASER_TESSDATA_DIR`, `PRASER_TESSERACT_BIN` and `SSH_KEY`:
+
+| value | resolves to |
+| --- | --- |
+| `""` | the built-in default |
+| `~/parser` | the user's home directory |
+| `abs:/srv/parser`, `file:/srv/parser` | that host path, exactly |
+| `C:\Parser\out` | that Windows path, exactly |
+| `output`, `./output/`, `/output/` | `<repo>/Junk/output` for input/output, `<repo>/output` for logs and maps |
+| `Junk/Parser/upload`, `/Junk/Parser/upload/` | `<repo>/Junk/Parser/upload` |
+| `/tmp/out` (an existing host directory) | `/tmp/out` — a deployment location is honoured |
+
+A value that would resolve against `/` is treated as a project path instead, so
+nothing silently reads or writes outside the checkout. `PARSER_INPUT_DIR` and
+`PARSER_OCR_INPUT_DIR` accept a file or a folder; a value ending with `/` is a
+folder, and `PARSER_LOG_FILE` ending with `/` (or naming an existing directory)
+puts `lane-decisions.log` inside it. `PRASER_PATH_ROOT` moves the anchor for
+every setting at once. `SSH_DIR` and the `REMOTE_*` queue folders are paths on
+the remote host and are deliberately not anchored locally.
+
+The same rule is used by the shared loader `index-path.py`, so importing the
+parser as a library reads the root `.env` too — the parser is not isolated from
+the workspace configuration.
+
+
 ## PDF lane decision log
 
 Set `PARSER_LOG_ENABLED=on` in the repository-root `.env` (or process
 environment) to append lane decisions to `B.Parser/logs/lane-decisions.log`.
-The default is off; `PARSER_LOG_FILE` optionally selects another file path.
+The default is off; `PARSER_LOG_FILE` optionally selects another file path,
+anchored to the project root as described above.
 The continuous scraper service loads the root `.env` on the VPS. Restart the parser or combined service after changing it. The file is created with owner-only permissions when
 new, and is ignored by Git. Manage its rotation and backups as needed.
 
@@ -155,11 +198,16 @@ uv run main.py ocr --ssh
 ```
 
 For a single output path without an extension, the source extension is appended.
-All explicit output paths must resolve inside the repository's `Junk` directory:
-relative output paths are relative to `Junk`, and absolute paths outside it are
-rejected. Input files are never deleted. Existing output files are not
-intentionally overwritten. Set `PARSER_INPUT_DIR` or `PARSER_OCR_INPUT_DIR` in
-root `.env` to provide a default local input when the input argument is omitted.
+All explicit output paths must resolve inside the repository's `Junk` directory
+(or the upload/output directory set in `.env`): relative output paths are
+relative to `Junk`, a leading slash is still a project path
+(`/Parser/output/txt/` is `Junk/Parser/output/txt/`), and paths outside those
+directories are rejected. Input paths follow the same anchoring, and a bare
+filename is looked up in `Junk/Parser/upload/pdf/` or `upload/docx/`. Input
+files are never deleted. Existing output files are not intentionally
+overwritten. Set `PARSER_INPUT_DIR` or `PARSER_OCR_INPUT_DIR` in root `.env` to
+provide a default local input when the input argument is omitted; the CLI works
+from any current working directory.
 
 Continuous runs started as root on a systemd host install and start their own
 `myangustis-parse.service` or `myangustis-ocr.service`. Add `--foreground` to

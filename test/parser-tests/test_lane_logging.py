@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 from myangustis_engine.logen import Logen
 from myangustis_parser.extract.pdf_fonts import DocumentDecoding, FontDecoder
+from myangustis_parser.resources import paths
 from myangustis_parser.workflow import lane_log, pipeline
 
 
@@ -63,6 +64,7 @@ class TestLaneLogging(unittest.TestCase):
     def test_toggle_console_always_file_only_when_enabled(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / 'nested' / 'decisions.log'
+            path.parent.mkdir()  # an existing host path is used as written
             for switch in ('off', 'on'):
                 stderr = io.StringIO()
                 with patch.dict(os.environ, {'PARSER_LOG_ENABLED': switch, 'PARSER_LOG_FILE': str(path)}), \
@@ -145,7 +147,7 @@ class TestLaneLogging(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp, \
              patch.dict(os.environ, {'PARSER_LOG_ENABLED': 'off'}, clear=True), \
              patch.dict(sys.modules, {'index-path': None}), \
-             patch.object(lane_log, 'REPO_ROOT', Path(temp)):
+             patch.object(paths, 'REPO_ROOT', Path(temp)):
             root = Path(temp)
             shutil.copyfile(source, root / 'index-path.py')
             (root / '.env').write_text('PARSER_LOG_ENABLED=on\nPARSER_LOG_FILE=from-env.log\n')

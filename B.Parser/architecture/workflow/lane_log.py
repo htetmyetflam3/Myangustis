@@ -1,34 +1,33 @@
 """Per-book parser decisions; only changes and contiguous page ranges are logged."""
 from __future__ import annotations
 
-import importlib.util
 import os
 from pathlib import Path
 import sys
 
 from myangustis_engine.logen import Logen
-from myangustis_parser.resources.paths import REPO_ROOT
+from myangustis_parser.resources import paths
 
 
 def _load_workspace_env():
     """Use the repository's shared loader when running from a checkout."""
-    module = sys.modules.get('index-path')
-    if module is not None:
-        module.load_root_env()
-        return
-    path = REPO_ROOT / 'index-path.py'
-    if path.is_file():
-        spec = importlib.util.spec_from_file_location('index-path', path)
-        module = importlib.util.module_from_spec(spec)
-        sys.modules['index-path'] = module
-        spec.loader.exec_module(module)  # loads root .env with environment precedence
+    paths.load_workspace_env()
+
+
+def log_file():
+    """The decision-log file, anchored to the project root.
+
+    ``PARSER_LOG_FILE=/log/`` writes ``<repo>/log/lane-decisions.log`` and
+    ``PARSER_LOG_FILE=./logs/decisions.log`` writes inside the checkout —
+    never under the filesystem root.
+    """
+    return paths.log_file_path()
 
 
 def make_logger():
     _load_workspace_env()
     enabled = os.environ.get('PARSER_LOG_ENABLED', '').strip().lower() in ('1', 'true', 'yes', 'on')
-    file = (Path(os.environ.get('PARSER_LOG_FILE') or REPO_ROOT / 'B.Parser' / 'logs' / 'lane-decisions.log')
-            .expanduser()) if enabled else None
+    file = log_file() if enabled else None
     # stderr is still a console (or service journal), without corrupting CLI
     # JSON/text output. File logging is independent of the console sink.
     return Logen(file=file, console=lambda message: print(message, file=sys.stderr, flush=True))

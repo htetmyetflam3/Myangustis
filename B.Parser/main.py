@@ -137,23 +137,20 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def resolve_input_path(raw_input: str) -> Path:
-    """Resolve an explicit path or a bare filename from Junk/Parser/upload/."""
+    """Resolve an explicit path or a bare filename from Junk/Parser/upload/.
+
+    Paths are anchored to the project root, never the filesystem root: a value
+    from .env such as ``/Junk/Parser/upload/`` is ``<repo>/Junk/Parser/upload``
+    and ``./upload/`` is ``<repo>/Junk/upload``. A bare filename is looked up in
+    the default upload folder for its suffix.
+    """
     text = str(raw_input or "").strip()
     if not text:
         raise ValueError("an input file is required")
-    candidate = Path(text)
-    has_dir = ("/" in text) or ("\\" in text) or candidate.is_absolute()
-    if has_dir:
-        if not candidate.is_file():
-            raise FileNotFoundError(f"Input not found: {candidate}")
-        return candidate
-
-    default_path = paths.input_dir_for(candidate.suffix.lower()) / candidate.name
-    if default_path.is_file():
-        return default_path
-    if candidate.is_file():
-        return candidate
-    raise FileNotFoundError(f"Input not found: {default_path}")
+    resolved = paths.resolve_input(text)
+    if resolved is None or not resolved.exists():
+        raise FileNotFoundError(f"Input not found: {resolved}")
+    return resolved
 
 
 def resolve_output_format(source: Path, requested: str | None) -> str:
@@ -204,13 +201,40 @@ def run_document(source: Path, out_path: Path, *, use_ocr: bool = False, log=pri
     )
 
 
-def _inside_junk(path: Path) -> Path:
-    root = (REPO_ROOT / 'Junk').resolve()
-    path = path.expanduser()
-    path = (path if path.is_absolute() else root / path).resolve()
-    if not path.is_relative_to(root):
-        raise ValueError('Output must be inside the repository Junk directory.')
+def _inside_junk(raw) -> Path:
+    """Resolve a caller output path inside the repository Junk directory.
+
+    Output paths follow the same anchoring as .env: a relative value is
+    relative to Junk, and a leading slash is a project path rather than a
+    filesystem path — ``/output/`` means ``<repo>/Junk/output``.
+    """
+    resolved = paths.working_path(raw, base=REPO_ROOT)
+    if resolved is None:
+        raise ValueError('an output path is required')
+    path = resolved.expanduser().resolve()
+    roots = _output_roots()
+    if not any(path.is_relative_to(root) for root in roots):
+        raise ValueError('Output must be inside the repository Junk directory '
+                         'or the upload/output directory set in .env.')
     return path
+
+
+def _output_roots():
+    """Where output may be written: Junk, plus an .env-configured directory.
+
+    ``PRASER_OUTPUT_DIR``/``PRASER_UPLOAD_DIR`` are the operator's explicit
+    choice, so a deployment directory outside the checkout is allowed when it
+    is the configured one; ad-hoc paths outside remain refused.
+    """
+    roots = [(REPO_ROOT / 'Junk').resolve()]
+    for directory in (paths.UPLOAD_DIR, paths.OUTPUT_DIR):
+        try:
+            resolved = Path(directory).resolve()
+        except OSError:
+            continue
+        if resolved not in roots:
+            roots.append(resolved)
+    return roots
 
 
 def _new_output(source: Path, raw: str | None, relative: Path | None = None) -> Path:
@@ -218,8 +242,8 @@ def _new_output(source: Path, raw: str | None, relative: Path | None = None) -> 
     if raw is None:
         directory = _inside_junk(paths.output_dir_for(default_format))
         return directory / (relative.parent if relative else Path()) / (source.stem + '.' + default_format)
-    dest = _inside_junk(Path(raw))
-    is_dir = dest.is_dir() or raw.endswith(('/', os.sep))
+    dest = _inside_junk(raw)
+    is_dir = dest.is_dir() or str(raw).strip().endswith(('/', os.sep))
     if is_dir:
         return dest / (relative.parent if relative else Path()) / (source.stem + '.' + default_format)
     if not dest.suffix:
@@ -274,7 +298,9 @@ def _modern_cli(argv):
                 # The service runs from the repository root, not the shell's cwd.
                 command.append(str(input_path.resolve()) if input_path.exists() else args.input)
             if args.output is not None:
-                command.append(args.output)  # relative outputs are always relative to Junk
+                # The service runs from the repository root; keep the resolved
+                # path so .env/CLI values cannot drift with the working directory.
+                command.append(str(_inside_junk(args.output)))
             if args.ssh:
                 command.append('--ssh')
             if args.continuous:
@@ -291,13 +317,18 @@ def _modern_cli(argv):
                 return run_document(source, output, use_ocr=which == 'ocr', log=print)
             run_forever(mode, convert)
             return 0
-        configured = os.environ.get('PARSER_OCR_INPUT_DIR' if mode == 'ocr' else 'PARSER_INPUT_DIR')
-        raw = args.input or configured
-        if not raw:
+        # PARSER_INPUT_DIR / PARSER_OCR_INPUT_DIR are already anchored to the
+        # project root (never /Junk/ on the filesystem root); a bare CLI
+        # filename falls back to the Junk upload folder for its suffix.
+        configured = paths.input_dir_from_env(mode)
+        if args.input is not None:
+            source = resolve_input_path(args.input)
+        elif configured is not None:
+            source = configured
+        else:
             raise ValueError('Provide an input file/folder or set PARSER_INPUT_DIR / PARSER_OCR_INPUT_DIR.')
-        source = Path(raw).expanduser()
-        if not source.exists():
-            source = resolve_input_path(raw)
+        if source is None or not source.exists():
+            raise FileNotFoundError(f'Input not found: {source}')
         if source.is_file():
             if args.continuous:
                 raise ValueError('--continuous requires an input directory.')
@@ -309,9 +340,11 @@ def _modern_cli(argv):
             return 0
         if not source.is_dir():
             raise ValueError('Input must be a file or a directory.')
-        if args.output and not (_inside_junk(Path(args.output)).is_dir() or args.output.endswith(('/', os.sep))):
+        output_dir = _inside_junk(args.output) if args.output else None
+        if output_dir is not None and not (
+                output_dir.is_dir() or str(args.output).strip().endswith(('/', os.sep))):
             raise ValueError('Batch output must be an existing directory or end with /.')
-        output_roots = ([_inside_junk(Path(args.output))] if args.output else
+        output_roots = ([output_dir] if output_dir is not None else
                         [_inside_junk(paths.output_dir_for(fmt)) for fmt in ('txt', 'docx', 'pdf')])
         while True:
             failed = False

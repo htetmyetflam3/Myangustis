@@ -18,6 +18,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+from myangustis_parser.resources import paths
 from myangustis_parser.resources.paths import DEFAULT_OUTPUT_DIR
 from myangustis_parser.entry.manager import ManagerError, dispatch_path, mute_advisories, render_text
 
@@ -76,8 +77,10 @@ def run_job_mode(args):
 def run_cli(args):
     if not args.pdf:
         raise ValueError("an input PDF, DOCX, or text file is required")
-    source = Path(args.pdf)
-    if not source.is_file():
+    # Input and output are anchored to the project root, not the filesystem
+    # root: /Junk/Parser/upload/x.pdf and ./upload/x.pdf both live in the tree.
+    source = paths.resolve_input(args.pdf)
+    if source is None or not source.is_file():
         raise FileNotFoundError(f"Input not found: {source}")
     suffix = source.suffix.lower()
     images = (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".webp", ".gif", ".bmp")
@@ -85,6 +88,7 @@ def run_cli(args):
         raise ValueError("input must be PDF, DOCX, TXT, or an image")
 
     out_arg = args.out or str(DEFAULT_OUTPUT_DIR)
+    out_arg = str(paths.working_path(out_arg))
     out_ext = Path(out_arg).suffix.lower()
     if out_ext in (".txt", ".docx", ".pdf"):
         out_path = Path(out_arg)
