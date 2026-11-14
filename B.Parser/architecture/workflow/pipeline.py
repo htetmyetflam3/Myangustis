@@ -51,7 +51,7 @@ from myangustis_parser.output.render import _write_docx_layout, _write_pdf, writ
 from myangustis_parser.resources.font_names import has_only_unicode_fonts, legacy_font_family, legacy_layout_for_font
 from myangustis_parser.output import markup
 from myangustis_parser.normalize.unicode_evidence import preserve_regional_runs
-from myangustis_parser.workflow import finish
+from myangustis_parser.workflow import finish, diagnostics
 from myangustis_parser.workflow.lane_log import LaneLog
 
 
@@ -93,7 +93,7 @@ def load_detector():
 #  STREAMING path — one page at a time, flat memory, single pass
 # ═══════════════════════════════════════════════════════════════════════════
 
-def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout=None, source_encoding="auto"):
+def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout=None, source_encoding="auto", diagnostic=False):
     """Stream per-page layout: returns ``(metadata, npages, iterator)``.
 
     The iterator yields one dict per page, ONE PAGE AT A TIME:
@@ -165,11 +165,13 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
         previous_visual_observer = code_to_uni.visual_unicode_observer
         code_to_uni.lane_observer = observe
         code_to_uni.visual_unicode_observer = observe_visual
+        extraction = {'fonts': {}, 'sample_enabled': diagnostics.samples_enabled(), 'adjacent_duplicate_runs': 0} if diagnostic else None
         try:
-            lines, w, h = extract_page_lines(objects, pnum, pgen, code_to_uni,
-                                             used_myanmar_fonts=font_names,
-                                             used_legacy_fonts=used_legacy_fonts,
-                                             image_records=images)
+            kwargs = dict(used_myanmar_fonts=font_names, used_legacy_fonts=used_legacy_fonts,
+                          image_records=images)
+            if extraction is not None:
+                kwargs['diagnostics'] = extraction
+            lines, w, h = extract_page_lines(objects, pnum, pgen, code_to_uni, **kwargs)
         finally:
             code_to_uni.lane_observer = previous_observer
             code_to_uni.visual_unicode_observer = previous_visual_observer
@@ -186,6 +188,7 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
             "font_names": font_names,
             "used_legacy_fonts": used_legacy_fonts,
             "lane_trace": lane_trace,
+            "diagnostics": extraction,
             "warnings": ([{'code': 'unicode-glyph-recovery-needs-review', 'page': idx + 1}] if visual_state['changed'] else [])
                         + ([{'code': 'unicode-glyph-mapping-needs-review', 'page': idx + 1}] if visual_state['unresolved'] else []),
         }
@@ -320,10 +323,11 @@ def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
     x/y/font-size and the page MediaBox so the writer can reproduce the page
     exactly; for .txt/.pdf those fields are dropped to keep memory minimal.
     """
-    metadata, npages, pages = stream_pdf_pages(pdf_path, detector=detector, log=log,
-                                                text_layout=text_layout, source_encoding=source_encoding)
-
     lane_log = LaneLog(book_name or os.path.basename(pdf_path))
+    diagnostic = diagnostics.enabled()
+    metadata, npages, pages = stream_pdf_pages(pdf_path, detector=detector, log=log,
+                                                text_layout=text_layout, source_encoding=source_encoding,
+                                                diagnostic=diagnostic)
 
     def reports():
         try:
@@ -360,6 +364,8 @@ def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
                         lines.append((*line[:3], value, line[4] if len(line) > 4 else None))
                 rep.update({'lines': lines, 'wh': pg['wh'], 'has_img': pg['has_img'],
                             'images': pg.get('images', [])})
+            if diagnostic:
+                diagnostics.page_log(lane_log, idx + 1, pg, result, rep['text'], apply_cleanup)
             lane_log.finish_page(idx + 1, result['decision'])
             yield rep
 

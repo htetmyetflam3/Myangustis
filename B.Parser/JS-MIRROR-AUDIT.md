@@ -129,7 +129,7 @@ Evidence includes `test_decoder_js_parity.py`, `test_gsub_js_parity.py`, `test_v
 
 ### Python file index
 
-These are the 43 Python files under `architecture/`; each is mapped individually so Python-only entry points are not mistaken for ports of a JS file. Package initializer rows denote wiring only.
+These are the 44 Python files under `architecture/`; each is mapped individually so Python-only entry points are not mistaken for ports of a JS file. Package initializer rows denote wiring only.
 
 | Python file | Closest JS responsibility / scope |
 |---|---|
@@ -172,6 +172,7 @@ These are the 43 Python files under `architecture/`; each is mapped individually
 | `resources/paths.py` | Parser resource paths, analogous in purpose to JS `_path.js`. |
 | `workflow/__init__.py` | Package wiring. |
 | `workflow/finish.py` | `@core/runtime/finish.js`, `finalized-cmap.js`; not a full API clone. |
+| `workflow/diagnostics.py` | Python opt-in PDF stage and segmentation diagnostics; no JS equivalent. |
 | `workflow/lane_log.py` | Python diagnostic logging. |
 | `workflow/ocr.py` | `@core/ocr/ocr.js`, `@core/runtime/render.js`; different OCR and rendering engines. |
 | `workflow/pipeline.py` | `@core/runtime/source.js`, `@core/docx/source.js`, `@core/requested.js`; reports and storage differ. |
