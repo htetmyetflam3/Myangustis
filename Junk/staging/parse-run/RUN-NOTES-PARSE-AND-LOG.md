@@ -123,3 +123,54 @@ Next, in order:
 3. Only then re-check `legacy_ascii`: if JS repairs the Latin slots itself,
    remove it.
 4. Re-run this triage and the JS comparison over the 133 names, not per book.
+
+## 6. The ordering experiment settles it: ordering is not the cause
+
+Both spellings normalise to the same sequence, and neither isolates the mark:
+
+```
+u1000 u1031 u102c u103a u1037   ->  1000 1031 102c 103a 1037   (a) unchanged
+u1000 u1031 u102c u1037 u103a   ->  1000 1031 102c 103a 1037   (b) reordered to (a)
+order_text == cleanup_text == the JS clean.js pair, no space, no orphan mark
+```
+
+So the Python ordering rules do not produce a bare mark, and a different rule
+would not have avoided one. Something upstream loses the host run. That is the
+second thing the correction says: remove the alternate orderings/fallback at
+that stage and behave exactly as JS — one path, no alternatives.
+
+## 7. What the current output actually contains (`data/books.parquet`, 306 books)
+
+`books.parquet` is the parser's **output** (`book`, `text`, `segmented`,
+`author`, `sha256`), not the PDFs, so it is the live Python answer for the 306
+books from `convertable` — and it is the reference point for the mirror, not
+`Junk/parsed-books.txt`, which predates the JS fix.
+
+| book | current Python text | what is broken |
+| --- | --- | --- |
+| `-1759341726906` | `နှင့်` written `နှငှေ့်` (` န ှ င ် ေ ့ ်`) | the preposed ေ is placed **inside** the cluster, and ် / ့ are swapped. Wrong decode, not wrong ordering. |
+| `-1758614468061` | `ပڨပڊပρသٳџـةŵ (Soybean)` | legacy bridge slots decoded as Arabic/Greek/Latin-Ext characters. The code page that would read them was never identified. |
+| `-1708528931770` | `စကပ\t/ရ/၊` repeated | glyph run split into fragments; no word survives. |
+
+Both real causes are in the decode stage, not the beautify stage:
+
+1. **`ေ` inside the cluster** — a decoded run arrives with the preposed vowel
+   displaced; `move_prebase_marks` cannot repair it because its host test
+   (`_candidate_is_real` / `_opens_cluster`) rejects the run. Compare against
+   JS `codepage-*.js` decode order for the same font before touching ordering.
+2. **legacy bridge without a code page** — a font whose /ToUnicode is a bridge to
+   a legacy layout (`ڨ ρ ٳ ـ` are slot values, not text) is accepted as Unicode
+   because `doc.legacy_code_page` is never confirmed (`lane_reason=
+   no-legacy-evidence`). JS resolves the layout (`codepage-confirmed/pooled/
+   subset/visual.js`); Python emits the slots. That is the root, and it is also
+   why `legacy_ascii.py` (the ASCII half of the same bridge) exists at all — the
+   fix belongs in code-page resolution, after which the module can go.
+
+Order of work to align with JS, no per-book ties:
+
+1. Port the code-page resolution path for a bridged /ToUnicode (confirm → pooled
+   → subset → visual), so a bridge never reaches the text as Latin/Arabic slots.
+2. Delete the ASCII residue module once (1) handles those slots, and delete the
+   Python-only second ordering/fallback at the finish stage.
+3. Re-run the 306 books of `books.parquet` as the comparison set, and report by
+   syndrome count, not by book.
