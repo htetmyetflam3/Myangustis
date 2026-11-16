@@ -6,8 +6,9 @@ whether a fix can be measured, or only asserted.
 
 **Open PR: [#33](https://github.com/htetmyetflam3/Myangustis/pull/33)** —
 `arena/0f6e3735-myangustis` → `python`, 42 files (+3,800 / −2,712), not draft,
-mergeable, no checks reported on this repo. It carries items 1b/1d/1e-partial below: the two
-legacy parsers and the acceptance rule that lets either win, the per-face program
+mergeable, no checks reported on this repo. It carries items 1b/1d/1e-partial
+below: the two legacy parsers and the acceptance rule that lets either win, the
+per-face program
 identity, the disarmed lane move with its pin kept, and this file plus
 `B.Parser/AUDIT.md`. It is **Python only** — the JS notes in here are for main, and
 nothing on the non-legacy path (zawcode / rabbit / aligned) is judged or changed by it.
