@@ -5,8 +5,8 @@ by whether the cause can be seen from this checkout at all: that is what decides
 whether a fix can be measured, or only asserted.
 
 **Open PR: [#33](https://github.com/htetmyetflam3/Myangustis/pull/33)** —
-`arena/0f6e3735-myangustis` → `python`, one commit, 42 files, not draft, mergeable,
-no checks reported on this repo. It carries items 1b/1d/1e-partial below: the two
+`arena/0f6e3735-myangustis` → `python`, 42 files (+3,800 / −2,712), not draft,
+mergeable, no checks reported on this repo. It carries items 1b/1d/1e-partial below: the two
 legacy parsers and the acceptance rule that lets either win, the per-face program
 identity, the disarmed lane move with its pin kept, and this file plus
 `B.Parser/AUDIT.md`. It is **Python only** — the JS notes in here are for main, and
@@ -15,7 +15,7 @@ It is ready to land as it stands (`283 passed, 37 skipped, 94 subtests`,
 `audit_overview --check` OK); the only asymmetry it carries is the parity one in
 Q3. Note for the record: a workspace restore flattened the branch back to its base
 (`52d7a21`) mid-work, so the earlier commit-by-commit history of these steps is
-gone and the content arrives as one commit.
+gone; the content arrives as the commits now on this branch.
 
 **Done: the separate Engine-normalize call is deleted.** The chain reaches the
 Engine once, at its end — `normalize/pos_scan.py` → bind-engine api
