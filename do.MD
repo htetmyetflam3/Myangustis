@@ -4,6 +4,19 @@ Ordered work, each item a general rule. No per-book handling. The order is set
 by whether the cause can be seen from this checkout at all: that is what decides
 whether a fix can be measured, or only asserted.
 
+**Open PR: [#33](https://github.com/htetmyetflam3/Myangustis/pull/33)** —
+`arena/0f6e3735-myangustis` → `python`, one commit, 42 files, not draft, mergeable,
+no checks reported on this repo. It carries items 1b/1d/1e-partial below: the two
+legacy parsers and the acceptance rule that lets either win, the per-face program
+identity, the disarmed lane move with its pin kept, and this file plus
+`B.Parser/AUDIT.md`. It is **Python only** — the JS notes in here are for main, and
+nothing on the non-legacy path (zawcode / rabbit / aligned) is judged or changed by it.
+It is ready to land as it stands (`283 passed, 37 skipped, 94 subtests`,
+`audit_overview --check` OK); the only asymmetry it carries is the parity one in
+Q3. Note for the record: a workspace restore flattened the branch back to its base
+(`52d7a21`) mid-work, so the earlier commit-by-commit history of these steps is
+gone and the content arrives as one commit.
+
 **Done: the separate Engine-normalize call is deleted.** The chain reaches the
 Engine once, at its end — `normalize/pos_scan.py` → bind-engine api
 (`myangustis_engine.api.collect`); `resources/engine.py` takes engine *data* only.
@@ -225,6 +238,57 @@ changed 15,846 of its 44,601 lines and removed **zero** `orphan` and
 decoded and finished, and read back with the scanner.
 
 Source PDFs are on branch `trash` (`pdf-parts/part-1..9.pdf`), never in this repo.
+
+## Open questions
+
+The ones this branch cannot answer by itself — each is a decision, not a task. The
+measurement that frames it is named, so answering means choosing, not re-running.
+
+- **Q1 · Does a witnessed profile outrank the lane gate, or only the face?** (1d, 1g)
+  A profile pins a code page for one program; the gate decides a lane for one page. The
+  lookup could move up to the stem pass for free, and the question left is whether the
+  gate should *prefer* a profile's `codePage` over its name-derived default when the two
+  disagree. **Unmeasured**: on these books 1 face of 94 pairs, so any answer now is a
+  guess about a population that does not exist here. Blocked on data, not on code —
+  it needs more profiles in `legacy-subset-profiles.json`, or a book that carries them.
+- **Q2 · Is `ayar`'s absence from `legacy-font-names.json` upstream data or a Python
+  entry?** (1c) `legacy_font_family('/EAAAAA+Ayar')` answers `'ayar'` while
+  `is_legacy_font_name` says no, so a page whose only face is named Ayar never enters
+  the lane. A Python-side entry diverges from the pinned JS sets. **main's call** —
+  the note is written, this branch will not loosen the gate to name substrings.
+- **Q3 · Does main mirror `arrange_legacy_order`?** The Python `legacy` branch of
+  `finish.apply_decision` moves 39 of the 310 parity samples, all of them
+  `decision == 'legacy'`; the JS `decision === "legacy"` branch has no such step, so
+  `test_pdf_finish_js_parity.py` pins the difference *until* main lands it. Same
+  question for the deletions listed in `B.Parser/AUDIT.md` (the three
+  `@rule/judgement.js` normalize sites, `applyCleanup` in
+  `@core/runtime/finalized-cmap.js`). **main's action**; the parity suite is the
+  countdown.
+- **Q4 · Is a *learned* bridge acceptable for a no-bridge face?** (2, 1f) Marks of a
+  font with no `/ToUnicode` currently arrive as `:`, `"`, `p`, `g`. Recovering them
+  needs either the pooled evidence (7.4 MB, deliberately not shipped) or a table
+  learned from the faces that do have a bridge — glyph names, then outline hash. The
+  design forbids guessing, so the open question is what counts as evidence:
+  a *derived* mapping is not the file's own. Needs the `trash` PDFs to measure at all.
+- **Q5 · What is `short_share`, exactly?** (3) A line broken between a base and its
+  marks is the named cause, and the metric for it exists in nothing but the deleted
+  scratch aggregator. It has to be defined where its siblings are — a counted field in
+  `workflow/diagnostics.text_metrics`, beside `single_char_lines` — and a definition
+  (which gap, which neighbour, per line or per run?) is a decision, not an
+  implementation detail.
+- **Q6 · Should the probe keep a `UNICODE_PATH` third candidate?** (1e) The lost
+  `extend/codepage-resolve.js chooseCodePage` could answer "neither table — this is
+  Unicode", which is the lane gate admitting it was wrong. The port matches the reduced
+  restored module (one sample, floor, mark minimum) and the lane can currently only
+  abstain or take a table. Adding the candidate is a real change to what the lane may
+  say, so it is asked rather than done. The ledger (`pagesAsked`, `pagesUsed`,
+  `pagesFailed`, `zeroedForFewMarks`) is not a question and is open to work.
+- **Q7 · Is "the trial pins the face, never the lane" final?** The move was tried,
+  measured on both books and disarmed (`ceaea30` in the flattened history): the trial's
+  sample is read through the shared decoder, so it gets the map's text for free while
+  the legacy decoder rightly does not trust that map — the CID-bridged version cost
+  363,115 Myanmar characters on part-1. If a lane move is ever payable, the price is
+  defined by that number; until then the answer recorded here is *no*.
 
 ## Sources
 
