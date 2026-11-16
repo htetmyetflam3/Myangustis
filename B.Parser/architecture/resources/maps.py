@@ -44,7 +44,7 @@ def map_dir() -> Path:
 def find_map(name: str):
     """Absolute path of a JSON map, or ``None`` when it is not shipped.
 
-    ``name`` may be a bare file name (``scan.json``), a relative path
+    ``name`` may be a bare file name (``damage-rules.json``), a relative path
     (``vector/index.svg``) or an absolute path.
     """
     candidate = Path(name)

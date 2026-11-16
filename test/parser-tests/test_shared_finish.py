@@ -47,6 +47,40 @@ class SharedFinishTests(unittest.TestCase):
         from myangustis_parser.normalize.mm_score import score_text
         self.assertEqual(score_text('က😀')['myanmar_ratio'], 1 / 3)
 
+    def test_the_gate_has_no_switch(self):
+        """Nothing in the chain may take a cleanup toggle -- not one function.
+
+        ``clean`` is the gate every finished page passes through, and its two
+        halves are one step: a parameter that could skip the imposter half would
+        make the page's text depend on who called it. JS still threads an
+        ``applyCleanup`` boolean through ``convertFinalizedPageText`` and
+        ``cleanupUnicodeText`` (see ``B.Parser/AUDIT.md``); that is the mirror's
+        own thing to delete, and until it is gone the parity tests compare the
+        pair this module returns instead of a flag.
+        """
+        import inspect
+        from myangustis_parser.entry import index, manager
+        from myangustis_parser.workflow import diagnostics, pipeline
+
+        chain = (finish.clean, finish.ordered, finish.finalized_output,
+                 finish.finalize_pdf_output, finish.finish_text, finish.finish_pdf_page,
+                 pipeline._convert_line, pipeline._conv_lines, pipeline._cleanup_for,
+                 pipeline.build_content, pipeline.build_final_pages,
+                 pipeline.process_pdf_stream, pipeline.collect_stream_results,
+                 diagnostics.page_log, diagnostics.page_record,
+                 index.convert, index.parse_decoding, index.dispatch_ocr,
+                 manager.dispatch_path, manager.dispatch_bytes,
+                 manager.dispatch_stream, manager.dispatch_ocr)
+        for fn in chain:
+            with self.subTest(function=f'{fn.__module__}.{fn.__name__}'):
+                toggles = [name for name in inspect.signature(fn).parameters
+                           if 'cleanup' in name or name == 'applyCleanup']
+                self.assertEqual(toggles, [],
+                                 f'{fn.__name__} still takes a cleanup toggle: {toggles}')
+                self.assertNotIn('cleanup', inspect.signature(fn).parameters.values().__str__(),
+                                 f'{fn.__name__} mentions cleanup in its signature')
+
+
     def test_clean_uses_current_js_prebase_and_impossible_rules(self):
         self.assertEqual(cleanup.order_text('ေက'), 'ကေ')
         self.assertEqual(cleanup.order_text('ကေိ'), 'ကေ')

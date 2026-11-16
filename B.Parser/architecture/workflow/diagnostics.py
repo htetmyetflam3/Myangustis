@@ -104,7 +104,7 @@ def _fonts(pg):
             for font in ranked]
 
 
-def page_record(page, pg, result, output, cleanup):
+def page_record(page, pg, result, output):
     """The compact, per-page evidence: scalars only, one line, ~200 bytes."""
     metrics = text_metrics(result['clean'])
     found = text_metrics(pg['text'])
@@ -112,6 +112,14 @@ def page_record(page, pg, result, output, cleanup):
     proven = {slot: count for slot, count in residue.items() if slot in legacy_ascii.RESIDUE_SLOTS}
     unproven = {slot: count for slot, count in residue.items() if slot not in legacy_ascii.RESIDUE_SLOTS}
     fonts = (pg.get('diagnostics') or {}).get('fonts') or {}
+    # The face decision, one step at a time: how many legacy faces the page shows,
+    # how many of them the name gate could not name, and of those how many the page
+    # probe settled on (and which table it settled on). ``families`` is the answer
+    # in force for the faces on this page, whatever its source.
+    legacy_faces = [font for font in fonts.values() if font.get('legacy_map')]
+    probed = [font for font in legacy_faces if font.get('family_accepted') is not None]
+    families = '/'.join(sorted({str(font.get('code_page')) for font in legacy_faces
+                                if font.get('code_page')}))
     unmapped = sum(font.get('unmapped_codes') or 0 for font in fonts.values())
     fallback = sum(font.get('fallback_bytes') or 0 for font in fonts.values())
     warnings = [str(w.get('code', 'unknown'))[:40] for w in pg.get('warnings', [])[:4]]
@@ -136,13 +144,18 @@ def page_record(page, pg, result, output, cleanup):
         'single_char_lines': found['single_char_lines'],
         'residue': _slot_counts(proven), 'residue_total': sum(residue.values()),
         'residue_unproven': _slot_counts(unproven),
+        'legacy_faces': len(legacy_faces), 'family_undecided': sum(
+            1 for font in legacy_faces if font.get('family_by') == 'default'),
+        'family_probed': len(probed), 'family_accepted': sum(
+            1 for font in probed if font.get('family_accepted')),
+        'families': families[:60],
         'unmapped_codes': unmapped, 'fallback_bytes': fallback,
         'replacement_chars': metrics['replacement_chars'],
         'hex_placeholders': found['hex_placeholder_patterns'],
         'detached_marks': found['detached_marks'],
         'duplicate_lines': metrics['adjacent_duplicate_lines'],
         'repeated_lines': found['repeated_lines'],
-        'warnings': ','.join(warnings), 'cleanup_applied': bool(cleanup),
+        'warnings': ','.join(warnings),
         'changed': 'yes' if metrics['chars'] and (result['finished'] != pg['text']) else 'no',
         'status': status,
     }
@@ -347,13 +360,13 @@ class BookReport:
         self.tracker.verdict(self.verdict())
 
 
-def page_log(tracker, page, pg, result, output, cleanup):
+def page_log(tracker, page, pg, result, output):
     """Record one page. Powers no decisions; a diagnostic never changes text."""
     if isinstance(tracker, BookReport):
         report, lane_log = tracker, tracker.tracker
     else:                                    # a bare LaneLog: one page, no verdict
         report, lane_log = BookReport(tracker), tracker
-    record = page_record({'book': lane_log.book, 'page': page}, pg, result, output, cleanup)
+    record = page_record({'book': lane_log.book, 'page': page}, pg, result, output)
     fonts = _fonts(pg)
     report.page(record, fonts)
     if verbose_enabled():

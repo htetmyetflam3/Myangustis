@@ -104,7 +104,7 @@ def write_output_file(out_path, job):
     Never re-opens the source document and never re-runs detection, so the
     same parse can be written several times without paying for the parse again.
     """
-    pages = pipeline.build_final_pages(job, True)
+    pages = pipeline.build_final_pages(job)
     written, job["posScan"] = pipeline.render_and_scan(
         out_path, pages, job.get("counts") or {}, job.get("filename") or "")
     return written

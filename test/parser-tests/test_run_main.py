@@ -275,7 +275,6 @@ class RunnerCliTests(unittest.TestCase):
                 self.assertEqual(conv.call_args.args[0], book_pdf)
                 self.assertEqual(conv.call_args.args[1], out_dir / "pdf" / "story.pdf")
                 self.assertNotIn("method", conv.call_args.kwargs)
-                self.assertNotIn("apply_cleanup", conv.call_args.kwargs)
 
                 # Parsing mode on DOCX with omitted format -> output/docx/chapter.docx
                 with patch.object(index, "convert", return_value={"file": str(out_dir / "docx" / "chapter.docx"), "pages": 1, "counts": {"ZAWGYI": 1}}) as conv, \
@@ -284,7 +283,6 @@ class RunnerCliTests(unittest.TestCase):
                 self.assertEqual(rc, 0)
                 self.assertEqual(conv.call_args.args[0], book_docx)
                 self.assertEqual(conv.call_args.args[1], out_dir / "docx" / "chapter.docx")
-                self.assertNotIn("apply_cleanup", conv.call_args.kwargs)
 
                 # OCR mode: calls index.dispatch_ocr (not convert)
                 with patch.object(index, "convert") as conv, \
@@ -296,35 +294,6 @@ class RunnerCliTests(unittest.TestCase):
                 ocr_call.assert_called_once()
                 self.assertEqual(ocr_call.call_args.args[0], book_pdf)
                 self.assertEqual(ocr_call.call_args.args[1], out_dir / "txt" / "story.txt")
-                self.assertNotIn("apply_cleanup", ocr_call.call_args.kwargs)
-
-    def test_public_entry_apis_expose_no_cleanup_toggle(self):
-        import inspect
-
-        for fn in (
-            index.convert,
-            index.parse_decoding,
-            index.write_output_file,
-            index.dispatch_ocr,
-            manager.dispatch_path,
-            manager.dispatch_bytes,
-            manager.dispatch_stream,
-            manager.dispatch_ocr,
-        ):
-            self.assertNotIn("apply_cleanup", inspect.signature(fn).parameters, fn.__name__)
-
-        with tempfile.TemporaryDirectory() as tmp:
-            work = Path(tmp)
-            out = work / "out.txt"
-            src = work / "in.pdf"
-            src.write_bytes(b"%PDF-1.4\n")
-            with patch.object(manager, "dispatch_path", return_value={"file": str(out), "pages": 1, "counts": {}}) as dp:
-                interop.run_job({
-                    "inPath": str(src),
-                    "outPath": str(out),
-                    "applyCleanup": False,
-                })
-            self.assertNotIn("apply_cleanup", dp.call_args.kwargs)
 
 
 class ManagerOcrAndDocxTests(unittest.TestCase):

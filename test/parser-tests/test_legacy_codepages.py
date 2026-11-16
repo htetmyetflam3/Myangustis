@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "B.Parser", "main", "Python", "modules"))
 
-from myangustis_parser.extract.pdf_extract import legacy_ayar_to_unicode  # noqa: E402
+from myangustis_parser.normalize.legacy_order import arrange_legacy_order  # noqa: E402
 from myangustis_parser.extract.pdf_fonts import (  # noqa: E402
     AYAR_LEGACY_CODE_PAGE,
     WININNWA_LEGACY_CODE_PAGE,
@@ -23,10 +23,10 @@ class LegacyCodepageTests(unittest.TestCase):
         font = FontDecoder("TT41", to_unicode={0x23: "A", 0x42: "k", 0x88: "Ç", 0x2f: "¥"}, doc=doc)
         self.assertEqual(AYAR_LEGACY_CODE_PAGE[0xc7], "င်္ီ")
         self.assertEqual(AYAR_LEGACY_CODE_PAGE[0xe7], "င်္")
-        self.assertEqual(legacy_ayar_to_unicode(font.decode(bytes([0x23, 0x42, 0x88, 0x2f]))), "အင်္ကျီ")
-        self.assertEqual(legacy_ayar_to_unicode("သိဂင်္ီ"), "သိင်္ဂီ")
-        self.assertEqual(legacy_ayar_to_unicode("သချင်္ာ"), "သင်္ချာ")
-        self.assertEqual(legacy_ayar_to_unicode("အင်္ကျီ"), "အင်္ကျီ")
+        self.assertEqual(arrange_legacy_order(font.decode(bytes([0x23, 0x42, 0x88, 0x2f]))), "အင်္ကျီ")
+        self.assertEqual(arrange_legacy_order("သိဂင်္ီ"), "သိင်္ဂီ")
+        self.assertEqual(arrange_legacy_order("သချင်္ာ"), "သင်္ချာ")
+        self.assertEqual(arrange_legacy_order("အင်္ကျီ"), "အင်္ကျီ")
 
     def test_wininnwa_global_stacks_and_compounds(self):
         table = WININNWA_LEGACY_CODE_PAGE
@@ -40,7 +40,7 @@ class LegacyCodepageTests(unittest.TestCase):
             ("od*Ð", "သိင်္ဂီ"), ("wð", "တိံ"),
         ]:
             decoded = "".join(table[ord(ch)] for ch in slots)
-            self.assertEqual(legacy_ayar_to_unicode(decoded), expected, slots)
+            self.assertEqual(arrange_legacy_order(decoded), expected, slots)
         self.assertEqual(table[0xc9], "္တွ")
         self.assertEqual(table[0xd8], "င်္ိ")
         self.assertEqual(table[0xf8], "င်္ံ")
@@ -60,7 +60,7 @@ class LegacyCodepageTests(unittest.TestCase):
         self.assertEqual(font.decode(bytes([0x30])), "ဏ္ဏ")
         self.assertEqual(font.decode(bytes([0x31, 0x32, 0x30])), "ဏ ဏ္ဏ")
         self.assertEqual(font.decode(bytes([0x33])), "%")
-        self.assertEqual(legacy_ayar_to_unicode(table[80] + table[214]), "ဏ္ဏ")
+        self.assertEqual(arrange_legacy_order(table[80] + table[214]), "ဏ္ဏ")
 
     def test_unresolved_slot_and_zero_width_are_preserved(self):
         doc = DocumentDecoding("legacy", {}, WININNWA_LEGACY_CODE_PAGE)
@@ -68,7 +68,7 @@ class LegacyCodepageTests(unittest.TestCase):
         self.assertIn(0x7c, WININNWA_UNRESOLVED_SLOTS)
         self.assertNotIn(0x7c, WININNWA_LEGACY_CODE_PAGE)
         self.assertEqual(font.decode(bytes([0x30])), "|")
-        self.assertEqual(legacy_ayar_to_unicode("သချင်္ာ\u200b"), "သင်္ချာ\u200b")
+        self.assertEqual(arrange_legacy_order("သချင်္ာ\u200b"), "သင်္ချာ\u200b")
 
 
 if __name__ == "__main__":

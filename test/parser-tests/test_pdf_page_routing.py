@@ -36,21 +36,26 @@ def cid_font(n, cmap, extra=b''):
 
 class PageRoutingTests(unittest.TestCase):
     def test_automatic_path_never_probes_draft_profiles(self):
+        # The draft is deleted, not gated: there is no slot to fill, no
+        # ``text_layout`` value that reaches it, and an old environment switch is
+        # simply nothing. A legacy face still decodes by its own name and table.
+        from myangustis_parser.extract.pdf_fonts import DocumentDecoding, FontDecoder
+        gone = {'zawcode_profiles', 'zawcode_templates', 'zawcode_order', 'zawcode_stats'}
+        self.assertFalse(gone & set(DocumentDecoding.__slots__),
+                         'the draft profile inputs came back with no supplier')
+        self.assertNotIn('zawcode_glyphs', set(FontDecoder.__slots__),
+                         'the draft gid table came back')
         font = {10: b'<< /Type /Font /Subtype /TrueType /BaseFont /WinInnwa >>'}
         data = simple_page_pdf({'F': 10}, b'BT /F 12 Tf 1 0 0 1 10 700 Tm (u) Tj ET', fonts=font)
         with tempfile.TemporaryDirectory() as directory, \
-             patch.dict('os.environ', {'PRASER_ZAWCODE_DRAFT': ''}):
+             patch.dict('os.environ', {'PRASER_ZAWCODE_DRAFT': 'on'}):
             path = Path(directory) / 'test.pdf'
             path.write_bytes(data)
-            _, _, stream = stream_pdf_pages(path)
-            result = list(stream)
+            result = list(stream_pdf_pages(path)[2])
             self.assertEqual(result[0]['text'], 'က')
             self.assertEqual(result[0]['decode_kind'], 'legacy')
-            with self.assertRaisesRegex(ValueError, 'draft was removed'):
+            with self.assertRaisesRegex(ValueError, 'Unsupported text layout: zawcode'):
                 stream_pdf_pages(path, text_layout='zawcode')
-            with patch.dict('os.environ', {'PRASER_ZAWCODE_DRAFT': 'on'}):
-                with self.assertRaisesRegex(ValueError, 'draft was removed'):
-                    stream_pdf_pages(path)
 
     def test_pdf_finish_uses_page_judgment_not_detector_or_forced_encoding(self):
         mapping = tounicode([(b'01', 'ေြက'.encode('utf-16-be').hex().encode())])
