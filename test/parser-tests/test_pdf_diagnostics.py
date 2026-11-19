@@ -35,12 +35,12 @@ class DiagnosticTests(unittest.TestCase):
             logger = Logen(file=log_file, console=events.append)
             with patch('myangustis_parser.workflow.lane_log.make_logger', return_value=logger), \
                  patch.dict(os.environ, {'PARSER_DIAGNOSTICS': 'off', 'PARSER_DIAGNOSTIC_SAMPLES': 'off'}):
-                _, _, pages = pipeline.process_pdf_stream(path, None, False)
+                _, _, pages = pipeline.process_pdf_stream(path, None)
                 expected = list(pages)
             events.clear()
             with patch('myangustis_parser.workflow.lane_log.make_logger', return_value=logger), \
                  patch.dict(os.environ, {'PARSER_DIAGNOSTICS': 'on', 'PARSER_DIAGNOSTIC_SAMPLES': 'off'}):
-                _, _, pages = pipeline.process_pdf_stream(path, None, False)
+                _, _, pages = pipeline.process_pdf_stream(path, None)
                 actual = list(pages)
                 log_text = log_file.read_text()
             self.assertEqual(actual, expected)
@@ -60,7 +60,7 @@ class DiagnosticTests(unittest.TestCase):
             events.clear()
             with patch('myangustis_parser.workflow.lane_log.make_logger', return_value=logger), \
                  patch.dict(os.environ, {'PARSER_DIAGNOSTICS': 'on', 'PARSER_DIAGNOSTIC_SAMPLES': 'on'}):
-                _, _, pages = pipeline.process_pdf_stream(path, None, False)
+                _, _, pages = pipeline.process_pdf_stream(path, None)
                 self.assertEqual(list(pages), expected)
                 log_text = log_file.read_text()
             self.assertIn('Hello secret', log_text)
@@ -129,7 +129,7 @@ class DiagnosticTests(unittest.TestCase):
             tracker = LaneLog('test.pdf', Logen(file=path, console=lambda line: None))
             with patch.dict(os.environ, {'PARSER_DIAGNOSTIC_SAMPLES': 'off',
                                          'PARSER_DIAGNOSTICS_VERBOSE': 'off'}):
-                record = diagnostics.page_log(tracker, 2, pg, result, result['base'], False)
+                record = diagnostics.page_log(tracker, 2, pg, result, result['base'])
             line = path.read_text()
             self.assertEqual(record['single_char_lines'], 2)
             self.assertEqual(record['chars'], len('က\nခ\n[0041]'))
@@ -141,7 +141,7 @@ class DiagnosticTests(unittest.TestCase):
             tracker = LaneLog('test.pdf', Logen(file=path, console=lambda line: None))
             with patch.dict(os.environ, {'PARSER_DIAGNOSTIC_SAMPLES': 'off',
                                          'PARSER_DIAGNOSTICS_VERBOSE': 'on'}):
-                diagnostics.page_log(tracker, 2, pg, result, result['base'], False)
+                diagnostics.page_log(tracker, 2, pg, result, result['base'])
             line = path.read_text()
             self.assertIn('"single_char_lines": 2', line)
             self.assertIn('"hex_placeholder_patterns": 1', line)

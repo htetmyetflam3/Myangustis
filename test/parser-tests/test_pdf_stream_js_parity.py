@@ -225,7 +225,6 @@ console.log(JSON.stringify(pdfs.map(pdf=>{
             raw_expected = json.loads(result.stdout)
         for pdf, js in zip(raw_pdfs, raw_expected):
             doc = DocumentDecoding('legacy', legacy_code_page=WININNWA_LEGACY_CODE_PAGE)
-            doc.legacy_text_fix = False
             profile = {'bytes': {35:'က'}, 'runs':[{'bytes': b'#/','text':'က္က'}], 'unresolved':set()}
             decoder = FontDecoder('F', doc=doc, base_font='WinInnwa',
                                   font_legacy_code_page=WININNWA_LEGACY_CODE_PAGE,

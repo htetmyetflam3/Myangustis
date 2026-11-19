@@ -74,11 +74,31 @@ console.log(JSON.stringify(outputs));
             result = subprocess.run(['node', str(check)], input=json.dumps(cases).encode(),
                                     capture_output=True, check=True, timeout=60, env=env)
             expected = json.loads(result.stdout)
+        # The one documented gap between this branch and the pinned mirror: the
+        # legacy lane's own beautify rule (``normalize/legacy_order.arrange_legacy_order``)
+        # is implemented in the parser and NOT in the JS -- ``finalized-cmap.js``
+        # says "There is no legacy-specific reorder rule: extraction only decodes".
+        # The divergence is therefore allowed ONLY on the legacy decision, and its
+        # size is pinned so it cannot grow unnoticed. When main lands the rule,
+        # delete this allowance and the count goes to zero.
+        # See B.Parser/AUDIT.md, "The legacy ordering rule: implemented in Python,
+        # still missing from the mirror".
+        LEGACY_LANE_GAP = 39
+        moved = []
         for index, (case, js) in enumerate(zip(cases, expected)):
             py = finish_pdf_page(case['text'], parsing_path=case['lane'],
                                  source_encoding=case['encoding'], zawgyi_codepage=case['zawgyi'])
             actual = {key: py[key] for key in js}
-            self.assertEqual(actual, js, (index, case))
+            if actual == js:
+                continue
+            self.assertEqual(py['decision'], 'legacy',
+                             f'sample {index} diverges from the mirror outside the '
+                             f'documented legacy-lane gap: {case}')
+            moved.append(index)
+        self.assertEqual(len(moved), LEGACY_LANE_GAP,
+                         f'the legacy-lane divergence moved to {len(moved)} samples '
+                         f'(pinned at {LEGACY_LANE_GAP}); re-measure and update both '
+                         f'the count and B.Parser/AUDIT.md')
 
 
 if __name__ == '__main__': unittest.main()

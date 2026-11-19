@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import re
 
-from myangustis_parser.normalize import mm_score
+from myangustis_parser.normalize import legacy_order, mm_score
 from myangustis_parser.normalize.detector import contains_myanmar
 from myangustis_parser.resources.font_names import is_legacy_font_name, is_unicode_font, normalise_font_name
 
@@ -39,8 +39,6 @@ __all__ = [
     "select_page_decision",
     "instruction_lane",
     "is_unicode_lane_decision",
-    "normalize_page_lines",
-    "normalize_output_text",
 ]
 
 PAGE_NUMBER = re.compile(
@@ -165,6 +163,14 @@ def judge_page_lines(lines, swap_candidate) -> dict:
     ``lines`` is an iterable of line strings. ``swap_candidate`` is handed in
     by the caller (the finisher owns the ZawCode order function); this module
     never imports it.
+
+    The pack also carries ``homoglyphSites``: how many of the shared-glyph
+    digits (``homoglyphs.json``) sit inside a Myanmar word rather than standing
+    alone as a number. Every lane collects it, because a shared glyph is a
+    property of these faces and not of one table -- see
+    ``extract/legacy_judgement.decide_legacy_family``, which is where the count
+    decides something. Selection never consults it: the JS selector does not,
+    and a judgement field is evidence, not a vote.
     """
     original_has_text = False
     has_myanmar = False
@@ -177,9 +183,17 @@ def judge_page_lines(lines, swap_candidate) -> dict:
     raw_marks = 0
     candidate_score_total = 0.0
     candidate_marks = 0
+    homoglyph_sites = 0
     for text in lines:
         count += 1
         inspected = str(text if text is not None else "")
+        # A digit inside a syllable run is not Burmese: ၀ and ဝ share one glyph
+        # in these faces, so the count says how often the table picked the
+        # numeral side of a shared glyph where the text wanted the letter. A
+        # run that is only digits is a number and proves nothing -- that
+        # exception is the whole rule, and it lives in normalize/legacy_order.py
+        # beside the pairs it reads.
+        homoglyph_sites += len(legacy_order.number_in_word_sites(inspected))
         original_has_text = original_has_text or bool(inspected.strip())
         has_myanmar = has_myanmar or contains_myanmar(inspected)
         aligned = aligned and mm_score.mark_order_aligned(inspected)
@@ -216,6 +230,7 @@ def judge_page_lines(lines, swap_candidate) -> dict:
         "count": count,
         "rawScore": raw_score_total / raw_marks if raw_marks else 0,
         "candidateScore": candidate_score_total / candidate_marks if candidate_marks else 0,
+        "homoglyphSites": homoglyph_sites,
     }
 
 
@@ -329,30 +344,3 @@ UNICODE_LANE_DECISIONS = frozenset(("aligned", "zawcode", "unaligned-unicode"))
 
 def is_unicode_lane_decision(decision, category=None) -> bool:
     return decision in UNICODE_LANE_DECISIONS or category == "UNICODE"
-
-
-# ===========================================================================
-# TEXT KEEPING (not lane machinery)
-# Inherited from the deleted normalize.js: the line-by-line Engine-normalize
-# plumbing. It judges nothing and selects nothing. There is no
-# protected/preserved character set: characters the chain does not itself
-# handle flow through transforms naturally.
-# ===========================================================================
-
-def normalize_page_lines(text, normalize):
-    """Yield ``normalize(line)`` per line, keeping the trailing empty line."""
-    if not callable(normalize):
-        raise TypeError("Expected Engine normalize function")
-    source = str(text if text is not None else "")
-    start = 0
-    while True:
-        end = source.find("\n", start)
-        if end < 0:
-            yield normalize(source[start:])
-            return
-        yield normalize(source[start:end])
-        start = end + 1
-
-
-def normalize_output_text(text, normalize) -> str:
-    return "\n".join(normalize_page_lines(text, normalize))

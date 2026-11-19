@@ -21,9 +21,7 @@ import zlib
 
 from myangustis_parser.normalize.mm_score import MARKS
 from myangustis_parser.normalize.detector import contains_myanmar
-from myangustis_parser.resources.font_names import is_unresolved_legacy_font
-from myangustis_parser.normalize import legacy_ascii
-from myangustis_parser.resources.font_names import is_legacy_font_name, legacy_layout_for_font
+from myangustis_parser.resources.font_names import is_unresolved_legacy_font, normalise_font_name
 from myangustis_parser.extract.pdf_fonts import (
     CMapEncoding,
     CmapIdentityMap,
@@ -46,7 +44,9 @@ from myangustis_parser.extract.pdf_fonts import (
     page_font_decoders,
     parse_object,
     usable_tounicode,
-)
+    # The bound on re-looking at a face whose sample was too short to judge;
+    # ``_settle_legacy_families`` keeps such a face open while it is unmet.
+    PROBE_MAX_ATTEMPTS)
 
 # Re-exported for callers that imported these from this module before the
 # font-specific decoders were split out (pipeline.py, tests, the JS port docs).
@@ -60,8 +60,7 @@ __all__ = [
     "collect_pages", "extract_metadata", "extract_page_lines",
     "extract_page_text_layout", "find_font_streams", "find_font_files2",
     "find_root_pages", "find_tounicode_maps", "get_page_mediabox",
-    "get_stream", "iter_content_operations", "legacy_ayar_to_unicode",
-    "fix_digit_consonant_confusion",
+    "get_stream", "iter_content_operations",
     "load_sidecar_map", "map_code", "page_font_decoders", "page_has_images",
     "parse_pdf_objects", "parse_tounicode_stream", "parse_ttf_cmap",
     "pick_embedded_font", "zlib_decompress_capped",
@@ -146,8 +145,6 @@ def get_stream(objects, num, gen=0):
         except Exception:
             return None
     return b
-
-
 
 def _page_content_stream(loader, ref):
     """Decode a content stream using its exact declared byte length.
@@ -632,96 +629,6 @@ ARLARWADE_AYAR_MAP = {
     117: "စ", 118: "ဗ", 119: "ဝ", 120: "ၺ", 121: "ပ",
 }
 
-
-def fix_digit_consonant_confusion(text):
-    """Restore the consonant ``ဝ`` where a legacy face wrote the digit ``၀``.
-
-    U+101D (the consonant wa) and U+1040 (digit zero) are the same shape, and
-    legacy code pages routinely resolve the shared glyph to the digit. The
-    disambiguation is structural: a digit cannot carry a dependent mark, so a
-    ``၀`` wearing one is really the consonant.
-
-    Two structural cases, and nothing else:
-
-    1. a digit wearing a dependent MARK;
-    2. a digit with a Myanmar letter or mark on BOTH sides -- it is inside a
-       word, and a number is not. This is the common one: the neighbour in
-       front is usually a mark, not a base (``ပါ၀င်`` ×327, ``တာ၀န်``, ``တာ၀တိံ``,
-       ``သာ၀က``), so requiring a base in front finds nothing at all.
-
-    A digit is never a letter or a mark, so a real number is untouched from
-    either side: ``၁၀``, ``၅၀၊`` and a ``၀`` after a space stay digits.
-
-    The same glyph runs the other way too: ``\u101b`` (ra) and ``\u1047`` (digit seven)
-    are one shape, so a ``\u101b`` INSIDE a run of digits is the digit -- ``\u1041\u101b`` is
-    17 and ``\u1043\u1048\u101b`` is 387. Never when a letter or mark follows, or ``\u1045\u101b\u1000\u103a``
-    (five days) would lose its ``\u101b\u1000\u103a``.
-
-    On a 445-page legacy grammar this takes orphan marks from 4.47% to 2.20%,
-    and the later cases convert a further ~1,700 occurrences.
-    """
-    def letter_or_mark(ch):
-        # ch may be "" at a string edge, and "" is `in` every string
-        return bool(ch) and ("\u1000" <= ch <= "\u1021"
-                             or ch in ("\u1025", "\u1027", "\u1039")
-                             or ch in MARKS)
-
-    def digit(ch):
-        return bool(ch) and "\u1040" <= ch <= "\u1049"
-
-    out = list(text)
-    n = len(out)
-    for i in range(n):
-        after = out[i + 1] if i + 1 < n else ""
-        before = out[i - 1] if i else ""
-        if out[i] == "\u1040":
-            # ၀ -> ဝ : the digit is wearing a mark, or sits inside a word
-            if after in MARKS or (letter_or_mark(before) and letter_or_mark(after)):
-                out[i] = "\u101d"
-            # ...or it OPENS a word: a number does not run into a consonant
-            elif not digit(before) and not letter_or_mark(before) \
-                    and "\u1000" <= after <= "\u1021":
-                out[i] = "\u101d"
-    text = "".join(out)
-
-    # ရ and ၇ are the same glyph, and the test is simply this: the shape is
-    # ရ unless a digit sits next to it. ရက် always carries its က်, so a
-    # following Myanmar letter or mark means ရ -- while a following digit, or
-    # another ရ, keeps it numeric.
-    #
-    #   ၅ရက်   -> ၅ရက်    (five days; က follows, so it is the word)
-    #   ရ၅ကတ္တား -> ၇၅ ကတ္တား  (index: the page number runs into the entry)
-    #   ၃ရရ     -> ၃၇၇      (page 377)
-    #   ၅၀ရာ    -> ၅၀ရာ     (ာ follows, so it is ရာ)
-    #
-    # Repeated to a fixed point so a run of ရ resolves from either end:
-    # ရရ၅ needs the rightmost to become ၇ before the leftmost can see a digit.
-    for _ in range(3):
-        chars = list(text)
-        changed = False
-        for i, ch in enumerate(text):
-            if ch != "\u101b":
-                continue
-            before = text[i - 1] if i else ""
-            after = text[i + 1] if i + 1 < len(text) else ""
-            if (digit(before) or digit(after)) and (
-                    not letter_or_mark(after) or digit(after) or after == "\u101b"):
-                chars[i] = "\u1047"
-                changed = True
-        text = "".join(chars)
-        if not changed:
-            break
-    return text
-
-
-_PREPOSED_RE = re.compile(
-    r"((?:ေ?ြ[ွှ]+)|[ြေ]+)"         # preposed slots, including compound ra
-    r"([က-အ၀၈၇])"                 # its base
-    r"(င်္)?"                       # kinzi, written after the base
-    r"((?:္[က-အ])*)"                # any stacked consonants
-)
-
-
 def _collapse_overprint(text):
     """Collapse a piece that is one short unit drawn twice (or three times).
 
@@ -746,88 +653,6 @@ def _collapse_overprint(text):
         if unit * (n // size) == text:
             return unit
     return text
-
-
-def legacy_ayar_to_unicode(text, *, apply_aa_vowel_rule=True):
-    """Put Ayar's visual/legacy order into normal Myanmar code-point order.
-
-    This is intentionally small and conservative.  It mirrors the established
-    Ayar -> Myanmar3 conversion rules: move preposed ြ/ေ after the base
-    and move င်္ clusters into their Unicode order. Preserve zero-width text.
-    """
-    # A combined kinzi/vowel glyph can precede medials in legacy order.
-    text = re.sub(r"([က-အ])(င်္)([ိီံ])([ျြွှ]+)", r"\1\2\4\3", text)
-    # ONE left-to-right pass for the preposed vowels. Two passes cannot work:
-    # the first would place သေကင်္တ correctly as သင်္ကေတ, and the second
-    # would then see that same ေ sitting in front of တ and move it AGAIN,
-    # giving သင်္ကတေ. Matching once and continuing past the replacement
-    # is what keeps it put.
-    #
-    # The vowel clears the whole cluster, never landing inside it:
-    #   base            ေက        -> ကေ
-    #   stacked pair    ေဏ္ဏ     -> ဏ္ဏေ      (not ဏေ္ဏ)
-    #   kinzi           ေကင်္    -> င်္ကေ     (kinzi leads the cluster)
-    def reorder_preposed(match):
-        vowel = match.group(1)
-        if vowel.startswith("ေြ") and ("ွ" in vowel or "ှ" in vowel):
-            vowel = vowel[1:] + "ေ"
-        return (match.group(3) or "") + match.group(2) + (match.group(4) or "") + vowel
-
-    text = _PREPOSED_RE.sub(reorder_preposed, text)
-
-    # A kinzi that is NOT followed by a consonant cannot belong to one on its
-    # right, so it belongs to the cluster on its left and moves in front of
-    # it: သချင်္ာ -> သင်္ချာ. When a consonant DOES follow, the kinzi is
-    # already where it belongs (ဝါစင်္ဂ) and is left alone -- 460 of those
-    # here against 24 of the broken shape.
-    #
-    # This repairs the AUTHOR'S TYPING, not a decoding error. The raw stream
-    # really holds \u101e \u1001 \u103b \u1004\u103a\u1039 \u102c (medial BEFORE kinzi) for all 24
-    # occurrences -- the order the legacy input method does not accept. The
-    # two encodings differ in how loudly they say so: Zawgyi renders that
-    # order visibly wrong, while Unicode reorders on the fly and renders it
-    # correctly, so in Unicode the same mistake is INVISIBLE and only the
-    # code points show it. That is why the matching scanner check compares
-    # code points and never shapes.
-    #
-    # It has to run AFTER the preposed vowel has been placed, and the group
-    # it jumps must include that vowel. သေဘင်္ာ is သင်္ဘော: moving the
-    # kinzi first leaves it sitting behind ေ, and the preposed rule then
-    # splits it apart and destroys it (18 သင်္ဘော, 7 တနင်္ဂနွေ, 6 ခြင်္သေ့
-    # were lost that way).
-    text = re.sub(r"([\u1000-\u1021][\u102b-\u103e]*)"
-                  r"(\u1004\u103a\u1039)(?![\u1000-\u1021])",
-                  r"\2\1", text)
-    # Pair medials with the base before ေ, including a combined ya/wa/ha.
-    text = re.sub(r"([က-အ၀၇၈])ေ([ျြ]?)([ွှ]+)", r"\1\2\3ေ", text)
-    text = re.sub(r"([က-အ၀၇၈])(ေ)([ျြ])", r"\1\3\2", text)
-    text = re.sub(r"([က-အ])([က-အ])(င်္)", r"\1\3\2", text)
-    # Ayar writes ဦး as ဦး in a number of older subsets.
-    text = text.replace("ဦး", "ဦး")
-
-    # Reorder-by-priority is NOT done here. It belongs to exactly one place,
-    # cleanup.reorder_marks, which reads the single shared priority table;
-    # a second implementation here drifted from it once already. What stays
-    # is what only this function can do: the legacy font's visual order.
-    #
-    # The single-word substitution that used to live here (a ``ဲ``/``ွ`` mix-up
-    # in one Arlarwade subset) is gone: per-resource decoding removed the
-    # cause, and patching one word of one document was never a fix.
-    # A digit cannot carry a mark; restore the consonant so the marks that
-    # follow have a base to attach to.
-    text = fix_digit_consonant_confusion(text)
-    # In these legacy layouts, ya/ra uses ာ rather than ါ. Apply this only
-    # after visual-order conversion, without moving the other marks.
-    if apply_aa_vowel_rule:
-        text = re.sub(r"([က-အ][ျြ][ျြွှ]*ေ?)ါ", r"\1ာ", text)
-    return text
-
-
-def _aa_vowel_rule_for_legacy(doc):
-    page = doc.legacy_code_page
-    return ((page is None and isinstance(doc.map, LegacyAyarMap)) or
-            page is LEGACY_CODE_PAGES['ayar'] or page is LEGACY_CODE_PAGES['wininnwa'])
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  Content-stream walking
@@ -972,27 +797,6 @@ def _line_font(ordered):
             return piece[4]
     return None
 
-
-def _join_draft_runs(pieces, order):
-    """Order adjacent profiled runs together, never other font resources."""
-    out, pending, selected = [], [], None
-    for piece in pieces:
-        text, runs = piece[2], piece[3]
-        for is_draft, part in (runs if runs is not None else [(False, text)]):
-            if not part:
-                continue
-            if selected is not None and selected != is_draft:
-                value = ''.join(pending)
-                out.append(order(value) if selected else value)
-                pending = []
-            selected = is_draft
-            pending.append(part)
-    value = ''.join(pending)
-    out.append(order(value) if selected else value)
-    return ''.join(out)
-
-
-
 def _join_visual_runs(pieces, doc):
     """Join adjacent font runs before any witnessed visual reconstruction."""
     from myangustis_parser.extract.pdf_visual import decode_visual_unicode_run
@@ -1025,74 +829,243 @@ def _join_visual_runs(pieces, doc):
     flush()
     return ''.join(transformed)
 
+#: How much of a page one family probe is allowed to read. The decision is per
+#: face and cached with its decoder, so this bounds the cost of the FIRST page
+#: that shows an unnamed legacy face. It is a cost cap, not a claim about
+#: sufficiency: if the part the probe read is too thin to score, the face is left
+#: undecided (and recorded that way) rather than judged on a longer scan.
+PROBE_SAMPLE_STRINGS = 240
+PROBE_SAMPLE_BYTES = 20000
+
+#: How much a face has to have been drawn with before an empty legacy reading counts as
+#: "this face is not a legacy subset" rather than "this page is short".
+SKIP_AFTER_BYTES = 200
 
 
-_MARK_RANGE = ('\u102b-\u103e\u105e-\u1060\u1062-\u1064\u1067-\u106d'
-               '\u1071-\u1074\u1082-\u108d\u108f\u109a-\u109d')
-_BASE_RANGE = ('\u1000-\u1021\u1023-\u102a\u103f\u104c-\u104f'
-               '\ua9e0-\ua9ef\uaa60-\uaa7f')
-_MARKS = re.compile(f'[{_MARK_RANGE}]')
-_BASES = re.compile(f'[{_BASE_RANGE}]')
-_TOKEN_BREAK = ' \t\n\r\u00a0\u104a\u104b\u104c\u104d\u104e\u104f'
+def _legacy_code_page_name(decoder):
+    """The legacy table in force for this face, by name -- or ``None``.
 
-
-def _bind_leading_marks(text):
-    """A mark run with nothing in front of it belongs to the base that follows.
-
-    These faces encode visual order, so a cluster can arrive as ``ိ`` then
-    ``က``: the mark has no base before it, which is what the scanner reports as
-    an orphan, and the base is the very next letter. Binding the marks behind
-    that base is the only reading that is Burmese. A mark that already has a
-    base in front of it is untouched, and so is a run with no base after it.
+    Read off the decoder's own ``font_legacy_code_page``, so it reports what was
+    actually used to read the bytes (name gate, page probe, or the documented
+    default) rather than what some earlier stage hoped for.
     """
-    if not text:
-        return text
-    out, i, size = [], 0, len(text)
-    while i < size:
-        if _MARKS.match(text[i]) and (i == 0 or text[i - 1] in _TOKEN_BREAK):
-            j = i
-            while j < size and _MARKS.match(text[j]):
-                j += 1
-            if j < size and _BASES.match(text[j]):
-                out.append(text[j])
-                out.append(text[i:j])
-                i = j + 1
+    page = getattr(decoder, 'font_legacy_code_page', None)
+    if page is None:
+        return None
+    from myangustis_parser.extract.pdf_fonts import LEGACY_CODE_PAGES
+    for name, candidate in LEGACY_CODE_PAGES.items():
+        if candidate is page:
+            return name
+    return 'other'
+
+
+def page_content_bytes(loader, page_num, page_gen):
+    """One page's content stream, contents arrays joined. No parse, no decode.
+
+    Both the lane trial and the face probe walk this -- they ask the page what its bytes
+    are, which is a different question from what its text is, and answering it must not
+    cost a second pass through the parsing chain.
+    """
+    def refs_of(value, depth=0):
+        if depth > 32:
+            raise ValueError('PDF contents reference nesting is too deep')
+        if isinstance(value, Ref):
+            item = loader.object_value(value)
+            if isinstance(item, list):
+                yield from refs_of(item, depth + 1)
+            else:
+                yield value
+        elif isinstance(value, list):
+            for item in value:
+                yield from refs_of(item, depth + 1)
+
+    page = loader.resolve(Ref(page_num, page_gen))
+    refs = list(refs_of(page.get('Contents') if isinstance(page, dict) else None))
+    return b''.join(_page_content_stream(loader, ref) for ref in refs)
+
+
+def shown_strings_by_face(content, faces):
+    """The strings ``faces`` draw, in the order the file drew them, capped.
+
+    The Tf operator decides which resource a string belongs to; ``PROBE_SAMPLE_STRINGS``
+    and ``PROBE_SAMPLE_BYTES`` bound the look, so the cost of asking is fixed while the
+    answer is still a sample of the page rather than the page.
+    """
+    shown = {name: [] for name in faces}
+    counts = {name: 0 for name in faces}
+    total = 0
+    active = None
+    for op, operands in iter_content_operations(content):
+        if op == 'Tf':
+            active = str(operands[-2]) if len(operands) >= 2 and isinstance(operands[-2], Name) else None
+            if active not in shown:
+                active = None
+            continue
+        if active is None or op not in ('Tj', 'TJ', "'", '"'):
+            continue
+        for string in _shown_strings(op, operands):
+            if counts[active] >= PROBE_SAMPLE_STRINGS or total >= PROBE_SAMPLE_BYTES:
                 continue
-        out.append(text[i])
-        i += 1
-    return ''.join(out)
+            shown[active].append(string)
+            counts[active] += 1
+            total += len(string)
+    return shown
+
+
+def lane_trial(loader, page_key, shared, legacy):
+    """The lane's own side of the fork: read one page's bytes through both legacy
+    tables and let the legacy judge answer, before the page is committed to a side.
+
+    The lane gate (``normalize/judgement.instruction_lane``) reads the font
+    instructions and nothing else, so a face whose /ToUnicode hands back keyboard
+    keys goes to the modern lane and comes out as ASCII. Here the two legacy tables
+    read the same bytes in parallel and ``extract/legacy_lane_score.trial_lane``
+    scores them in the ZawCode visual order, asking the one question the gate is not
+    allowed to ask: does either reading look like Burmese, and is the map reading of
+    the same bytes ascii junk. The page, not the book, is what gets sent -- so a face
+    that draws headings in Latin and the text in Myanmar is asked again on every page
+    and answers for the page in front of it.
+
+    Both are remembered PER PROGRAM, not per name: the ledger is keyed by the hash of
+    the face's embedded font program (see ``pdf_fonts.font_program_sha256``), and a
+    face whose font is not embedded is not asked at all, because there is nothing to
+    pair its name with.
+
+    Two things are remembered per face, both once for the book: a face whose codes
+    neither table can read as Myanmar at all is a Latin face and is never asked
+    again (``skip``), and the table a readable page won is kept as that face's code
+    page (``family``), which ``build_font_decoder`` honours in place of the default
+    the name gate could not supply. No text is produced here, and the page is parsed
+    once, by the caller that acts on the answer.
+    """
+    if legacy.lane_trial is None:
+        legacy.lane_trial = {}
+    answered = legacy.lane_trial
+    decoders = page_font_decoders(loader, page_key[0], page_key[1], shared)
+    faces = {}
+    for name, font in decoders.items():
+        # (Face identity) The trial's key is the embedded program's hash, never the
+        # name. ``BaseFont`` is a label a file reuses freely -- part-1 has sixty
+        # different embedded programs and 1,032 unembedded resources answering to
+        # ``Zawgyi-One``, part-4 five to ``wininnwa`` -- so a verdict inherited across
+        # them is one wrong reading repeated. A face with no program in the file has no
+        # identity to answer for: the trial commits nothing about it, and the
+        # instructor's side of the fork stands as it was.
+        key = font.program_sha256
+        if not key or font.is_cid:
+            continue
+        # A face that DECLARES what its codes mean -- /WinAnsiEncoding, a named
+        # standard encoding, no /Differences -- has a documented code space and is
+        # not a hand-cut subset. /Differences is NOT that signal: a legacy subset
+        # declares its codes through exactly that, which is what the /ToUnicode
+        # bridge reads.
+        if font.has_encoding and not font.encoding_has_differences:
+            continue
+        if (answered.get(key) or {}).get('skip'):
+            continue
+        faces[name] = font
+    if not faces:
+        return False
+    content = page_content_bytes(loader, page_key[0], page_key[1])
+    if not content:
+        return False
+    from myangustis_parser.extract.legacy_lane_score import trial_lane
+    from myangustis_parser.extract.pdf_fonts import (LEGACY_CODE_PAGES, bridge_codes,
+                                                read_through_table)
+    flip = False
+    for name, strings in shown_strings_by_face(content, faces).items():
+        font = faces[name]
+        key = font.program_sha256
+        if not strings:
+            continue
+        # Same chain the read uses: the face's own map says where each of its codes
+        # sits in the original font's numbering, and the table is read at THAT slot.
+        bridge = bridge_codes(font)
+        readings = {table: read_through_table(strings, page, bridge)
+                    for table, page in LEGACY_CODE_PAGES.items()}
+        if not any(readings.values()):
+            # Nothing readable through either table on THIS page. A title page shows a
+            # font in two words, which is not enough to call a face Latin -- so a face
+            # is only retired once the sample behind the empty reading is real.
+            if sum(len(item) for item in strings) >= SKIP_AFTER_BYTES:
+                answered[key] = {'skip': True, 'lane': 'modern', 'reason': 'no-burmese',
+                                 'baseFont': normalise_font_name(font.base_font)}
+            continue
+        modern = ''.join(font.decode(data, use_confirmed=False) for data in strings)
+        verdict = trial_lane(readings, modern)
+        if verdict['lane'] == 'legacy':
+            answered[key] = {'skip': False, 'lane': 'legacy', 'family': verdict['family'],
+                             'reason': verdict['reason'], 'score': verdict['score'],
+                             'marks': verdict['marks'], 'quality': verdict['quality'],
+                             'baseFont': normalise_font_name(font.base_font)}
+            flip = True
+    return flip
+
+
+def _settle_legacy_families(content, decoders, doc):
+    """Let the page name the code page of the legacy faces the file did not.
+
+    One extra pass over the content of a legacy page, and only when that page
+    shows a face still undecided: every string the page shows for each such
+    resource, handed to the decoder, which reads them through each candidate
+    table and scores them in ``extract/legacy_lane_score`` -- the page is parsed
+    once, and the two readings live inside that decision instead of becoming two
+    passes of the chain (see :meth:`pdf_fonts.FontDecoder.settle_legacy_family`). The order of the
+    strings is the order the file drew them, and the size that a string carries is
+    the font size in effect, so nothing here re-reads or re-sorts the page.
+    """
+    if doc.kind != 'legacy' or doc.map:
+        return
+    # Undecided and worth another look: never probed, or probed on a sample that
+    # was too short to judge and still under the attempt bound.
+    pending = {name: decoder for name, decoder in decoders.items()
+               if not decoder.family_pinned and decoder.family_probe is None
+               and (decoder.family_short is None
+                    or decoder.family_attempts < PROBE_MAX_ATTEMPTS)}
+    if not pending:
+        return
+    shown = shown_strings_by_face(content, pending)
+    for name, decoder in pending.items():
+        chunks = shown[name]
+        held = list(decoder.family_samples or [])
+        if held or chunks:
+            # The look carries over from page to page while the face stays open. A
+            # face that gets two lines per page never reaches MIN_PROBE_MARKS in one
+            # page, and 104 of part-1's probes abstained for exactly that reason --
+            # "too short" is a fact about the book, not about the page. The caps are
+            # unchanged: the same byte bound, just spent over a few pages.
+            merged = held + list(chunks)
+            used = sum(len(item) for item in merged)
+            while used > PROBE_SAMPLE_BYTES and len(merged) > 1:
+                used -= len(merged.pop(0))
+            decoder.family_samples = merged
+            chunks = merged
+        decoder.settle_legacy_family(chunks)
 
 
 def _join_page_runs(pieces, doc):
-    """Join one page's glyph runs. The legacy-ASCII repair lives HERE.
+    """Join one page's glyph runs. This function repairs nothing.
 
-    A /ToUnicode that is a bridge back to a legacy ASCII layout hands the
-    Myanmar glyphs over as Latin letters (A=အ, U=ဥ, O=ဩ, E=ဧ). The slots can
-    only be recognised once every run of the page is in one string, because
-    the evidence is adjacency: a Latin letter that touches Myanmar text is a
-    slot, and the same letter inside a Latin word is text. Repairing at the
-    join -- the decode stage -- keeps the finish stage free of a second,
-    Python-only pass over the text.
+    It is the last place a page's bytes are still the file's own, so it is a
+    reader and not an editor: which *code page* the page meant was settled above
+    (``FontDecoder.settle_legacy_family``), and what ORDER the text is in is
+    settled after parsing, at the normalize gate -- ``workflow.finish.clean``,
+    which every lane passes through and which ends the page's work in the
+    parsing chain. A mark order that looks wrong here is a report for that stage
+    or for the decode above, never something to fix on the way out of the join.
+
+    The legacy-ASCII repair that used to sit here is removed, not rerouted. It
+    re-read a page's Latin bridge slots from adjacency behind a font-name gate,
+    which is the wrong door twice over: the lane comes from the stem parser and a
+    name only pins which subset code page was hand-crafted; and it has no
+    ancestor in the pinned JS (no ``@core/pdf`` module resolves bridge bytes), so
+    no reading on the other side of the mirror agreed with it. What remains of
+    ``legacy_ascii`` is ``RESIDUE_SLOTS``, which ``workflow/diagnostics.py`` uses
+    to say which slots are proven -- reporting, never a rewrite.
     """
-    if doc.zawcode_order:
-        joined = _join_draft_runs(pieces, doc.zawcode_order)
-    elif doc.kind == 'font' and doc.visual_unicode_enabled:
-        joined = _join_visual_runs(pieces, doc)
-    else:
-        joined = ''.join(piece[2] for piece in pieces)
-    # Scope it the way the design scopes the code page: only a page that
-    # carries a legacy Myanmar face can be reading that face's slots. A page
-    # of plain Unicode text is never searched for them.
-    names = [piece[4] for piece in pieces if len(piece) > 4 and piece[4]]
-    if not any(is_legacy_font_name(name) or 'zawgyi' in name.lower() for name in names):
-        return joined
-    # A registered face names its own layout and the decode already read it
-    # (``known`` is the registry's word, not the guess from a layout prefix), so
-    # a real WinInnwa or Ayar book costs nothing here. Only an unnamed bridge -
-    # nothing in the file to identify it - is read from the text.
-    if any((legacy_layout_for_font(name) or {}).get('known') for name in names):
-        return joined
-    return _bind_leading_marks(legacy_ascii.resolve(joined))
+    if doc.kind == 'font' and doc.visual_unicode_enabled:
+        return _join_visual_runs(pieces, doc)
+    return ''.join(piece[2] for piece in pieces)
 
 def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=False, *, used_myanmar_fonts=None, used_legacy_fonts=None, image_records=None, diagnostics=None):
     """Extract text lines WITH layout: ``(lines, page_w, page_h)``.
@@ -1141,6 +1114,7 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
     previous_diagnostic_run = None
     # Contents arrays form one logical stream, including mid-token boundaries.
     content = b''.join(_page_content_stream(loader, ref) for ref in refs)
+    _settle_legacy_families(content, decoders, doc)
     image_collector = None
     if image_records is not None:
         from myangustis_parser.extract.pdf_image_coverage import PageImageCollector
@@ -1226,11 +1200,11 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
         nonlocal block_texts, block_runs, block_font, block_xy, block_size
         if block_texts and block_xy is not None:
             text = ''.join(block_texts)
-            if doc.legacy_text_fix:
+            if doc.kind == 'legacy':
                 text = _collapse_overprint(text)
             pieces.append((block_xy[1], block_xy[0], 12.0 if block_size is None else block_size,
-                           text, block_runs if doc.zawcode_order or
-                           (doc.kind == 'font' and doc.visual_unicode_enabled) else None,
+                           text,
+                           block_runs if (doc.kind == 'font' and doc.visual_unicode_enabled) else None,
                            block_font))
         block_texts, block_runs = [], []
         block_font = block_xy = block_size = None
@@ -1327,6 +1301,17 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
                         'to_unicode_entries': len(decoder.to_unicode or {}),
                         'encoding': decoder.has_encoding, 'own_gid_entries': len(decoder.own_gids or {}),
                         'legacy_map': bool(decoder.font_legacy_code_page),
+                        # Which legacy table this face is being read through, and
+                        # where that came from: the name gate ('name') or the page
+                        # itself ('page'). Observation only -- nothing here decides
+                        # anything, it reports what the decoder already settled on
+                        # (``FontDecoder.settle_legacy_family``), because until now a
+                        # run left no trace of the choice and its score at all.
+                        'code_page': _legacy_code_page_name(decoder),
+                        'family_by': 'name' if decoder.family_pinned else (
+                            'page' if decoder.family_probe else 'default'),
+                        'family_accepted': (decoder.family_probe or {}).get('accepted'),
+                        'family_score': (decoder.family_probe or {}).get('score'),
                         'visual_recovery': bool(decoder.visual_unicode_glyphs),
                         'runs': 0, 'bytes': 0, 'decoded_chars': 0, 'myanmar_chars': 0, 'single_char_runs': 0,
                         'unmapped_codes': 0, 'fallback_bytes': 0, 'dropped_controls': 0})
@@ -1362,9 +1347,7 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
                 if block_font is None and decoder.base_font:
                     block_font = decoder.base_font
                 block_texts.append(text)
-                if doc.zawcode_order:
-                    block_runs.append((decoder.zawcode_glyphs is not None, text))
-                elif doc.kind == 'font' and doc.visual_unicode_enabled:
+                if doc.kind == 'font' and doc.visual_unicode_enabled:
                     block_runs.append((decoder, text, shown if decoder.visual_unicode_glyphs else None))
 
     if image_collector is not None:
@@ -1502,8 +1485,6 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
                     if cur_line:
                         cur_line.sort(key=lambda p: p[0])   # x only; stable = stream order
                         _j = _join_page_runs(cur_line, doc)
-                        if doc.legacy_text_fix:
-                            _j = legacy_ayar_to_unicode(_j, apply_aa_vowel_rule=_aa_vowel_rule_for_legacy(doc))
                         lines.append((cur_line[0][0], cur_y,
                                       max(p[1] for p in cur_line), _j,
                                       _line_font(cur_line)))
@@ -1512,8 +1493,6 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
             if cur_line:
                 cur_line.sort(key=lambda p: p[0])   # x only; stable = stream order
                 joined = _join_page_runs(cur_line, doc)
-                if doc.legacy_text_fix:
-                    joined = legacy_ayar_to_unicode(joined, apply_aa_vowel_rule=_aa_vowel_rule_for_legacy(doc))
                 lines.append((cur_line[0][0], cur_y,
                               max(p[1] for p in cur_line), joined,
                               _line_font(cur_line)))
@@ -1539,8 +1518,6 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
         # puts it back on its base: 'ရှိသည်။'.
         ordered = sorted(current_line, key=lambda p: p[0])
         joined = _join_page_runs(ordered, doc)
-        if doc.legacy_text_fix:
-            joined = legacy_ayar_to_unicode(joined, apply_aa_vowel_rule=_aa_vowel_rule_for_legacy(doc))
         lines.append((ordered[0][0], current_y,
                       max(p[1] for p in ordered), joined, _line_font(ordered)))
 

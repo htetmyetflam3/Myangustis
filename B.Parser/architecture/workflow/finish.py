@@ -13,7 +13,7 @@ from myangustis_parser.normalize import judgement, mm_score, scan
 from myangustis_parser.normalize.detector import contains_myanmar
 from myangustis_parser.normalize.beautify import arrange_zawcode_order
 from myangustis_parser.normalize.cleanup import cleanup_text, order_text
-from myangustis_parser.normalize import legacy_ascii
+from myangustis_parser.normalize import legacy_ascii, legacy_order
 from myangustis_parser.normalize.rabbit import Rabbit
 from myangustis_parser.normalize.unicode_evidence import preserve_regional_runs
 
@@ -41,11 +41,16 @@ def decide(text, *, source, parsing_path='font-cmap', zawgyi_codepage=False,
 
 
 def apply_decision(text, decision):
-    """Apply the page decision to text the decode stage already repaired.
+    """Apply the lane's own beautify rule to the text the decode stage produced.
 
-    Legacy ASCII slots are repaired where the page's runs are joined
-    (``extract.pdf_extract._join_page_runs``), not here: this stage orders and
-    cleans, and it must not carry a second, Python-only pass over the text.
+    One slot, one rule per lane: the ZawCode lane gets ``arrange_zawcode_order``,
+    the legacy lane gets ``legacy_order.arrange_legacy_order`` (a legacy page's
+    visual order is a code-page fact, issued by the stem parser's instruction,
+    never a font name), the Rabbit lane gets the conversion. ``aligned`` has no
+    rule of its own and takes the shared ordering at the finish like every other
+    page. Legacy ASCII slots are repaired where the page's runs are joined, not
+    here: this stage orders and cleans, and it must not carry a second pass that
+    only one lane can see.
     """
     if decision == 'ocr':
         return text
@@ -53,15 +58,119 @@ def apply_decision(text, decision):
         return Rabbit.zg2uni(text)
     if decision == 'zawcode':
         return arrange_zawcode_order(text)
-    if decision in ('legacy', 'aligned'):
+    if decision == 'legacy':
+        return legacy_order.arrange_legacy_order(text)
+    if decision == 'aligned':
         return text
     raise ValueError(f'Unknown Parser decision: {decision}')
 
 
-def clean(text, *, apply_cleanup=True):
-    # Preserve regional-script runs just as the Parser's Unicode lane does.
-    ordered = preserve_regional_runs(text, order_text)
-    return preserve_regional_runs(ordered, cleanup_text) if apply_cleanup else ordered
+def ordered(text):
+    """Normalize alone -- the report's ``base`` column, never a page's output.
+
+    ``base`` sits beside ``clean`` in the finalized-page record because
+    ``n_changes`` is the difference between the two, and the JS oracle reaches
+    that pair by passing a third argument, ``applyCleanup``, to
+    ``convertFinalizedPageText``. This module has no such argument: the pair comes
+    from :func:`finalized_output`, so no caller can hold a page's text back from
+    its cleanup half. The JS flag is recorded in ``B.Parser/AUDIT.md`` as the
+    mirror's own thing to delete.
+    """
+    # Preserve regional-script runs just as the Parser's Unicode lane does --
+    # ``@rule/unicode-evidence.js`` at PDF position 26, and the JS legacy lane
+    # calls the same wrapped helper (``finishPageToFile`` writes
+    # ``orderUnicodeText(text)`` per line), so the protection is the oracle's own
+    # step and not a Python-side addition. See AUDIT.md, "the regional wrapper".
+    return preserve_regional_runs(text, order_text)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# THE GATE -- normalize, called after the page's parsing finishes.
+#
+# Every page of every lane comes through this function: the Unicode lane, the
+# Zawgyi lane (after Rabbit), the legacy lane, OCR, and UNKNOWN. It is internal
+# routing and it has no switch -- nothing may pass a flag to skip a half of it,
+# no lane has its own variant, and there is no second copy of the ordering
+# anywhere else in the parser. When this returns, the page's parsing is finished
+# and the page leaves the parsing chain: nothing downstream re-opens its text.
+#
+# JS's own words for this place, which is why the gate is one step and not two:
+#   "@postprocess/beautify/zawcode-order.js"  These rules rewrite text; deciding
+#       stays in @rule/judgement.js... beautify is the parsing chain, repair is a
+#       later runtime stage.
+#   "@rule/mm-score.js"  Broken text is rejected here... This module never
+#       rewrites text.  /  "@rule/judgement.js"  ...which this module asks for
+#       evidence. Nothing here rewrites text.
+#   "@core/runtime/finalized-cmap.js"  Every beautify rule layer gets clean.js as
+#       its follow-up here, then the page is finished... Do not add a blanket
+#       second ordering pass behind this finish.  And for this lane: "Legacy pages
+#       are written as decoded, then given the one shared ordering every lane gets
+#       at page finish. There is no legacy-specific reorder rule: extraction only
+#       decodes."
+#
+# WHICH NORMALIZE. Two things are called by that name and they are not the same
+# pass. (1) ``cleanup.order_text``/``cleanup_text`` -- ``clean.js``'s ordering and
+# imposter step -- are the follow-up of the beautify rule and run here, beside
+# mm-score and the ZawCode swap: that pair is (2)'s neighbour, never its
+# container. (2) the FINAL gate -- and it has no module of its own, by design: the
+# deleted ``B.Parser/main/parser/text/normalize.js`` says "There is deliberately no
+# normalize.py -- this module has NO Python counterpart", and names ``cleanup.py``
+# as the owner of the five functions and ``mm_score.py`` as the owner of MARKS (so
+# neither ``clean.py`` nor a parser ``normalize.py`` has ever existed here). The
+# gate: the parser must NOT call the Engine's normalize as a second, separate
+# pass. The chain reaches the Engine once, at its end -- ``normalize/pos_scan.py``
+# hands the finished lines to the bind-engine api (``myangustis_engine.api.collect``)
+# -- and the Engine's own ``normalize`` already runs behind that call, as the FIRST
+# thing it does with the text it is handed. Traced, so this is not an assumption:
+#
+#   JS  @postprocess/bind-engine.js       bindEngine(request) -> BindEngine(request)
+#       A.Engine/.../init/bridge.js:12    async function* Engine({ sourceText, flag, log })
+#       A.Engine/.../init/bridge.js:19    readFromApi(sourceText)
+#       .../MonoSyllabism/generators/input.js   for await (block of collectFromText(text)):
+#                                                cleaned = normalize(block); mapperStr(cleaned)
+#   Py  myangustis_engine/api.py:6-8      collect -> bind_engine({'sourceText', 'flag', 'log'})
+#       myangustis_engine/init/bridge.py:17,42   bind_engine(request) -> read_from_api(source, mapper)
+#       .../MonoSyllabism/generators/input.py:3-5  yield runtime.mapperNormalize(block)
+#       .../MonoSyllabism/map/normalize.py:95,89   mapperNormalize = mapperStr(reorderAndWrap(normalize(t)))
+#                                                 normalize = NFC -> from_utf16 -> Glue strip -> cleanImposters
+#
+# Two consequences, both rules. (a) A normalize on the parser's side is the same
+# pass twice, run on the wrong side of the door. (b) It is not a repair either:
+# what comes back from bind is tagged analysis OF the normalized text, and the
+# normalized text is never written back over the file -- so a mark that survives
+# into a finished page is a bug in (1) above, never something to pre-normalize
+# around. Removing the parser's copy therefore loses nothing and changes no byte.
+#
+# The plumbing that made a separate call possible (``normalize_page_lines`` /
+# ``normalize_output_text``, the TEXT KEEPING section inherited from the deleted
+# ``normalize.js``) is therefore **deleted** here, together with the two
+# ``test_mirror.py`` pins that were its only callers. Nothing else in the tree
+# reached it, and nothing may add it back: a normalize beside the gate is a second
+# owner of the same characters, invisible to every lane that does not call it.
+# There is likewise no protected or preserved character set -- characters the chain
+# does not itself handle flow through its transforms naturally, which is what the
+# inherited header said and what this gate relies on.
+#
+# The pinned JS is in the same state and takes the same verdict, as a NOTE rather
+# than an edit: at ``67f02845`` the only code that fetches the Engine normalize
+# separately is ``test/parser-test/zawcode-order.test.js``, through the orphaned
+# ``@rule/judgement.js`` ``normalizePageLines``/``normalizeOutputText`` and the
+# ``getEngineNormalize`` re-export in ``B.Parser/_path.js`` / ``index-path.js`` --
+# production chain: no caller. Deleting those is main's action, recorded in
+# ``B.Parser/AUDIT.md``, "The separate Engine-normalize call is deleted; bind
+# engine is the only door".
+#
+# REMINDER, because this is where the temptation sits: if a page still shows a
+# mark out of place, the rule is missing from (1) or (2) above, or the code page
+# the page was decoded through was the wrong one -- fix it there. Do not add a
+# pass here, in the extraction join, or in a lane-specific helper "for the legacy
+# case": a repair beside the gate is invisible to every other lane, unparitable
+# with the JS chain, and it leaves the next reader unable to tell which of the
+# two the text went through.
+# ══════════════════════════════════════════════════════════════════════════
+def clean(text):
+    """The gate: normalize, then imposter cleanup. Always both, for every page."""
+    return preserve_regional_runs(ordered(text), cleanup_text)
 
 
 def finish_text(text, *, source, parsing_path='font-cmap', zawgyi_codepage=False,
@@ -71,19 +180,35 @@ def finish_text(text, *, source, parsing_path='font-cmap', zawgyi_codepage=False
                              zawgyi_codepage=zawgyi_codepage,
                              already_zawcode=already_zawcode, source_encoding=source_encoding)
     converted = apply_decision(text, decision)
-    base = clean(converted, apply_cleanup=False)
-    # JS legacy pages receive shared ordering only, not the Unicode cleanup
-    # applied to rule-converted pages.
-    cleaned = base if decision == 'legacy' else clean(converted, apply_cleanup=True)
+    base = ordered(converted)
+    # Which lanes the cleanup half applies to is a category rule, JS's
+    # ``cleanupFor`` -- not a caller's choice, and a legacy page is JS's one lane
+    # that keeps the shared ordering only.
+    cleaned = base if decision == 'legacy' else clean(converted)
     return {'decision': decision, 'score': score, 'base': base,
             'clean': cleaned, 'scan': scan.scan_text(cleaned)}
 
 
-def finalize_pdf_output(text, decision, apply_cleanup=True):
-    """The JS finalized-page output step; legacy was ordered earlier."""
-    if decision not in ('aligned', 'zawcode', 'unaligned-unicode', 'rabbit'):
-        return text
-    return clean(text, apply_cleanup=apply_cleanup)
+# JS's FINAL_UNICODE_DECISIONS: the lanes the finalized-page step owns.
+FINALIZED_OUTPUT_DECISIONS = ('aligned', 'zawcode', 'unaligned-unicode', 'rabbit')
+
+
+def finalized_output(text, decision):
+    """The finalized page's ``(base, clean)`` pair, from JS's output step.
+
+    Legacy was ordered earlier, and a decision outside JS's final set is handed on
+    as supplied in both columns. Both halves come from here so the two columns can
+    never disagree about what the gate was, and the pair cannot be split into a
+    mode where a page ships ordered-but-uncleaned.
+    """
+    if decision not in FINALIZED_OUTPUT_DECISIONS:
+        return text, text
+    return ordered(text), clean(text)
+
+
+def finalize_pdf_output(text, decision):
+    """:func:`finalized_output`'s second half, for one line at a time."""
+    return finalized_output(text, decision)[1]
 
 
 def finish_pdf_page(text, *, parsing_path='font-cmap', zawgyi_codepage=False,
@@ -101,16 +226,21 @@ def finish_pdf_page(text, *, parsing_path='font-cmap', zawgyi_codepage=False,
     evidence = judgement.judge_page_lines(text.split('\n'), swap)
     decision = judgement.select_page_decision(evidence, parsing_path, zawgyi_codepage)
     if decision == 'legacy':
-        # JS orders each legacy line once while finalizing the page spool.
-        finished = '\n'.join(clean(line, apply_cleanup=False) for line in text.split('\n'))
+        # The lane's own rule first, then the one shared ordering every lane gets
+        # at the page finish -- the position the chain reserves for it. JS's legacy
+        # branch runs the shared ordering alone (``@core/runtime/finalized-cmap.js``:
+        # "There is no legacy-specific reorder rule: extraction only decodes"), so
+        # this half-step is the parser leading the mirror; see B.Parser/AUDIT.md,
+        # "The legacy ordering rule does not exist in either tree".
+        finished = '\n'.join(ordered(apply_decision(line, 'legacy'))
+                             for line in text.split('\n'))
     else:
         finished = apply_decision(text, decision)
         if decision == 'rabbit' and source_encoding != 'unicode':
             finished = re.sub(r'က(?:မၻာ|မ်ဘာ)', 'ကမ္ဘာ', finished)
     category = ('UNKNOWN' if not contains_myanmar(finished) else
                 'ZAWGYI' if decision == 'rabbit' else 'UNICODE')
-    base = finalize_pdf_output(finished, decision, False)
-    cleaned = finalize_pdf_output(finished, decision, True)
+    base, cleaned = finalized_output(finished, decision)
     return {'decision': decision, 'category': category, 'finished': finished,
             'base': base, 'clean': cleaned, 'scan': scan.scan_text(cleaned),
             # Latin slots found in Myanmar context, by letter: the evidence the

@@ -72,7 +72,7 @@ from myangustis_parser.extract.ttf_gsub import resolve_shaped_glyphs
 from myangustis_parser.extract.pdf_visual import match_visual_unicode_glyphs
 from myangustis_parser.resources import maps
 from myangustis_parser.resources.font_names import (is_legacy_font_name,
-    is_unresolved_legacy_font, legacy_layout_for_font, normalise_font_name)
+    is_unresolved_legacy_font, legacy_layout_for_font, legacy_font_family, normalise_font_name)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -953,6 +953,11 @@ ZAWCODE_LEGACY_CODE_PAGE = {
 # layout name -> code page.  Add an entry to support another legacy face.
 _UNSET = object()
 
+#: How often a face with too little on it may be looked at again, in pages, before the
+#: lane stops asking. Enough to get past a title page; few enough that an unreadable
+#: face cannot cost a book -- the look itself is capped per page by the caller.
+PROBE_MAX_ATTEMPTS = 3
+
 LEGACY_CODE_PAGES = {
     "ayar": AYAR_LEGACY_CODE_PAGE,
     "wininnwa": WININNWA_LEGACY_CODE_PAGE,
@@ -986,6 +991,56 @@ def decode_raw_byte_slots(data, profile):
 
 def decode_raw_bytes(data, profile):
     return ''.join(decode_raw_byte_slots(data, profile))
+
+
+def bridge_codes(font):
+    """``{pdf code: table slot}`` for one face, from the maps it carries itself.
+
+    (Code bridge) A legacy subset renumbers its glyphs from 0x21 in an arbitrary
+    order, so the code in the content stream is not a code space two subsets agree
+    on. The face's own /ToUnicode -- or its /Encoding /Differences, when that is all
+    it has -- is a faithful bridge back to the ORIGINAL font's numbering, which is
+    what a layout table is written against. ``FontDecoder._legacy_lookup`` follows
+    exactly this chain to read a page; the lane trial has to read it the same way or
+    it is scoring a different question, and a bridge that is not a single latin char
+    is not a bridge at all (a map that hands back Myanmar is already the modern read).
+    """
+    mapping = getattr(font, 'to_unicode', None) or {}
+    codes = range(1, 256) if getattr(mapping, 'by_width', None) else list(mapping)
+    bridge = {}
+    for code in codes:
+        if code < 1 or code > 255:
+            continue
+        value = (font._to_unicode_for_code(mapping, code, 1) if getattr(mapping, 'by_width', None)
+                 else mapping.get(code))
+        if isinstance(value, str) and len(value) == 1 and value.isascii():
+            bridge[code] = ord(value)
+        elif font.has_encoding:
+            shown = font.encoding.get(code)
+            if isinstance(shown, str) and len(shown) == 1 and shown.isascii():
+                bridge[code] = ord(shown)
+    return bridge
+
+
+def read_through_table(strings, table, bridge=None):
+    """One set of shown strings, read through one legacy code page. Nothing else.
+
+    (Table read) The lane trial needs both legacy readings of a page's own bytes, and it
+    needs them without reading the page: no /ToUnicode, no confirmed runs, no encoding,
+    no fallback byte, no join. A code the table does not define becomes nothing at all,
+    because a hole in the sample is honest while an ASCII imposter in the sample would be
+    scored as Burmese by the very test that exists to catch it.
+
+    ``bridge`` (see :func:`bridge_codes`) re-reads each code through the face's own map
+    first, so a subset that renumbered its glyphs is still looked up in the code space the
+    table was cut against. Without it the trial sees only the faces that never renumbered,
+    which is a different population from the one the lane is about.
+    """
+    get = table.get
+    if not bridge:
+        return ''.join(''.join(get(code) or '' for code in data) for data in strings if data)
+    return ''.join(''.join(get(bridge.get(code, code)) or '' for code in data)
+                   for data in strings if data)
 
 
 def encode_raw_byte_slots(slots, profile, *, byte_choices=None):
@@ -1123,10 +1178,10 @@ class DocumentDecoding:
     mapping-based strategies remain available to direct API callers.
     """
 
-    __slots__ = ("kind", "map", "key_kind", "trust_font_tounicode",
-                 "legacy_text_fix", "legacy_code_page", "loader", "_decoders",
-                 "_page_fonts", "zawcode_profiles", "zawcode_templates", "zawcode_order", "zawcode_stats",
-                 "lane_observer", "stem_fonts", "visual_unicode_enabled", "visual_unicode_observer")
+    __slots__ = ("kind", "map", "key_kind", "trust_font_tounicode", "lane_trial",
+                 "legacy_code_page", "loader", "_decoders",
+                 "_page_fonts", "lane_observer", "stem_fonts",
+                 "visual_unicode_enabled", "visual_unicode_observer")
 
     def __init__(self, kind, mapping=None, legacy_code_page=None):
         self.kind = kind
@@ -1137,7 +1192,6 @@ class DocumentDecoding:
         # Legacy treats a selected resource's ToUnicode as a slot bridge;
         # font mode first uses that resource's own Unicode mapping.
         self.trust_font_tounicode = kind in ("tounicode", "none", "font")
-        self.legacy_text_fix = kind == "legacy"
         # Source-byte -> Unicode table for a legacy layout. When present, a
         # simple font that declares no encoding is decoded through its OWN
         # /ToUnicode into the source font's code space and then through this
@@ -1148,12 +1202,11 @@ class DocumentDecoding:
         self.loader = None
         self._decoders = ResourceCache(64)
         self._page_fonts = {}
-        self.zawcode_profiles = None
-        self.zawcode_templates = None
-        self.zawcode_order = None
-        self.zawcode_stats = None
         self.lane_observer = None
         self.stem_fonts = {}
+        # base font name -> the lane trial's verdict for that face, taken once
+        # (``workflow/pipeline.normal_page`` fills it, ``build_font_decoder`` reads it).
+        self.lane_trial = {}
         self.visual_unicode_enabled = False
         self.visual_unicode_observer = None
 
@@ -1213,6 +1266,7 @@ class FontResourceLoader:
         self._gid_cache = ResourceCache(32)
         self._tu_cache = ResourceCache(32)
         self._cid_cache = ResourceCache(32)
+        self._program_cache = ResourceCache(32)
 
     # -- object access ----------------------------------------------------
     def object_value(self, ref):
@@ -1381,15 +1435,17 @@ class FontDecoder:
     """Decodes shown strings for ONE ``/Font`` resource."""
 
     __slots__ = ("name", "subtype", "is_cid", "cmap", "to_unicode", "encoding",
-                 "has_encoding", "own_gids", "doc", "_cid_to_gid", "base_font",
-                 "zawcode_glyphs", "font_legacy_code_page", "confirmed_raw_runs", "encoding_has_differences", "selected_legacy", "unicode_cid_legacy", "conflicting_space_map", "padded_simple_to_unicode", "visual_unicode_glyphs", "_space_gids",
-                 "_bridge_page_cache")
+                 "has_encoding", "own_gids", "doc", "_cid_to_gid", "base_font", "family_pinned", "family_probe",
+                 "family_attempts", "family_short", "family_samples",
+                 "font_legacy_code_page", "confirmed_raw_runs", "encoding_has_differences", "selected_legacy", "unicode_cid_legacy", "conflicting_space_map", "padded_simple_to_unicode", "visual_unicode_glyphs", "_space_gids",
+                 "_bridge_page_cache", "program_sha256")
 
     def __init__(self, name, subtype="", base_font="", is_cid=False, cmap=None,
                  to_unicode=None, encoding=None, has_encoding=False,
-                 own_gids=None, doc=None, cid_to_gid=None, zawcode_glyphs=None,
+                 own_gids=None, doc=None, cid_to_gid=None,
                  font_legacy_code_page=None, confirmed_raw_runs=None,
-                 encoding_has_differences=False, selected_legacy=True):
+                 encoding_has_differences=False, selected_legacy=True,
+                 family_pinned=True, program_sha256=None):
         self.name = name
         self.subtype = subtype
         self.base_font = base_font
@@ -1399,7 +1455,6 @@ class FontDecoder:
         self.encoding = encoding or {}
         self.has_encoding = has_encoding
         self.own_gids = own_gids or {}
-        self.zawcode_glyphs = zawcode_glyphs
         self.doc = doc if doc is not None else DocumentDecoding("none")
         self._cid_to_gid = cid_to_gid
         self.font_legacy_code_page = font_legacy_code_page
@@ -1409,6 +1464,10 @@ class FontDecoder:
         self.visual_unicode_glyphs = None
         self._space_gids = None
         self._bridge_page_cache = _UNSET
+        # sha256 of the embedded font program when the file carries one, and only
+        # then: this is the face's identity, and a code-space answer is kept for the
+        # program it was taken on. See :func:`font_program_sha256` and :attr:`pairable`.
+        self.program_sha256 = program_sha256
         groups = getattr(to_unicode, 'by_width', None)
         self.padded_simple_to_unicode = bool(not is_cid and groups and set(groups) == {2}
                                              and all(c <= 0xff for c in groups[2]))
@@ -1416,7 +1475,7 @@ class FontDecoder:
         mm = sum(any('\u1000' <= ch <= '\u109f' for ch in v) for v in values)
         spaces = sum(v == ' ' for v in values)
         self.unicode_cid_legacy = (self.doc.kind == 'legacy' and is_cid and
-            zawcode_glyphs is None and len(values) >= 8 and mm >= 4 and
+            len(values) >= 8 and mm >= 4 and
             mm * 2 >= len(values) and spaces * 2 < len(values))
         self.conflicting_space_map = False
         if self.doc.kind == 'font' and is_cid and values:
@@ -1428,6 +1487,15 @@ class FontDecoder:
                 if value == ' ' and self.gid_for(self.cmap.cid_for(code, width)) in direct
                 and direct[self.gid_for(self.cmap.cid_for(code, width))] not in space_codes)
             self.conflicting_space_map = contradictions >= 4 and contradictions / len(values) >= .08
+        # A face is only worth probing when its name said nothing AND the legacy
+        # code page was picked as a fallback (see ``settle_legacy_family``); the
+        # default here keeps every other construction out of the probe's way.
+        self.family_pinned = family_pinned
+        self.family_probe = None
+        self.family_attempts = 0
+        self.family_short = None
+        # The strings collected for a face whose sample was not yet judgeable.
+        self.family_samples = None
 
     # -- helpers ----------------------------------------------------------
     @property
@@ -1473,6 +1541,81 @@ class FontDecoder:
         if best_cover >= .95:
             self._bridge_page_cache = best
         return self._bridge_page_cache
+
+    def settle_legacy_family(self, chunks):
+        """Decide Ayar or WinInnwa for this face, from the page's own bytes.
+
+        Reached only for a face the name gate could not name: no witnessed
+        profile and no registered prefix, so the code page it was handed is the
+        documented default. Those are exactly the faces the lane already warns
+        about (``legacy-unknown-font``), and the two tables disagree on 92 of
+        the 109 slots they share, so a default is a guess on nine of ten.
+
+        The sample is this page's strings for this resource, decoded once per
+        candidate through the font's own reading path with nothing but the table
+        swapped -- which is why the caller collects it and this method applies it.
+        The scoring is not done here and not done by re-entering the chain:
+        ``extract/legacy_lane_score.decide_lane`` is the one place that imports
+        mm-score, the scanner, the shared-glyph test and the English-likeness
+        check, and it accepts a reading only above the mirrored scorer's floor
+        (``extract/legacy_judgement.py`` is that scorer, kept for the JS
+        comparison). Below the floor the default stays and the probe is recorded:
+        an undecided face has to stay visible.
+
+        Runs once per face, on the first page that shows it: the decoders are
+        cached per font object, so the whole batch inherits one answer.
+        """
+        if (self.family_probe is not None or not chunks
+                or self.family_pinned or not self.selected_legacy):
+            return self.family_probe
+        if self.family_attempts >= PROBE_MAX_ATTEMPTS:
+            # Looked, could not tell, and no more looks: the face keeps its table and
+            # ``family_short`` says so. A short sample is retried on a later page
+            # because the first page that shows a font is often its title page --
+            # this is not another pass over the text, it is the same capped look at
+            # the content of a page that was going to be read anyway.
+            return self.family_short
+        from myangustis_parser.extract.legacy_lane_score import decide_lane
+        # "Default" means the table this face was handed before any probe, so an
+        # undecided sample leaves it exactly where the name gate left it.
+        saved = self.font_legacy_code_page
+        default = next((key for key, page in LEGACY_CODE_PAGES.items() if page is saved), None)
+
+        def decode_sample(page, name):
+            self.font_legacy_code_page = page
+            return ''.join(self.decode(data, use_confirmed=False) for data in chunks)
+
+        decision = decide_lane(decode_sample, LEGACY_CODE_PAGES, default=default)
+        if decision['accepted']:
+            self.font_legacy_code_page = decision['codePage']
+        else:
+            self.font_legacy_code_page = saved
+        record = {'family': decision['name'], 'score': round(decision['score'], 4),
+                  'accepted': decision['accepted'], 'marks': decision.get('marks', 0),
+                  'insufficient': decision.get('insufficient', False),
+                  'attempts': self.family_attempts + 1,
+                  'ranking': [[name, round(score, 4)] for name, score in decision['ranking']]}
+        self.family_attempts += 1
+        if decision.get('insufficient') and self.family_attempts < PROBE_MAX_ATTEMPTS:
+            self.family_short = record
+            return record            # open: ``family_samples`` keeps growing for the next page
+        self.family_probe = record
+        self.family_samples = None      # closed: the collected look is no longer needed
+        return record
+
+    @property
+    def pairable(self):
+        """True when this face has a program hash to be identified by.
+
+        (Face identity) A decision about a code space is worth keeping only for the
+        program it was taken on. A face whose font is not embedded has no program, so
+        nothing about it can be paired -- the name is then the only thing the file
+        offers, and the name is shared: on part-1, 1,032 resources named
+        ``Zawgyi-One`` are unembedded and a further 60 embedded programs answer to the
+        same name. Where that happens the lane commits nothing and the instructor's own
+        answer stands.
+        """
+        return bool(self.program_sha256)
 
     def _to_unicode_for_code(self, mapping, code, width):
         if not mapping:
@@ -1525,8 +1668,6 @@ class FontDecoder:
 
     def _doc_lookup(self, key, cid=None):
         """Document-level map lookup, own-font glyph map first."""
-        if self.zawcode_glyphs is not None:
-            return self.zawcode_glyphs.get(key)
         if self.doc.map is IDENTITY:
             return map_code(IDENTITY, key)
         if self.doc.key_kind == "gid" and self.own_gids:
@@ -1600,7 +1741,7 @@ class FontDecoder:
         key = cid if (self.doc.key_kind == "code" or self.doc.map is IDENTITY) \
             else self.gid_for(cid)
         return self._observe_lane(self._doc_lookup(key, cid),
-                                  "legacy" if self.doc.kind == "legacy" and self.zawcode_glyphs is None else "unicode")
+                                  "legacy" if self.doc.kind == "legacy" else "unicode")
 
     def decode(self, data, *, use_confirmed=True, stats=None):
         """Decode a shown string (``bytes``) with this font's rules."""
@@ -1617,8 +1758,6 @@ class FontDecoder:
             if stats is not None:
                 stats['unmapped_codes'] += len(data)
             return ''.join(f"[{code:02X}]" for code in data)
-        if self.zawcode_glyphs is not None and self.doc.zawcode_stats is not None:
-            self.doc.zawcode_stats['glyphs'] += len(data) // 2
         out = []
         if self.is_cid:
             for code, cid, width in self.cmap.iter_codes(data):
@@ -1661,11 +1800,49 @@ class FontDecoder:
         return "".join(out)
 
 
+def font_program_sha256(loader, descriptor, entry=None, truetype_only=False):
+    """sha256 of the program embedded behind one ``/FontDescriptor``, or ``None``.
+
+    (Face identity) Any embedded program answers -- TrueType, CFF, Type1 -- because the
+    only question asked of it is "are these the same bytes as that face". The name a
+    file gives a font answers nothing: on part-1 sixty different embedded programs and
+    1,032 unembedded resources all answer to ``Zawgyi-One``, and a code space decided
+    for one of them is a different code space for the rest.
+
+    ``truetype_only`` narrows the answer to ``/FontFile2``, which is what the legacy
+    subset-profile pool was cut against -- a pool entry describes TrueType bytes, and
+    pairing it with a CFF program would be a false match. The two questions share this
+    one code path and one answer per ``/Font`` object is remembered on the loader, so a
+    program is hashed once for the book instead of once per page that cites it.
+    """
+    cache = getattr(loader, '_program_cache', None)
+    key = (entry, truetype_only) if isinstance(entry, Ref) else None
+    if key is not None and key in cache:
+        return cache[key]
+    found = None
+    descriptor = loader.resolve(descriptor)
+    if isinstance(descriptor, dict):
+        keys = ('FontFile2',) if truetype_only else ('FontFile2', 'FontFile3', 'FontFile')
+        for file_key in keys:
+            blob = loader.stream_of(descriptor.get(file_key))
+            if blob:
+                found = hashlib.sha256(blob).hexdigest()
+                break
+    if key is not None:
+        cache[key] = found
+    return found
+
+
 def build_font_decoder(loader, name, entry, doc):
     """Build the :class:`FontDecoder` for one ``/Font`` resource entry."""
     font = loader.resolve(entry)
     if not isinstance(font, dict):
         return FontDecoder(name, doc=doc)
+    # Computed for every face and every lane, before the legacy block below decides
+    # whether it wants the program for anything: the lane trial reads the shared
+    # (modern-side) decoders, and an identity that only existed inside one lane's
+    # bookkeeping would be missing for exactly the faces the trial is asking.
+    program_sha256 = font_program_sha256(loader, font.get('FontDescriptor'), entry)
     subtype = str(loader.resolve(font.get("Subtype")) or "")
     base_font = str(loader.resolve(font.get("BaseFont")) or "")
     if subtype == "Type0":
@@ -1684,39 +1861,24 @@ def build_font_decoder(loader, name, entry, doc):
             if isinstance(resolved, dict):
                 descendant = resolved
         descriptor = descendant.get("FontDescriptor")
-        zawcode_glyphs = None
-        if doc.zawcode_profiles and isinstance(encoding, Name) and str(encoding) == 'Identity-H':
-            cid_map = loader.resolve(descendant.get('CIDToGIDMap'))
-            identity_gids = cid_map is None or (isinstance(cid_map, Name) and str(cid_map) == 'Identity')
-            resolved = loader.resolve(descriptor)
-            program = loader.stream_of(resolved.get('FontFile2')) if identity_gids and isinstance(resolved, dict) else None
-            digest = hashlib.sha256(program).hexdigest() if program else None
-            profile = doc.zawcode_profiles.get(digest)
-            if profile:
-                template = (doc.zawcode_templates or {}).get(profile['template']) if profile.get('template') else profile
-                if template is None:
-                    raise ValueError(f'Missing ZawCode draft template for {digest}')
-                alternatives = {**template.get('alternatives', {}), **profile.get('alternatives', {})}
-                glyphs = {**template.get('glyphs', {}), **profile.get('glyphs', {})}
-                order_glyphs = {**template.get('orderGlyphs', {}), **profile.get('orderGlyphs', {})}
-                zawcode_glyphs = {int(gid, 16): value for gid, value in glyphs.items()
-                                  if gid not in alternatives}
-                for gid, item in order_glyphs.items():
-                    if gid in alternatives:
-                        continue
-                    key, slot = int(gid, 16), item['slot']
-                    if key in zawcode_glyphs and zawcode_glyphs[key] != slot:
-                        del zawcode_glyphs[key]
-                    else:
-                        zawcode_glyphs[key] = slot
-        # The matching resource bypasses ToUnicode. Other fonts keep their own.
-        to_unicode = loader.tounicode_of(font, preserve_spaces=doc.kind == "font") if zawcode_glyphs is None else None
-        own_gids = loader.reversed_font_cmap(descriptor) if zawcode_glyphs is None else {}
+        # A CID face keeps its program on the descendant, not on the Type0 dict, so
+        # the identity is read where the bytes are. Same fact, same rule: no embedded
+        # program, no pairing, and nothing about this face is committed anywhere.
+        program_sha256 = font_program_sha256(loader, descriptor, entry)
+        # A CID-keyed face is read through its own maps -- /ToUnicode, then the
+        # reversed font cmap -- and nothing else. The draft path that used to
+        # bypass them here (a witnessed gid-to-slot table, matched by the
+        # embedded program's digest) was removed: the ZawCode feature lives in
+        # the beautify rule, which needs no per-font table, and the table's two
+        # inputs were never assigned by anything.
+        to_unicode = loader.tounicode_of(font, preserve_spaces=doc.kind == "font")
+        own_gids = loader.reversed_font_cmap(descriptor)
         decoder = FontDecoder(
             name, subtype=subtype, base_font=base_font, is_cid=True, cmap=cmap,
-            to_unicode=to_unicode, own_gids=own_gids, doc=doc, zawcode_glyphs=zawcode_glyphs,
-            cid_to_gid=loader.cid_to_gid(descendant), selected_legacy=False)
-        if doc.kind == 'font' and doc.visual_unicode_enabled and zawcode_glyphs is None:
+            to_unicode=to_unicode, own_gids=own_gids, doc=doc,
+            cid_to_gid=loader.cid_to_gid(descendant), selected_legacy=False,
+            program_sha256=program_sha256)
+        if doc.kind == 'font' and doc.visual_unicode_enabled:
             resolved = loader.resolve(descriptor)
             program = loader.stream_of(resolved.get('FontFile2')) if isinstance(resolved, dict) else None
             decoder.visual_unicode_glyphs = match_visual_unicode_glyphs(decoder, program)
@@ -1738,10 +1900,11 @@ def build_font_decoder(loader, name, entry, doc):
                    for value in (shared_mapping or {}).values())
     selected = clusters < 4
     if doc.kind == 'legacy' and selected:
-        descriptor = loader.resolve(font.get('FontDescriptor'))
-        program = loader.stream_of(descriptor.get('FontFile2')) if isinstance(descriptor, dict) else None
+        # The pool is keyed on the TrueType program, so THIS pairing stays as narrow
+        # as the pool: FontFile2 only, never a CFF or Type1 stand-in for it.
+        digest = font_program_sha256(loader, font.get('FontDescriptor'), entry,
+                                     truetype_only=True)
         tu_data = loader.stream_of(font.get('ToUnicode'))
-        digest = hashlib.sha256(program).hexdigest() if program else None
         candidate = maps.load_map('legacy-subset-profiles.json')['profiles'].get(digest)
         if candidate and 'Encoding' not in font and candidate['baseFont'] == normalise_font_name(base_font) and \
                 candidate['firstChar'] == font.get('FirstChar') and candidate['lastChar'] == font.get('LastChar') and \
@@ -1749,10 +1912,26 @@ def build_font_decoder(loader, name, entry, doc):
             profile = candidate
     page = None
     raw_runs = None
+    family_pinned = True
     if doc.kind == 'legacy' and selected and not doc.map:
         verdict = doc.stem_fonts.get(entry) if isinstance(entry, Ref) else None
-        layout = (profile['codePage'] if profile else (verdict or {}).get('family')
-                  or legacy_layout_for_font(base_font)['layout'])
+        # The name gate first, and only as the pin it is: a witnessed profile or a
+        # registered WinInnwa/Ayar prefix says WHICH table to read. Where it says
+        # nothing, the face is not left to guess forever -- the page itself answers
+        # (``FontDecoder.settle_legacy_family``), which is the population the lane
+        # already warns about as ``legacy-unknown-font``.
+        # A face the lane trial has answered for is answered once, for the book: the
+        # trial is the lane's own look at the page's bytes, and it outranks the default
+        # the name gate could not supply. It does not outrank a witnessed profile.
+        # ...and a lane-trial pin is honoured for the program it was taken on, never
+        # for whoever else carries the same label. No hash, no pairing, no pin.
+        trial = (doc.lane_trial or {}).get(program_sha256)
+        named = (profile['codePage'] if profile else None) or (trial or {}).get('family') \
+            or (verdict or {}).get('family') or legacy_font_family(base_font)
+        layout = (profile['codePage'] if profile else named) if (profile or named) \
+            else legacy_layout_for_font(base_font)['layout']
+        if not profile and not named:
+            family_pinned = False
         page = LEGACY_CODE_PAGES[layout]
         if profile and profile['rawRuns']:
             raw = profile['rawRuns']
@@ -1764,7 +1943,8 @@ def build_font_decoder(loader, name, entry, doc):
         to_unicode=to_unicode, encoding=encoding, has_encoding=declared,
         own_gids=own_gids, doc=doc, font_legacy_code_page=page,
         confirmed_raw_runs=raw_runs, encoding_has_differences=differences,
-        selected_legacy=selected)
+        selected_legacy=selected, family_pinned=family_pinned,
+        program_sha256=program_sha256)
 
 
 def page_font_decoders(loader, page_num, page_gen, doc):

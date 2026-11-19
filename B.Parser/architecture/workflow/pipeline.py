@@ -35,6 +35,8 @@ from myangustis_parser.normalize.cleanup import cleanup_text, order_text
 from myangustis_parser.extract.docx_extract import extract_docx_paragraphs, strip_image_markers
 from myangustis_parser.normalize.mm_score import score_text
 from myangustis_parser.normalize.judgement import instruction_lane
+from myangustis_parser.extract.pdf_extract import lane_trial
+from myangustis_parser.resources.font_names import normalise_font_name
 from myangustis_parser.extract.pdf_fonts import FontResourceLoader, Ref, page_font_decoders
 from myangustis_parser.extract.pdf_extract import (
     DocumentDecoding,
@@ -108,11 +110,10 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
     page content, then follow them when decoding each font resource. No
     mapping is borrowed from a different resource.
     """
-    # Older Python-only draft profiles bypass the JS instruction path. Do not
-    # silently run them when an old configuration is still present.
-    setting = os.environ.get('PRASER_ZAWCODE_DRAFT', '').strip().lower()
-    if text_layout == 'zawcode' or (text_layout is None and setting in ('1', 'true', 'yes', 'on')):
-        raise ValueError('The Python-only ZawCode draft was removed; use automatic instruction routing')
+    # The ZawCode draft is deleted, not gated: the decoder slots it filled, its
+    # run join and the map it read are gone, so there is no draft to opt into and
+    # no environment switch to honour. A config that still says ``zawcode`` is
+    # simply an unsupported layout.
     if text_layout not in (None, 'auto', 'off'):
         raise ValueError(f'Unsupported text layout: {text_layout}')
     with open(pdf_path, "rb") as f:
@@ -234,17 +235,26 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
     shared = DocumentDecoding('font')
     shared.visual_unicode_enabled = source_encoding != 'zawgyi-one'
     legacy = DocumentDecoding('legacy')
+    legacy.lane_trial = {}
     for strategy in (shared, legacy):
         strategy.loader = instruction_loader
         strategy.stem_fonts = stem_fonts
-    # Current JS leaves legacy extraction untouched; its shared finish stage
-    # orders the decoded text. Keep the old helper only for direct API callers.
-    legacy.legacy_text_fix = False
-
     def normal_page(idx):
         choice = instruction_lane(page_instructions[idx], source_encoding)
         strategy = legacy if choice['parser'] == 'legacy' else shared
         page_key = all_pages[idx]
+        if strategy is shared:
+            # The trial still runs on a page the gate sent to the modern lane, and what
+            # it decides is kept -- but what it decides is the FACE's table, not the
+            # page's lane. Moving the lane was tried and measured on both books: the
+            # sample is read through the shared decoder, so it gets the map's text for
+            # free, while ``DocumentDecoding('legacy')`` does not trust that map by
+            # design -- the one page of part-1 that flipped (1341) came back with 5,048
+            # more ASCII bytes, and the CID-bridged version of the rule cost 363,115
+            # Myanmar characters on that book and 98,423 on part-4. A lane is not bought
+            # by a score. The pin stands: a face the name gate left undecided now has an
+            # answer for the pages that ARE read as legacy.
+            lane_trial(instruction_loader, page_key, shared, legacy)
         unknown_fonts = []
         if strategy is legacy:
             shared_fonts = page_font_decoders(instruction_loader, *page_key, shared)
@@ -303,7 +313,7 @@ def _cmap_fork(cat, raw, decode_kind, idx, category, log):
     return "UNICODE"
 
 
-def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
+def process_pdf_stream(pdf_path, detector, log=lambda m: None,
                        want_layout=False, *, text_layout=None, source_encoding="auto",
                        book_name=None):
     """Single-pass streaming pipeline. Returns ``(metadata, npages, iterator)``.
@@ -314,10 +324,10 @@ def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
         {"page", "category", "prob", "text", "n_changes",
          "lines", "wh", "has_img"}      # layout fields only when want_layout
 
-    ``text`` is the final text for that page (Zawgyi already converted via
-    Rabbit; cleanup applied or not per ``apply_cleanup``, and only ever on a
-    UNICODE page); ``n_changes`` is how many lines the cleanup step altered
-    (counted, not stored) -- always 0 for ZAWGYI and UNKNOWN.
+    ``text`` is the final text for that page -- the finished page exactly as
+    the gate left it (Zawgyi already converted via Rabbit, imposter cleanup on
+    the lanes JS runs it on); ``n_changes`` is how many lines that cleanup
+    altered (counted, not stored) -- always 0 for ZAWGYI and UNKNOWN.
 
     ``want_layout=True`` (DOCX output) additionally carries the per-line
     x/y/font-size and the page MediaBox so the writer can reproduce the page
@@ -353,7 +363,7 @@ def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
             base, cleaned = result['base'], result['clean']
             cat = result['category']
             rep = {'page': idx + 1, 'category': cat, 'prob': 1.0 if cat == 'ZAWGYI' else 0.0,
-                   'text': cleaned if apply_cleanup else base,
+                   'text': cleaned,
                    'base': base, 'clean': cleaned, 'decision': result['decision'],
                    'scan': result['scan'], 'n_changes': _count_diff_lines(base, cleaned)}
             if result['decision'] == 'zawcode':
@@ -365,12 +375,12 @@ def process_pdf_stream(pdf_path, detector, apply_cleanup, log=lambda m: None,
                 finished_lines = result['finished'].split('\n')
                 if len(finished_lines) == len(pg['lines']):
                     for line, finished_line in zip(pg['lines'], finished_lines):
-                        value = finish.finalize_pdf_output(finished_line, result['decision'], apply_cleanup)
+                        value = finish.finalize_pdf_output(finished_line, result['decision'])
                         lines.append((*line[:3], value, line[4] if len(line) > 4 else None))
                 rep.update({'lines': lines, 'wh': pg['wh'], 'has_img': pg['has_img'],
                             'images': pg.get('images', [])})
             if diagnostic:
-                diagnostics.page_log(book_report, idx + 1, pg, result, rep['text'], apply_cleanup)
+                diagnostics.page_log(book_report, idx + 1, pg, result, rep['text'])
             lane_log.finish_page(idx + 1, result['decision'])
             yield rep
 
@@ -393,19 +403,22 @@ def _cleanup_for(cat, text):
     return cleanup_text(text) if cat == "UNICODE" else None
 
 
-def _convert_line(t, cat, apply_cleanup):
-    """Apply the same per-page transform to one extracted line."""
+def _convert_line(t, cat):
+    """Apply the same per-page transform to one extracted line.
+
+    Ordering is every category's; the imposter replacement is the UNICODE
+    branch's step, per ``cleanupFor`` -- a category rule, not a switch.
+    """
     if cat == "ZAWGYI":
         return order_text(Rabbit.zg2uni(t))     # ordered, never imposter-fixed
     if cat == "UNICODE":
         # Regional (Mon/extended) runs keep their marks: ordering and cleanup
         # are Burmese-only rules and must not rewrite them.
-        return (preserve_regional_runs(t, cleanup_text) if apply_cleanup
-                else preserve_regional_runs(t, order_text))
+        return preserve_regional_runs(t, cleanup_text)
     return order_text(t)
 
 
-def _conv_lines(lines, cat, apply_cleanup):
+def _conv_lines(lines, cat):
     """Per-line conversion mirroring the page-level transform (layout mode).
 
     The font name (5th element) rides along untouched: it is evidence for
@@ -415,7 +428,7 @@ def _conv_lines(lines, cat, apply_cleanup):
     for line in lines:
         x, y, size, text = line[:4]
         font = line[4] if len(line) > 4 else None
-        out.append((x, y, size, _convert_line(text, cat, apply_cleanup), font))
+        out.append((x, y, size, _convert_line(text, cat), font))
     return out
 
 
@@ -449,7 +462,7 @@ def _count_diff_lines(base, clean):
                if (bl[i] if i < len(bl) else "") != (cl[i] if i < len(cl) else ""))
 
 
-def collect_stream_results(pdf_path, detector, apply_cleanup, log=lambda m: None,
+def collect_stream_results(pdf_path, detector, log=lambda m: None,
                            want_layout=False):
     """Convenience: run the streaming pipeline, keep final pages + counts.
 
@@ -457,7 +470,7 @@ def collect_stream_results(pdf_path, detector, apply_cleanup, log=lambda m: None
     ``{"text", "lines"?, "wh"?, "has_img"?}`` ready for :func:`render_texts`.
     """
     metadata, npages, reports = process_pdf_stream(pdf_path, detector,
-                                                   apply_cleanup, log=log,
+                                                   log=log,
                                                    want_layout=want_layout)
     counts = {"ZAWGYI": 0, "UNICODE": 0, "UNKNOWN": 0}
     pages = []
@@ -504,7 +517,7 @@ def collect_changes(reports):
     return changes
 
 
-def build_content(job, apply_cleanup=True, kind=None):
+def build_content(job, kind=None):
     """Whole document body as ONE plain text string (API output).
 
     Every page's final text joined with a blank line — no metadata banner,
@@ -519,13 +532,13 @@ def build_content(job, apply_cleanup=True, kind=None):
     kind = (kind or job.get("kind") or "pdf").lower()
     sep = "\n" if kind == "docx" else "\n\n"
     parts = []
-    finished_pages = (build_final_pages(job, apply_cleanup)
+    finished_pages = (build_final_pages(job)
                       if kind == 'docx' or (kind == 'pdf' and any(pg.get('_ocr_supplied') for pg in job['pages']))
                       else None)
     for index, (pg, rep) in enumerate(zip(job["pages"], job["reports"])):
         if finished_pages is not None and (kind == 'docx' or pg.get('_ocr_supplied')):
             parts.append(finished_pages[index]['text'])
-        elif apply_cleanup and rep.get("clean") is not None:
+        elif rep.get("clean") is not None:
             parts.append(rep["clean"])
         else:
             parts.append(pg["text"])
@@ -629,7 +642,7 @@ def process_pdf_bytes(data, detector, filename="upload.pdf", log=lambda m: None,
         # Keep pg["text"] at base here so reports retain base vs clean diffs;
         # build_final_pages / build_content apply cleanup unconditionally.
         metadata, npages, reports_iter = process_pdf_stream(
-            tmp_path, detector, False, log=log, want_layout=True, text_layout=text_layout,
+            tmp_path, detector, log=log, want_layout=True, text_layout=text_layout,
             source_encoding=source_encoding, book_name=filename)
         reports = []
         pages = []
@@ -777,7 +790,7 @@ def process_bytes(data, kind, detector, filename=None, log=lambda m: None, *, te
     raise ValueError(f"Unsupported kind: {kind!r} (use 'pdf' or 'docx')")
 
 
-def build_final_pages(job, apply_cleanup=True):
+def build_final_pages(job):
     """Assemble final render pages from a job.
 
     Lines already hold the CONVERTED base text — cleanup runs internally
@@ -796,14 +809,14 @@ def build_final_pages(job, apply_cleanup=True):
             continue
         if "lines" not in pg:
             text = (rep["clean"]
-                    if (apply_cleanup and rep.get("clean") is not None)
+                    if rep.get("clean") is not None
                     else pg["text"])
             marked = (markup.marked_text_to_markup(text) if pg.get('marked')
                       else markup.text_to_markup(text))
             page = {"text": markup.strip_markup(marked), "marked": marked}
             out.append(page)
             continue
-        if apply_cleanup and rep["clean"] is not None:
+        if rep["clean"] is not None:
             if job.get('kind') == 'pdf':
                 # PDF base lines have already passed the one output ordering.
                 # Legacy pages must not receive Unicode cleanup at all.

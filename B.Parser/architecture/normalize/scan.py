@@ -38,32 +38,38 @@ import sys
 import argparse
 import collections
 
-from myangustis_parser.normalize.mm_score import is_index, is_mark
+from myangustis_parser.normalize.mm_score import is_mark
+from myangustis_parser.resources import maps
 
-__all__ = ["scan_text", "format_report", "RULES"]
+__all__ = ["scan_text", "format_report", "impossible_hits", "RULES"]
 
 # Token boundary: whitespace and the punctuation that cannot sit inside a word.
 _SPLIT = re.compile(r'[\s\u104a\u104b()\[\]"\u2018\u2019\u201c\u201d,\.:;?!/=+_\u2014-]+')
 
 _MYANMAR = lambda c: '\u1000' <= c <= '\u109f'          # noqa: E731
 _DIGIT = lambda c: '\u1040' <= c <= '\u1049'            # noqa: E731
-_LETTER_OR_MARK = lambda c: (is_index(c) or is_mark(c)  # noqa: E731
-                             or c == '\u1039' or c in '\u1023\u1024\u1026\u1028\u1029')
+#: The scanner's whole vocabulary is one bundled map. ``damage-rules.json`` is
+#: the file ``burmese-inventory.json`` was generated from -- its own header says
+#: ``"marks": "map/mm-score.json marks + map/scan.json strayMarks"`` and
+#: ``"consonants": "map/scan.json base + extraBases"``, quoted verbatim from the
+#: map, which is why the file on disk kept the older name for as long as it did.
+#: The lists are read from the map instead of restated here: a second copy of a
+#: table is a second opinion, and the two were already drifting -- the module
+#: held seven impossible pairs against the map's seven with nothing checking
+#: that the pair agreed.
+_SCAN = maps.load_map('damage-rules.json')
 
-# (key, one-line title, pair regex) for the sequences Burmese cannot write
-_IMPOSSIBLE = [
-    ("\u1036\u103a", "\u1036 + \u103a", "anusvara before asat -- the second is dot below"),
-    ("\u1032[\u102c\u102b]", "\u1032 + \u102c/\u102b", "ai vowel cannot share a syllable with aa"),
-    ("\u1032[\u102f\u1030]", "\u1032 + \u102f/\u1030", "ai vowel cannot share a syllable with u"),
-    ("[\u102d\u102e][\u102c\u102b]", "\u102d/\u102e + \u102c/\u102b", "i and aa cannot combine"),
-    ("[\u102c\u102b][\u102c\u102b]", "doubled \u102c/\u102b", "two aa vowels in one syllable"),
-    ("\u103a[\u103b\u103c\u103d\u103e]", "\u103a + medial", "a medial cannot follow asat"),
-    # Kinzi with no consonant after it. Worth a rule of its own because the
-    # renderer HIDES it: \u101e\u1001\u103b\u1004\u103a\u1039\u102c and \u101e\u1004\u103a\u1039\u1001\u103b\u102c draw the same shape, so the
-    # damage is invisible on screen and only the code points show it.
-    ("\u1004\u103a\u1039(?![\u1000-\u1021])", "kinzi with nothing to sit on",
-     "a kinzi must be followed by the consonant it belongs to"),
-]
+#: (pair regex, one-line title, why it cannot occur) -- the rules the file carries,
+#: read from the map so the map is the only copy.
+_IMPOSSIBLE = [(pat, title, why) for pat, title, why in _SCAN['impossible']]
+
+#: A base or a mark: what must sit on either side of a digit for the digit to be
+#: inside a word rather than standing alone.
+_LETTER_OR_MARK = frozenset(_SCAN['letterOrMark']).__contains__
+
+#: A token made of only these is a collapsed shadow copy, not a word: the
+#: engine's marks, plus U+1039, which no syllable may start with.
+_STRAY_MARKS = frozenset(_SCAN['strayMarks'])
 
 
 def _words(text):
@@ -104,31 +110,26 @@ def _line_of(text, i, newlines):
 
 
 # ── the rules ─────────────────────────────────────────────────────────────
-# Anything a dependent mark may legally sit on, for SCANNING only --
-# deliberately wider than the engine's ``index()``, which governs reordering
-# and stops at U+1021 (+U+1025/U+1027).
-#   U+1023 U+1024 U+1026 U+1028 U+1029 U+102A  independent vowels
-#   U+103F  great sa is a LETTER and takes marks
-#   U+1022  rare, included for completeness
-_EXTRA_BASES = '\u1023\u1024\u1026\u1028\u1029\u102a\u103f\u1022'
-
-# In this kind of book a dash or a blank rule stands in for 'any consonant':
-# the vowel charts print  U+2014 + vowel  ( ---a  ---i  ---u ) and the
-# exercises print a rule to fill in. Marks hanging off those are correctly
-# placed on a placeholder, not orphaned, and counting them as damage buries
-# the real cases -- they were 258 of 478.
-_PLACEHOLDER_BASES = '\u2014\u2013-_'
+#: The map is called ``damage-rules.json`` because every entry in it describes
+#: text a Burmese page cannot produce -- it is not a "scan" of anything, and the
+#: scan of this repo is the repair circle below. The scanner reports all six
+#: kinds; ``impossible`` is the only one a DECISION may consult, and only
+#: through :func:`impossible_hits` -- see ``extract/legacy_judgement.py``.
+#: Anything a dependent mark may legally sit on, for SCANNING only -- the map's
+#: ``base`` list, deliberately wider than the engine's ``index()`` (which governs
+#: reordering and stops at U+1021 +U+1025/U+1027) because the independent vowels
+#: U+1023/4/6/8/9/A, U+103F great sa and the rare U+1022 DO carry marks in real
+#: text (``\u1026\u1038`` is ordinary), and because a dash or a blank rule stands in for
+#: "any consonant" in these books: the vowel charts print U+2014 + vowel
+#: ( ---a  ---i  ---u ) and the exercises print a rule to fill in. Marks hanging
+#: off those are correctly placed on a placeholder, and counting them as damage
+#: buries the real cases -- they were 258 of 478.
+_BASES = frozenset(_SCAN['base'])
 
 
 def _is_base(ch):
-    """Base for SCANNING, deliberately wider than the engine's ``index()``.
-
-    ``index()`` governs reordering and stops at U+1021 (+U+1025/U+1027). The
-    independent vowels DO carry marks in real text -- ``\u1026\u1038`` is ordinary --
-    so counting them as bases here removes false orphans without touching
-    the reorder rule.
-    """
-    return is_index(ch) or ch in _EXTRA_BASES or ch in _PLACEHOLDER_BASES
+    """Base for SCANNING -- see ``_BASES`` for what the set adds and why."""
+    return ch in _BASES
 
 
 def _find_orphans(text, words):
@@ -149,9 +150,30 @@ def _find_impossible(text, words):
             yield m.start()
 
 
+def impossible_hits(text):
+    """The ``(offset, pattern, title)`` of every pair Burmese cannot write.
+
+    The scanner's ``impossible`` kind is a report; this is the same seven rules
+    as an answer a decision can act on. It exists because each of the seven was
+    found by reading a wrong byte -- a pair that cannot occur in one syllable is
+    not a style problem, it is proof that the text came through the wrong table.
+    That is why the rule belongs to the Ayar-or-WinInnwa choice
+    (``extract/legacy_judgement.py``) and to nothing else in the parser: inside
+    the lane, one reading of a page has these pairs and the other does not.
+    """
+    if not text:
+        return []
+    hits = []
+    for pat, title, _why in _IMPOSSIBLE:
+        for m in re.finditer(pat, text):
+            hits.append((m.start(), pat, title))
+    hits.sort()
+    return hits
+
+
 def _find_stray(text, words):
     for tok, i in words:
-        if len(tok) >= 1 and all(is_mark(c) or c == '\u1039' for c in tok):
+        if len(tok) >= 1 and all(c in _STRAY_MARKS for c in tok):
             yield i
 
 

@@ -26,7 +26,7 @@ def main():
     pdf = os.path.join(REPO, "R_Site", "Praser", "Python",
                        "upload", "input", "pdf", "test.pdf")
     det = load_detector()
-    _, _, reports = process_pdf_stream(pdf, det, False, log=lambda m: None, want_layout=False)
+    _, _, reports = process_pdf_stream(pdf, det, log=lambda m: None, want_layout=False)
     texts = []
     for i, rep in enumerate(reports):
         if i >= 6:

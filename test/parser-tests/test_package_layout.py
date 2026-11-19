@@ -26,7 +26,7 @@ class PackageLayoutTests(unittest.TestCase):
             self.assertEqual(paths.REPO_ROOT, ROOT)
             self.assertEqual(ocr.PARSER_ROOT, PARSER)
         for name in ('burmese-inventory.json', 'cipher-map.json', 'legacy-font-names.json',
-                     'mm-score.json', 'scan.json', 'zawcode-draft-glyphs.json'):
+                     'damage-rules.json', 'homoglyphs.json'):
             self.assertTrue(maps.map_path(name).is_file(), name)
 
 

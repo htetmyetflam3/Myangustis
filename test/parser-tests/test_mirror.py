@@ -151,12 +151,6 @@ def main() -> int:
                          {"baseFont": "Helvetica", "subtype": "TrueType", "toUnicode": True}]},
               "auto")["reason"] == "no-legacy-evidence")
 
-    # ── judgement: text keeping ──────────────────────────────────────────
-    check("normalize keeps the trailing empty line",
-          list(judgement.normalize_page_lines("a\nb\n", lambda t: t.upper())) == ["A", "B", ""])
-    check("normalize output text",
-          judgement.normalize_output_text("a\nb", lambda t: t.upper()) == "A\nB")
-
     # ── font registry ────────────────────────────────────────────────────
     check("subset prefix + hex escape",
           font_names.normalise_font_name("ABCDEE+Zawgyi#2DOne") == "zawgyione")

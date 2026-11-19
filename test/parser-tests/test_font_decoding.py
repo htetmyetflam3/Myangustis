@@ -23,6 +23,7 @@ sys.path.insert(0, _HERE)
 from pdfbuild import build_pdf, simple_page_pdf, truetype_with_cmap  # noqa: E402
 
 from myangustis_parser.extract import pdf_extract as PE
+from myangustis_parser.normalize import legacy_order as LO   # noqa: E402
 from myangustis_parser.normalize import cleanup                                                       # noqa: E402
 from myangustis_parser.normalize import scan                                                          # noqa: E402
 from myangustis_parser.workflow import pipeline                                                      # noqa: E402                                             # noqa: E402
@@ -495,7 +496,11 @@ class SimpleFontEncodingTest(unittest.TestCase):
         pdf = simple_page_pdf({"F2": 20}, content, fonts=fonts)
         legacy = DocumentDecoding("legacy",
                                   LegacyAyarMap({33: "\u103C", 34: "\u1015"}))
-        self.assertEqual(extract(pdf, legacy), "\u1015\u103C")  # reordered
+        # Extraction only decodes: the visual-order repair is the legacy LANE's
+        # beautify rule and runs at the page finish, not in the join.
+        self.assertEqual(extract(pdf, legacy), "\u103C\u1015")
+        from myangustis_parser.workflow import finish
+        self.assertEqual(finish.apply_decision("\u103C\u1015", "legacy"), "\u1015\u103C")
 
     def test_control_bytes_are_dropped_not_emitted(self):
         fonts = _simple_font(20)
@@ -744,8 +749,11 @@ class ExistingBehaviourTest(unittest.TestCase):
         pdf = simple_page_pdf({"F2": 20}, content, fonts=fonts)
         legacy = DocumentDecoding("legacy",
                                   LegacyAyarMap(PE.ARLARWADE_AYAR_MAP))
-        out = extract(pdf, legacy)
-        self.assertEqual(out, "\u1015\u103C")
+        from myangustis_parser.workflow import finish
+        # decoded here, reordered at the finish -- the two stages, in order
+        self.assertEqual(extract(pdf, legacy), "\u103C\u1015")
+        self.assertEqual(finish.apply_decision(extract(pdf, legacy), "legacy"),
+                         "\u1015\u103C")
 
     def test_bare_maps_are_still_accepted(self):
         """Older callers passed a raw map or the IDENTITY sentinel."""
@@ -857,9 +865,9 @@ class CanonicalMarkOrderTests(unittest.TestCase):
                          "\u1000\u102d\u102f\u1014\u102d\u102f")
 
     def test_parse_time_no_longer_reorders(self):
-        # legacy_ayar_to_unicode keeps only the legacy font's visual->logical
+        # arrange_legacy_order keeps only the legacy font's visual->logical
         # moves; priority ordering happens once, in the cleanup step.
-        self.assertEqual(PE.legacy_ayar_to_unicode("\u1000\u102f\u102d"),
+        self.assertEqual(LO.arrange_legacy_order("\u1000\u102f\u102d"),
                          "\u1000\u102f\u102d")
 
 
@@ -867,23 +875,23 @@ class DigitConsonantConfusionTests(unittest.TestCase):
     """U+101D (wa) and U+1040 (digit zero) share one glyph."""
 
     def test_marked_digit_becomes_the_consonant(self):
-        self.assertEqual(PE.fix_digit_consonant_confusion("\u1040\u102d"),
+        self.assertEqual(LO.fix_digit_consonant_confusion("\u1040\u102d"),
                          "\u101d\u102d")
 
     def test_unmarked_digit_is_left_alone(self):
         # Genuinely ambiguous; guessing would corrupt page numbers.
-        self.assertEqual(PE.fix_digit_consonant_confusion("\u1040"), "\u1040")
-        self.assertEqual(PE.fix_digit_consonant_confusion("\u1041\u1040\u1042"),
+        self.assertEqual(LO.fix_digit_consonant_confusion("\u1040"), "\u1040")
+        self.assertEqual(LO.fix_digit_consonant_confusion("\u1041\u1040\u1042"),
                          "\u1041\u1040\u1042")
 
     def test_other_digits_are_not_touched(self):
-        self.assertEqual(PE.fix_digit_consonant_confusion("\u1045\u102d"),
+        self.assertEqual(LO.fix_digit_consonant_confusion("\u1045\u102d"),
                          "\u1045\u102d")
 
     def test_the_legacy_fix_gives_the_marks_a_base(self):
         # The digit becomes the consonant so the marks are no longer orphans;
         # putting them in priority order is the cleanup step's job.
-        out = PE.legacy_ayar_to_unicode("\u1040\u102f\u102d")
+        out = LO.arrange_legacy_order("\u1040\u102f\u102d")
         self.assertEqual(out, "\u101d\u102f\u102d")
         self.assertEqual(cleanup.reorder_marks(out), "\u101d\u102d\u102f")
 
@@ -943,25 +951,26 @@ class TwoLayoutSelectionTests(unittest.TestCase):
         # word mm-grammar.pdf spells through the Ayar layout.
         winn = LEGACY_CODE_PAGES["wininnwa"]
         got = "".join(winn.get(ord(c), c) for c in "emrfpm;")
-        self.assertEqual(PE.legacy_ayar_to_unicode(got), "\u1014\u102c\u1019\u103a\u1005\u102c\u1038")
+        self.assertEqual(LO.arrange_legacy_order(got), "\u1014\u102c\u1019\u103a\u1005\u102c\u1038")
 
     def test_ayar_does_not_decode_the_wininnwa_anchor(self):
         ayar = LEGACY_CODE_PAGES["ayar"]
         got = "".join(ayar.get(ord(c), c) for c in "emrfpm;")
-        self.assertNotEqual(PE.legacy_ayar_to_unicode(got),
+        self.assertNotEqual(LO.arrange_legacy_order(got),
                             "\u1014\u102c\u1019\u103a\u1005\u102c\u1038")
 
 
 class OrderingAndCleanupReachTests(unittest.TestCase):
     """Ordering runs everywhere; imposter cleanup is the Unicode branch's."""
 
-    def test_ordering_is_not_behind_the_toggle_or_a_category(self):
+    def test_ordering_runs_on_every_category(self):
+        # No switch and no category gets to skip the ordering half of the gate.
         scrambled = "\u1000\u102f\u102d"
         ordered = "\u1000\u102d\u102f"
         self.assertEqual(cleanup.order_text(scrambled), ordered)
         for cat in ("ZAWGYI", "UNICODE", "UNKNOWN"):
             self.assertEqual(
-                pipeline._convert_line(scrambled, cat, apply_cleanup=False),
+                pipeline._convert_line(scrambled, cat),
                 ordered, f"{cat} line was not ordered")
 
     def test_imposter_cleanup_only_offered_for_unicode(self):
@@ -972,7 +981,7 @@ class OrderingAndCleanupReachTests(unittest.TestCase):
                          "\u1000\u103e\u102f")
 
     def test_order_text_leaves_imposters_alone(self):
-        # The always-on step must not silently do the toggleable one.
+        # The always-on step must not silently do the UNICODE branch's step.
         self.assertEqual(cleanup.order_text("\u1000\u1088"), "\u1000\u1088")
 
 

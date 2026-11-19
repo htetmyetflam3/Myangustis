@@ -107,7 +107,7 @@ class TestLaneLogging(unittest.TestCase):
         with patch.object(pipeline, 'stream_pdf_pages', return_value=({}, 2, iter(pages))), \
              patch.object(pipeline.finish, 'finish_pdf_page', return_value=result), \
              patch('myangustis_parser.workflow.lane_log.make_logger', return_value=logger):
-            _, _, reports = pipeline.process_pdf_stream('/tmp/random.pdf', Detector(), False, book_name='real.pdf')
+            _, _, reports = pipeline.process_pdf_stream('/tmp/random.pdf', Detector(), book_name='real.pdf')
             self.assertEqual(len(list(reports)), 2)
         self.assertEqual(sum('lane-switch' in m for m in messages), 1)
         self.assertEqual(sum('decision' in m for m in messages), 1)
@@ -138,7 +138,7 @@ class TestLaneLogging(unittest.TestCase):
                  patch.object(pipeline, 'extract_page_lines', side_effect=extract), \
                  patch.object(pipeline.finish, 'finish_pdf_page', return_value=finished), \
                  patch('myangustis_parser.workflow.lane_log.make_logger', return_value=logger):
-                _, _, reports = pipeline.process_pdf_stream(path, Detector(), False, text_layout='off')
+                _, _, reports = pipeline.process_pdf_stream(path, Detector(), text_layout='off')
                 self.assertEqual(len(list(reports)), 2)
         self.assertEqual(sum('lane-switch' in line for line in events), 1)
         self.assertIn('page=2', next(line for line in events if 'lane-switch' in line))

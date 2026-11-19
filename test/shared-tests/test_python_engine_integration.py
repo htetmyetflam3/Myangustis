@@ -49,7 +49,7 @@ class NativeJsonLoaderTests(unittest.TestCase):
 
     def test_bundled_parser_maps_are_available(self):
         for name in ('burmese-inventory.json', 'legacy-font-names.json',
-                     'cipher-map.json', 'zawcode-draft-glyphs.json'):
+                     'cipher-map.json', 'damage-rules.json', 'homoglyphs.json'):
             with self.subTest(name=name):
                 self.assertIsInstance(maps.load_map(name), dict)
 

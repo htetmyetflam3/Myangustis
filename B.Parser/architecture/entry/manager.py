@@ -395,7 +395,7 @@ def _convert(data, filename, out_path, *, kind, method=None,
 
     page_count = len(job.get("reports") or [])
 
-    pages = pipeline.build_final_pages(job, True)
+    pages = pipeline.build_final_pages(job)
     counts = job.get("counts") or {}
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     try:
@@ -419,7 +419,7 @@ def _convert(data, filename, out_path, *, kind, method=None,
         "ocrPages": ocr_pages,
     }
     if include_text:
-        result["text"] = pipeline.build_content(job, True, kind)
+        result["text"] = pipeline.build_content(job, kind)
     if include_preview:
         result["changes"] = job.get("changes") or []
     if job.get("encoding_path"):
@@ -514,7 +514,7 @@ def dispatch_ocr(in_path, out_path, *, filename=None,
     except (OSError, ValueError, RuntimeError) as exc:
         raise ManagerError(f"{name}: {exc}") from exc
 
-    pages = pipeline.build_final_pages(job, True)
+    pages = pipeline.build_final_pages(job)
     counts = job.get("counts") or {}
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     try:
@@ -537,7 +537,7 @@ def dispatch_ocr(in_path, out_path, *, filename=None,
         "ocrPages": job.get("ocrPages") or [],
     }
     if include_text:
-        result["text"] = pipeline.build_content(job, True, "ocr")
+        result["text"] = pipeline.build_content(job, "ocr")
     if include_preview:
         result["changes"] = job.get("changes") or []
     return result
