@@ -151,6 +151,7 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
         has_img = page_has_images(objects, pnum, pgen)
         font_names = set()
         used_legacy_fonts = []
+        legacy_families = []
         images = []
         # Record only this page's actual resource decoding.
         lane_trace = []
@@ -168,6 +169,7 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
         extraction = {'fonts': {}, 'sample_enabled': diagnostics.samples_enabled(), 'adjacent_duplicate_runs': 0} if diagnostic else None
         try:
             kwargs = dict(used_myanmar_fonts=font_names, used_legacy_fonts=used_legacy_fonts,
+                          legacy_families=legacy_families,
                           image_records=images, probe_page=idx + 1)
             if extraction is not None:
                 kwargs['diagnostics'] = extraction
@@ -187,6 +189,10 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
             "decode_kind": getattr(code_to_uni, "kind", None),
             "font_names": font_names,
             "used_legacy_fonts": used_legacy_fonts,
+            # Which code page each legacy face was read through, and where that
+            # came from ('page' = the probe on its own bytes, 'name' = the gate).
+            # The legacy lane's beautify rule picks its case from this.
+            "legacy_families": legacy_families,
             "lane_trace": lane_trace,
             "diagnostics": extraction,
             "warnings": ([{'code': 'unicode-glyph-recovery-needs-review', 'page': idx + 1}] if visual_state['changed'] else [])
@@ -361,10 +367,19 @@ def process_pdf_stream(pdf_path, detector, log=lambda m: None,
             # name says nothing keeps the ZawCode swap (legacy_layout None).
             legacy_layout = None
             if parsing_path == 'legacy':
-                for name in pg.get('font_names') or ():
-                    legacy_layout = legacy_font_family(name)
-                    if legacy_layout:
+                # The settled family first -- a subset whose name says nothing was
+                # decided by its own bytes (family_by 'page'), and that is the code
+                # page it is being read through. The name gate is the fallback, and
+                # a face neither way keeps the ZawCode swap.
+                for record in pg.get('legacy_families') or ():
+                    if record.get('family'):
+                        legacy_layout = record['family']
                         break
+                if legacy_layout is None:
+                    for name in pg.get('font_names') or ():
+                        legacy_layout = legacy_font_family(name)
+                        if legacy_layout:
+                            break
             result = finish.finish_pdf_page(raw, parsing_path=parsing_path,
                                             zawgyi_codepage=named_zawgyi,
                                             source_encoding=source_encoding,

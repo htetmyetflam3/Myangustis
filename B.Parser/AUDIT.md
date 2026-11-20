@@ -636,22 +636,46 @@ JS parser's shield blocks the same repair. Narrowing those `IMPOSTER` keys is
 where this belongs; until then Python and the JS oracle disagree on such text by
 design, not by accident.
 
-## The legacy ordering rule: implemented in Python, still missing from the mirror
+## The legacy ordering rule: two cases, chosen by the code page
 
-The chain, as the design states it, has one slot per lane for the rule that
-rewrites the lane's text:
+The chain gives every lane one slot for the rule that rewrites its text:
 
-> stem parser → judgement → lane selection → parse in the selected lane with the
-> selected beautify rule (**or**: parse + call mm-score per page and apply the rule
-> — **and in the legacy lane, that rule is the legacy ordering**) → cleanup →
-> `finish.py` → bind-engine api.
+> stem parser -> judgement -> lane selection -> parse in the selected lane with the
+> selected beautify rule (**and in the legacy lane, that rule is the legacy
+> ordering**) -> cleanup -> `finish.py` -> bind-engine api.
 
-The legacy lane's half of that is unimplemented, in both trees, and this is the
-note that records it rather than a rule invented to fill it.
+The legacy lane's slot is filled, and it has **two cases**, because a legacy face's
+visual order is a property of the code page, not of the lane:
 
-**JS (the pinned reference `67f02845`)** carries no legacy ordering at all. The
-legacy branch of the page-finish step writes each line through the shared
-ordering and says why nothing else runs:
+| case | what runs | where it comes from |
+|---|---|---|
+| plain slots (`layout='wininnwa'`/`'ayar'`) | `reorder_legacy_slots` — ေ+ra+base -> base+ra+ေ, ra+base -> base+ra, ေ+base(+ya) -> base+ya+ေ | the code page the face was read through |
+| compound (`layout=None`/`'zawcode'`) | `visual_order` (the ZawCode swap, U+200B kept) | a face whose code page is not plain WinInnwa/Ayar |
+
+Both then run the same kinzi/preposed/AA regexes in `arrange_legacy_order`, which
+`finish.apply_decision`'s `legacy` branch calls per line.
+
+**The switch is the settled code page.** `pipeline` reads it from
+`pg['legacy_families']` — the record `extract.pdf_extract` writes per face from the
+decoder: `family` from `FontDecoder.settle_legacy_family`'s probe on the face's own
+bytes (`by='page'`), or from the name gate (`by='name'`), or nothing. The name gate
+alone is not enough: a subset renumbers glyphs from `0x21`, so its code page is the
+one its **bytes** were settled through, bridged by its own `/ToUnicode`
+(`pdf_fonts.bridge_codes`). Only when no family is settled does the rule keep the
+ZawCode swap.
+
+**History, because the record was wrong.** `legacy_bases`, `reorder_legacy_slots`,
+`reorder_zawcode_text` and `count_zawcode_evidence` were deleted at `cdb05fb`, and
+that commit's message and this file then stated the lane's rule "does not exist in
+either tree", with the slot "left empty". It did exist, in this module and in the JS
+that mirrored it (`7504040:B.Parser/main/parser/text/legacy-order.js`,
+`reorderLegacySlots`, deleted at `764b272`/`2fa2a81` during the parser restructure).
+What the deletion actually left was the ZawCode case applied to every face, i.e. the
+compound guards running over plain WinInnwa text. Both cases are restored, and the
+choice is now the one the decoder already settled.
+
+**JS still has none of it.** The pinned reference's page-finish step writes each
+legacy line through the shared ordering and says why:
 
 ```js
 // @core/runtime/finalized-cmap.js:243-262
@@ -663,95 +687,19 @@ if (decision === "legacy") {
 }
 ```
 
-Grepping that reference for a legacy reorder helper (`reorderLegacySlots`,
-`legacyOrder`, `reorderZawcode`, `zawcodeEvidence`) returns **no file**.
+So the legacy decision is still the one documented divergence from the mirror, and
+`test_pdf_finish_js_parity.py` still pins its size (`LEGACY_LANE_GAP`).
 
-**Python** had the shape of one without its wiring: `normalize/legacy_order.py`
-held `legacy_bases`, `reorder_legacy_slots`, `reorder_zawcode_text` and
-`count_zawcode_evidence`, and its own header admitted they were "the module's
-original content and are unwired". Measured: `order_text`-equivalent work they
-duplicate is already the gate's, and nothing in the chain loaded them -- only
-two `tools-box` generators did. They are **deleted here**, with those two
-generators, so the module keeps exactly what the chain reads: the
-`homoglyphs.json` pairs and the Burmese-number test used by
-`extract/legacy_judgement.decide_legacy_family` (the wininnwa/ayar ranking) and
-by `normalize/judgement.judge_page_lines`.
-
-**Turn 3 landed the Python half.** The rule was not written from scratch: it existed
-already, in the wrong stage and switched off. `extract/pdf_extract.py` carried
-`legacy_ayar_to_unicode` and called it from the run join behind
-`doc.legacy_text_fix`, which `workflow/pipeline.py:239-241` then set to `False`
-("Current JS leaves legacy extraction untouched") -- a rule no pipeline reached.
-It is now `normalize/legacy_order.arrange_legacy_order`, called from
-`finish.apply_decision`'s `legacy` branch (the lane's beautify slot) one step
-BEFORE the shared `cleanup.order_text` at the page finish, and the switch is
-deleted: `legacy_text_fix` is gone from `DocumentDecoding.__slots__`, from the
-pipeline override, from the three join sites and from the tests that set it.
-`_collapse_overprint` stays in the extraction stage -- a piece drawn as one unit
-repeated is a piece-level fact -- but is now keyed on `doc.kind == 'legacy'`,
-the lane, instead of a second boolean for the same question. The AA-vowel gate
-(`_aa_vowel_rule_for_legacy`) was dropped because it was degenerate: it read the
-decoder's code page and was true for both legacy pages and for the default map.
-
-Measured on the parity generator's 310 samples (fixed seed `8675309`): **39 move,
-and all 39 are `lane=legacy / decision=legacy`** -- 97 legacy samples are
-unchanged, and `font-cmap` (aligned 75, rabbit 68) and `legacy/zawcode` (18) do
-not move at all. `test_pdf_finish_js_parity.py` still compares every lane byte for
-byte; a divergence outside `decision == 'legacy'` fails the run, and the size of
-the legacy gap is pinned at 39 so it cannot grow unnoticed. When main lands the JS
-rule the allowance and the count both go to zero.
-
-**The lane rule carries the ZawCode swap, because they are one family.** The
-preposed `ြ`/`ေ` movement in `arrange_legacy_order` is the *ancestor* of
-`@postprocess/beautify/zawcode-order.js`: the minimal form stayed with the legacy
-lane while the branch grew the longer slot patterns (three-, four- and five-code
-swaps) once a real ZawCode PDF was faced. A legacy face can be encoded either way,
-so `arrange_legacy_order` now applies `beautify.arrange_zawcode_order` first
-(`legacy_order._zawcode_swap`) and its own ancestor rules after; the swap's habit
-of dropping U+200B on entry is undone there, because this lane's contract
-preserves zero-width text. Corpus reach: 16,357 Myanmar lines change on the
-ancestor rules alone, **16,424** with the swap included -- 67 lines that only the
-descendant repairs. `apply_decision`'s own `zawcode` branch is unchanged: a page
-that *scores* as ZawCode still gets the swap as its lane rule, and the legacy lane
-now gets it as part of its own.
-
-**The name-gate fallback is a module, not a second pass.** An unnamed legacy face
-is decided by `extract/legacy_lane_score.decide_lane` -- the instructor hands it
-the page's own shown strings for that resource and a decode callback, and it
-imports every signal it needs (`mm_score`, `cleanup.order_text`, `scan.impossible_hits`,
-`legacy_order.number_in_word_sites`, and `judgement.english_likeness`, the one the
-mirror does not have) instead of threading a second page parse through the chain.
-Scoring the page twice would measure the same bytes but leave a reader unable to
-tell a parse from a decision, and a decision that has been parsed twice can be
-applied twice -- so the two readings live inside the module and never enter
-`workflow/pipeline`. It wraps `extract/legacy_judgement.decide_legacy_family`
-rather than restating it: the floor, the mark minimum and the `impossible` veto
-stay in the mirrored scorer, the English-likeness penalty is applied on top of its
-ranking, and `mirror` carries what the scorer alone decided so the added signal is
-auditable. A reading below the floor is not rescued by having no junk Latin, and
-the face keeps the table the name gate handed it.
-
-**The JS half is main's.** Landing it means:
-
-1. the JS legacy branch of `@core/runtime/finalized-cmap.js`
-   (`write(orderUnicodeText(text))`, line ~255) gains
-   `arrangeZawCodeOrder`-shaped `arrangeLegacyOrder(text)` *ahead* of the shared
-   ordering -- the lane's beautify slot, never the extraction join;
-2. `test/parser-test/` re-pins against the new reference and
-   `B.Parser/tools/audit_overview.py --check` is re-run;
-3. the parser then deletes the `LEGACY_LANE_GAP = 38` allowance in
-   `test_pdf_finish_js_parity.py`, which is the commit that closes this item on
-   both sides.
-
-`test/parser-tests/test_legacy_order.py` is the case list main has to match: the
-preposed-vowel move, the kinzi jump and its negative case, zero-width
-preservation, the position (lane rule before the shared ordering), the exclusivity
-(only `decision == 'legacy'` reaches it), and the absence of any reordering left in
-the extraction stage. The `139`-sample figure below -- the regional wrapper, a
-*different* and unverified change -- is the caution that applied to landing this
-half-only; it no longer does, because the Python rule is measured (38, all legacy)
-and pinned rather than assumed.
-
+**Measured, 2026-11-20, because the pin was not describing anything.** Against the
+pinned reference it now compares (`67f0284`, main), the oracle diverges on 253 of
+310 samples -- and 121 of those differ while both sides pick the *same* decision
+(40 legacy/legacy, 39 rabbit/rabbit, 37 aligned/aligned, 5 zawcode/zawcode). Its
+allowance only covers samples where this tree says `legacy` and JS says something
+else, so the guard trips at the first sample outside that shape (`'က'`,
+`parsingPath='legacy'`, `sourceEncoding='unicode'`: this tree `aligned`, JS `legacy`).
+Read it as: the oracle outlived the reference it was written against, not as a
+one-sample regression, and the pin needs re-basing on a reference this tree still
+mirrors before it means anything again.
 
 ## The separate Engine-normalize call is deleted; bind engine is the only door
 

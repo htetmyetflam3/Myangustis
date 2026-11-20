@@ -106,7 +106,11 @@ def ordered(text):
 #       second ordering pass behind this finish.  And for this lane: "Legacy pages
 #       are written as decoded, then given the one shared ordering every lane gets
 #       at page finish. There is no legacy-specific reorder rule: extraction only
-#       decodes."
+#       decodes."  -- that last sentence describes the MIRROR. This tree's legacy
+#       slot is filled: `normalize/legacy_order.arrange_legacy_order` runs in the
+#       `legacy` branch below, in one of its two cases, and the difference against
+#       JS is the documented parity gap (AUDIT.md, "The legacy ordering rule: two
+#       cases, chosen by the code page").
 #
 # WHICH NORMALIZE. Two things are called by that name and they are not the same
 # pass. (1) ``cleanup.order_text``/``cleanup_text`` -- ``clean.js``'s ordering and
@@ -267,12 +271,14 @@ def finish_pdf_page(text, *, parsing_path='font-cmap', zawgyi_codepage=False,
         # ordering. Phase 2 is the only thing this page still meets.
         finished = text
     elif decision == 'legacy':
-        # Stage 1.1, legacy branch: the legacy lane's own rule, per line. Phase 2
-        # then gives it the same cleanup follow-up every lane gets. JS's legacy
-        # branch runs the shared ordering alone (``@core/runtime/finalized-cmap.js``:
-        # "There is no legacy-specific reorder rule: extraction only decodes"), so
-        # this is the parser leading the mirror; see B.Parser/AUDIT.md, "The
-        # legacy ordering rule does not exist in either tree".
+        # Stage 1.1, legacy branch: the lane's own rule, per line, in one of its
+        # two cases -- ``legacy_layout`` is the code page the face was read through
+        # ('wininnwa'/'ayar' plain slots, None/'zawcode' the swap). Phase 2 then
+        # gives it the same cleanup follow-up every lane gets. JS's legacy branch
+        # has no such rule (``@core/runtime/finalized-cmap.js``: "There is no
+        # legacy-specific reorder rule: extraction only decodes"), so this is the
+        # parser leading the mirror; see B.Parser/AUDIT.md, "The legacy ordering
+        # rule: two cases, chosen by the code page".
         finished = '\n'.join(apply_decision(line, 'legacy', legacy_layout=legacy_layout)
                              for line in text.split('\n'))
     else:

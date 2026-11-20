@@ -81,8 +81,8 @@ console.log(JSON.stringify(outputs));
         # The divergence is therefore allowed ONLY on the legacy decision, and its
         # size is pinned so it cannot grow unnoticed. When main lands the rule,
         # delete this allowance and the count goes to zero.
-        # See B.Parser/AUDIT.md, "The legacy ordering rule: implemented in Python,
-        # still missing from the mirror".
+        # See B.Parser/AUDIT.md, "The legacy ordering rule: two cases, chosen by
+        # the code page".
         LEGACY_LANE_GAP = 39
         moved = []
         for index, (case, js) in enumerate(zip(cases, expected)):

@@ -1,31 +1,31 @@
-"""Evidence for the legacy code-page decision: shared glyphs and numbers.
+"""The legacy lane's ordering rule, its two cases, and the codepage evidence.
 
-Nothing here rewrites a page. ``normalize/cleanup.order_text`` is the one
-ordering the chain gives a page (see ``workflow/finish.py``), and this module's
-own visual-order slot rules -- ``legacy_bases``, ``reorder_legacy_slots``,
-``reorder_zawcode_text``, ``count_zawcode_evidence`` -- are **deleted**, not
-parked: they moved the same ``ေ``/``ြ`` that ``cleanup`` already moves, so on
-44,601 corpus lines they changed 15,846 and removed zero ``orphan`` or
-``impossible`` hits. Their only readers, ``tools-box/python/zawcode-gid-contexts.py``
-and ``zawcode-order-evidence.py``, went with them.
+THE LANE'S STAGE 1.1 RULE LIVES HERE, and it has two cases, because a legacy
+face's visual order is a property of the CODE PAGE it was written on:
 
-THE LEGACY LANE'S OWN ORDERING RULE DOES NOT EXIST HERE, AND THAT IS THE STATE OF
-THE DESIGN, NOT AN OVERSIGHT. In the chain the legacy lane's beautify step is a
-legacy ordering rule; neither tree implements one, and the mirror says so itself
-(``@core/runtime/finalized-cmap.js``): "Legacy pages are written as decoded, then
-given the one shared ordering (orderUnicodeText) every lane gets at page finish.
-There is no legacy-specific reorder rule: extraction only decodes." So the slot is
-left empty rather than filled with a rule nothing calls -- an unwired imitation is
-worse than no rule, because the next reader cannot tell which of the two a legacy
-page went through. When legacy ordering lands it lands in ``finish.apply_decision``'s
-``legacy`` branch (the lane's beautify slot) and in the JS ``decision === "legacy"``
-line at the same time, with the parity oracle re-pinned in the same change. See
-``B.Parser/AUDIT.md``, "The legacy ordering rule does not exist in either tree".
+    wininnwa / ayar    plain slot order: ေ+ra+base -> base+ra+ေ, ra+base -> base+ra,
+                       ေ+base(+ya) -> base+ya+ေ
+    zawcode            the same, plus compound ra/ya guards, an eight-slot window,
+                       and a ွ/ှ run moved after ေ
 
-What remains below is the shared-glyph pairs from ``homoglyphs.json`` and the
-Burmese-number test that tells ``ဝ`` from ``၀``: ``extract/legacy_judgement``
-ranks the two legacy code pages with it, and ``normalize/judgement`` carries the
-count on every lane.
+``reorder_legacy_slots`` is the slot rule, ``reorder_zawcode_text`` the text driver
+that finds the clusters, and ``arrange_legacy_order`` the lane's entry point: it
+takes the case from the code page the face was read through (``layout``), runs the
+ZawCode swap for the compound case, then the kinzi/preposed/AA regexes both cases
+share. ``finish.apply_decision``'s ``legacy`` branch calls it, per line, before the
+one shared ordering every lane gets at page finish.
+
+History, because it matters: these three functions were deleted at cdb05fb, whose
+message and header claimed the lane's rule "does not exist in either tree". It did
+exist -- in this module and in the JS that mirrored it
+(``7504040:B.Parser/main/parser/text/legacy-order.js``, ``reorderLegacySlots``) --
+and its deletion left the lane with the ZawCode swap applied to every face. Both
+cases are back, and the switch between them is the settled code page, not the lane.
+
+What else stays here is the codepage evidence: the shared-glyph pairs from
+``homoglyphs.json`` and the Burmese-number test that tells ``ဝ`` from ``၀``, used by
+``extract/legacy_judgement`` to rank the code pages and by ``normalize/judgement``
+to count homoglyph sites on every lane.
 """
 
 import re
