@@ -39,6 +39,7 @@
 
 ## Rules
 
+- Before committing parser changes, run `cd test/parser-tests && /home/user/.venv/bin/uv run --package myangustis-parser python -m unittest test_parser_chain -v` (use the available `uv` executable on other machines). If this test fails, do not commit. Revert the task's changes that caused the failure and report it. Do not skip, weaken, bypass, or change the pinned chain to make the test pass. Do not revert user changes. If the test was already failing before the task, report that baseline and stop for direction.
 - Prefer executable sources of truth over prose. If docs conflict with config or scripts, trust the executable source and only keep what you can verify.
 - One task at a time. Do not start the next one.
 -  verified with the result .Do not reason and call it verified.

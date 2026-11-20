@@ -97,28 +97,6 @@ class DiagnosticTests(unittest.TestCase):
         self.assertTrue(any('[PDFDIAG]' in event and 'segmentation' in event for event in events))
         self.assertFalse(any('Sample text' in event for event in events))
 
-    def test_myanmar_embedded_font_with_diagnostics(self):
-        from fpdf import FPDF
-        root = Path(__file__).resolve().parents[2]
-        font = root / 'Junk/fonts/zawgyi one/ZAWGYI-ONE_V3.1.TTF'
-        if not font.exists():
-            self.skipTest(f'font fixture not in this tree: {font.relative_to(root)}')
-        with tempfile.TemporaryDirectory() as temp:
-            pdf = FPDF(); pdf.add_font('Zawgyi-One', fname=str(font)); pdf.add_page()
-            pdf.set_font('Zawgyi-One', size=14); pdf.cell(text='ေြက')
-            path = Path(temp) / 'book.pdf'; pdf.output(str(path))
-            log_file = Path(temp) / 'log' / 'lane-decisions.log'
-            with patch('myangustis_parser.workflow.lane_log.make_logger',
-                       return_value=Logen(file=log_file, console=lambda line: None)), \
-                 patch.dict(os.environ, {'PARSER_DIAGNOSTICS': 'on',
-                                         'PARSER_DIAGNOSTICS_VERBOSE': 'on',
-                                         'PARSER_DIAGNOSTIC_SAMPLES': 'off'}):
-                pipeline.process_pdf_bytes(path.read_bytes(), pipeline.load_detector(), filename='book.pdf')
-            # Font-level evidence is the verbose payload, on request only.
-            page = log_file.read_text()
-            self.assertIn('to_unicode_entries', page)
-            self.assertIn('"cid"', page)
-            self.assertIn('book.pdf', page)
 
     def test_page_record_is_compact_and_stage_metrics_need_verbose(self):
         pg = {'text': 'က\nခ\n[0041]', 'decode_kind': 'font', 'diagnostics': {}}

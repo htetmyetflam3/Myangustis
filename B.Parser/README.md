@@ -291,19 +291,10 @@ For DOCX, unknown-font text is left in its stored order and direct bold/italic
 run marks are retained, and the DOCX conversion keeps working on Zawgyi and on
 explicitly Unicode input.
 
-The parser tests include deterministic differential checks against the JS
-font decoder, GSUB logic, witnessed visual recovery, PDF finishing and
-end-to-end synthetic PDF pages at main commit `67f02845bcd266ff764fcc167a3337626eb1c75f`.
-These checks run Node only as a **test oracle**, never as part of the Python
-parser. They skip when Node or the pinned Git commit is unavailable (the
-font-decoder, visual and PDF checks require Node 22+). They cover synthetic
-cases and two bundled witness fonts, not every PDF or all parser behavior.
-Update the pinned reference deliberately when reviewing a newer JS version;
-a passing test is not proof of full parity. The optional PDF renderer
-comparison additionally needs `pdfjs-dist@6.4.299` and
-`@napi-rs/canvas@1.0.10` in an external Node modules directory, supplied via
-`JS_RENDER_NODE_MODULES`. It compares geometry and solid-color fixtures;
-PDFium and PDF.js can rasterize real documents differently.
+The Python/JS differential tests and optional PDF renderer oracle have been
+removed. Earlier tests compared selected synthetic cases against main commit
+`67f02845bcd266ff764fcc167a3337626eb1c75f`; they did not cover every PDF or
+all parser behavior.
 
 Previously committed SSH queue entries are not automatically re-parsed after
 an upgrade. Deleting `books.parquet` alone does not restart the queue: it is

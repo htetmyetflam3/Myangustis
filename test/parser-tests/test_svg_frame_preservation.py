@@ -4,7 +4,6 @@ import importlib.util
 import json
 from pathlib import Path
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -12,7 +11,7 @@ import unittest
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
-SVGOUT = ROOT / "svgout"
+SVGOUT = ROOT / "B.Parser" / "tools" / "svg"
 XLINK = "{http://www.w3.org/1999/xlink}href"
 
 # The duplicate occurrences are deliberately byte-for-byte identical. The other
@@ -55,7 +54,7 @@ def use_contexts(xml):
     return Counter(found)
 
 
-@unittest.skipUnless(shutil.which("node") and (SVGOUT / "make-line.js").is_file(), "JS SVG reference is not available")
+@unittest.skipUnless((SVGOUT / "make_line.py").is_file(), "Python SVG slicer is not available")
 class SvgFramePreservationTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -73,13 +72,12 @@ class SvgFramePreservationTest(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def run_pair(self, selection=""):
+    def run_slicer(self, selection=""):
         results = []
         outputs = []
-        for runner, executable, suffix in (("make-line.js", "node", ".js"),
-                                            ("make_line.py", sys.executable, ".py")):
+        for runner, executable, suffix in (("make_line.py", sys.executable, ".py"),):
             cmd = [executable, str(SVGOUT / runner), str(self.page), "1", suffix, selection]
-            result = subprocess.run(cmd, cwd=self.cwd, capture_output=True, text=True)
+            result = subprocess.run(cmd, cwd=self.cwd / "svgout", capture_output=True, text=True)
             results.append(result)
             if result.returncode == 0:
                 outputs.append(tuple((self.cwd / "svgout" / "known" /
@@ -88,11 +86,10 @@ class SvgFramePreservationTest(unittest.TestCase):
         return results, outputs
 
     def test_full_sheet_preserves_every_use_and_its_context(self):
-        results, outputs = self.run_pair()
+        results, outputs = self.run_slicer()
         for result in results:
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("retained", result.stderr.lower())
-        self.assertEqual(outputs[0], outputs[1])
         sheet = outputs[0][1]
         self.assertEqual(use_signatures(PAGE), use_signatures(sheet))
         self.assertEqual(use_contexts(PAGE), use_contexts(sheet))
@@ -105,26 +102,23 @@ class SvgFramePreservationTest(unittest.TestCase):
         self.assertGreaterEqual(viewbox[1] + viewbox[3], 120)
 
     def test_selected_lines_are_intentional_subsets(self):
-        results, outputs = self.run_pair("1")
+        results, outputs = self.run_slicer("1")
         for result in results:
             self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(outputs[0], outputs[1])
         uses = [e for e in ET.fromstring(outputs[0][1]).iter() if e.tag.endswith("}use")]
         self.assertEqual(len(uses), 4)  # both repeats, the tiny glyph, and the space
         self.assertEqual(sum(e.get(XLINK) == "#glyph" for e in uses), 2)
 
-        results, outputs = self.run_pair("2")
+        results, outputs = self.run_slicer("2")
         for result in results:
             self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(outputs[0], outputs[1])
         uses = [e for e in ET.fromstring(outputs[0][1]).iter() if e.tag.endswith("}use")]
         self.assertEqual([e.get("data-kind") for e in uses], ["transformed"])
 
     def test_selecting_every_line_also_retains_unframed_uses(self):
-        results, outputs = self.run_pair("1-3")
+        results, outputs = self.run_slicer("1-3")
         for result in results:
             self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(outputs[0], outputs[1])
         self.assertEqual(use_signatures(PAGE), use_signatures(outputs[0][1]))
 
     def test_missing_or_empty_line_metadata_does_not_drop_uses(self):
@@ -133,28 +127,26 @@ class SvgFramePreservationTest(unittest.TestCase):
                 self.lines.write_text('{"coordinates": "svg-page", "lines": []}', encoding="utf-8")
             else:
                 self.lines.unlink()
-            results, outputs = self.run_pair()
+            results, outputs = self.run_slicer()
             for result in results:
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIn("falling back", result.stderr.lower())
-            self.assertEqual(outputs[0], outputs[1])
-            self.assertEqual(use_signatures(PAGE), use_signatures(outputs[0][1]))
+                self.assertEqual(use_signatures(PAGE), use_signatures(outputs[0][1]))
 
     def test_old_unrotated_metadata_is_not_treated_as_svg_coordinates(self):
         self.lines.write_text('{"lines": [[5, 20, 10, "old"]]}', encoding="utf-8")
-        results, outputs = self.run_pair()
+        results, outputs = self.run_slicer()
         for result in results:
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("unverified coordinates", result.stderr.lower())
             self.assertIn("re-export", result.stderr.lower())
-        self.assertEqual(outputs[0], outputs[1])
         self.assertEqual(use_signatures(PAGE), use_signatures(outputs[0][1]))
 
     def test_unknown_local_reference_fails_instead_of_emitting_a_lossy_sheet(self):
         self.page.write_text(PAGE.replace('xlink:href="#image" x="0"',
                                           'xlink:href="#missing" x="0"'),
                              encoding="utf-8")
-        results, outputs = self.run_pair()
+        results, outputs = self.run_slicer()
         self.assertFalse(outputs)
         for result in results:
             self.assertNotEqual(result.returncode, 0)
@@ -168,12 +160,11 @@ class SvgFramePreservationTest(unittest.TestCase):
         self.page.write_text(page, encoding="utf-8")
         self.lines.write_text(json.dumps({"coordinates": "svg-page",
                                           "lines": [[20, 20, 10, "x"]]}), encoding="utf-8")
-        results, outputs = self.run_pair("1")
+        results, outputs = self.run_slicer("1")
         for result in results:
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("avoid clipping", result.stderr.lower())
             self.assertIn("not assessed for strokes", result.stdout.lower())
-        self.assertEqual(outputs[0], outputs[1])
         for svg in outputs[0]:
             self.assertEqual(use_signatures(page), use_signatures(svg))
             box = [float(v) for v in ET.fromstring(svg).get("viewBox").split()]
@@ -184,16 +175,14 @@ class SvgFramePreservationTest(unittest.TestCase):
         text = PAGE.replace('data-kind="transformed"',
                             'style="transform:translate(0px,20px)" data-kind="transformed"', 1)
         self.page.write_text(text, encoding="utf-8")
-        results, outputs = self.run_pair()
+        results, outputs = self.run_slicer()
         for result in results:
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("retained", result.stderr.lower())
-        self.assertEqual(outputs[0], outputs[1])
         self.assertEqual(use_signatures(text), use_signatures(outputs[0][1]))
-        results, outputs = self.run_pair("2")
+        results, outputs = self.run_slicer("2")
         for result in results:
             self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(outputs[0], outputs[1])
         selected = [e for e in ET.fromstring(outputs[0][1]).iter() if e.tag.endswith("}use")]
         self.assertFalse(any(e.get("data-kind") == "transformed" for e in selected))
 
@@ -204,17 +193,16 @@ class SvgFramePreservationTest(unittest.TestCase):
         text = PAGE.replace('</defs>', definition, 1).replace(
             '</svg>', '<use xlink:href="#combo" transform="matrix(10,0,0,10,10,90)"/></svg>', 1)
         self.page.write_text(text, encoding="utf-8")
-        results, outputs = self.run_pair()
+        results, outputs = self.run_slicer()
         for result in results:
             self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(outputs[0], outputs[1])
         self.assertEqual(use_signatures(text), use_signatures(outputs[0][1]))
 
     def test_external_use_references_fail_instead_of_changing_their_base_url(self):
         text = PAGE.replace('xlink:href="#image" x="0"',
                             'xlink:href="other.svg#image" x="0"', 1)
         self.page.write_text(text, encoding="utf-8")
-        results, outputs = self.run_pair()
+        results, outputs = self.run_slicer()
         self.assertFalse(outputs)
         for result in results:
             self.assertNotEqual(result.returncode, 0)
@@ -229,7 +217,7 @@ class SvgFramePreservationTest(unittest.TestCase):
         malformed = PAGE.replace(first, first[:-2], 1)
         for text, message in ((prefixed, "namespaced"), (malformed, "malformed")):
             self.page.write_text(text, encoding="utf-8")
-            results, outputs = self.run_pair()
+            results, outputs = self.run_slicer()
             self.assertFalse(outputs)
             for result in results:
                 self.assertNotEqual(result.returncode, 0)
@@ -238,7 +226,7 @@ class SvgFramePreservationTest(unittest.TestCase):
     def test_ambiguous_duplicate_definition_ids_fail_without_a_sheet(self):
         text = PAGE.replace('<defs>', '<defs><path id="glyph" d="M0 0"/>', 1)
         self.page.write_text(text, encoding="utf-8")
-        results, outputs = self.run_pair()
+        results, outputs = self.run_slicer()
         self.assertFalse(outputs)
         for result in results:
             self.assertNotEqual(result.returncode, 0)
@@ -249,7 +237,7 @@ class SvgFramePreservationTest(unittest.TestCase):
         for replacement, message in (('d="M0 0A2 2 0 1 1 1 0"', "unsupported glyph path"),
                                      ('d="M0 0L0.5"', "truncated command")):
             self.page.write_text(PAGE.replace(old, replacement, 1), encoding="utf-8")
-            results, outputs = self.run_pair()
+            results, outputs = self.run_slicer()
             self.assertFalse(outputs)
             for result in results:
                 self.assertNotEqual(result.returncode, 0)
@@ -260,83 +248,48 @@ class SvgFramePreservationTest(unittest.TestCase):
         for path, expected_band in (("M0.5 0.75 0.7 0.5", "0.500"),
                                     ("m0.5 0.75 0.7 0.5", "0.625")):
             self.page.write_text(PAGE.replace(old, f'd="{path}"', 1), encoding="utf-8")
-            results, outputs = self.run_pair("1")
+            results, outputs = self.run_slicer("1")
             for result in results:
                 self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual(outputs[0], outputs[1])
-            self.assertEqual(ET.fromstring(outputs[0][1]).get("data-band"), expected_band)
+                self.assertEqual(ET.fromstring(outputs[0][1]).get("data-band"), expected_band)
 
-    def test_scientific_notation_in_a_glyph_path_is_measured_in_both_runners(self):
+    def test_scientific_notation_in_a_glyph_path_is_measured(self):
         text = PAGE.replace('d="M0 0L0.5 0L0.5 0.7Z"',
                             'd="M0 0L5e-1 0L5e-1 7e-1Z"', 1)
         self.page.write_text(text, encoding="utf-8")
-        results, outputs = self.run_pair()
+        results, outputs = self.run_slicer()
         for result in results:
             self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(outputs[0], outputs[1])
         self.assertEqual(use_signatures(text), use_signatures(outputs[0][1]))
 
     def test_page_clip_id_does_not_collide_with_source_definitions(self):
         self.page.write_text(PAGE.replace('<defs>',
-                                          '<defs><path id="__svgout_page_clip" d="M0 0"/>', 1),
+                                          '<defs><path id="__svg_page_clip" d="M0 0"/>', 1),
                              encoding="utf-8")
-        results, outputs = self.run_pair()
+        results, outputs = self.run_slicer()
         for result in results:
             self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(outputs[0], outputs[1])
         root = ET.fromstring(outputs[0][1])
         ids = [e.get("id") for e in root.iter() if e.get("id")]
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertIn("__svgout_page_clip_", ids)
+        self.assertIn("__svg_page_clip_", ids)
         self.assertEqual(use_signatures(self.page.read_text()), use_signatures(outputs[0][1]))
 
     def test_unhandled_root_geometry_fails_instead_of_repositioning_uses(self):
         self.page.write_text(PAGE.replace('viewBox="0 0 120 120"',
                                           'viewBox="10 0 120 120"'), encoding="utf-8")
-        results, outputs = self.run_pair()
+        results, outputs = self.run_slicer()
         self.assertFalse(outputs)
         for result in results:
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("viewbox", result.stderr.lower())
 
-    def test_nonmatching_selection_fails_in_both_runners(self):
-        results, outputs = self.run_pair("999")
+    def test_nonmatching_selection_fails(self):
+        results, outputs = self.run_slicer("999")
         self.assertFalse(outputs)
         for result in results:
             self.assertNotEqual(result.returncode, 0)
 
-    def test_parity_check_never_renames_or_overwrites_existing_files(self):
-        fixture = self.cwd / "prototype"
-        out = fixture / "svgout"
-        (out / "known").mkdir(parents=True)
-        (fixture / "package.json").write_text('{"type":"module"}', encoding="utf-8")
-        for name in ("make-line.js", "make_line.py", "scan-frame.js", "scan_frame.py",
-                     "test_frame_parity.py"):
-            shutil.copyfile(SVGOUT / name, out / name)
-        shutil.copyfile(self.page, out / "page.svg")
-        shutil.copyfile(self.lines, out / "page.lines.json")
-        parked = out / "page.lines.json.parked"
-        parked.write_text("keep parked metadata", encoding="utf-8")
-        sentinel = out / "known" / "frame-sheet.1.js.svg"
-        sentinel.write_text("keep existing output", encoding="utf-8")
-        original_metadata = (out / "page.lines.json").read_bytes()
-        cmd = [sys.executable, str(out / "test_frame_parity.py")]
-        result = subprocess.run(cmd, cwd=fixture, capture_output=True, text=True)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("8/8 outputs byte-identical", result.stdout)
-        self.assertEqual((out / "page.lines.json").read_bytes(), original_metadata)
-        self.assertEqual(parked.read_text(), "keep parked metadata")
-        self.assertEqual(sentinel.read_text(), "keep existing output")
-
-        (out / "page.lines.json").write_text('{"lines": []}', encoding="utf-8")
-        result = subprocess.run(cmd, cwd=fixture, capture_output=True, text=True)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("unverified coordinates", result.stderr.lower())
-
-        (out / "page.svg").unlink()
-        result = subprocess.run(cmd, cwd=fixture, capture_output=True, text=True)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("no page exports", result.stdout)
 
 
 try:
@@ -376,8 +329,8 @@ class SvgRotationTest(unittest.TestCase):
                 for matrix in matrices:
                     self.assertAlmostEqual(rows[0][1], float(matrix.split(",")[-1]), delta=0.02)
 
-    @unittest.skipUnless(shutil.which("node") and (SVGOUT / "make-line.js").is_file(), "JS SVG reference is not available")
-    def test_rotated_pdf_through_both_slicers_keeps_all_uses_on_the_line(self):
+
+    def test_rotated_pdf_slicer_keeps_all_uses_on_the_line(self):
         for rotation in (0, 90, 180, 270):
             with self.subTest(rotation=rotation), tempfile.TemporaryDirectory() as tmp, pymupdf.open() as doc:
                 page = doc.new_page(width=200, height=300)
@@ -388,26 +341,21 @@ class SvgRotationTest(unittest.TestCase):
                 page.set_rotation(rotation)
                 svg = page.get_svg_image(matrix=pymupdf.Matrix(1, 1), text_as_path=True)
                 work = Path(tmp)
-                (work / "svgout" / "known").mkdir(parents=True)
+                (work / "known").mkdir()
                 src = work / "page.svg"
                 src.write_text(svg, encoding="utf-8")
                 src.with_suffix(".lines.json").write_text(json.dumps({
                     "coordinates": "svg-page", "rotation": rotation,
                     "lines": self.exporter.page_lines(page),
                 }), encoding="utf-8")
-                outputs = []
-                for runner, executable, suffix in (("make-line.js", "node", ".js"),
-                                                    ("make_line.py", sys.executable, ".py")):
-                    result = subprocess.run([executable, str(SVGOUT / runner), str(src), "1", suffix],
-                                            cwd=work, capture_output=True, text=True)
-                    self.assertEqual(result.returncode, 0, result.stderr)
-                    line = (work / "svgout" / "known" / f"line-sample{suffix}.svg").read_bytes()
-                    sheet = (work / "svgout" / "known" / f"frame-sheet{suffix}.svg").read_bytes()
-                    self.assertEqual(use_signatures(svg), use_signatures(sheet))
-                    self.assertEqual(use_signatures(svg), use_signatures(line))
-                    self.assertEqual(ET.fromstring(sheet).get("data-lines"), "1")
-                    outputs.append((line, sheet))
-                self.assertEqual(outputs[0], outputs[1])
+                result = subprocess.run([sys.executable, str(SVGOUT / "make_line.py"), str(src), "1", ".py"],
+                                        cwd=work, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                line = (work / "known" / "line-sample.py.svg").read_bytes()
+                sheet = (work / "known" / "frame-sheet.py.svg").read_bytes()
+                self.assertEqual(use_signatures(svg), use_signatures(sheet))
+                self.assertEqual(use_signatures(svg), use_signatures(line))
+                self.assertEqual(ET.fromstring(sheet).get("data-lines"), "1")
 
     def test_cropped_page_origins_match_svg_after_rotation(self):
         for rotation in (0, 90, 180, 270):

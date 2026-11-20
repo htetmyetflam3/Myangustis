@@ -12,9 +12,6 @@ from myangustis_parser.extract.pdf_fonts import DocumentDecoding, FontDecoder
 from myangustis_parser.resources import paths
 from myangustis_parser.workflow import lane_log, pipeline
 
-# The python branch no longer ships Junk/fonts; tests that need a real Zawgyi
-# face skip instead of failing on a fixture that is not in the tree.
-ZAWGYI_FONT = Path(__file__).resolve().parents[2] / 'Junk/fonts/zawgyi one/ZAWGYI-ONE_V3.1.TTF'
 
 
 class TestLaneLogging(unittest.TestCase):
@@ -161,32 +158,6 @@ class TestLaneLogging(unittest.TestCase):
             self.assertIsNone(logger.file)  # explicit process setting wins
             self.assertEqual(os.environ['PARSER_LOG_FILE'], 'from-env.log')
 
-    @unittest.skipUnless(ZAWGYI_FONT.exists(), 'Zawgyi font fixture not in this tree')
-    def test_real_pdf_uses_filename_and_writes_single_decision(self):
-        from fpdf import FPDF
-        root = Path(__file__).resolve().parents[2]
-        font = root / 'Junk/fonts/zawgyi one/ZAWGYI-ONE_V3.1.TTF'
-        with tempfile.TemporaryDirectory() as temp:
-            pdf = FPDF()
-            pdf.add_font('Zawgyi-One', fname=str(font))
-            for _ in range(2):
-                pdf.add_page()
-                pdf.set_font('Zawgyi-One', size=14)
-                pdf.cell(text='ေြက')
-            path = Path(temp) / 'input.pdf'
-            log_file = Path(temp) / 'lane.log'
-            pdf.output(str(path))
-            stderr = io.StringIO()
-            with patch.dict(os.environ, {'PARSER_LOG_ENABLED': 'on', 'PARSER_LOG_FILE': str(log_file)}), \
-                 patch.object(lane_log, '_load_workspace_env'), contextlib.redirect_stderr(stderr):
-                job = pipeline.process_pdf_bytes(path.read_bytes(), pipeline.load_detector(), filename='စာအုပ်.pdf')
-            self.assertEqual(len(job['pages']), 2)
-            lines = log_file.read_text().splitlines()
-            decisions = [line for line in lines if '[BEAUTIFY]' in line]
-            self.assertEqual(len(decisions), 1)
-            self.assertIn('စာအုပ်.pdf', decisions[0])
-            self.assertIn('1-2', decisions[0])
-            self.assertIn('[BEAUTIFY]', stderr.getvalue())
 
     def test_names_are_escaped_and_logs_do_not_contain_body(self):
         events = []

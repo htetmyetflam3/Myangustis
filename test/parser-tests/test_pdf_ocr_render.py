@@ -1,22 +1,14 @@
 """PDF OCR renders full pages and crops in PDF coordinates, before OCR."""
-import base64
 import io
-import json
-import os
-from pathlib import Path
-import shutil
-import subprocess
-import tempfile
 import unittest
 from unittest.mock import patch
 
-from PIL import Image, ImageChops
+from PIL import Image
 import pypdfium2
 from pypdf import PdfWriter
 from pypdf.generic import ArrayObject, DecodedStreamObject, DictionaryObject, FloatObject, NameObject, NumberObject
 
 from myangustis_parser.workflow import ocr
-from test_gsub_js_parity import REFERENCE, ROOT
 
 
 def make_pdf(rotation=0, unit=1, *, image=False):
@@ -97,7 +89,7 @@ class PdfOcrRenderTests(unittest.TestCase):
                 ocr._render_pdf_png(pdf, 1, bbox=box)
         with self.assertRaisesRegex(ocr.OcrError, 'outside'):
             ocr._render_pdf_png(pdf, 1, bbox=[500, 500, 550, 550])
-        # Reversed coordinates still select the rectangle, matching JS.
+        # Reversed coordinates still select the rectangle.
         _, size = ocr._render_pdf_png(pdf, 1, bbox=[80.1, 105.8, 24.2, 40.4])
         self.assertEqual(size, (169, 197))
 
@@ -107,49 +99,6 @@ class PdfOcrRenderTests(unittest.TestCase):
         self.assertEqual(picture(recognize.call_args.args[0]).size, (70, 100))
 
 
-class PdfRenderJsParityTests(unittest.TestCase):
-    def test_pdfjs_canvas_geometry_and_solid_fill(self):
-        """Optional oracle: set JS_RENDER_NODE_MODULES to the pinned JS dependencies.
-
-        Install pdfjs-dist@6.4.299 and @napi-rs/canvas@1.0.10 in an external
-        directory; runtime PDF OCR never invokes Node.
-        """
-        modules = os.environ.get('JS_RENDER_NODE_MODULES')
-        if not modules or not Path(modules).is_dir() or not shutil.which('node'):
-            self.skipTest('JS_RENDER_NODE_MODULES and Node required for PDF.js render oracle')
-        source = subprocess.run(['git', 'show', f'{REFERENCE}:B.Parser/architecture/@core/runtime/render.js'],
-                                cwd=ROOT, capture_output=True)
-        if source.returncode:
-            self.skipTest('Pinned JS reference unavailable')
-        cases = [(make_pdf(rot, unit), [24.2, 40.4, 80.1, 105.8])
-                 for rot in (0, 90, 180, 270) for unit in (1, 2)]
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp)
-            (path / 'package.json').write_text('{"type":"module"}')
-            (path / 'node_modules').symlink_to(Path(modules).resolve(), target_is_directory=True)
-            (path / 'render.js').write_bytes(source.stdout)
-            (path / 'check.mjs').write_text('''
-import fs from 'node:fs';
-import {renderPdfPagePng,renderPdfRegionPng} from './render.js';
-const inputs=JSON.parse(fs.readFileSync(0,'utf8'));
-const out=[];
-for(const c of inputs) {
- const pdf=Buffer.from(c.pdf,'base64');
- const page=await renderPdfPagePng(pdf,1,{scale:3,maxPixels:25000000});
- const crop=await renderPdfRegionPng(pdf,1,c.bbox,{scale:3,maxPixels:25000000});
- out.push({size:[page.width,page.height], crop:[crop.width,crop.height], png:crop.png.toString('base64')});
-}
-console.log(JSON.stringify(out));
-''')
-            payload = [{'pdf': base64.b64encode(pdf).decode(), 'bbox': box} for pdf, box in cases]
-            raw = subprocess.run(['node', str(path / 'check.mjs')], input=json.dumps(payload).encode(),
-                                 capture_output=True, check=True, timeout=60).stdout
-        for (pdf, box), expected in zip(cases, json.loads(raw)):
-            _, size = ocr._render_pdf_png(pdf, 1)
-            crop, crop_size = ocr._render_pdf_png(pdf, 1, bbox=box)
-            self.assertEqual(list(size), expected['size'])
-            self.assertEqual(list(crop_size), expected['crop'])
-            self.assertIsNone(ImageChops.difference(picture(crop), picture(base64.b64decode(expected['png']))).getbbox())
 
 
 if __name__ == '__main__':

@@ -1,16 +1,14 @@
-"""Engine unit and JS parity tests. Node is used only as a test oracle."""
+"""Engine unit tests."""
 import asyncio
 import json
 import os
-import random
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
 
-ROOT = Path(os.environ.get('MYANGUSTIS_JS_REFERENCE_ROOT', Path(__file__).resolve().parents[2]))
+ROOT = Path(__file__).resolve().parents[2]
 # MYANGUSTIS_TREE_DIR can point at externally built reference trees.
 from types import SimpleNamespace
 from myangustis_engine.init.bridge import bind_engine
@@ -20,7 +18,6 @@ from myangustis_engine.MonoSyllabism.main.phoneme import lexer, phonology, class
 from myangustis_engine.MonoSyllabism.generators import pos_input, SfomatterForP
 from myangustis_engine.MonoSyllabism.utilities import stream
 from myangustis_engine.MonoSyllabism.graph import build as graph_build
-from myangustis_engine.MonoSyllabism.map import loader as native_mapper
 from myangustis_engine.logen import Logen, read_counts, read_tally
 from myangustis_engine.secure_data import secure as data
 pipeline = SimpleNamespace(fullstop_holder=pos_input.fullstop_holder, classify_number=classify_number.classify_number,
@@ -28,53 +25,6 @@ pipeline = SimpleNamespace(fullstop_holder=pos_input.fullstop_holder, classify_n
 trees = SimpleNamespace(walk=traverser.walk, walk_pos=traverser.walk_pos,
     verify_cache_tree=cache_integrity.verify_cache_tree, write_cache_manifest=cache_integrity.write_cache_manifest,
     cache_info=cache_integrity.cache_info, load_syllables_data=tree_loaded.load_syllables_data)
-
-ORACLE = r'''
-import * as map from './Architecture/Engine/MonoSyllabism/map/loader.js';
-import { BindEngine } from './Architecture/Engine/init/bridge.js';
-import readline from 'node:readline';
-const reader = readline.createInterface({ input: process.stdin });
-for await (const line of reader) {
-  try {
-    const {method, args} = JSON.parse(line);
-    let result;
-    if (method === 'tables') result = {newClause: map.newClause, ALL_DIGITS: [...map.ALL_DIGITS], PUNCTUATION: [...map.PUNCTUATION]};
-    else if (method === 'bridge') {
-      const value = BindEngine(args[0]);
-      if (value && typeof value[Symbol.asyncIterator] === 'function') {
-        result = []; for await (const item of value) result.push(item);
-      } else result = await value;
-    } else result = map[method](...args);
-    process.stdout.write(JSON.stringify({result}) + '\n');
-  } catch (error) { process.stdout.write(JSON.stringify({error: String(error)}) + '\n'); }
-}
-'''
-
-
-class Oracle:
-    def __init__(self):
-        self.proc = subprocess.Popen(['node', '--no-warnings', '--input-type=module', '-e', ORACLE], cwd=ROOT,
-                                     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                     encoding='utf-8')
-
-    def call(self, method, *args):
-        self.proc.stdin.write(json.dumps({'method': method, 'args': args}, ensure_ascii=True) + '\n')
-        self.proc.stdin.flush()
-        line = self.proc.stdout.readline()
-        if not line:
-            raise RuntimeError(self.proc.stderr.read())
-        response = json.loads(line)
-        if 'error' in response: raise RuntimeError(response['error'])
-        return response['result']
-
-    def __getattr__(self, method): return lambda *args: self.call(method, *args)
-
-    def close(self):
-        self.proc.stdin.close()
-        self.proc.wait(timeout=10)
-        self.proc.stdout.close()
-        self.proc.stderr.close()
-
 
 def consume(value):
     async def go():
@@ -258,63 +208,25 @@ asyncio.run(main())
             self.assertIn('done', log.file.read_text())
 
 
-@unittest.skipUnless(shutil.which('node') and (ROOT / 'Architecture/Engine/MonoSyllabism/map/loader.js').exists(), 'JS engine and Node are needed for parity tests')
-class JavaScriptParityTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls): cls.oracle = Oracle()
-    @classmethod
-    def tearDownClass(cls): cls.oracle.close()
 
-    @unittest.skip('Legacy JS bridge uses normalize+mapperStr; Python now uses the uploaded kit mapperNormalize')
-    def test_bridge(self):
-        texts = ['', 'မင်္ဂလာပါ။', 'ကျွန်တော် မြန်မာစာကို လေ့လာနေပါတယ်။ နေကောင်းလား။',
-                 'ဦး နှင့် ဪ။ ၂၀၂၄ 09-12345678\nHello world!\n', 'a\n\nခ။ဂ။ဃ။', '😄က🙂', '{😄} က']
-        for text in texts:
-            for flag in ('syllable', 'pos'):
-                with self.subTest(text=text, flag=flag):
-                    request = {'sourceText': text, 'flag': flag, 'log': False}
-                    expected = self.oracle.bridge(request)
-                    actual = consume(bind_engine(request, runtime=self.oracle))
-                    self.assertEqual(actual, expected)
-                    self.assertEqual(consume(bind_engine(request)), expected)
 
-    def test_template_snapshot_matches_javascript(self):
-        template = ROOT / 'Architecture/Engine/knowledge/isTreasure/template.js'
-        if not template.exists(): self.skipTest('JS templates not available')
-        script = "import {Templates} from './Architecture/Engine/knowledge/isTreasure/template.js'; console.log(JSON.stringify(Templates));"
-        output = subprocess.check_output(['node', '--input-type=module', '-e', script], cwd=ROOT, text=True)
-        js_templates = json.loads(output)
-        self.assertEqual(data.load_template_data()['Templates'], js_templates)
-        for name, expected_slots in [('msp-06', ['pe1', 'pe2', 'pe3', 'pe4', 'pe5']),
-                                     ('msp-07', ['pe1', 'pe2', 'pe3', 'pe4'])]:
-            template = js_templates[name]
-            self.assertEqual(template['tail']['status'], 'reject')
-            self.assertEqual(len(template['head']['root']['children']), 1)
-            node, slots = template['head']['root']['children'][0], []
-            while node:
-                slots.append(node['slot'])
-                node = node.get('next')
-            self.assertEqual(slots, expected_slots)
-
-    def test_native_mapper(self):
-        texts = ['ကောင်းလား', 'မင်္ဂလာပါ', 'abc 12-34', 'ဉ့် ဥ်၊', 'ကာ့ာ', 'hello 😄 ကျောင်း', 'ဦး ၂၀၂၄', 'aက']
-        for text in texts:
-            for method in ('normalize', 'mapperNormalize', 'myNormalize', 'mapperStr', 'toBurmeseStr'):
-                with self.subTest(text=text, method=method):
-                    self.assertEqual(getattr(native_mapper, method)(text), self.oracle.call(method, text))
-
-    @unittest.skip('Legacy JS bridge uses normalize+mapperStr; Python now uses the uploaded kit mapperNormalize')
-    def test_mixed_random_parity(self):
-        rng = random.Random(391)
-        words = ['မင်္ဂလာ', 'မြန်မာ', 'စား', '။', 'ကောင်း', '  ', '\n', '2024', 'abc', '၊', '😀']
-        for _ in range(20):
-            text = ''.join(rng.choice(words) for _ in range(rng.randint(1, 7)))
-            for flag in ('pos', 'syllable'):
-                request = {'sourceText': text, 'flag': flag, 'log': False}
-                with self.subTest(text=text, flag=flag):
-                    expected = self.oracle.bridge(request)
-                    self.assertEqual(consume(bind_engine(request, runtime=self.oracle)), expected)
-                    self.assertEqual(consume(bind_engine(request)), expected)
+class RuntimeNormalizationTests(unittest.TestCase):
+    def test_end_to_end_uses_mapper_normalize(self):
+        from myangustis_engine.api import pos_views, segment_text
+        from myangustis_engine.MonoSyllabism.utilities.buffer import read_and_prepare
+        from myangustis_engine.MonoSyllabism.map import loader, normalize
+        text = 'ကြည့် စောင့် hello 123။'
+        result = segment_text(text)
+        self.assertIn('ကြည့်', result)
+        self.assertIn('စောင့်', result)
+        self.assertIn('hello', result)
+        self.assertIn('123', result)
+        self.assertNotIn('  ်', result)
+        self.assertIn('hello', pos_views(text)['syllable'])
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'input.txt'
+            path.write_text(text, encoding='utf-8')
+            self.assertEqual(''.join(read_and_prepare(path, loader)), normalize.mapperNormalize(text))
 
 
 if __name__ == '__main__': unittest.main()

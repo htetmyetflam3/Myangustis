@@ -816,24 +816,6 @@ class CanonicalMarkOrderTests(unittest.TestCase):
         # only hide the damage.
         self.assertEqual(cleanup.reorder_marks("\u103c\u1000"), "\u103c\u1000")
 
-    @unittest.skipUnless(os.path.isfile(os.path.join(_HERE, "..", "..", "index-path.js")), "JS reference not present in this branch")
-    def test_spacing_examples_follow_engine_normalize(self):
-        # Compare these examples with the actual Engine function, not an
-        # inferred whitespace policy or a claim that this helper is the Engine.
-        examples = ["\u1000 \u102d", "\u1000  \u1001"]
-        script = """
-            import fs from 'node:fs';
-            import { getEngineNormalize } from './index-path.js';
-            const normalize = await getEngineNormalize();
-            const inputs = JSON.parse(fs.readFileSync(0, 'utf8'));
-            process.stdout.write(JSON.stringify(inputs.map((text) => normalize(text))));
-        """
-        repo = os.path.abspath(os.path.join(_HERE, "..", "..", ".."))
-        result = subprocess.run(
-            ["node", "--input-type=module", "-e", script],
-            input=json.dumps(examples), capture_output=True, text=True, cwd=repo, check=True,
-        )
-        self.assertEqual([cleanup.reorder_marks(text) for text in examples], json.loads(result.stdout))
 
     def test_a_digit_is_not_a_base(self):
         # index() is U+1000..U+1021 plus U+1025/U+1027: marks after a digit

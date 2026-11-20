@@ -57,7 +57,7 @@ Legend: **T** = selected cases compared with pinned JS; **P** = Python counterpa
 | `@core/requested.js` | `workflow/pipeline.py`, `output/render.py`; output shape, metadata and limits differ. | P |
 | `@core/run.js` | `entry/manager.py`, `workflow/pipeline.py`; image-only PDF OCR routing and markup edge case tested; bare-image and DOCX OCR finalization need more comparison. | T/P |
 | `@core/runtime/finalized-cmap.js` | `workflow/finish.py`, `normalize/cleanup.py`; synthetic PDF finishes compared; no file-backed streaming replacement. | T/P |
-| `@core/runtime/finish.js` | `workflow/finish.py`, `workflow/pipeline.py`; selected PDF/DOCX records compared by `test_pdf_finish_js_parity.py` (312 samples, exact). JS threads an `applyCleanup` boolean through its finishing calls; the Python side does not — see "The cleanup flag is not part of the design". | T/P |
+| `@core/runtime/finish.js` | `workflow/finish.py`, `workflow/pipeline.py`; selected PDF/DOCX records were compared historically; the JS differential test has been removed. JS threads an `applyCleanup` boolean through its finishing calls; the Python side does not — see "The cleanup flag is not part of the design". | T/P |
 | `@core/runtime/json-map.js` | `resources/maps.py`, `resources/engine.py`; Python reads bundled JSON/Engine data in-process, loading APIs differ. | P |
 | `@core/runtime/lexer.js` | `extract/pdf_fonts.py`, `extract/pdf_extract.py`; Python lexer reads in-memory bytes, not JS file lexer. | P |
 | `@core/runtime/markup.js` | `output/markup.py`, `workflow/pipeline.py`; selected DOCX and OCR markup compared. | T/P |
@@ -125,7 +125,7 @@ Legend: **T** = selected cases compared with pinned JS; **P** = Python counterpa
 
 `entry/api.py`, `entry/cli.py`, `entry/prase.py`, `entry/interop.py`, `workflow/remote_queue.py`, `workflow/lane_log.py`, the launcher scripts and SSH ledger/Parquet/TXT collection are Python integration features; they are not proof of a one-to-one JS mirror. Package `__init__.py` files are wiring, not independent JS behavior. `normalize/legacy_order.py` and the historical evidence scripts have helper/draft functionality outside the pinned normal JS parse route. `output/fonts.py`, resource paths/maps, and Engine data access are Python-side implementations rather than Node subprocesses.
 
-Evidence includes `test_decoder_js_parity.py`, `test_gsub_js_parity.py`, `test_visual_js_parity.py`, `test_pdf_finish_js_parity.py`, `test_pdf_stream_js_parity.py`, `test_pdf_image_coverage.py`, `test_pdf_ocr_js_parity.py`, `test_pdf_ocr_render.py` and `test_docx_js_parity.py`. JS is invoked by these tests only; production Python PDF decoding does not run JS or cache compiled JS. PDF OCR invokes the external Tesseract CLI. The PDF renderer oracle is optional and needs the exact JS rendering dependencies documented in `README.md`. Actual affected books and OCR recognition have not been compared to JS here.
+The Python suite retains `test_pdf_image_coverage.py` and `test_pdf_ocr_render.py`; the Python/JS differential tests have been removed. Production Python PDF decoding does not run JS or cache compiled JS. PDF OCR invokes the external Tesseract CLI. Earlier comparisons did not cover actual affected books or OCR recognition.
 
 ### Python file index
 
@@ -771,7 +771,7 @@ page loses its own rule
 The JS mirror says the same thing out loud -- `@rule/judgement.js:188-191` and the comment at `:162-171`,
 "flagged zawcode and takes the ZawCode beautify rules, legacy pages included" -- so this is inherited
 behaviour, recorded here as the mechanism. Changing it in Python needs the design's ruling first: no
-code in this branch was touched for it, and the `test_pdf_finish_js_parity` oracle would move with it.
+code in this branch was touched for it, and the now-removed `test_pdf_finish_js_parity` oracle would have moved with it.
 
 **The same book, run from the pre-edit stage.** `git worktree add --detach /tmp/base 52d7a21` with its own
 shim (this checkout untouched), same command, same env: the result file is **byte-identical** (`cmp` clean,

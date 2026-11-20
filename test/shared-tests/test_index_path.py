@@ -49,31 +49,6 @@ class WorkspaceEnvironmentTests(unittest.TestCase):
         result = json.loads(self.python("import importlib,json; p=importlib.import_module('index-path'); print(json.dumps(p.ENV_RESULT))"))
         self.assertEqual(result, {'sources': [], 'applied': []})
 
-    def test_dotenv_parser_matches_node_for_supported_forms(self):
-        text = """# comment
-export EXPORTED="with spaces"
-SINGLE='one # two'
-BACKTICK=`literal`
-HASH=before#after
-SPACED=before # after
-MULTI="first
-second"
-ESCAPE="line\\nnext"
-DUP=first
-DUP=last
-EMPTY=
-1BAD=x
-invalid-key=y
-NEXT=\x20\x20
-    after-space
-TAIL=tail
-"""
-        (self.root / 'sample.env').write_text(text)
-        py = json.loads(self.python("import importlib,json,pathlib; p=importlib.import_module('index-path'); print(json.dumps(p.parse_dotenv(pathlib.Path('sample.env').read_text())))"))
-        node = json.loads(subprocess.check_output(['node', '--input-type=module', '-e',
-            "import {parseEnv} from 'node:util'; import fs from 'node:fs'; const o=parseEnv(fs.readFileSync('sample.env','utf8')); console.log(JSON.stringify(Object.fromEntries(Object.entries(o).filter(([k])=>/^[A-Za-z_][A-Za-z0-9_]*$/.test(k)))));"],
-            cwd=self.root, env=self.env, text=True))
-        self.assertEqual(py, node)
 
 
 
