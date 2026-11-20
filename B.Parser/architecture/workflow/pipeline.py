@@ -356,9 +356,19 @@ def process_pdf_stream(pdf_path, detector, log=lambda m: None,
             lane_log.stem(idx + 1, pg.get("lane_trace", ()))
             named_zawgyi = has_only_zawgyi_fonts(pg.get("font_names"))
             parsing_path = 'legacy' if pg.get('decode_kind') == 'legacy' else 'font-cmap'
+            # The legacy lane's two orderings are chosen by the identified code
+            # page: the face's own name says it (wininnwa/ayar), and a face whose
+            # name says nothing keeps the ZawCode swap (legacy_layout None).
+            legacy_layout = None
+            if parsing_path == 'legacy':
+                for name in pg.get('font_names') or ():
+                    legacy_layout = legacy_font_family(name)
+                    if legacy_layout:
+                        break
             result = finish.finish_pdf_page(raw, parsing_path=parsing_path,
                                             zawgyi_codepage=named_zawgyi,
-                                            source_encoding=source_encoding)
+                                            source_encoding=source_encoding,
+                                            legacy_layout=legacy_layout)
             base, cleaned = result['base'], result['clean']
             cat = result['category']
             rep = {'page': idx + 1, 'category': cat, 'prob': 1.0 if cat == 'ZAWGYI' else 0.0,

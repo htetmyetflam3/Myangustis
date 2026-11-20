@@ -162,7 +162,179 @@ def visual_order(text):
 _zawcode_swap = visual_order
 
 
-def arrange_legacy_order(text):
+# ══════════════════════════════════════════════════════════════════════════
+# RESTORED from history: the layout-dependent half of the lane's rule.
+#
+# `reorder_legacy_slots` / `reorder_zawcode_text` / `legacy_bases` were deleted at
+# cdb05fb ("are **deleted**, not parked") and their header rewritten to say the
+# legacy lane has no ordering rule. Theirs is the case the ZawCode swap does not
+# cover: the same three slots, ordered by the CODE PAGE the face was read with
+# rather than by the ZawCode compound rules --
+#
+#     layout="wininnwa" (default)   plain: ေ+ra+base -> base+ra+ေ, ra+base -> base+ra,
+#                                   ေ+base(+ya) -> base+ya+ေ, else base+ေ
+#     layout="zawcode"              the same, plus compound ra/ya guards: a compound
+#                                   slot matches isRa/isYa, mark_summary spans 8 slots,
+#                                   and a ွ/ှ run goes after ေ
+#
+# The source is `52d7a21:B.Parser/architecture/normalize/legacy_order.py`, itself the
+# mirror of `7504040:B.Parser/main/parser/text/legacy-order.js` (reorderLegacySlots).
+# Only `reorder_zawcode_text` gained a `layout` keyword: in history it hardwired
+# 'zawcode', which is why the WinInnwa/Ayar case could not be reached at all.
+# ══════════════════════════════════════════════════════════════════════════
+@lru_cache(maxsize=1)
+def legacy_bases():
+    """Cluster bases, from the shared ``burmese-inventory.json`` map."""
+    return frozenset(maps.load_map('burmese-inventory.json')['consonants']) | {'၎'}
+
+
+def reorder_legacy_slots(input_slots, *, layout="wininnwa"):
+    """Reorder only the leading visual-order slots, preserving the suffix.
+
+    ``layout`` is the identified code page: ``wininnwa``/``ayar`` take the plain
+    case, ``zawcode`` adds the compound guards. Only the leading slots move; the
+    suffix keeps its order, as it did when this ran in the JS parser.
+    """
+    if not isinstance(input_slots, (list, tuple)) or any(
+            not isinstance(slot, str) or not slot for slot in input_slots):
+        raise TypeError("Expected non-empty Unicode slots")
+    slots = list(input_slots)
+
+    bases = legacy_bases()
+    zawcode = layout.lower() == 'zawcode'
+
+    def is_base(slot):
+        return slot in bases
+
+    def is_ra(slot):
+        return slot == '\u103c' or (zawcode and bool(re.fullmatch(r'\u103c[\u103d\u103e]+', slot)))
+
+    def is_ya(slot):
+        return slot == '\u103b' or (zawcode and bool(re.fullmatch(r'\u103b[\u103d\u103e]+', slot)))
+
+    def mark_summary(start):
+        ra = ya = False
+        for slot in slots[start:8]:
+            if any(c == '\u1039' or not '\u102b' <= c <= '\u103e' for c in slot):
+                break
+            ra |= '\u103c' in slot
+            ya |= '\u103b' in slot
+        return ra, ya
+
+    if len(slots) >= 3 and slots[0] == '\u1031' and is_ra(slots[1]) and is_base(slots[2]):
+        if zawcode and mark_summary(3)[1]:
+            return slots
+        return [slots[2], slots[1], slots[0], *slots[3:]]
+    if len(slots) >= 2 and is_ra(slots[0]) and is_base(slots[1]):
+        if zawcode and mark_summary(2)[1]:
+            return slots
+        return [slots[1], slots[0], *slots[2:]]
+    if len(slots) < 2 or slots[0] != '\u1031' or not is_base(slots[1]):
+        return slots
+    if zawcode:
+        seen_ra, seen_ya = mark_summary(2)
+        if seen_ra and seen_ya:
+            return slots
+
+    ya = 2 if len(slots) > 2 and is_ya(slots[2]) else -1
+    if ya < 0 and zawcode:
+        for i in range(2, min(8, len(slots))):
+            slot = slots[i]
+            if is_ya(slot):
+                ya = i
+                break
+            # Do not infer an order for a combined ra+ya cluster.
+            if any(c in ('\u1039', '\u103c') or not '\u102b' <= c <= '\u103e' for c in slot):
+                break
+    if ya >= 0:
+        # Keep a compound ya+wa/ha glyph together; preserve the other slots.
+        return [slots[1], slots[ya], slots[0], *slots[2:ya], *slots[ya + 1:]]
+    if zawcode:
+        end = 2
+        while end < len(slots) and re.fullmatch(r'[\u103d\u103e]+', slots[end]):
+            end += 1
+        if end > 2:
+            return [slots[1], *slots[2:end], slots[0], *slots[end:]]
+    return [slots[1], slots[0], *slots[2:]]
+
+
+def reorder_zawcode_text(text, *, layout="zawcode"):
+    """Apply the leading-slot rule per cluster, without cleanup or mark loss.
+
+    The text driver for :func:`reorder_legacy_slots`. It finds the preposed runs
+    (``ေ``+ra, ``ေ``+base+ya) and hands each cluster to the slot rule with the
+    page's own ``layout``.
+    """
+    if not isinstance(text, str):
+        raise TypeError('Expected text')
+    chars = list(text)
+    bases = legacy_bases()
+    out = []
+
+    def mark_span(start, limit):
+        end = start
+        seen_ra = seen_ya = False
+        while end < min(limit, len(chars)):
+            ch = chars[end]
+            if ch == '္' or not '\u102b' <= ch <= '\u103e':
+                break
+            seen_ra |= ch == 'ြ'
+            seen_ya |= ch == 'ျ'
+            end += 1
+        return end, seen_ra, seen_ya
+
+    i = 0
+    while i < len(chars):
+        has_e = chars[i] == 'ေ'
+        ra = i + 1 if has_e else i
+        if ra < len(chars) and chars[ra] == 'ြ':
+            base = ra + 1
+            while base < len(chars) and chars[base] in ('ွ', 'ှ'):
+                base += 1
+            if base < len(chars) and chars[base] in bases:
+                end, _, seen_ya = mark_span(base + 1, i + 8)
+                if seen_ya:
+                    out.extend(chars[i:end])
+                    i = end
+                    continue
+                medial = ''.join(chars[ra:base])
+                slots = ['ေ', medial, chars[base]] if has_e else [medial, chars[base]]
+                out.extend(reorder_legacy_slots(slots, layout=layout))
+                i = base + 1
+                continue
+        if has_e and i + 1 < len(chars) and chars[i + 1] in bases:
+            end, seen_ra, seen_ya = mark_span(i + 2, i + 8)
+            if seen_ra and seen_ya:
+                out.extend(chars[i:end])
+                i = end
+                continue
+            ya = -1
+            for j in range(i + 2, min(i + 8, len(chars))):
+                ch = chars[j]
+                if ch == 'ျ':
+                    ya = j
+                    break
+                if ch in ('္', 'ြ') or not '\u102b' <= ch <= '\u103e':
+                    break
+            end = i + 2
+            if ya >= 0:
+                end = ya + 1
+                while end < len(chars) and chars[end] in ('ွ', 'ှ'):
+                    end += 1
+                slots = [chars[i], chars[i + 1], *chars[i + 2:ya], ''.join(chars[ya:end])]
+            else:
+                while end < len(chars) and chars[end] in ('ွ', 'ှ'):
+                    end += 1
+                slots = chars[i:end]
+            out.extend(reorder_legacy_slots(slots, layout=layout))
+            i = end
+            continue
+        out.append(chars[i])
+        i += 1
+    return ''.join(out)
+
+
+def arrange_legacy_order(text, *, layout=None):
     """
     The legacy lane's beautify rule: visual order in, code-point order out.
 
@@ -178,12 +350,26 @@ def arrange_legacy_order(text):
     movement below is that rule's ancestor, left minimal here while the branch
     grew for ZawCode PDFs, and a legacy face can be encoded either way.
 
+    TWO CASES, chosen by the identified code page -- ``layout``:
+
+        None / 'zawcode'        THE ZAWCODE SWAP (``visual_order``) and then the
+                                regexes below: today's behaviour, byte for byte
+        'wininnwa' / 'ayar'     ``reorder_zawcode_text(text, layout=...)`` first --
+                                the plain slot case restored above -- then the
+                                same regexes
+
+    ``layout`` is the identified layout, not a lane opinion: it comes from the
+    face's name (``resources.font_names.legacy_layout_for_font``) or from the
+    settled family (``FontDecoder.settle_legacy_family``). With no layout the
+    rule keeps the ZawCode swap, which is what this function always did.
+
     Intentionally small and conservative: it mirrors the established Ayar ->
     Myanmar3 conversion -- move preposed \u103c/\u1031 after the base, move the
     \u1004\u103a\u1039 clusters into their Unicode order -- and preserves zero-width
     text.
     """
-    text = _zawcode_swap(text)
+    text = (reorder_zawcode_text(text, layout=layout)
+            if layout in ('wininnwa', 'ayar') else _zawcode_swap(text))
     # A combined kinzi/vowel glyph can precede medials in legacy order.
     text = re.sub(r"([က-အ])(င်္)([ိီံ])([ျြွှ]+)", r"\1\2\4\3", text)
     # ONE left-to-right pass for the preposed vowels. Two passes cannot work:

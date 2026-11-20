@@ -43,7 +43,7 @@ def decide(text, *, source, parsing_path='font-cmap', zawgyi_codepage=False,
     return judgement.select_page_decision(evidence, parsing_path, zawgyi_codepage), score
 
 
-def apply_decision(text, decision):
+def apply_decision(text, decision, *, legacy_layout=None):
     """Apply the lane's own beautify rule to the text the decode stage produced.
 
     One slot, one rule per lane: the ZawCode lane gets ``arrange_zawcode_order``,
@@ -62,7 +62,9 @@ def apply_decision(text, decision):
     if decision == 'zawcode':
         return arrange_zawcode_order(text)
     if decision == 'legacy':
-        return legacy_order.arrange_legacy_order(text)
+        # Two cases, chosen by the identified code page (see the rule's docstring):
+        # 'wininnwa'/'ayar' take the plain slot order, None/'zawcode' the swap.
+        return legacy_order.arrange_legacy_order(text, layout=legacy_layout)
     if decision == 'aligned':
         return text
     raise ValueError(f'Unknown Parser decision: {decision}')
@@ -243,7 +245,7 @@ def finalize_pdf_output(text, decision):
 
 
 def finish_pdf_page(text, *, parsing_path='font-cmap', zawgyi_codepage=False,
-                    source_encoding='auto'):
+                    source_encoding='auto', legacy_layout=None):
     """Finish a decoded PDF page using the JS PDF page decision and output steps.
 
     Source encoding selects the PDF instruction lane and suppresses a world
@@ -271,7 +273,7 @@ def finish_pdf_page(text, *, parsing_path='font-cmap', zawgyi_codepage=False,
         # "There is no legacy-specific reorder rule: extraction only decodes"), so
         # this is the parser leading the mirror; see B.Parser/AUDIT.md, "The
         # legacy ordering rule does not exist in either tree".
-        finished = '\n'.join(apply_decision(line, 'legacy')
+        finished = '\n'.join(apply_decision(line, 'legacy', legacy_layout=legacy_layout)
                              for line in text.split('\n'))
     else:
         finished = apply_decision(text, decision)
