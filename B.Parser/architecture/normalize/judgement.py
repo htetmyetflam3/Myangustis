@@ -178,6 +178,7 @@ def judge_page_lines(lines, swap_candidate) -> dict:
     candidate_changed = False
     candidate_aligned = True
     candidate_slots = 0
+    space_broken = 0
     count = 0
     raw_score_total = 0.0
     raw_marks = 0
@@ -197,6 +198,9 @@ def judge_page_lines(lines, swap_candidate) -> dict:
         original_has_text = original_has_text or bool(inspected.strip())
         has_myanmar = has_myanmar or contains_myanmar(inspected)
         aligned = aligned and mm_score.mark_order_aligned(inspected)
+        # Marks the separators took their base from. A spacing fault, carried
+        # as its own evidence: it must not travel as a ZawCode slot count.
+        space_broken += mm_score.space_broken_marks(inspected)
         candidate = swap_candidate(inspected)
         candidate_changed = candidate_changed or candidate != inspected
         if candidate != inspected:
@@ -227,6 +231,7 @@ def judge_page_lines(lines, swap_candidate) -> dict:
         "candidateChanged": candidate_changed,
         "candidateAligned": candidate_aligned,
         "candidateSlots": candidate_slots,
+        "spaceBroken": space_broken,
         "count": count,
         "rawScore": raw_score_total / raw_marks if raw_marks else 0,
         "candidateScore": candidate_score_total / candidate_marks if candidate_marks else 0,
@@ -251,22 +256,29 @@ ZAWCODE_MIN_SLOTS = 6
 def select_page_decision(judgment, parsing_path, zawgyi_codepage=False) -> str:
     """The lane call: ``legacy`` / ``zawcode`` / ``rabbit`` / ``aligned``.
 
-    1. ZawCode: the swapping rule is offered as a candidate in BOTH lanes, and
-       matching more than one slot (``ZAWCODE_MIN_SLOTS``) is the ZawCode
-       call. Never offered on a Zawgyi codepage page.
-    2. Mark order violated -> Rabbit. The mark-order rule alone makes this
-       call; no score margin second-guesses it.
-    3. Neither -> aligned (nothing but the Normalize behind every finish).
+    1. Aligned: the reading already follows Unicode mark order, so it passes
+       through -- nothing but the Normalize behind every finish. Alignment is
+       measured on the reading as emitted (``mark_order_aligned``), and an
+       aligned reading is no rule's business: no swap is offered against it
+       and no conversion overrides it.
+    2. Not aligned -> the two visual-order readings are consulted, and only
+       now can either claim the page. ZawCode: the swapping rule matches more
+       than one slot (``ZAWCODE_MIN_SLOTS``); never on a Zawgyi codepage page,
+       never on a reading whose marks a space took the base from. Otherwise
+       Rabbit: the mark-order rule alone makes that call; no score margin
+       second-guesses it.
+    3. A page with no Myanmar is not consulted at all.
     """
     if not judgment["hasMyanmar"]:
         return "legacy" if parsing_path == PDF_PARSING_PATHS["LEGACY"] else "aligned"
-    if not zawgyi_codepage and judgment["candidateSlots"] >= ZAWCODE_MIN_SLOTS:
-        return "zawcode"
+    if judgment["aligned"]:
+        return "aligned"
     if parsing_path == PDF_PARSING_PATHS["LEGACY"]:
         return "legacy"
-    if not judgment["aligned"]:
-        return "rabbit"
-    return "aligned"
+    if (not zawgyi_codepage and not judgment.get("spaceBroken")
+            and judgment["candidateSlots"] >= ZAWCODE_MIN_SLOTS):
+        return "zawcode"
+    return "rabbit"
 
 
 def _font_field(font, *names):

@@ -33,7 +33,6 @@ from myangustis_parser.entry import limits  # noqa: E402
 from myangustis_parser.output import markup  # noqa: E402
 from myangustis_parser.normalize import mm_score  # noqa: E402
 from myangustis_parser.workflow import pipeline  # noqa: E402
-from myangustis_parser.normalize import unicode_evidence  # noqa: E402
 
 
 def _judge_evidence(slots: int):
@@ -170,17 +169,6 @@ def main() -> int:
     check("only unicode fonts", font_names.has_only_unicode_fonts(["Padauk", "Myanmar3"]))
     check("mixed fonts are not only-unicode",
           not font_names.has_only_unicode_fonts(["Padauk", "WinInnwa"]))
-
-    # ── regional runs ────────────────────────────────────────────────────
-    mon = "\u1000\u1050\u1031"
-    check("regional run untouched",
-          unicode_evidence.preserve_regional_runs(mon, lambda t: t[::-1]) == mon)
-    check("other spans transformed",
-          unicode_evidence.preserve_regional_runs("ab\u1000\u102c " + mon,
-                                                  lambda t: t[::-1])
-          == " \u102c\u1000ba" + mon)
-    check("no regional -> straight transform",
-          unicode_evidence.preserve_regional_runs("abc", lambda t: t.upper()) == "ABC")
 
     # ── markup: writer half ──────────────────────────────────────────────
     lines = [

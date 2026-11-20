@@ -46,6 +46,7 @@ __all__ = [
     "is_index", "is_mark", "is_myanmar", "is_unicode_base",
     "orphan_mark_rate", "duplicate_mark_rate", "order_violation_rate",
     "myanmar_ratio", "score_text", "mark_order_aligned",
+    "space_broken_marks",
 ]
 
 # The dependent marks: signs that cannot stand without a base in front of
@@ -254,30 +255,56 @@ def score_text(text):
     }
 
 
-def mark_order_aligned(text):
-    """True when ``text`` already follows Unicode 16's Burmese mark order.
+def _walk_mark_runs(text):
+    """One pass over ``text``: order *inside* a run, and marks that start one.
 
-    The evidence walker `judgement` asks before it calls the Rabbit lane: a
-    page whose marks are already in a possible order is not a crossed page.
-    Space separators break the syllable; asat keeps the previous position
-    because NFC can place it after the dot below.
+    A space or newline ENDS the mark run (see ``MARKS`` above) -- it is not a
+    gap the walker looks through. That distinction is the whole point of this
+    walker:
+
+    * a mark whose run has a base, out of order -> the reading is crossed,
+      ``aligned`` is False (the Rabbit call);
+    * a mark sitting where a run starts has been separated from its base by
+      the separator itself -> a spacing fault, counted in ``stranded``, and
+      it says nothing about mark order. Skipping the separator instead read
+      `တ ွေ` as `တွေ`, called the line aligned, and let a page of correctly
+      ordered Unicode text be counted as ZawCode slot evidence.
+
+    Asat keeps the previous position because NFC can place it after the dot
+    below. Returns ``(aligned, stranded)``.
     """
     attached = False
     preceding_marks = False
+    stranded_run = False
     previous = -1
+    run_start = True
+    stranded = 0
     import unicodedata
     for ch in str(text if text is not None else ""):
-        if ch == " " or unicodedata.category(ch) == "Zs":
+        if ch == " " or ch == "\n" or unicodedata.category(ch) == "Zs":
+            attached = False
+            preceding_marks = False
+            stranded_run = False
+            previous = -1
+            run_start = True
             continue
         if is_unicode_base(ch):
             if not attached and preceding_marks:
-                return False
+                return False, stranded
             attached = True
             preceding_marks = False
+            stranded_run = False
             previous = -1
+            run_start = False
             continue
         if ch == ASAT or ch in UNICODE_MARK_ORDER:
             if not attached:
+                if run_start or stranded_run:
+                    # The run began with this mark: the space took its base.
+                    stranded_run = True
+                    run_start = False
+                    stranded += 1
+                    continue
                 preceding_marks = True
                 continue
             if ch == ASAT:
@@ -286,10 +313,32 @@ def mark_order_aligned(text):
                 continue
             priority = UNICODE_MARK_ORDER[ch]
             if priority < previous:
-                return False
+                return False, stranded
             previous = priority
             continue
         attached = False
         preceding_marks = False
+        stranded_run = False
         previous = -1
-    return True
+        run_start = False
+    return True, stranded
+
+
+def mark_order_aligned(text):
+    """True when ``text`` already follows Unicode 16's Burmese mark order.
+
+    The evidence walker `judgement` asks before it calls the Rabbit lane: a
+    page whose marks are already in a possible order is not a crossed page.
+    Space and newline end the syllable; asat keeps the previous position
+    because NFC can place it after the dot below.
+    """
+    return _walk_mark_runs(text)[0]
+
+
+def space_broken_marks(text):
+    """How many marks lost their base to a space in front of them.
+
+    A separated mark is not a mark-order violation -- it is a spacing fault,
+    and the lane call must not read it as a swap signature.
+    """
+    return _walk_mark_runs(text)[1]

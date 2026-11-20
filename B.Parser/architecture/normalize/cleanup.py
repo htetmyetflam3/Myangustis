@@ -19,6 +19,7 @@ The functions only touch characters in their defined sets; everything else
 passes through.
 """
 
+import re
 import unicodedata
 from functools import lru_cache
 
@@ -75,6 +76,8 @@ def _is_index(ch: str) -> bool:
     return (0x1000 <= cp <= 0x1021 or 0x1023 <= cp <= 0x1027
             or cp in (0x1029, 0x102a, 0x103f, 0x104e))
 
+
+_ENGINE_BASES = frozenset(chr(c) for c in list(range(0x1000, 0x1022)) + [0x1025, 0x1027])
 
 _PREBASE = frozenset("ေြ")
 _MEDIALS = frozenset("ျြွှ")
@@ -341,3 +344,61 @@ def cleanup_text(t: str) -> str:
     place in the run.
     """
     return drop_impossible_marks(reorder_marks(clean_imposters(normalize_text(t))))
+
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# PHASE 2 -- the Engine's ``normalize``, copied, and used for every lane.
+#
+# The Engine's ``normalize`` is NFC -> glue strip -> cleanImposters, then its
+# mark run sorted by ``Priority`` (no braces, no ``mapperStr``), then the spaces
+# in front of a detached ``base + asat`` head removed. This is that function
+# with the same table and the same base test, so the parser's phase 2 and the
+# Engine's own reading see the same characters. It is here, in clean, because
+# clean owns these characters; the Engine's copy serves the Engine.
+# ══════════════════════════════════════════════════════════════════════════
+def normalize_phase2(t: str) -> str:
+    """PHASE 2, for every lane: the Engine's ``normalize``.
+
+    pass 1  NFC, glue strip, imposters, then the mark run collected exactly as
+            ``reorderAndWrap`` collects it -- every character in ``Priority``,
+            the space included (``' '`` is 17), a repeat in a run dropped -- and
+            sorted by that priority, so the marks come back behind their base
+            (``စ ီး`` -> ``စီး``, ``တ ိုင ်း`` -> ``တို င်း``)
+    pass 2  the spaces in front of a detached ``base + asat [U+1038 | U+1037]``
+            head removed -- that pattern only, so a space in front of a head
+            without asat (``န`` + ``ို``) is left as pass 1 left it
+
+    No pre-base movement and no syllable-inventory lookup: re-attaching a ``ေ``
+    is a lane's repair, and this phase is the follow-up every lane gets after
+    its own stage 1.1. Mark order and spaces only; every other character
+    survives, which is what the run over ``IMB Final.pdf`` measures.
+    """
+    if not t or not isinstance(t, str):
+        return ""
+    text = clean_imposters(normalize_text(t))
+    priority = _master_data()["Priority"]
+    bases = _ENGINE_BASES
+    out, i, n = [], 0, len(text)
+    while i < n and text[i] in " \t":
+        out.append(text[i])
+        i += 1
+    while i < n:
+        ch = text[i]
+        if ch in bases:
+            out.append(ch)
+            i += 1
+            marks, seen = [], set()
+            while i < n and text[i] not in bases and text[i] in priority:
+                p = priority[text[i]]
+                if p not in seen:
+                    seen.add(p)
+                    marks.append(text[i])
+                i += 1
+            out.extend(sorted(marks, key=lambda c: priority[c]))
+            continue
+        out.append(ch)
+        i += 1
+    return re.sub(r"(?<=[\u1000-\u1021\u1025\u1027\u102b-\u103e]) +"
+                  r"(?=[\u1000-\u1021\u1025\u1027]\u103a[\u1037\u1038]?)",
+                  "", "".join(out))

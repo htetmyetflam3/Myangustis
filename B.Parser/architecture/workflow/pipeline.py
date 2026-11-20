@@ -52,7 +52,6 @@ from myangustis_parser.extract.pdf_extract import (
 from myangustis_parser.output.render import _write_docx_layout, _write_pdf, write_docx_markup
 from myangustis_parser.resources.font_names import has_only_unicode_fonts, legacy_font_family, legacy_layout_for_font
 from myangustis_parser.output import markup
-from myangustis_parser.normalize.unicode_evidence import preserve_regional_runs
 from myangustis_parser.workflow import finish, diagnostics
 from myangustis_parser.workflow.lane_log import LaneLog
 
@@ -412,9 +411,7 @@ def _convert_line(t, cat):
     if cat == "ZAWGYI":
         return order_text(Rabbit.zg2uni(t))     # ordered, never imposter-fixed
     if cat == "UNICODE":
-        # Regional (Mon/extended) runs keep their marks: ordering and cleanup
-        # are Burmese-only rules and must not rewrite them.
-        return preserve_regional_runs(t, cleanup_text)
+        return finish.clean_page(t)
     return order_text(t)
 
 
@@ -748,8 +745,9 @@ def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: Non
             scan_result = finish.scan.scan_text(base)
         elif cat == 'UNICODE' and source_encoding == 'auto' and has_only_unicode_fonts(fonts):
             # A direct known Unicode face keeps the stored base text; JS's
-            # cleanup follow-up does not perform pre-base mark movement.
-            base, clean, decision = chunk, preserve_regional_runs(chunk, cleanup_text), 'aligned'
+            # cleanup follow-up does not perform pre-base mark movement. Same
+            # phase 2 call the PDF finish makes -- one name, one step.
+            base, clean, decision = chunk, finish.clean_page(chunk), 'aligned'
             scan_result = finish.scan.scan_text(clean)
         else:
             # The pinned JS currently throws ReferenceError in these two
@@ -821,7 +819,7 @@ def build_final_pages(job):
                 # PDF base lines have already passed the one output ordering.
                 # Legacy pages must not receive Unicode cleanup at all.
                 transform = ((lambda value: value) if rep.get('decision') == 'legacy'
-                             else lambda value: preserve_regional_runs(value, cleanup_text))
+                             else finish.clean_page)
             else:
                 transform = finish.clean
             lines = [(line[0], line[1], line[2], transform(line[3]),

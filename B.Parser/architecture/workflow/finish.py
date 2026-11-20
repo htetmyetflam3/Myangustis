@@ -11,11 +11,14 @@ import re
 
 from myangustis_parser.normalize import judgement, mm_score, scan
 from myangustis_parser.normalize.detector import contains_myanmar
-from myangustis_parser.normalize.beautify import arrange_zawcode_order
-from myangustis_parser.normalize.cleanup import cleanup_text, order_text
+from myangustis_parser.normalize.beautify import arrange_zawcode_order, zawcode_slot_candidate
+# PHASE 2's normalizer lives with the cleanup it belongs to: clean.cleanup's
+# ``normalize_phase2`` -- the Engine's ``normalizeText`` copied there. It is not
+# imported from the Engine, so the Engine keeps one owner of its own characters
+# and this phase keeps one owner of its own.
+from myangustis_parser.normalize.cleanup import cleanup_text, normalize_phase2, order_text
 from myangustis_parser.normalize import legacy_ascii, legacy_order
 from myangustis_parser.normalize.rabbit import Rabbit
-from myangustis_parser.normalize.unicode_evidence import preserve_regional_runs
 
 
 def decide(text, *, source, parsing_path='font-cmap', zawgyi_codepage=False,
@@ -35,7 +38,7 @@ def decide(text, *, source, parsing_path='font-cmap', zawgyi_codepage=False,
         return 'rabbit', score
     if already_zawcode:
         return 'aligned', score  # font-scoped draft was ordered during extraction
-    swap = (lambda value: value) if zawgyi_codepage else arrange_zawcode_order
+    swap = (lambda value: value) if zawgyi_codepage else zawcode_slot_candidate
     evidence = judgement.judge_page_lines(text.split('\n'), swap)
     return judgement.select_page_decision(evidence, parsing_path, zawgyi_codepage), score
 
@@ -47,10 +50,10 @@ def apply_decision(text, decision):
     the legacy lane gets ``legacy_order.arrange_legacy_order`` (a legacy page's
     visual order is a code-page fact, issued by the stem parser's instruction,
     never a font name), the Rabbit lane gets the conversion. ``aligned`` has no
-    rule of its own and takes the shared ordering at the finish like every other
-    page. Legacy ASCII slots are repaired where the page's runs are joined, not
-    here: this stage orders and cleans, and it must not carry a second pass that
-    only one lane can see.
+    rule of its own and no follow-up either: an aligned reading ships as
+    decoded. Legacy ASCII slots are repaired where the page's runs are joined,
+    not here: this stage orders and cleans, and it must not carry a second pass
+    that only one lane can see.
     """
     if decision == 'ocr':
         return text
@@ -76,12 +79,7 @@ def ordered(text):
     its cleanup half. The JS flag is recorded in ``B.Parser/AUDIT.md`` as the
     mirror's own thing to delete.
     """
-    # Preserve regional-script runs just as the Parser's Unicode lane does --
-    # ``@rule/unicode-evidence.js`` at PDF position 26, and the JS legacy lane
-    # calls the same wrapped helper (``finishPageToFile`` writes
-    # ``orderUnicodeText(text)`` per line), so the protection is the oracle's own
-    # step and not a Python-side addition. See AUDIT.md, "the regional wrapper".
-    return preserve_regional_runs(text, order_text)
+    return order_text(text)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -168,9 +166,39 @@ def ordered(text):
 # with the JS chain, and it leaves the next reader unable to tell which of the
 # two the text went through.
 # ══════════════════════════════════════════════════════════════════════════
+def clean_page(text):
+    """PHASE 2 -- ``clean.py``'s cleanup half, and nothing else.
+
+    The normalizer is ``clean.normalize_phase2``, the copy of the Engine's
+    ``normalizeText``: the Engine's ``normalize`` -- NFC -> glue strip ->
+    cleanImposters -- then ``reorderAndWrap``'s middle step only, the mark run
+    sorted by ``Priority``, then the spaces in front of a detached
+    ``base + asat`` head removed. The mapper's wrapping and ``mapperStr`` are
+    not part of it. ``mapperNormalize``
+    itself is ``mapperStr(reorderAndWrap(normalize(t)))`` and is never written
+    back -- that is the Engine's reading input. It carries no pre-base movement
+    -- ``pipeline.py:750`` says so in as many words ("JS's cleanup follow-up
+    does not perform pre-base mark movement") -- because moving a pre-base mark
+    is a lane's repair, and this phase is the follow-up every lane gets after
+    its own stage 1.1, not a repair of its own.
+
+    Two passes, in this order and no others, both in ``clean.normalize_phase2``:
+
+        pass 1  normalize, then the mark run sorted by ``Priority``
+        pass 2  spaces in front of a detached ``base + asat [U+1038 | U+1037]``
+                head removed -- that pattern only
+
+    This is the phase that used to run ``order_text`` instead, which is how a
+    page with no rule applied still had characters moved: ``order_text`` ends in
+    ``move_prebase_marks``, a per-cluster rewrite that consults the syllable
+    inventory and re-attaches a `ေ` to a consonant it never belonged to.
+    """
+    return normalize_phase2(text)
+
+
 def clean(text):
-    """The gate: normalize, then imposter cleanup. Always both, for every page."""
-    return preserve_regional_runs(ordered(text), cleanup_text)
+    """Both halves, for the callers that ask for the ordered reading as well."""
+    return cleanup_text(ordered(text))
 
 
 def finish_text(text, *, source, parsing_path='font-cmap', zawgyi_codepage=False,
@@ -180,11 +208,11 @@ def finish_text(text, *, source, parsing_path='font-cmap', zawgyi_codepage=False
                              zawgyi_codepage=zawgyi_codepage,
                              already_zawcode=already_zawcode, source_encoding=source_encoding)
     converted = apply_decision(text, decision)
-    base = ordered(converted)
-    # Which lanes the cleanup half applies to is a category rule, JS's
-    # ``cleanupFor`` -- not a caller's choice, and a legacy page is JS's one lane
-    # that keeps the shared ordering only.
-    cleaned = base if decision == 'legacy' else clean(converted)
+    # Same chain as the PDF finish: stage 1.1's result is `base`, phase 2 is
+    # `clean`. A legacy page takes the follow-up too -- it is cleanup, not an
+    # ordering rule, so no lane is exempt from it and no lane gets more.
+    base = converted
+    cleaned = clean_page(converted)
     return {'decision': decision, 'score': score, 'base': base,
             'clean': cleaned, 'scan': scan.scan_text(cleaned)}
 
@@ -203,7 +231,10 @@ def finalized_output(text, decision):
     """
     if decision not in FINALIZED_OUTPUT_DECISIONS:
         return text, text
-    return ordered(text), clean(text)
+    # PHASE 2 for every lane, aligned included: clean.py's cleanup half is the
+    # follow-up each lane gets, and it is not a rule. `base` is the page exactly
+    # as phase 1 left it -- stage 1.1's rule applied, or nothing for aligned.
+    return text, clean_page(text)
 
 
 def finalize_pdf_output(text, decision):
@@ -222,17 +253,25 @@ def finish_pdf_page(text, *, parsing_path='font-cmap', zawgyi_codepage=False,
         raise ValueError('Unknown parsing path')
     if source_encoding not in ('auto', 'unicode', 'zawgyi-one'):
         raise ValueError('Unknown source encoding')
-    swap = (lambda value: value) if zawgyi_codepage else arrange_zawcode_order
+    # PHASE 1 -- parsing. The decode already happened upstream; stage 1 is the
+    # text it produced. Everything below is stage 1.1: decide the lane, then
+    # apply that lane's rule. An aligned reading passes through with no rule;
+    # only an unaligned one is asked whether it is ZawCode or Rabbit.
+    swap = (lambda value: value) if zawgyi_codepage else zawcode_slot_candidate
     evidence = judgement.judge_page_lines(text.split('\n'), swap)
     decision = judgement.select_page_decision(evidence, parsing_path, zawgyi_codepage)
-    if decision == 'legacy':
-        # The lane's own rule first, then the one shared ordering every lane gets
-        # at the page finish -- the position the chain reserves for it. JS's legacy
+    if decision == 'aligned':
+        # Stage 1.1, aligned branch: nothing is applied. No swap, no Rabbit, no
+        # ordering. Phase 2 is the only thing this page still meets.
+        finished = text
+    elif decision == 'legacy':
+        # Stage 1.1, legacy branch: the legacy lane's own rule, per line. Phase 2
+        # then gives it the same cleanup follow-up every lane gets. JS's legacy
         # branch runs the shared ordering alone (``@core/runtime/finalized-cmap.js``:
         # "There is no legacy-specific reorder rule: extraction only decodes"), so
-        # this half-step is the parser leading the mirror; see B.Parser/AUDIT.md,
-        # "The legacy ordering rule does not exist in either tree".
-        finished = '\n'.join(ordered(apply_decision(line, 'legacy'))
+        # this is the parser leading the mirror; see B.Parser/AUDIT.md, "The
+        # legacy ordering rule does not exist in either tree".
+        finished = '\n'.join(apply_decision(line, 'legacy')
                              for line in text.split('\n'))
     else:
         finished = apply_decision(text, decision)

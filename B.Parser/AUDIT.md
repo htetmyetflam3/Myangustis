@@ -103,7 +103,7 @@ Legend: **T** = selected cases compared with pinned JS; **P** = Python counterpa
 | JS file | Python counterpart / finding | Status |
 |---|---|---|
 | `@postprocess/beautify/beautify.js` | No equivalent token repair/beautification in the Python conversion path; not called by JS `convert`. | N |
-| `@postprocess/beautify/clean.js` | `normalize/cleanup.py`, `normalize/unicode_evidence.py`; selected PDF finishing comparisons. | T/P |
+| `@postprocess/beautify/clean.js` | `normalize/cleanup.py`; selected PDF finishing comparisons. | T/P |
 | `@postprocess/beautify/zawcode-order.js` | `normalize/beautify.py`; selected page-decision/order behavior compared; JS repair APIs not ported. | T/P |
 | `@postprocess/bind-engine.js` | `normalize/pos_scan.py` binds Python Engine in-process, not JS stream bridge; interface differs. | P |
 | `@postprocess/init.js` | `normalize/scan.py`, `normalize/pos_scan.py`; selected structural/POS behavior, not comprehensive equivalence. | P |
@@ -119,7 +119,7 @@ Legend: **T** = selected cases compared with pinned JS; **P** = Python counterpa
 | `@rule/judgement.js` | `normalize/judgement.py`; selected instruction and page decisions compared. | T/P |
 | `@rule/mm-score.js` | `normalize/mm_score.py`; used by finishing; not exhaustively verified. | P |
 | `@rule/rabbit.js` | `normalize/rabbit.py`; used by differential finishes, not all strings checked. | T/P |
-| `@rule/unicode-evidence.js` | `normalize/unicode_evidence.py`; selected finishing comparisons, not all regional scripts. A Python-side deletion was tried and reverted — see *"The regional wrapper"*. | T/P |
+| `@rule/unicode-evidence.js` | **no Python counterpart** — deleted on request, 2026-11-20; see *"The regional wrapper"*. | — |
 
 ## Python-only surface and cross-checks
 
@@ -163,7 +163,7 @@ These are the 47 Python files under `architecture/`; each is mapped individually
 | `normalize/pos_scan.py` | Parts of `@postprocess/init.js` and Engine binding; Python Engine API differs. |
 | `normalize/rabbit.py` | `@rule/rabbit.js`, in memory rather than JS streaming. |
 | `normalize/scan.py` | Structural scanning in `@postprocess/init.js`. |
-| `normalize/unicode_evidence.py` | `@rule/unicode-evidence.js`. Kept, though the shield is upstream's to settle — see *"The regional wrapper"*. |
+| *(deleted)* `normalize/unicode_evidence.py` | was `@rule/unicode-evidence.js`. Removed 2026-11-20 — see *"The regional wrapper"*. |
 | `output/__init__.py` | Package wiring. |
 | `output/fonts.py` | `@output/helper/output-fonts.js`; separate writer/font library. |
 | `output/markup.py` | `@core/runtime/markup.js`, `@output/helper/markup.js`. |
@@ -608,48 +608,33 @@ instruction, not an oversight:
 | `@core/pdf/legacy-judgement.js`, `@core/runtime/finish.js:58` | `orderText(...)` called directly, no flag | nothing — this is already the design |
 | job payloads on either door | `applyCleanup` is a key nothing reads: `interop.run_job` picks its options by name and never looks at it | delete the key wherever a caller still sends it |
 
-### The regional wrapper: measured, deleted, put back — the drift is upstream
+### The regional wrapper: deleted on request
 
-`preserve_regional_runs` (`normalize/unicode_evidence.py`) was reported as a
-Python-side invention, so the deletion was carried out: the module removed, its
-five call sites (`workflow/finish.py` `ordered`/`clean`, `workflow/pipeline.py`
-`_convert_line`, the DOCX Unicode branch, the PDF line transform in
-`build_final_pages`) unwrapped, and the three `test_mirror.py` checks dropped.
-Measured before landing it:
+`normalize/unicode_evidence.py` and `preserve_regional_runs` are **gone**
+(2026-11-20, by instruction). Removed with them: the import and the three calls in
+`workflow/finish.py` (`ordered`, `clean`, `clean_page` — now bare
+`order_text`/`cleanup_text(ordered(text))`/`normalize_phase2`), the import in
+`workflow/pipeline.py`, and the three `test_mirror.py` checks. Ordering and
+cleanup now run on **every** code point, Mon and extended ranges included.
+
+What that costs, measured before it was dropped the first time:
 
 ```
-ENGINE   normalize('ကမၻာ')            -> 'ကမ္ဘာ'   (imposter replaced, no shield)
-ENGINE   reorderAndWrap(normalize(x)) == normalize(x)  for a real Mon line
-JS       convertFinalizedPageText('ကမၻာ', page, true) -> 'ကမၻာ'   (the shield holds)
-PARITY   139 of 310 samples contain a REGIONAL-range code point; the wrapper
-         changes the result for all 139  ->  deleting it in Python alone moves
-         45% of test_pdf_finish_js_parity, and that file is the oracle.
+ENGINE   normalize('ကမၻာ')  -> imposter table applies, no shield
+JS       convertFinalizedPageText('ကမၻာ', page, true) -> unchanged (the shield holds)
+PARITY   139 of 310 samples carry a REGIONAL-range code point; the wrapper changed
+         the result for all 139 — i.e. ~45% of test_pdf_finish_js_parity
 ```
 
-So the wrapper is not a Python addition: `@rule/unicode-evidence.js` is PDF
-position 26 of the chain, and the JS **legacy** lane runs it too
-(`finishPageToFile` writes `orderUnicodeText(text)` per line), while Python's
-`_convert_line` already matches `convertLine` raw-for-raw on the other lanes. The
-code is unchanged; the deletion is reverted.
+On `IMB Final.pdf` nothing changes: 0 of its 339 decoded lines contain a
+REGIONAL-range code point, so the shipped TXT is byte-identical either way.
 
-What the experiment did prove is that a real conflict sits under it, and **that**
-is the note for the main branch:
-
-1. The Engine applies its `IMPOSTER` table with no regional shield, so
-   `ကမၻာ` (U+107B, in the range the shield protects) becomes `ကမ္ဘာ` there.
-   The JS parser's shield blocks the same repair. Two layers of one design
-   disagree, and which is right is a data question about the table, not a
-   per-lane knob.
-2. The shield's granularity is a whole Myanmar run: one code point 40 positions
-   away switches ordering off for everything around it (6.7% of corpus lines,
-   2,976 of 44,658). No mark's fate should depend on that.
-
-Fix upstream: narrow the `IMPOSTER` keys that collide with Mon/extended code
-points, and let the shield go with them — then `unicode-evidence.js`, its two
-`finalized-cmap.js` helpers, and Python's `preserve_regional_runs` all disappear
-in one change, on both sides, with the parity samples rewritten by the same
-commit. Until that lands in `python`, Python keeps calling the wrapper: deleting
-it here only moves the mirror without settling the table.
+The upstream conflict the experiment found is still open and is the note for
+`python`: the Engine applies its `IMPOSTER` table with no shield, so a Mon or
+extended code point that collides with a table key is rewritten there, while the
+JS parser's shield blocks the same repair. Narrowing those `IMPOSTER` keys is
+where this belongs; until then Python and the JS oracle disagree on such text by
+design, not by accident.
 
 ## The legacy ordering rule: implemented in Python, still missing from the mirror
 
