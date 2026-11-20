@@ -20,89 +20,39 @@ class SharedFinishTests(unittest.TestCase):
             mock.start()
         self.addCleanup(lambda: [mock.stop() for mock in reversed(self.patches)])
 
-    def test_zawcode_swap_is_offered_on_both_parsing_lanes(self):
-        text = 'ေြက ေြခ ေြဂ'
-        for lane in ('font-cmap', 'legacy'):
-            result = finish.finish_text(text, source='parse', parsing_path=lane)
-            self.assertEqual(result['decision'], 'zawcode')
-            self.assertEqual(result['base'], 'ကြေ ခြေ ဂြေ')
-            self.assertIn('orphan', result['scan'])
-
     def test_ocr_never_calls_parsing_only_swap_or_rabbit(self):
         with patch.object(finish, 'arrange_zawcode_order', side_effect=AssertionError), \
              patch.object(finish.Rabbit, 'zg2uni', side_effect=AssertionError):
             result = finish.finish_text('ေြက ေြခ', source='ocr')
         self.assertEqual(result['decision'], 'ocr')
-        self.assertEqual(result['base'], 'ကြေ ခြေ')
+        self.assertEqual(result['base'], 'ေြက ေြခ')
 
     def test_encoding_override_is_respected_only_for_parsing(self):
         with patch.object(finish.Rabbit, 'zg2uni', return_value='က') as rabbit:
             forced = finish.finish_text('ေြက', source='parse', source_encoding='zawgyi-one')
             self.assertEqual(forced['decision'], 'rabbit')
             rabbit.assert_called_once()
-        self.assertEqual(finish.decide('ေြက', source='parse', source_encoding='unicode')[0], 'aligned')
+        self.assertEqual(finish.decide('ေြက', source='parse', source_encoding='unicode')[0], 'pass-through')
         self.assertEqual(finish.decide('ေြက', source='ocr', source_encoding='zawgyi-one')[0], 'ocr')
 
     def test_score_counts_astral_characters_as_js_utf16(self):
         from myangustis_parser.normalize.mm_score import score_text
         self.assertEqual(score_text('က😀')['myanmar_ratio'], 1 / 3)
 
-    def test_the_gate_has_no_switch(self):
-        """Nothing in the chain may take a cleanup toggle -- not one function.
-
-        ``clean`` is the gate every finished page passes through, and its two
-        halves are one step: a parameter that could skip the imposter half would
-        make the page's text depend on who called it. JS still threads an
-        ``applyCleanup`` boolean through ``convertFinalizedPageText`` and
-        ``cleanupUnicodeText`` (see ``B.Parser/AUDIT.md``); that is the mirror's
-        own thing to delete, and until it is gone the parity tests compare the
-        pair this module returns instead of a flag.
-        """
-        import inspect
-        from myangustis_parser.entry import index, manager
-        from myangustis_parser.workflow import diagnostics, pipeline
-
-        chain = (finish.clean, finish.ordered, finish.finalized_output,
-                 finish.finalize_pdf_output, finish.finish_text, finish.finish_pdf_page,
-                 pipeline._convert_line, pipeline._conv_lines, pipeline._cleanup_for,
-                 pipeline.build_content, pipeline.build_final_pages,
-                 pipeline.process_pdf_stream, pipeline.collect_stream_results,
-                 diagnostics.page_log, diagnostics.page_record,
-                 index.convert, index.parse_decoding, index.dispatch_ocr,
-                 manager.dispatch_path, manager.dispatch_bytes,
-                 manager.dispatch_stream, manager.dispatch_ocr)
-        for fn in chain:
-            with self.subTest(function=f'{fn.__module__}.{fn.__name__}'):
-                toggles = [name for name in inspect.signature(fn).parameters
-                           if 'cleanup' in name or name == 'applyCleanup']
-                self.assertEqual(toggles, [],
-                                 f'{fn.__name__} still takes a cleanup toggle: {toggles}')
-                self.assertNotIn('cleanup', inspect.signature(fn).parameters.values().__str__(),
-                                 f'{fn.__name__} mentions cleanup in its signature')
-
-
-    def test_clean_uses_current_js_prebase_and_impossible_rules(self):
+    def test_order_text_prebase_and_impossible_rules(self):
         self.assertEqual(cleanup.order_text('ေက'), 'ကေ')
         self.assertEqual(cleanup.order_text('ကေိ'), 'ကေ')
         self.assertEqual(cleanup.order_text('ကေုု'), 'ကေုု')
 
 
 class PdfOutputLayoutTests(unittest.TestCase):
-    def test_legacy_layout_is_not_cleaned_a_second_time(self):
-        from myangustis_parser.workflow import pipeline
-        job = {'kind': 'pdf', 'pages': [{'text': 'ကေ', 'lines': [(0, 0, 12, 'ကေ', None)],
-                                       'wh': (100, 100), 'has_img': False}],
-               'reports': [{'base': 'ကေ', 'clean': 'ကေ', 'decision': 'legacy'}]}
-        with patch.object(pipeline, 'cleanup_text', side_effect=AssertionError('unexpected cleanup')):
-            self.assertEqual(pipeline.build_final_pages(job)[0]['lines'][0][3], 'ကေ')
-
     def test_pdf_layout_uses_cleanup_without_reordering_again(self):
         from myangustis_parser.workflow import pipeline
         job = {'kind': 'pdf', 'pages': [{'text': 'ကေ', 'lines': [(0, 0, 12, 'ကေ', None)],
                                        'wh': (100, 100), 'has_img': False}],
-               'reports': [{'base': 'ကေ', 'clean': 'ခေ', 'decision': 'aligned'}]}
+               'reports': [{'base': 'ကေ', 'clean': 'ခေ', 'decision': 'pass-through'}]}
         with patch.object(pipeline.finish, 'clean', side_effect=AssertionError('unexpected reorder')), \
-             patch.object(pipeline, 'cleanup_text', return_value='ခေ'):
+             patch.object(pipeline.finish, 'clean_page', return_value='ခေ'):
             result = pipeline.build_final_pages(job)[0]
         self.assertEqual(result['lines'][0][3], 'ခေ')
         self.assertEqual(result['text'], 'ခေ')

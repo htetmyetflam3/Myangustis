@@ -9,7 +9,7 @@ counter blocks (``extraction``/``layout``/``finished``/``base``/``clean``/
 ``stream_output``) at the same level, so a page that produced **zero**
 characters looked exactly as loud as a page that produced a page of text;
 85 pages wrote 97 console lines and ~240 KB, and the file said
-``decision: aligned category: UNKNOWN`` for a blank page. Finding out what
+``decision: pass-through category: UNKNOWN`` for a blank page. Finding out what
 went wrong still meant copying the PDF out of the collection and re-running
 it by hand, which is the cost this module exists to remove.
 
@@ -369,6 +369,17 @@ def page_log(tracker, page, pg, result, output):
     record = page_record({'book': lane_log.book, 'page': page}, pg, result, output)
     fonts = _fonts(pg)
     report.page(record, fonts)
+    extraction = pg.get('diagnostics') or {}
+    for ledger in extraction.get('codepage_events', ()):
+        # Probe ledgers are emitted only to the opt-in file sink. They contain
+        # candidate metrics and page counts, never decoded sample strings.
+        lane_log.file_event('codepage', {
+            'book': lane_log.book, 'page': page,
+            'resource': ledger.get('resource'),
+            'base_font': ledger.get('base_font'),
+            'font_program_sha256': ledger.get('font_program_sha256'),
+            'ledger': ledger.get('ledger', {}),
+        })
     if verbose_enabled():
         lane_log.file_event('page', _verbose_page(record, pg, result, output))
     else:

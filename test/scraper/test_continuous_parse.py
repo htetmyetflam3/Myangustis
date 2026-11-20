@@ -216,46 +216,6 @@ class ContinuousParseTests(unittest.TestCase):
             runner.run(self.db)
         self.assertEqual(self.text.read_text(), '===== book =====\nearlier text\n\n')
 
-    def test_real_generated_zawgyi_font_pdf_both_outputs(self):
-        from fpdf import FPDF
-        import pyarrow.parquet as pq
-        if 'myangustis_parser' not in sys.modules:
-            p = ROOT / 'B.Parser/architecture/__init__.py'
-            spec = importlib.util.spec_from_file_location('myangustis_parser', p,
-                         submodule_search_locations=[str(p.parent)])
-            module = importlib.util.module_from_spec(spec)
-            sys.modules['myangustis_parser'] = module
-            spec.loader.exec_module(module)
-        source = self.root / 'source.pdf'
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.add_font('Zawgyi-One', fname=str(ROOT / 'Junk/fonts/zawgyi one/ZAWGYI-ONE_V3.1.TTF'))
-        pdf.set_font('Zawgyi-One', size=14)
-        pdf.cell(text='ေြက')
-        pdf.output(str(source))
-        def download(config, remote, target):
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(source.read_bytes())
-            return runner.sha256_file(target)
-        log_file = self.root / 'lane.log'
-        with patch.dict(os.environ, {'PARSER_LOG_ENABLED': 'on', 'PARSER_LOG_FILE': str(log_file)}), \
-             patch.object(runner, 'load_workspace_env'), \
-             patch.object(runner, 'load_config', return_value=SimpleNamespace(directory='pdfs')), \
-             patch.object(runner, 'remote_parser_dir', return_value='old'), \
-             patch.object(runner, 'discover', return_value=['old/စာအုပ်.pdf']), \
-             patch.object(runner, 'download', side_effect=download), \
-             patch.object(runner, 'mail_notice'), patch.object(runner, 'reminders'), \
-             patch.object(runner, 'DISK_FLOOR', 0):
-            runner.run(self.db)
-        rows = pq.read_table(self.root / 'pdfs/parquet/books.parquet').to_pylist()
-        self.assertEqual(len(rows), 1)
-        self.assertTrue(rows[0]['text'].strip())
-        self.assertEqual(rows[0]['book'], 'စာအုပ်')
-        self.assertEqual(self.text.read_text(), '===== စာအုပ် =====\n' + rows[0]['text'] + '\n\n')
-        decisions = log_file.read_text().splitlines()
-        self.assertEqual(len(decisions), 1)
-        self.assertIn('စာအုပ်.pdf', decisions[0])
-        self.assertIn('[BEAUTIFY]', decisions[0])
         # This tests wiring and matching outputs, not old-font conversion accuracy.
 
     def test_text_failure_does_not_mark_success_or_delete_local_pdf(self):

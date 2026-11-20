@@ -1002,45 +1002,55 @@ def lane_trial(loader, page_key, shared, legacy):
     return flip
 
 
-def _settle_legacy_families(content, decoders, doc):
-    """Let the page name the code page of the legacy faces the file did not.
+def _settle_legacy_families(content, decoders, doc, *, page_key):
+    """Let shown strings decide an unnamed legacy face and return ledger events.
 
-    One extra pass over the content of a legacy page, and only when that page
-    shows a face still undecided: every string the page shows for each such
-    resource, handed to the decoder, which reads them through each candidate
-    table and scores them in ``extract/legacy_lane_score`` -- the page is parsed
-    once, and the two readings live inside that decision instead of becoming two
-    passes of the chain (see :meth:`pdf_fonts.FontDecoder.settle_legacy_family`). The order of the
-    strings is the order the file drew them, and the size that a string carries is
-    the font size in effect, so nothing here re-reads or re-sorts the page.
+    The page is parsed once. This bounded inspection collects the strings shown
+    by each still-undecided face and asks ``FontDecoder.settle_legacy_family`` to
+    compare the same sample through the candidate tables. Short samples can
+    accumulate across later pages; their source refs are kept beside the encoded
+    strings so the final ledger can report asked, retained, and failed pages.
     """
     if doc.kind != 'legacy' or doc.map:
-        return
-    # Undecided and worth another look: never probed, or probed on a sample that
-    # was too short to judge and still under the attempt bound.
+        return []
     pending = {name: decoder for name, decoder in decoders.items()
                if not decoder.family_pinned and decoder.family_probe is None
                and (decoder.family_short is None
                     or decoder.family_attempts < PROBE_MAX_ATTEMPTS)}
     if not pending:
-        return
+        return []
     shown = shown_strings_by_face(content, pending)
+    events = []
     for name, decoder in pending.items():
         chunks = shown[name]
         held = list(decoder.family_samples or [])
+        sample_sources = list(decoder.family_sample_sources or [])
+        if not sample_sources and held:
+            # Compatibility for callers that supplied the old internal sample
+            # list directly: those bytes have no page attribution.
+            sample_sources = [(None, item) for item in held]
+        if chunks:
+            decoder.family_probe_pages_asked.add(page_key)
+            sample_sources.extend((page_key, item) for item in chunks)
         if held or chunks:
-            # The look carries over from page to page while the face stays open. A
-            # face that gets two lines per page never reaches MIN_PROBE_MARKS in one
-            # page, and 104 of part-1's probes abstained for exactly that reason --
-            # "too short" is a fact about the book, not about the page. The caps are
-            # unchanged: the same byte bound, just spent over a few pages.
-            merged = held + list(chunks)
-            used = sum(len(item) for item in merged)
-            while used > PROBE_SAMPLE_BYTES and len(merged) > 1:
-                used -= len(merged.pop(0))
-            decoder.family_samples = merged
-            chunks = merged
-        decoder.settle_legacy_family(chunks)
+            # Keep precisely the prior rolling byte cap and eviction order. The
+            # extra tuple only tags each retained string with its source page.
+            used = sum(len(item) for _source, item in sample_sources)
+            while used > PROBE_SAMPLE_BYTES and len(sample_sources) > 1:
+                used -= len(sample_sources.pop(0)[1])
+            decoder.family_sample_sources = sample_sources
+            decoder.family_samples = [item for _source, item in sample_sources]
+            chunks = decoder.family_samples
+        previous_attempts = decoder.family_attempts
+        record = decoder.settle_legacy_family(chunks, sample_sources=sample_sources)
+        if decoder.family_attempts != previous_attempts and record is not None:
+            events.append({
+                'resource': str(name or '')[:80],
+                'base_font': str(decoder.base_font or '')[:120],
+                'font_program_sha256': decoder.program_sha256,
+                'ledger': record,
+            })
+    return events
 
 
 def _join_page_runs(pieces, doc):
@@ -1067,7 +1077,7 @@ def _join_page_runs(pieces, doc):
         return _join_visual_runs(pieces, doc)
     return ''.join(piece[2] for piece in pieces)
 
-def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=False, *, used_myanmar_fonts=None, used_legacy_fonts=None, image_records=None, diagnostics=None):
+def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=False, *, used_myanmar_fonts=None, used_legacy_fonts=None, legacy_families=None, image_records=None, diagnostics=None, probe_page=None):
     """Extract text lines WITH layout: ``(lines, page_w, page_h)``.
 
     ``lines`` is a top-to-bottom list of ``(x, y, size, text, font)`` where x/y are
@@ -1114,7 +1124,11 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
     previous_diagnostic_run = None
     # Contents arrays form one logical stream, including mid-token boundaries.
     content = b''.join(_page_content_stream(loader, ref) for ref in refs)
-    _settle_legacy_families(content, decoders, doc)
+    codepage_events = _settle_legacy_families(
+        content, decoders, doc,
+        page_key=probe_page if probe_page is not None else (page_num, page_gen))
+    if diagnostics is not None:
+        diagnostics['codepage_events'] = codepage_events
     image_collector = None
     if image_records is not None:
         from myangustis_parser.extract.pdf_image_coverage import PageImageCollector
@@ -1297,6 +1311,8 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
                         key = '<other>'
                     stats = fonts.setdefault(key, {
                         'resource': key, 'base_font': str(decoder.base_font or '')[:120],
+                        'font_program_sha256': decoder.program_sha256,
+                        'family_probe': decoder.family_probe or decoder.family_short,
                         'subtype': str(decoder.subtype or '')[:40], 'cid': decoder.is_cid,
                         'to_unicode_entries': len(decoder.to_unicode or {}),
                         'encoding': decoder.has_encoding, 'own_gid_entries': len(decoder.own_gids or {}),
@@ -1341,6 +1357,25 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
                     name = decoder.base_font or ''
                     if name not in used_legacy_fonts:
                         used_legacy_fonts.append(name)
+                # A face is legacy here only if it was read through a code page or
+                # its family was probed on its own bytes; `family_pinned` is every
+                # decoder's default and says nothing about the lane.
+                if legacy_families is not None and (
+                        decoder.font_legacy_code_page or decoder.family_probe):
+                    # WHICH code page this face is read through, settled where it
+                    # was settled: the probe on the face's own bytes ('page'), or
+                    # the name gate ('name'). The legacy lane's beautify rule has
+                    # two cases and takes this as its switch, so a subset whose
+                    # name says nothing is still ordered by what its bytes decided.
+                    settled = (decoder.family_probe or {}).get('family')
+                    record = {'face': decoder.base_font or '',
+                              'family': settled,
+                              'by': ('page' if settled else
+                                     'name' if decoder.family_pinned else 'default'),
+                              'accepted': (decoder.family_probe or {}).get('accepted'),
+                              'pinned': bool(decoder.family_pinned)}
+                    if record not in legacy_families:
+                        legacy_families.append(record)
                 if used_myanmar_fonts is not None and (contains_myanmar(text)
                         or decoder.font_legacy_code_page or decoder.confirmed_raw_runs):
                     used_myanmar_fonts.add(decoder.base_font or '')

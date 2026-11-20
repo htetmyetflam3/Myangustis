@@ -52,7 +52,6 @@ from myangustis_parser.extract.pdf_extract import (
 from myangustis_parser.output.render import _write_docx_layout, _write_pdf, write_docx_markup
 from myangustis_parser.resources.font_names import has_only_unicode_fonts, legacy_font_family, legacy_layout_for_font
 from myangustis_parser.output import markup
-from myangustis_parser.normalize.unicode_evidence import preserve_regional_runs
 from myangustis_parser.workflow import finish, diagnostics
 from myangustis_parser.workflow.lane_log import LaneLog
 
@@ -152,6 +151,7 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
         has_img = page_has_images(objects, pnum, pgen)
         font_names = set()
         used_legacy_fonts = []
+        legacy_families = []
         images = []
         # Record only this page's actual resource decoding.
         lane_trace = []
@@ -169,7 +169,8 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
         extraction = {'fonts': {}, 'sample_enabled': diagnostics.samples_enabled(), 'adjacent_duplicate_runs': 0} if diagnostic else None
         try:
             kwargs = dict(used_myanmar_fonts=font_names, used_legacy_fonts=used_legacy_fonts,
-                          image_records=images)
+                          legacy_families=legacy_families,
+                          image_records=images, probe_page=idx + 1)
             if extraction is not None:
                 kwargs['diagnostics'] = extraction
             lines, w, h = extract_page_lines(objects, pnum, pgen, code_to_uni, **kwargs)
@@ -188,6 +189,10 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
             "decode_kind": getattr(code_to_uni, "kind", None),
             "font_names": font_names,
             "used_legacy_fonts": used_legacy_fonts,
+            # Which code page each legacy face was read through, and where that
+            # came from ('page' = the probe on its own bytes, 'name' = the gate).
+            # The legacy lane's beautify rule picks its case from this.
+            "legacy_families": legacy_families,
             "lane_trace": lane_trace,
             "diagnostics": extraction,
             "warnings": ([{'code': 'unicode-glyph-recovery-needs-review', 'page': idx + 1}] if visual_state['changed'] else [])
@@ -324,10 +329,7 @@ def process_pdf_stream(pdf_path, detector, log=lambda m: None,
         {"page", "category", "prob", "text", "n_changes",
          "lines", "wh", "has_img"}      # layout fields only when want_layout
 
-    ``text`` is the final text for that page -- the finished page exactly as
-    the gate left it (Zawgyi already converted via Rabbit, imposter cleanup on
-    the lanes JS runs it on); ``n_changes`` is how many lines that cleanup
-    altered (counted, not stored) -- always 0 for ZAWGYI and UNKNOWN.
+    ``text`` is the cleaned page text. ``n_changes`` counts changed lines.
 
     ``want_layout=True`` (DOCX output) additionally carries the per-line
     x/y/font-size and the page MediaBox so the writer can reproduce the page
@@ -357,9 +359,28 @@ def process_pdf_stream(pdf_path, detector, log=lambda m: None,
             lane_log.stem(idx + 1, pg.get("lane_trace", ()))
             named_zawgyi = has_only_zawgyi_fonts(pg.get("font_names"))
             parsing_path = 'legacy' if pg.get('decode_kind') == 'legacy' else 'font-cmap'
+            # The legacy lane's two orderings are chosen by the identified code
+            # page: the face's own name says it (wininnwa/ayar), and a face whose
+            # name says nothing keeps the ZawCode swap (legacy_layout None).
+            legacy_layout = None
+            if parsing_path == 'legacy':
+                # The settled family first -- a subset whose name says nothing was
+                # decided by its own bytes (family_by 'page'), and that is the code
+                # page it is being read through. The name gate is the fallback, and
+                # a face neither way keeps the ZawCode swap.
+                for record in pg.get('legacy_families') or ():
+                    if record.get('family'):
+                        legacy_layout = record['family']
+                        break
+                if legacy_layout is None:
+                    for name in pg.get('font_names') or ():
+                        legacy_layout = legacy_font_family(name)
+                        if legacy_layout:
+                            break
             result = finish.finish_pdf_page(raw, parsing_path=parsing_path,
                                             zawgyi_codepage=named_zawgyi,
-                                            source_encoding=source_encoding)
+                                            source_encoding=source_encoding,
+                                            legacy_layout=legacy_layout)
             base, cleaned = result['base'], result['clean']
             cat = result['category']
             rep = {'page': idx + 1, 'category': cat, 'prob': 1.0 if cat == 'ZAWGYI' else 0.0,
@@ -412,9 +433,7 @@ def _convert_line(t, cat):
     if cat == "ZAWGYI":
         return order_text(Rabbit.zg2uni(t))     # ordered, never imposter-fixed
     if cat == "UNICODE":
-        # Regional (Mon/extended) runs keep their marks: ordering and cleanup
-        # are Burmese-only rules and must not rewrite them.
-        return preserve_regional_runs(t, cleanup_text)
+        return finish.clean_page(t)
     return order_text(t)
 
 
@@ -742,14 +761,10 @@ def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: Non
         chosen = ('zawgyi-one' if cat == 'ZAWGYI' else
                   'unicode' if cat == 'UNICODE' else source_encoding)
         if cat == 'UNKNOWN':
-            # DOCX source.js does not infer a page decision or reorder unknown
-            # text; missing/mixed font evidence leaves the stored text alone.
-            base, clean, decision = chunk, None, 'unknown'
-            scan_result = finish.scan.scan_text(base)
+            base, clean, decision = chunk, finish.clean_page(chunk), 'unknown'
+            scan_result = finish.scan.scan_text(clean)
         elif cat == 'UNICODE' and source_encoding == 'auto' and has_only_unicode_fonts(fonts):
-            # A direct known Unicode face keeps the stored base text; JS's
-            # cleanup follow-up does not perform pre-base mark movement.
-            base, clean, decision = chunk, preserve_regional_runs(chunk, cleanup_text), 'aligned'
+            base, clean, decision = chunk, finish.clean_page(chunk), 'pass-through'
             scan_result = finish.scan.scan_text(clean)
         else:
             # The pinned JS currently throws ReferenceError in these two
@@ -799,9 +814,7 @@ def build_final_pages(job):
     out = []
     for pg, rep in zip(job["pages"], job["reports"]):
         if job.get('kind') == 'pdf' and pg.get('_ocr_supplied'):
-            # JS finalizes the original geometry ahead of OCR text when any
-            # extractable lines remain; OCR text itself is not PDF-finished.
-            page = {"text": pg["text"], "lines": pg.get("lines", []),
+            page = {"text": finish.clean_page(pg["text"]), "lines": pg.get("lines", []),
                     "wh": pg["wh"], "has_img": pg["has_img"], "images": pg.get("images", [])}
             page["marked"] = page_markup(page)
             page["text"] = markup.strip_markup(page["marked"])
@@ -817,13 +830,7 @@ def build_final_pages(job):
             out.append(page)
             continue
         if rep["clean"] is not None:
-            if job.get('kind') == 'pdf':
-                # PDF base lines have already passed the one output ordering.
-                # Legacy pages must not receive Unicode cleanup at all.
-                transform = ((lambda value: value) if rep.get('decision') == 'legacy'
-                             else lambda value: preserve_regional_runs(value, cleanup_text))
-            else:
-                transform = finish.clean
+            transform = finish.clean_page
             lines = [(line[0], line[1], line[2], transform(line[3]),
                       line[4] if len(line) > 4 else None) for line in pg["lines"]]
             text = rep["clean"]

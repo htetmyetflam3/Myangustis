@@ -19,6 +19,7 @@ The functions only touch characters in their defined sets; everything else
 passes through.
 """
 
+import re
 import unicodedata
 from functools import lru_cache
 
@@ -75,6 +76,8 @@ def _is_index(ch: str) -> bool:
     return (0x1000 <= cp <= 0x1021 or 0x1023 <= cp <= 0x1027
             or cp in (0x1029, 0x102a, 0x103f, 0x104e))
 
+
+_ENGINE_BASES = frozenset(chr(c) for c in list(range(0x1000, 0x1022)) + [0x1025, 0x1027])
 
 _PREBASE = frozenset("ေြ")
 _MEDIALS = frozenset("ျြွှ")
@@ -318,26 +321,43 @@ def normalize_text(t: str) -> str:
 
 
 def order_text(t: str) -> str:
-    """Normalize + reorder: the part that runs on EVERY path, always.
-
-    Ordering marks by priority is not an opinion about a document, it is the
-    one canonical sequence, so it is not behind the cleanup toggle and not
-    tied to a category: Zawgyi (after Rabbit), Unicode and Unknown all get
-    it. The glue strip comes with it because a zero-width joiner sitting
-    between a base and its marks would otherwise split the cluster and hide
-    the very run that needs ordering.
-
-    Imposter replacement is NOT here -- that is the toggleable step, and the
-    Unicode path's alone.
-    """
+    """Normalize text and apply the ordering rules."""
     return drop_impossible_marks(reorder_marks(move_prebase_marks(normalize_text(t))))
 
 
 def cleanup_text(t: str) -> str:
-    """The toggleable step: imposter cleanup, on top of normalize + reorder.
-
-    Reorder runs again after the replacement, because an imposter expands
-    into real marks (U+1088 -> U+103E U+102F) that then have to take their
-    place in the run.
-    """
+    """Normalize text, replace imposters and reorder marks."""
     return drop_impossible_marks(reorder_marks(clean_imposters(normalize_text(t))))
+
+
+
+def normalize_phase2(t: str) -> str:
+    """Normalize text, replace imposters and sort marks by priority."""
+    if not t or not isinstance(t, str):
+        return ""
+    text = clean_imposters(normalize_text(t))
+    priority = _master_data()["Priority"]
+    bases = _ENGINE_BASES
+    out, i, n = [], 0, len(text)
+    while i < n and text[i] in " \t":
+        out.append(text[i])
+        i += 1
+    while i < n:
+        ch = text[i]
+        if ch in bases:
+            out.append(ch)
+            i += 1
+            marks, seen = [], set()
+            while i < n and text[i] not in bases and text[i] in priority:
+                p = priority[text[i]]
+                if p not in seen:
+                    seen.add(p)
+                    marks.append(text[i])
+                i += 1
+            out.extend(sorted(marks, key=lambda c: priority[c]))
+            continue
+        out.append(ch)
+        i += 1
+    return re.sub(r"(?<=[\u1000-\u1021\u1025\u1027\u102b-\u103e]) +"
+                  r"(?=[\u1000-\u1021\u1025\u1027]\u103a[\u1037\u1038]?)",
+                  "", "".join(out))

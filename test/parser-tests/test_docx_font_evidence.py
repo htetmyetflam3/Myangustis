@@ -36,7 +36,7 @@ class DocxFontEvidenceTests(unittest.TestCase):
                       '<w:rFonts w:ascii="Zawgyi-One" w:hAnsi="Other"/>'):
             with self.subTest(props=props):
                 with patch.object(pipeline.finish, 'finish_text', return_value={
-                    'base': 'raw', 'clean': 'raw', 'decision': 'aligned', 'scan': {}}) as finish:
+                    'base': 'raw', 'clean': 'raw', 'decision': 'pass-through', 'scan': {}}) as finish:
                     job = pipeline.process_docx_bytes(document(props), ZawgyiDetector())
                 self.assertEqual(job['counts']['UNKNOWN'], 1)
                 finish.assert_not_called()
