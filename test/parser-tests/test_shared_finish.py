@@ -40,7 +40,7 @@ class SharedFinishTests(unittest.TestCase):
             forced = finish.finish_text('ေြက', source='parse', source_encoding='zawgyi-one')
             self.assertEqual(forced['decision'], 'rabbit')
             rabbit.assert_called_once()
-        self.assertEqual(finish.decide('ေြက', source='parse', source_encoding='unicode')[0], 'aligned')
+        self.assertEqual(finish.decide('ေြက', source='parse', source_encoding='unicode')[0], 'pass-through')
         self.assertEqual(finish.decide('ေြက', source='ocr', source_encoding='zawgyi-one')[0], 'ocr')
 
     def test_score_counts_astral_characters_as_js_utf16(self):
@@ -100,7 +100,7 @@ class PdfOutputLayoutTests(unittest.TestCase):
         from myangustis_parser.workflow import pipeline
         job = {'kind': 'pdf', 'pages': [{'text': 'ကေ', 'lines': [(0, 0, 12, 'ကေ', None)],
                                        'wh': (100, 100), 'has_img': False}],
-               'reports': [{'base': 'ကေ', 'clean': 'ခေ', 'decision': 'aligned'}]}
+               'reports': [{'base': 'ကေ', 'clean': 'ခေ', 'decision': 'pass-through'}]}
         with patch.object(pipeline.finish, 'clean', side_effect=AssertionError('unexpected reorder')), \
              patch.object(pipeline, 'cleanup_text', return_value='ခေ'):
             result = pipeline.build_final_pages(job)[0]

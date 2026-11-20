@@ -104,7 +104,7 @@ parsing. The log contains the book filename and page numbers, not page text.
   the same finishing decision, with one-based inclusive page numbers. Thus a
   whole 100-page book using `zawcode` produces one entry; pages 1–20 using
   `rabbit` (Zawgyi conversion) and 21–100 using `zawcode` produce two. A
-  later switch back starts a new range. `aligned`/`legacy` indicate no
+  later switch back starts a new range. `pass-through`/`legacy` indicate no
   ZawCode or Rabbit finishing conversion. These are actual parser decisions,
   not a guarantee that detection or conversion was correct.
 

@@ -9,7 +9,7 @@ counter blocks (``extraction``/``layout``/``finished``/``base``/``clean``/
 ``stream_output``) at the same level, so a page that produced **zero**
 characters looked exactly as loud as a page that produced a page of text;
 85 pages wrote 97 console lines and ~240 KB, and the file said
-``decision: aligned category: UNKNOWN`` for a blank page. Finding out what
+``decision: pass-through category: UNKNOWN`` for a blank page. Finding out what
 went wrong still meant copying the PDF out of the collection and re-running
 it by hand, which is the cost this module exists to remove.
 

@@ -98,12 +98,12 @@ def main() -> int:
     check("judge candidate slots", judge["candidateSlots"] >= 1, judge)
 
     check("zawcode needs more than one slot",
-          judgement.select_page_decision(_judge_evidence(5), "font-cmap") == "aligned")
+          judgement.select_page_decision(_judge_evidence(5), "font-cmap") == "pass-through")
     check("zawcode at the threshold",
           judgement.select_page_decision(_judge_evidence(6), "font-cmap") == "zawcode")
     check("zawcode never on a Zawgyi codepage",
           judgement.select_page_decision(_judge_evidence(6), "font-cmap",
-                                         zawgyi_codepage=True) == "aligned")
+                                         zawgyi_codepage=True) == "pass-through")
     legacy = _judge_evidence(0)
     legacy["aligned"] = False
     check("legacy page stays legacy",
@@ -112,7 +112,7 @@ def main() -> int:
           judgement.select_page_decision({**legacy, "aligned": False}, "font-cmap") == "rabbit")
     no_myanmar = {**_judge_evidence(0), "hasMyanmar": False}
     check("no Myanmar -> aligned",
-          judgement.select_page_decision(no_myanmar, "font-cmap") == "aligned")
+          judgement.select_page_decision(no_myanmar, "font-cmap") == "pass-through")
     check("no Myanmar legacy -> legacy",
           judgement.select_page_decision(no_myanmar, "legacy") == "legacy")
     check("unicode lane decisions",

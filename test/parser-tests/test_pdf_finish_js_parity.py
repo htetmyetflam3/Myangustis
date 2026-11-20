@@ -89,6 +89,11 @@ console.log(JSON.stringify(outputs));
             py = finish_pdf_page(case['text'], parsing_path=case['lane'],
                                  source_encoding=case['encoding'], zawgyi_codepage=case['zawgyi'])
             actual = {key: py[key] for key in js}
+            # This tree names the no-rule decision ``pass-through``; the pinned
+            # mirror still calls it ``aligned``. Map the word so a label difference
+            # is not counted as a divergence.
+            if actual['decision'] == 'pass-through':
+                actual['decision'] = 'aligned'
             if actual == js:
                 continue
             self.assertEqual(py['decision'], 'legacy',

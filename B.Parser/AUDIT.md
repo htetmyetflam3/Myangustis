@@ -693,10 +693,10 @@ So the legacy decision is still the one documented divergence from the mirror, a
 **Measured, 2026-11-20, because the pin was not describing anything.** Against the
 pinned reference it now compares (`67f0284`, main), the oracle diverges on 253 of
 310 samples -- and 121 of those differ while both sides pick the *same* decision
-(40 legacy/legacy, 39 rabbit/rabbit, 37 aligned/aligned, 5 zawcode/zawcode). Its
+(40 legacy/legacy, 39 rabbit/rabbit, 37 aligned/aligned [this tree: pass-through], 5 zawcode/zawcode). Its
 allowance only covers samples where this tree says `legacy` and JS says something
 else, so the guard trips at the first sample outside that shape (`'က'`,
-`parsingPath='legacy'`, `sourceEncoding='unicode'`: this tree `aligned`, JS `legacy`).
+`parsingPath='legacy'`, `sourceEncoding='unicode'`: this tree `pass-through`, JS `legacy`).
 Read it as: the oracle outlived the reference it was written against, not as a
 one-sample regression, and the pin needs re-basing on a reference this tree still
 mirrors before it means anything again.
@@ -899,10 +899,12 @@ generated `audit/`, page for page and book for book.
 **Where the residual sits.** `orphan` is not uniform across the three books -- +0.5%
 on part-4, +5 on part-8, +277 on part-5 -- and it is not the legacy phases' to own:
 beautify is a one-arm dispatch (`workflow/finish.apply_decision`: `rabbit` gets the
-conversion, `zawcode` the slot swap, `legacy` the legacy ordering, `aligned` nothing),
+conversion, `zawcode` the slot swap, `legacy` the legacy ordering, `pass-through`
+nothing -- the decision is named for that, and the mirror calls the same value
+`aligned`),
 and `normalize/judgement.select_page_decision` consults four fields and no score
 (`hasMyanmar`, `candidateSlots >= ZAWCODE_MIN_SLOTS`, `parsing_path`, `zawgyi_codepage`,
-then `aligned`); its own docstring says the mark-order rule alone makes the Rabbit
+then `judgment['aligned']`, the evidence that leads to `pass-through`); its own docstring says the mark-order rule alone makes the Rabbit
 call and "no score margin second-guesses it". Nothing in this repository ranks a
 ZawCode or Rabbit reading against another, and the only place that ranks candidates at
 all is `extract/legacy_judgement` over exactly two of them -- `LEGACY_CODE_PAGES` is
@@ -956,8 +958,8 @@ counter-example to every book in `audit/`: it has **no legacy pages at all**.
 |---|---|
 | page records | 4,414, all `lane=font` (`decode_kind` never `legacy`) |
 | `category` | UNICODE 3,812 / UNKNOWN 377 / ZAWGYI 225 |
-| `decision` | **`zawcode` 2,666** / `aligned` 1,523 / `rabbit` 225 |
-| `changed` | yes on 2,891 = **every `zawcode` and `rabbit` page, no `aligned` page** |
+| `decision` | **`zawcode` 2,666** / `pass-through` 1,523 (`aligned` in the mirror) / `rabbit` 225 |
+| `changed` | yes on 2,891 = **every `zawcode` and `rabbit` page, no `pass-through` page** |
 | scanner on the result file | `orphan` 25,739 -- `stray` 2,856 -- `impossible` 71 -- `digit` 99 -- `virama` 29 |
 | warnings | `unicode-glyph-recovery-needs-review` on 2,075 pages |
 
@@ -989,7 +991,7 @@ code in this branch was touched for it, and the `test_pdf_finish_js_parity` orac
 **The same book, run from the pre-edit stage.** `git worktree add --detach /tmp/base 52d7a21` with its own
 shim (this checkout untouched), same command, same env: the result file is **byte-identical** (`cmp` clean,
 5,196,583 bytes each) and **0 of 4,414** page records differ in `lane`, `decision` or `changed`. Both trees:
-`font`/`zawcode` 2,666 -- `font`/`aligned` 1,523 -- `font`/`rabbit` 225 -- `lane=legacy` **0**. JS was not
+`font`/`zawcode` 2,666 -- `font`/`pass-through` 1,523 -- `font`/`rabbit` 225 -- `lane=legacy` **0**. JS was not
 executed here (no `npm` install in this sandbox); it was compared at source, and `@rule/judgement.js:188-191`
 carries the same body as `judgement.py:236-246` at the base and at HEAD.
 
@@ -998,7 +1000,7 @@ and beautify is the correctness lift, so the shape of each page is what should d
 
 | set | pages | slots on the text the judgement actually saw | what that means |
 |---|---|---|---|
-| `decision=aligned` (`changed=no`, so the file *is* what was judged) | 1,523 | 1,511 with **0** slots; **12 with 1-5** | nothing to lift, correct. The 12 carry real ZawCode shape and are under the page floor, so no rule ran at all |
+| `decision=pass-through` (`changed=no`, so the file *is* what was judged) | 1,523 | 1,511 with **0** slots; **12 with 1-5** | nothing to lift, correct. The 12 carry real ZawCode shape and are under the page floor, so no rule ran at all |
 | `decision=rabbit` (every font named `Zawgyi`/`ZawgyiOne`) | 225 | 48 still show >=6 slots *after* the rewrite | `workflow/pipeline.py:343` sets `zawgyi_codepage` from the **font name**, and `judgement.py:263` then refuses to offer the swap at all -- a name vetoes a repair |
 | `decision=zawcode` | 2,666 | (post-lift, not comparable) | the lift ran; residual counts drop, which is what a lift does |
 

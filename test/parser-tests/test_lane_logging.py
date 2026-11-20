@@ -91,7 +91,7 @@ class TestLaneLogging(unittest.TestCase):
             events = []
             tracker = lane_log.LaneLog('book.pdf', Logen(file=broken / 'log', console=events.append))
             tracker.stem(1, ['unicode', 'legacy'])
-            tracker.finish_page(1, 'aligned')
+            tracker.finish_page(1, 'pass-through')
             tracker.flush()
             self.assertEqual(len(events), 2)
 
@@ -101,7 +101,7 @@ class TestLaneLogging(unittest.TestCase):
                  for i in range(2)]
         class Detector:
             def detect(self, text): return 'UNICODE', 1
-        result = {'base': 'က', 'clean': 'က', 'decision': 'aligned', 'category': 'UNICODE', 'finished': 'က', 'scan': {}}
+        result = {'base': 'က', 'clean': 'က', 'decision': 'pass-through', 'category': 'UNICODE', 'finished': 'က', 'scan': {}}
         messages = []
         logger = Logen(console=messages.append)
         with patch.object(pipeline, 'stream_pdf_pages', return_value=({}, 2, iter(pages))), \
@@ -112,7 +112,7 @@ class TestLaneLogging(unittest.TestCase):
         self.assertEqual(sum('lane-switch' in m for m in messages), 1)
         self.assertEqual(sum('decision' in m for m in messages), 1)
         self.assertTrue(all('real.pdf' in m for m in messages))
-        self.assertIn('rule=aligned', messages[-1])
+        self.assertIn('rule=pass-through', messages[-1])
 
     def test_page_extraction_collects_probes_without_duplicate_switches(self):
         events = []
@@ -127,7 +127,7 @@ class TestLaneLogging(unittest.TestCase):
             for lane in (['unicode'] * 5 if num == 10 else ['unicode'] * 5 + ['legacy'] * 5):
                 doc.lane_observer(lane)
             return [(0, 0, 12, 'က')], 100, 100
-        finished = {'base': 'က', 'clean': 'က', 'decision': 'aligned', 'category': 'UNICODE', 'finished': 'က', 'scan': {}}
+        finished = {'base': 'က', 'clean': 'က', 'decision': 'pass-through', 'category': 'UNICODE', 'finished': 'က', 'scan': {}}
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / 'mixed.pdf'
             path.write_bytes(b'%PDF-1.7')

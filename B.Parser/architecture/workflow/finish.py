@@ -33,11 +33,11 @@ def decide(text, *, source, parsing_path='font-cmap', zawgyi_codepage=False,
     if source == 'ocr':
         return 'ocr', score
     if source_encoding == 'unicode':
-        return 'aligned', score
+        return 'pass-through', score
     if source_encoding == 'zawgyi-one':
         return 'rabbit', score
     if already_zawcode:
-        return 'aligned', score  # font-scoped draft was ordered during extraction
+        return 'pass-through', score  # font-scoped draft was ordered during extraction
     swap = (lambda value: value) if zawgyi_codepage else zawcode_slot_candidate
     evidence = judgement.judge_page_lines(text.split('\n'), swap)
     return judgement.select_page_decision(evidence, parsing_path, zawgyi_codepage), score
@@ -50,7 +50,7 @@ def apply_decision(text, decision, *, legacy_layout=None):
     the legacy lane gets ``legacy_order.arrange_legacy_order`` (a legacy page's
     visual order is a code-page fact, issued by the stem parser's instruction,
     never a font name), the Rabbit lane gets the conversion. ``aligned`` has no
-    rule of its own and no follow-up either: an aligned reading ships as
+    rule of its own and no follow-up either: a ``pass-through`` page ships as
     decoded. Legacy ASCII slots are repaired where the page's runs are joined,
     not here: this stage orders and cleans, and it must not carry a second pass
     that only one lane can see.
@@ -65,7 +65,7 @@ def apply_decision(text, decision, *, legacy_layout=None):
         # Two cases, chosen by the identified code page (see the rule's docstring):
         # 'wininnwa'/'ayar' take the plain slot order, None/'zawcode' the swap.
         return legacy_order.arrange_legacy_order(text, layout=legacy_layout)
-    if decision == 'aligned':
+    if decision == 'pass-through':
         return text
     raise ValueError(f'Unknown Parser decision: {decision}')
 
@@ -224,7 +224,7 @@ def finish_text(text, *, source, parsing_path='font-cmap', zawgyi_codepage=False
 
 
 # JS's FINAL_UNICODE_DECISIONS: the lanes the finalized-page step owns.
-FINALIZED_OUTPUT_DECISIONS = ('aligned', 'zawcode', 'unaligned-unicode', 'rabbit')
+FINALIZED_OUTPUT_DECISIONS = ('pass-through', 'zawcode', 'unaligned-unicode', 'rabbit')
 
 
 def finalized_output(text, decision):
@@ -237,9 +237,9 @@ def finalized_output(text, decision):
     """
     if decision not in FINALIZED_OUTPUT_DECISIONS:
         return text, text
-    # PHASE 2 for every lane, aligned included: clean.py's cleanup half is the
+    # PHASE 2 for every lane, pass-through included: clean.py's cleanup half is the
     # follow-up each lane gets, and it is not a rule. `base` is the page exactly
-    # as phase 1 left it -- stage 1.1's rule applied, or nothing for aligned.
+    # as phase 1 left it -- stage 1.1's rule applied, or nothing for pass-through.
     return text, clean_page(text)
 
 
@@ -261,14 +261,15 @@ def finish_pdf_page(text, *, parsing_path='font-cmap', zawgyi_codepage=False,
         raise ValueError('Unknown source encoding')
     # PHASE 1 -- parsing. The decode already happened upstream; stage 1 is the
     # text it produced. Everything below is stage 1.1: decide the lane, then
-    # apply that lane's rule. An aligned reading passes through with no rule;
-    # only an unaligned one is asked whether it is ZawCode or Rabbit.
+    # apply that lane's rule. A page the evidence calls aligned passes through
+    # with no rule -- the decision is named for that, ``pass-through`` -- and only
+    # an unaligned one is asked whether it is ZawCode or Rabbit.
     swap = (lambda value: value) if zawgyi_codepage else zawcode_slot_candidate
     evidence = judgement.judge_page_lines(text.split('\n'), swap)
     decision = judgement.select_page_decision(evidence, parsing_path, zawgyi_codepage)
-    if decision == 'aligned':
-        # Stage 1.1, aligned branch: nothing is applied. No swap, no Rabbit, no
-        # ordering. Phase 2 is the only thing this page still meets.
+    if decision == 'pass-through':
+        # Stage 1.1, pass-through branch: nothing is applied. No swap, no Rabbit,
+        # no ordering. Phase 2 is the only thing this page still meets.
         finished = text
     elif decision == 'legacy':
         # Stage 1.1, legacy branch: the lane's own rule, per line, in one of its

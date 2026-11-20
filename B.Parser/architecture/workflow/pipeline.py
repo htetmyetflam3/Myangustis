@@ -772,7 +772,7 @@ def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: Non
             # A direct known Unicode face keeps the stored base text; JS's
             # cleanup follow-up does not perform pre-base mark movement. Same
             # phase 2 call the PDF finish makes -- one name, one step.
-            base, clean, decision = chunk, finish.clean_page(chunk), 'aligned'
+            base, clean, decision = chunk, finish.clean_page(chunk), 'pass-through'
             scan_result = finish.scan.scan_text(clean)
         else:
             # The pinned JS currently throws ReferenceError in these two
