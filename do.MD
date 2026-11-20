@@ -4,19 +4,14 @@ Ordered work, each item a general rule. No per-book handling. The order is set
 by whether the cause can be seen from this checkout at all: that is what decides
 whether a fix can be measured, or only asserted.
 
-**Open PR: [#33](https://github.com/htetmyetflam3/Myangustis/pull/33)** —
-`arena/0f6e3735-myangustis` → `python`, 42 files (+3,800 / −2,712), not draft,
-mergeable, no checks reported on this repo. It carries items 1b/1d/1e-partial
-below: the two legacy parsers and the acceptance rule that lets either win, the
-per-face program
-identity, the disarmed lane move with its pin kept, and this file plus
-`B.Parser/AUDIT.md`. It is **Python only** — the JS notes in here are for main, and
-nothing on the non-legacy path (zawcode / rabbit / aligned) is judged or changed by it.
-It is ready to land as it stands (`283 passed, 37 skipped, 94 subtests`,
-`audit_overview --check` OK); the only asymmetry it carries is the parity one in
-Q3. Note for the record: a workspace restore flattened the branch back to its base
-(`52d7a21`) mid-work, so the earlier commit-by-commit history of these steps is
-gone; the content arrives as the commits now on this branch.
+**Merged PR: [#33](https://github.com/htetmyetflam3/Myangustis/pull/33)** —
+merged into `python` on 2026-11-19. It carried the Python legacy judgement and
+acceptance rule, per-face program identity, the disarmed lane move with its pin
+kept, and this file plus `B.Parser/AUDIT.md`. It is **Python only** — the JS
+notes in here are for main, and nothing on the non-legacy path (zawcode / rabbit /
+aligned) was judged or changed by it. The merged code is the baseline for the
+remaining items below, not pending PR work; the outstanding parity asymmetry is
+still Q3.
 
 **Done: the separate Engine-normalize call is deleted.** The chain reaches the
 Engine once, at its end — `normalize/pos_scan.py` → bind-engine api
@@ -94,17 +89,21 @@ those three sites is main's action: `B.Parser/AUDIT.md`,
    answer — `@core/pdf/legacy-judgement.js`, "the caller decodes the same page
    sample under each code page and this layer scores which reading is real
    Burmese" — with no Python caller. It has one now:
-   `extract/legacy_judgement.decide_legacy_family` (scoring, floor 0.85, minimum
-   50 marks), applied by `FontDecoder.settle_legacy_family` to a sample collected
-   by `extract/pdf_extract._settle_legacy_families`. Measured through the
-   pipeline door: `orphan` 96 → 0 on a page with one named and one unnamed face,
-   written in Ayar codes; a pinned name is never asked, and an undecided sample
-   keeps the default with the attempt recorded. `test_legacy_family.py`.
+   `extract/legacy_lane_score.decide_lane`, wrapping
+   `extract/legacy_judgement.decide_legacy_family`, is called by
+   `FontDecoder.settle_legacy_family` on strings collected by
+   `extract/pdf_extract._settle_legacy_families`. The standalone scorer retains
+   its 0.85 floor for comparison; the lane wrapper selects the better table
+   relatively and abstains for fewer than 50 marks. Measured through the pipeline
+   door: `orphan` 96 → 0 on a page with one named and one unnamed face, written in
+   Ayar codes; a pinned name is never asked, and an insufficient sample keeps the
+   default with the attempt recorded. `test_legacy_family.py`.
    Two things deliberately **not** done here: the choice was not moved into the
    beautify stage (a wrong table is a wrong *character*, not a wrong order, and
-   only the parse stage has the raw codes and both tables), and it was not decided
-   per page beyond one page (a table is a font fact — per-page scoring would
-   let 400 pages of one face disagree).
+   only the parse stage has the raw codes and both tables), and it does not let
+   each page commit a conflicting table. A short sample can accumulate across
+   up to three attempts; the resulting answer is pinned once to that face for
+   the rest of the document.
 1d. **Make the subset bridge callable, then test it.** Partly done, and the
    measurement killed the part that should not have been tried. A face now has an
    identity: `FontDecoder.program_sha256`, with `.pairable` answering whether the
@@ -135,16 +134,28 @@ those three sites is main's action: `B.Parser/AUDIT.md`,
    name" and costs one sha256 per embedded program. `pdf-legacy-bridge.test.js`'s
    three real-hash cases cannot be ported while that JS tree and the source PDFs
    (branch `trash`) are out of reach.
-1e. **Widen the code-page probe to what the lost `extend` version did.** The port
-   this turn matches the *restored* `legacy-judgement.js` (one sample, floor, mark
-   minimum), and that module is a reduced survivor. `extend/codepage-resolve.js
-   chooseCodePage` (deleted in `764b272`) sampled up to six pages per candidate,
-   built a `DocumentDecoding` per table rather than swapping one field, kept a
-   ledger (`candidates`, `zeroedForFewMarks`, `pagesAsked`, `pagesUsed`,
-   `pagesFailed`, `marks`) and emitted it as a `codepage` event, and ranked
-   `UNICODE_PATH` as a third candidate so "neither table — this is Unicode" is an
-   answer. All four are still open. Do the ledger first: an accepted-or-not decision
-   with no page count next to it cannot be audited against the books.
+1e. **Make the code-page probe auditable before widening it.** The ledger is now
+   implemented without changing which table wins. The current Python path can
+   accumulate shown strings across up to three probe attempts (bounded by
+   `PROBE_SAMPLE_BYTES`), tries Ayar and WinInnwa, and keeps one answer on the face.
+   Each attempt records `candidates`, `zeroedForFewMarks`, `pagesAsked`,
+   `pagesUsed`, `pagesFailed`, marks and candidate scores/evidence. With both
+   `PARSER_DIAGNOSTICS=on` and `PARSER_LOG_ENABLED=on`, the file gets a
+   `[PDFDIAG] codepage` event per attempt; it contains counts and evidence, never
+   decoded sample text. `attempts` counts evaluations; `pagesAsked` counts distinct
+   one-based PDF pages that showed the face; `pagesUsed` counts pages retained in
+   the current bounded sample; `pagesFailed` counts distinct pages that raised in a
+   candidate decode (with the candidate breakdown in `candidates`). A candidate's
+   `pagesUsed` is zero when its sample read failed; `zeroedForFewMarks` counts
+   candidate evaluations below the mark minimum, with counts by candidate.
+
+   **Still open:** the lost `extend/codepage-resolve.js chooseCodePage` sampled up
+   to six pages *per candidate* and built a separate `DocumentDecoding` per table;
+   the current path still swaps the table on the face's decoder and is capped at
+   three attempts. Ranking `UNICODE_PATH` as a third candidate remains Q6, a
+   behavior decision rather than part of the ledger task. The source PDFs on
+   `trash` are not required to unit-test or audit the ledger, but they are needed
+   to measure any wider probe against the books.
 1f. **Do not ship the pooled map.** `pooled-keyboard-font-evidence.json` (7.4 MB)
    is the widest name+hash evidence in the old design and Python never loads it.
    If `pdfRepairCandidates` is ever ported, the map belongs beside the source PDFs
@@ -279,11 +290,10 @@ measurement that frames it is named, so answering means choosing, not re-running
   implementation detail.
 - **Q6 · Should the probe keep a `UNICODE_PATH` third candidate?** (1e) The lost
   `extend/codepage-resolve.js chooseCodePage` could answer "neither table — this is
-  Unicode", which is the lane gate admitting it was wrong. The port matches the reduced
-  restored module (one sample, floor, mark minimum) and the lane can currently only
-  abstain or take a table. Adding the candidate is a real change to what the lane may
-  say, so it is asked rather than done. The ledger (`pagesAsked`, `pagesUsed`,
-  `pagesFailed`, `zeroedForFewMarks`) is not a question and is open to work.
+  Unicode", which would let the legacy face probe reject both tables. The current
+  path still considers only Ayar and WinInnwa, with a per-face answer or abstention;
+  its ledger is implemented and records the page/candidate evidence. Adding a third
+  candidate changes what the parser may conclude, so it remains an owner decision.
 - **Q7 · Is "the trial pins the face, never the lane" final?** The move was tried,
   measured on both books and disarmed (`ceaea30` in the flattened history): the trial's
   sample is read through the shared decoder, so it gets the map's text for free while

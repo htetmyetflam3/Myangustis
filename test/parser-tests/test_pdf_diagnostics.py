@@ -147,6 +147,47 @@ class DiagnosticTests(unittest.TestCase):
             self.assertIn('"hex_placeholder_patterns": 1', line)
             self.assertIn('"layout"', line)
 
+    def test_codepage_ledger_is_file_only_and_contains_no_decoded_sample(self):
+        from test_legacy_family import SAMPLE_TEXT, _pdf as legacy_probe_pdf
+        from myangustis_parser.extract.pdf_extract import extract_page_lines, parse_pdf_objects
+        from myangustis_parser.extract.pdf_fonts import DocumentDecoding, LEGACY_CODE_PAGES
+
+        pdf = legacy_probe_pdf()
+        expected_doc = DocumentDecoding('legacy')
+        expected_lines, _, _ = extract_page_lines(
+            parse_pdf_objects(pdf), 3, 0, expected_doc, probe_page=7)
+        extraction = {'fonts': {}, 'sample_enabled': False,
+                      'adjacent_duplicate_runs': 0}
+        doc = DocumentDecoding('legacy')
+        lines, _, _ = extract_page_lines(
+            parse_pdf_objects(pdf), 3, 0, doc,
+            diagnostics=extraction, probe_page=7)
+        self.assertEqual(lines, expected_lines)
+        self.assertIn(SAMPLE_TEXT, [line[3] for line in lines])
+        probed_face = next(decoder for decoder in doc._decoders.values()
+                           if decoder.name == 'F2')
+        self.assertIs(probed_face.font_legacy_code_page, LEGACY_CODE_PAGES['ayar'])
+        page_text = '\n'.join(line[3] for line in lines)
+        pg = {'text': page_text, 'decode_kind': 'legacy', 'diagnostics': extraction}
+        result = {'decision': 'legacy', 'category': 'UNICODE',
+                  'finished': page_text, 'base': page_text, 'clean': page_text}
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / 'log' / 'lane-decisions.log'
+            console = []
+            tracker = LaneLog('probe.pdf', Logen(file=path, console=console.append))
+            with patch.dict(os.environ, {'PARSER_DIAGNOSTIC_SAMPLES': 'off',
+                                         'PARSER_DIAGNOSTICS_VERBOSE': 'off'}):
+                diagnostics.page_log(tracker, 7, pg, result, page_text)
+            log_text = path.read_text()
+
+        self.assertIn('[PDFDIAG] info codepage', log_text)
+        self.assertIn('"page": 7', log_text)
+        self.assertIn('"pagesAsked": 1', log_text)
+        self.assertIn('"pagesUsed": 1', log_text)
+        self.assertIn('"font_program_sha256":', log_text)
+        self.assertNotIn(page_text, log_text)
+        self.assertEqual(console, [], 'codepage details must stay on the file sink')
+
     def test_ssh_queue_logs_separate_segmentation(self):
         import pyarrow.parquet as pq
         from test_ssh_combined_text import CFG, download

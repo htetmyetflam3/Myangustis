@@ -369,6 +369,17 @@ def page_log(tracker, page, pg, result, output):
     record = page_record({'book': lane_log.book, 'page': page}, pg, result, output)
     fonts = _fonts(pg)
     report.page(record, fonts)
+    extraction = pg.get('diagnostics') or {}
+    for ledger in extraction.get('codepage_events', ()):
+        # Probe ledgers are emitted only to the opt-in file sink. They contain
+        # candidate metrics and page counts, never decoded sample strings.
+        lane_log.file_event('codepage', {
+            'book': lane_log.book, 'page': page,
+            'resource': ledger.get('resource'),
+            'base_font': ledger.get('base_font'),
+            'font_program_sha256': ledger.get('font_program_sha256'),
+            'ledger': ledger.get('ledger', {}),
+        })
     if verbose_enabled():
         lane_log.file_event('page', _verbose_page(record, pg, result, output))
     else:

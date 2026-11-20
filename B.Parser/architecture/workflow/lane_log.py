@@ -1,4 +1,4 @@
-"""Per-book parser decisions; only changes and contiguous page ranges are logged."""
+"""Per-book parser decisions and file-only page evidence."""
 from __future__ import annotations
 
 import os

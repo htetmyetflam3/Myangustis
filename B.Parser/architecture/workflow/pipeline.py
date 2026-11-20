@@ -169,7 +169,7 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
         extraction = {'fonts': {}, 'sample_enabled': diagnostics.samples_enabled(), 'adjacent_duplicate_runs': 0} if diagnostic else None
         try:
             kwargs = dict(used_myanmar_fonts=font_names, used_legacy_fonts=used_legacy_fonts,
-                          image_records=images)
+                          image_records=images, probe_page=idx + 1)
             if extraction is not None:
                 kwargs['diagnostics'] = extraction
             lines, w, h = extract_page_lines(objects, pnum, pgen, code_to_uni, **kwargs)

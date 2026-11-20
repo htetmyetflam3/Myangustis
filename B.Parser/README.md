@@ -110,8 +110,9 @@ parsing. The log contains the book filename and page numbers, not page text.
 
 A repeated parse creates new entries. The beautify range is emitted when it
 ends or the page iterator closes; an abruptly terminated process may lose the
-last pending range. Neither this file nor the console log is a per-page or
-per-character dump.
+last pending range. Without diagnostics, the lane log is not a per-page dump;
+opt-in diagnostics add page-level counts and probe evidence, never a character
+stream by default.
 
 
 ### Diagnosing garbled PDF text
@@ -135,8 +136,14 @@ the local parser or reset/back up queue outputs and state together before
 reprocessing. Do not delete production output merely to collect diagnostics.
 
 Each page records the chosen decoding lane and reason, actual finishing rule,
-category, cleanup setting, image flag and warning codes. `extraction.fonts`
-contains up to 12 resource entries plus an `<other>` aggregate: base font,
+category, cleanup setting, image flag and warning codes. When an unnamed legacy
+font is probed, the file also gets a `[PDFDIAG] codepage` event for each attempt;
+it includes per-candidate marks/scores and asked/used/failed page counts. This
+event is file-only and requires both `PARSER_DIAGNOSTICS=on` and
+`PARSER_LOG_ENABLED=on`. It never includes decoded sample strings or exception
+messages; the separate sensitive `PARSER_DIAGNOSTIC_SAMPLES=on` option can still
+add page-stage samples to the verbose page event. `extraction.fonts` contains up
+to 12 resource entries plus an `<other>` aggregate: base font,
 subtype, CID flag, ToUnicode/embedded glyph-map entry counts, encoding and
 legacy/visual flags, input bytes, runs, decoded characters, Myanmar characters,
 single-character runs, and exact unmapped-code, fallback-byte and dropped-control
