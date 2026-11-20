@@ -29,6 +29,13 @@ OCR uses the external Tesseract CLI; configure language data through
 PDFium Python package at scale 3 (216 DPI) before recognition. The former
 `PRASER_OCR_DPI` Poppler-fallback setting no longer changes PDF page OCR.
 SVG helper scripts and their golden fixtures are in `tools/svg/`.
+The standalone `tools/svg/pdf2svg.py` exports an original PDF page as SVG paths
+and a line-boundary JSON file. `tools/svg/known/sheet.py` is a historical
+prototype that shapes parsed text into SVG paths. They are not connected to the
+parser or to vector voting and matching. The prototype uses fixed `/tmp` input
+and font paths, and both scripts require extra dependencies: PyMuPDF and Pillow
+for the PDF export, plus HarfBuzz (`uharfbuzz`) and fontTools for the text
+sheet. The files were restored from commit `b69206e`.
 
 PDF decryption and object-stream expansion use the pure-Python `pypdf` library,
 not the qpdf executable. Password-protected files requiring a non-empty user
