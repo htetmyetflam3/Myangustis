@@ -574,41 +574,7 @@ resources with **zero `/ToUnicode` entries** (`/ABCDEE+Zawgyi-One`,
 with neither `/ToUnicode` nor `/Encoding` leaves no per-glyph link in the file,
 so every mark outside the fallback is lost — that is the open root cause.
 
-## The cleanup flag is not part of the design
-
-**The gate.** `workflow/finish.clean()` is normalize, called after a page's
-parsing finishes. Every page of every lane passes through it — Unicode, Zawgyi
-after Rabbit, legacy, OCR, UNKNOWN — it is internal routing rather than a
-caller's option, and when it returns the page's parsing is finished: the page
-leaves the parsing chain and nothing downstream re-opens its text. Its two halves
-are one step: ordering (`order_text`, whose tables are the engine's) and the
-imposter replacement (`cleanup_text`).
-
-**Deleted here.** There was an `apply_cleanup` boolean threaded from
-`finish.clean` through `finalize_pdf_output`, `finish_text`, `finish_pdf_page`,
-`pipeline._convert_line`, `_conv_lines`, `_cleanup_for`, `build_content`,
-`build_final_pages`, `process_pdf_stream`, `collect_stream_results`,
-`diagnostics.page_log`/`page_record` (as `cleanup_applied`) and the entry callers.
-Any caller could hand a page back with the ordering applied and cleanup skipped,
-which is the same text two lanes would not agree on. `test_public_entry_apis_expose_no_cleanup_toggle`
-pinned only that the *public* APIs hid the flag, so the internals kept it; the
-whole flag is now gone, the two halves are `clean` (the page's text) and
-`ordered` (a report column, never an output), and
-`test_shared_finish.test_the_gate_has_no_switch` fails if the word `cleanup`
-appears in any of those signatures again.
-
-**The JS side: delete it there too.** The mirror still carries the flag and the
-Python parity tests are written against its output, so this note is the
-instruction, not an oversight:
-
-| JS file | the flag's shape | what to do |
-|---|---|---|
-| `@core/runtime/finalized-cmap.js` | `orderUnicodeText`/`cleanupUnicodeText` are separate exports, and `convertFinalizedPageText(text, page, applyCleanup)` picks between them with a boolean | drop the third argument; return the `(base, clean)` pair, as `finish.finalized_output` does |
-| `@core/runtime/finish.js` | `cleanupFor(cat, text)` gates by category and the category gate is real; `applyCleanup` is threaded beside it | keep the category rule, delete the boolean |
-| `@core/pdf/legacy-judgement.js`, `@core/runtime/finish.js:58` | `orderText(...)` called directly, no flag | nothing — this is already the design |
-| job payloads on either door | `applyCleanup` is a key nothing reads: `interop.run_job` picks its options by name and never looks at it | delete the key wherever a caller still sends it |
-
-### The regional wrapper: deleted on request
+## The regional wrapper: deleted on request
 
 `normalize/unicode_evidence.py` and `preserve_regional_runs` are **gone**
 (2026-11-20, by instruction). Removed with them: the import and the three calls in
@@ -637,12 +603,6 @@ where this belongs; until then Python and the JS oracle disagree on such text by
 design, not by accident.
 
 ## The legacy ordering rule: two cases, chosen by the code page
-
-The chain gives every lane one slot for the rule that rewrites its text:
-
-> stem parser -> judgement -> lane selection -> parse in the selected lane with the
-> selected beautify rule (**and in the legacy lane, that rule is the legacy
-> ordering**) -> cleanup -> `finish.py` -> bind-engine api.
 
 The legacy lane's slot is filled, and it has **two cases**, because a legacy face's
 visual order is a property of the code page, not of the lane:
@@ -687,8 +647,7 @@ if (decision === "legacy") {
 }
 ```
 
-So the legacy decision is still the one documented divergence from the mirror, and
-`test_pdf_finish_js_parity.py` still pins its size (`LEGACY_LANE_GAP`).
+The legacy decision differs from the pinned reference.
 
 **Measured, 2026-11-20, because the pin was not describing anything.** Against the
 pinned reference it now compares (`67f0284`, main), the oracle diverges on 253 of
@@ -700,182 +659,6 @@ else, so the guard trips at the first sample outside that shape (`'က'`,
 Read it as: the oracle outlived the reference it was written against, not as a
 one-sample regression, and the pin needs re-basing on a reference this tree still
 mirrors before it means anything again.
-
-## The separate Engine-normalize call is deleted; bind engine is the only door
-
-**The trace, from both trees, is what settles it.** The bind api is "call it and
-pass an object", and the normalize sits *behind* it, applied to every block before
-the Engine looks at it:
-
-| step | JS (pinned `67f02845`) | Python (`A.Engine/architecture/`) |
-|---|---|---|
-| the call the parser makes | `@postprocess/bind-engine.js` — `bindEngine(request)` → `BindEngine(request)` | `api.py:6-8` — `collect(text, flag)` → `bind_engine({'sourceText': text, 'flag': flag, 'log': False})` |
-| into the engine | `init/bridge.js:12` — `async function* Engine({ sourceText, flag, log }, …)` | `init/bridge.py:17-42` — `bind_engine(request)`, then `bridge.py:42` |
-| the input reader | `init/bridge.js:19` — `readFromApi(sourceText)` | `bridge.py:42` — `read_from_api(source, mapper)` |
-| **the normalize** | `MonoSyllabism/generators/input.js` — `for await (const block of collectFromText(sourceText)) { const cleaned = normalize(block); const mapped = mapperStr(cleaned); yield mapped; }` | `MonoSyllabism/generators/input.py:3-5` — `for block in collect_from_text(text): yield runtime.mapperNormalize(block)` |
-| what that is | `normalize` + `mapperStr`, imported from `map/loader.js` | `map/normalize.py:95` `mapperNormalize = mapperStr(reorderAndWrap(normalize(text)))`, and `:89` `normalize` = `NFC → from_utf16_units → Glue strip → cleanImposters` |
-
-Two consequences, and they are the rule:
-
-1. **An upfront normalize in the parser is the same pass twice**, run on the wrong
-   side of the door. The parser's job ends at `cleanup` inside the finish; whatever
-   it hands over is normalized by the Engine as the first act inside bind.
-2. **It is not a repair, so deleting it loses nothing.** What returns from bind is
-   tagged *analysis* of the normalized text — the normalized text is not written
-   back over the file. A stray mark that survives into a finished page is therefore
-   a `cleanup` bug to fix in `cleanup`; pre-normalizing at the parser's end would
-   hide it from `normalize/scan.py`'s counts and from the reports while leaving the
-   shipped bytes identical.
-
-That is also why this section deletes the plumbing instead of wiring it, where the
-earlier draft of this audit proposed re-attaching it.
-
-The chain, in the JS's own words:
-
-| piece | what it is told to do |
-|---|---|
-| `@rule/mm-score.js` | "judges structure strictly… **This module never rewrites text.**" |
-| `@rule/judgement.js` | "the strict low-level token walking lives in `mm-score.js` beside it… **which this module asks for evidence. Nothing here rewrites text.**" and: "The TEXT KEEPING section at the bottom is **inherited plumbing from the deleted `normalize.js`**; it judges nothing and selects nothing." |
-| `@postprocess/beautify/zawcode-order.js` | "**These rules rewrite text; deciding stays in `@rule/judgement.js`.** … beautify is the parsing chain, repair is a later runtime stage." |
-| `@core/runtime/finalized-cmap.js` | "Every beautify rule layer gets `clean.js` as its follow-up here, **then the page is finished**… **Do not add a blanket second ordering pass behind this finish.**" |
-
-So mm-score + beautify and normalize are not one pass: the pair runs first, and
-the Engine normalize is the **final gate per line, one step behind it**. `36aa3a5`
-shows that shape exactly:
-
-```js
-// B.Parser/main/parser/text/page-file-decision.js  (finishPageToFile)
-const writeOriginal = ({ transform = (text) => text, normalizeLines = false } = {}) => {
-  for (const [, , , text] of store.lines()) {
-    let result = transform(text);                                             // beautify rule
-    if (normalizeLines) result = [...normalizePageLines(result, normalize)].join("\n");  // the gate, behind it
-    write(correctWorldWord(result, worldEvidence));
-  }
-};
-writeOriginal({ normalizeLines: true });                                   // plain lane
-writeOriginal({ transform: arrangeZawCodeOrder, normalizeLines: true });   // ZawCode lane
-```
-
-with `normalize` arriving from the front door: `extend/pipeline.js:30`
-`const normalizeWithEngine = await getEngineNormalize();` → passed into
-`finishPageToFile({ …, normalize: normalizeWithEngine })`.
-
-`764b272` ("main parser fresh") dropped the `normalizeLines` calls and the
-`normalize` parameter and moved the two functions into `@rule/judgement.js`'s TEXT
-KEEPING section as orphans. At the pinned reference `getEngineNormalize` is
-imported by **`test/parser-test/zawcode-order.test.js` and nothing else** — the
-gate runs in the JS tests and not in the JS chain. The Python port inherited that
-state faithfully: `normalize/judgement.py` carried `normalize_page_lines` /
-`normalize_output_text` with `test_mirror.py` as their only caller, and
-`resources/engine.py` reads engine *data*, never an engine function. (The two
-functions are deleted now — see "Settled, and the other way round" at the end of
-this section.)
-
-**Name the owner before blaming it.** No `clean.py` has ever existed in this
-repository, and neither has a parser `normalize.py`: the Python file is
-`normalize/cleanup.py`, at every step of its history
-(`B.Parser/Python/modules/cleanup.py` → `main/Python/modules/cleanup.py` →
-`architecture/normalize/cleanup.py`). The deleted `B.Parser/main/parser/text/normalize.js`
-said so in its own header, and that sentence is the design's:
-
-> "JS-only pipeline orchestration. **There is deliberately no `normalize.py`** —
-> this module has NO Python counterpart, so it must not define any data or
-> behaviour that a Python module owns. The five functions **`cleanup.py` owns**
-> live in their mirror, `cleanup.mjs`, and are re-exported here so existing
-> callers keep working unchanged. **`normalizeGlue` is `cleanup.py`'s
-> `normalize_text`**, aliased on the way through because this module exports an
-> unrelated `normalizeText` of its own further down — the one name that genuinely
-> means two different things on the two sides of the port. **`MARKS` belongs to
-> `mm_score.py`** and is re-exported from its mirror for the same reason."
-
-So the five normalize functions belong to `cleanup.py` (with `MARKS` to
-`mm_score.py`), and `normalize.js` was only a JS re-export shim — deleted in
-`2ef4ac3`, with `cleanup.js` and every other `normalize.js` gone by the pinned
-reference. What `764b272` actually lost is not a Python module but the shim's
-second job: the **pluggable external normalize** (`initNormalize()` reading
-`PRASER_NORMALIZE_MODULE`, `getEngineNormalize()` handed to
-`finishPageToFile({…, normalize})` and applied per line one step behind the
-beautify rule). At the pinned reference that hook has no production caller at all
-— only `test/parser-test/zawcode-order.test.js` still fetches it — so an outside
-normalize can no longer be attached to the finish, and the parser's own
-`normalize_page_lines`/`normalize_output_text` (the plumbing the shim re-exported)
-sat uncalled in both trees — deleted from the Python side, still to be deleted in
-the JS.
-
-**Settled, and the other way round.** The question "should the gate be re-attached
-to the parser?" is answered *no*: the chain reaches the Engine **once**, at its
-end, through the bind-engine api — `normalize/pos_scan.py` importing
-`myangustis_engine.api.collect` is the only Engine text call in the parser, while
-`resources/engine.py` reads engine *data* and `workflow/lane_log.py` its logger.
-A second, separate call of the Engine `normalize` is a competing owner of the same
-characters, so the plumbing that made one possible is **deleted here**:
-`normalize/judgement.py`'s TEXT KEEPING section (`normalize_page_lines`,
-`normalize_output_text`, and their `__all__` entries) plus the two
-`test/parser-tests/test_mirror.py` pins that were its only callers. Nothing else in
-the tree loaded them, which is the same test the deletion was decided by
-everywhere else in this audit.
-
-`workflow/ocr.py`, `entry/*`, `output/*` and the parity suites are untouched — no
-behavior changed, so `test_pdf_finish_js_parity.py`, `test_decoder_js_parity.py` and
-`test_docx_js_parity.py` still compare byte-for-byte, and a page's characters are
-shaped by exactly one thing after the pair: `cleanup` at the finish.
-
-**Action for main, because the JS is the same.** At the pinned reference the only
-remaining separate caller is a *test*, and the reach is three sites:
-
-| site | what to do |
-|---|---|
-| `@rule/judgement.js:266,281` — `normalizePageLines` / `normalizeOutputText` | delete; the header already calls them "inherited plumbing … it judges nothing and selects nothing" |
-| `B.Parser/_path.js:39` `getEngineNormalize`, its re-export at `B.Parser/_index.js:5` and `index-path.js:52,57` | delete the hook — with no chain caller it exists only to let a test fetch a second normalize |
-| `test/parser-test/zawcode-order.test.js:6,10,12,110,184,196,202-243` | drop the cases that call `getEngineNormalize()`/`normalizeOutputText()`; keep the ordering assertions that go through the lane |
-
-The `36aa3a5` shape above is *not* worth restoring, and the trace is the reason: its
-`normalizeLines` pass re-ran what bind already runs internally, and its only visible
-effect was on bytes the file already carried. If main wants the text the parser
-*writes* to be Engine-normalized too, that is a different decision from this one —
-it would move every lane's output, re-pin the parity samples in both trees at once,
-and re-baseline `normalize/scan.py`'s orphan/stray counts, because those are
-measured on the written text. Nothing was wired here, by design: the parser has one
-normalize owner inside the finish (`cleanup`) and the Engine keeps its own, behind
-the api.
-
-## Reading a PDF run: which symptom belongs to which phase
-
-The books in `audit/broken-books.jsonl` live on the scraper VPS, not in Git:
-`download-pdfs.py --env /path/to/.env --book=<name>` fetches them (SSH host, user
-and `SSH_DIR` come from `.env`; the default local directory is outside the
-repository, and every file is checked against the source SHA-256). This sandbox
-has only `.env.example` and no route to that host, so the per-PDF runs happen on a
-machine that does -- and the table below is what to read in their output. Each
-symptom class is owned by exactly one phase; a class improving somewhere else
-means a repair left its phase.
-
-| phase | what it owns | the class that should move here | what a hit here *means* |
-|---|---|---|---|
-| `extract/pdf_extract` + `pdf_fonts` (decode) | turning the file's codes into Unicode | `orphan` where the base never arrived; `virama` with nothing stacked | the file has no per-glyph link (no `/ToUnicode`, no `/Encoding`) -- root cause 2, not a rule to add downstream |
-| the lane's beautify rule (`apply_decision`: `arrange_legacy_order` incl. the ZawCode swap, `arrange_zawcode_order`, `Rabbit`) | the code page's own ordering and shared-glyph habits | `digit` (``၀`` wearing a mark, ``ရ`` inside a word run), preposed/kinzi order | a wrong or undecided table: inspect the per-face `codepage` ledger (marks, candidate scores, `impossible`/English evidence and page counts) before blaming the ordering |
-| `cleanup` at `workflow/finish` | mark order inside a cluster that *has* a base, imposter replacement | `orphan` whose base is present but out of order; ``မၻာ``-style imposters | a rule missing from `order_text`/`cleanup_text` -- the one shared ordering, never a lane-specific copy |
-| `normalize/pos_scan` → bind-engine api | reporting only | none: it must not change any count | a difference here is the Engine's reading of the text, and the Engine normalizes *behind* the api; nothing is written back |
-| repair development tools | `tools/svg/pdf2svg.py` exports original PDF pages and line boundaries; `tools/svg/known/sheet.py` shapes parsed text into paths. Both are standalone historical prototypes. Vector vote and match remain unwired. | none yet | These tools do not change parser output. The parser renders and scans its pages without applying a vector repair. The tools were restored from `b69206e`; `311b703` documented the missing runtime repair stage. |
-| extraction piece dedup + `_collapse_overprint` | double-drawn shadow copies | `stray`, `repeat` | a piece that is one unit repeated is a piece-level fact -- fixed at the piece, never re-parsed later |
-
-Three readings that are expected, not regressions:
-
-- **`impossible` does not go down.** By design it is consulted only in the
-  wininnwa-versus-ayar decision (a veto there, never a rewrite), so a page keeps
-  its `impossible` hits and says so; `scan` counting them is the deliverable.
-- **`orphan` falls but not to zero.** Ordering cannot move a mark with no base in
-  front of it. The residual `ေ`/`ိ`/`ာ`/`ျ`/`ု` leading counts are the size of the
-  decode problem, not of the ordering rule.
-- **A legacy page may differ from the JS output.** `test_pdf_finish_js_parity.py`
-  pins that gap at **39 of 310 samples, all `decision == 'legacy'`** -- the lane
-  rule the mirror has not landed. Anything outside that lane is a bug, not a gap.
-
-```bash
-python -m myangustis_parser.normalize.scan <out.txt> -o <out.scan.txt>   # damage per rule
-python B.Parser/tools/audit_overview.py --write                          # refresh OVERVIEW.md
-python B.Parser/tools/audit_overview.py --check                          # claim table vs evidence
-```
 
 ## Front-door re-run of three parts from the report
 

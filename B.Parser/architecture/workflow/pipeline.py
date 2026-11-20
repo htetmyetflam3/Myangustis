@@ -329,10 +329,7 @@ def process_pdf_stream(pdf_path, detector, log=lambda m: None,
         {"page", "category", "prob", "text", "n_changes",
          "lines", "wh", "has_img"}      # layout fields only when want_layout
 
-    ``text`` is the final text for that page -- the finished page exactly as
-    the gate left it (Zawgyi already converted via Rabbit, imposter cleanup on
-    the lanes JS runs it on); ``n_changes`` is how many lines that cleanup
-    altered (counted, not stored) -- always 0 for ZAWGYI and UNKNOWN.
+    ``text`` is the cleaned page text. ``n_changes`` counts changed lines.
 
     ``want_layout=True`` (DOCX output) additionally carries the per-line
     x/y/font-size and the page MediaBox so the writer can reproduce the page
@@ -764,17 +761,9 @@ def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: Non
         chosen = ('zawgyi-one' if cat == 'ZAWGYI' else
                   'unicode' if cat == 'UNICODE' else source_encoding)
         if cat == 'UNKNOWN':
-            # DOCX source.js does not infer a page decision or reorder unknown
-            # text; missing/mixed font evidence leaves the stored text alone.
-            # The later phase is still global, so the chunk is cleaned and
-            # scanned like every other one -- `clean` is the phase's output, not
-            # a conversion the plan chose.
             base, clean, decision = chunk, finish.clean_page(chunk), 'unknown'
             scan_result = finish.scan.scan_text(clean)
         elif cat == 'UNICODE' and source_encoding == 'auto' and has_only_unicode_fonts(fonts):
-            # A direct known Unicode face keeps the stored base text; JS's
-            # cleanup follow-up does not perform pre-base mark movement. Same
-            # phase 2 call the PDF finish makes -- one name, one step.
             base, clean, decision = chunk, finish.clean_page(chunk), 'pass-through'
             scan_result = finish.scan.scan_text(clean)
         else:
@@ -825,12 +814,6 @@ def build_final_pages(job):
     out = []
     for pg, rep in zip(job["pages"], job["reports"]):
         if job.get('kind') == 'pdf' and pg.get('_ocr_supplied'):
-            # JS finalizes the original geometry ahead of OCR text when any
-            # extractable lines remain; the OCR text is not PDF-finished. It does
-            # get the same later phase as every other text in the tree, though --
-            # one name, one step: ``finish.clean_page``, exactly what a DOCX chunk
-            # and a PDF line get. The geometry lines are the PDF's own and were
-            # left as extracted; the OCR text is the page text.
             page = {"text": finish.clean_page(pg["text"]), "lines": pg.get("lines", []),
                     "wh": pg["wh"], "has_img": pg["has_img"], "images": pg.get("images", [])}
             page["marked"] = page_markup(page)
@@ -847,12 +830,6 @@ def build_final_pages(job):
             out.append(page)
             continue
         if rep["clean"] is not None:
-            # One later phase for every kind and every decision: ``clean_page``
-            # -- the gate's cleanup half, with no ordering of its own. A DOCX
-            # chunk, an OCR page and a PDF line all get this same call, and no
-            # lane is exempt from it (a legacy page included, since cleanup is
-            # not the ordering rule stage 1.1 applies). Never ``finish.clean``
-            # here: that one orders first, and this step is after the order.
             transform = finish.clean_page
             lines = [(line[0], line[1], line[2], transform(line[3]),
                       line[4] if len(line) > 4 else None) for line in pg["lines"]]

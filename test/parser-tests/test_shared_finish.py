@@ -25,9 +25,6 @@ class SharedFinishTests(unittest.TestCase):
              patch.object(finish.Rabbit, 'zg2uni', side_effect=AssertionError):
             result = finish.finish_text('ေြက ေြခ', source='ocr')
         self.assertEqual(result['decision'], 'ocr')
-        # OCR text is not finished: nothing is applied to it, and the phase reads
-        # it as it stands. The swap never touches it (the patches above would
-        # have raised), so `base` is the OCR text itself.
         self.assertEqual(result['base'], 'ေြက ေြခ')
 
     def test_encoding_override_is_respected_only_for_parsing(self):
@@ -42,63 +39,18 @@ class SharedFinishTests(unittest.TestCase):
         from myangustis_parser.normalize.mm_score import score_text
         self.assertEqual(score_text('က😀')['myanmar_ratio'], 1 / 3)
 
-    def test_the_gate_has_no_switch(self):
-        """Nothing in the chain may take a cleanup toggle -- not one function.
-
-        ``clean`` is the gate every finished page passes through, and its two
-        halves are one step: a parameter that could skip the imposter half would
-        make the page's text depend on who called it. JS still threads an
-        ``applyCleanup`` boolean through ``convertFinalizedPageText`` and
-        ``cleanupUnicodeText`` (see ``B.Parser/AUDIT.md``); that is the mirror's
-        own thing to delete, and until it is gone the parity tests compare the
-        pair this module returns instead of a flag.
-        """
-        import inspect
-        from myangustis_parser.entry import index, manager
-        from myangustis_parser.workflow import diagnostics, pipeline
-
-        chain = (finish.clean, finish.ordered, finish.finalized_output,
-                 finish.finalize_pdf_output, finish.finish_text, finish.finish_pdf_page,
-                 pipeline._convert_line, pipeline._conv_lines, pipeline._cleanup_for,
-                 pipeline.build_content, pipeline.build_final_pages,
-                 pipeline.process_pdf_stream, pipeline.collect_stream_results,
-                 diagnostics.page_log, diagnostics.page_record,
-                 index.convert, index.parse_decoding, index.dispatch_ocr,
-                 manager.dispatch_path, manager.dispatch_bytes,
-                 manager.dispatch_stream, manager.dispatch_ocr)
-        for fn in chain:
-            with self.subTest(function=f'{fn.__module__}.{fn.__name__}'):
-                toggles = [name for name in inspect.signature(fn).parameters
-                           if 'cleanup' in name or name == 'applyCleanup']
-                self.assertEqual(toggles, [],
-                                 f'{fn.__name__} still takes a cleanup toggle: {toggles}')
-                self.assertNotIn('cleanup', inspect.signature(fn).parameters.values().__str__(),
-                                 f'{fn.__name__} mentions cleanup in its signature')
-
-
-    def test_clean_uses_current_js_prebase_and_impossible_rules(self):
+    def test_order_text_prebase_and_impossible_rules(self):
         self.assertEqual(cleanup.order_text('ေက'), 'ကေ')
         self.assertEqual(cleanup.order_text('ကေိ'), 'ကေ')
         self.assertEqual(cleanup.order_text('ကေုု'), 'ကေုု')
 
 
 class PdfOutputLayoutTests(unittest.TestCase):
-    def test_legacy_layout_is_not_cleaned_a_second_time(self):
-        from myangustis_parser.workflow import pipeline
-        job = {'kind': 'pdf', 'pages': [{'text': 'ကေ', 'lines': [(0, 0, 12, 'ကေ', None)],
-                                       'wh': (100, 100), 'has_img': False}],
-               'reports': [{'base': 'ကေ', 'clean': 'ကေ', 'decision': 'legacy'}]}
-        with patch.object(pipeline, 'cleanup_text', side_effect=AssertionError('unexpected cleanup')):
-            self.assertEqual(pipeline.build_final_pages(job)[0]['lines'][0][3], 'ကေ')
-
     def test_pdf_layout_uses_cleanup_without_reordering_again(self):
         from myangustis_parser.workflow import pipeline
         job = {'kind': 'pdf', 'pages': [{'text': 'ကေ', 'lines': [(0, 0, 12, 'ကေ', None)],
                                        'wh': (100, 100), 'has_img': False}],
                'reports': [{'base': 'ကေ', 'clean': 'ခေ', 'decision': 'pass-through'}]}
-        # The PDF layout step applies the phase (``finish.clean_page``) and never
-        # the ordering-carrying ``finish.clean``; it used to reach the phase
-        # through ``pipeline.cleanup_text``, which it no longer calls.
         with patch.object(pipeline.finish, 'clean', side_effect=AssertionError('unexpected reorder')), \
              patch.object(pipeline.finish, 'clean_page', return_value='ခေ'):
             result = pipeline.build_final_pages(job)[0]

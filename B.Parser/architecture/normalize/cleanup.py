@@ -321,59 +321,18 @@ def normalize_text(t: str) -> str:
 
 
 def order_text(t: str) -> str:
-    """Normalize + reorder: the part that runs on EVERY path, always.
-
-    Ordering marks by priority is not an opinion about a document, it is the
-    one canonical sequence, so it is not behind the cleanup toggle and not
-    tied to a category: Zawgyi (after Rabbit), Unicode and Unknown all get
-    it. The glue strip comes with it because a zero-width joiner sitting
-    between a base and its marks would otherwise split the cluster and hide
-    the very run that needs ordering.
-
-    Imposter replacement is NOT here -- that is the toggleable step, and the
-    Unicode path's alone.
-    """
+    """Normalize text and apply the ordering rules."""
     return drop_impossible_marks(reorder_marks(move_prebase_marks(normalize_text(t))))
 
 
 def cleanup_text(t: str) -> str:
-    """The toggleable step: imposter cleanup, on top of normalize + reorder.
-
-    Reorder runs again after the replacement, because an imposter expands
-    into real marks (U+1088 -> U+103E U+102F) that then have to take their
-    place in the run.
-    """
+    """Normalize text, replace imposters and reorder marks."""
     return drop_impossible_marks(reorder_marks(clean_imposters(normalize_text(t))))
 
 
 
-# ══════════════════════════════════════════════════════════════════════════
-# PHASE 2 -- the Engine's ``normalize``, copied, and used for every lane.
-#
-# The Engine's ``normalize`` is NFC -> glue strip -> cleanImposters, then its
-# mark run sorted by ``Priority`` (no braces, no ``mapperStr``), then the spaces
-# in front of a detached ``base + asat`` head removed. This is that function
-# with the same table and the same base test, so the parser's phase 2 and the
-# Engine's own reading see the same characters. It is here, in clean, because
-# clean owns these characters; the Engine's copy serves the Engine.
-# ══════════════════════════════════════════════════════════════════════════
 def normalize_phase2(t: str) -> str:
-    """PHASE 2, for every lane: the Engine's ``normalize``.
-
-    pass 1  NFC, glue strip, imposters, then the mark run collected exactly as
-            ``reorderAndWrap`` collects it -- every character in ``Priority``,
-            the space included (``' '`` is 17), a repeat in a run dropped -- and
-            sorted by that priority, so the marks come back behind their base
-            (``စ ီး`` -> ``စီး``, ``တ ိုင ်း`` -> ``တို င်း``)
-    pass 2  the spaces in front of a detached ``base + asat [U+1038 | U+1037]``
-            head removed -- that pattern only, so a space in front of a head
-            without asat (``န`` + ``ို``) is left as pass 1 left it
-
-    No pre-base movement and no syllable-inventory lookup: re-attaching a ``ေ``
-    is a lane's repair, and this phase is the follow-up every lane gets after
-    its own stage 1.1. Mark order and spaces only; every other character
-    survives, which is what the run over ``IMB Final.pdf`` measures.
-    """
+    """Normalize text, replace imposters and sort marks by priority."""
     if not t or not isinstance(t, str):
         return ""
     text = clean_imposters(normalize_text(t))

@@ -1,32 +1,4 @@
-"""The legacy lane's ordering rule, its two cases, and the codepage evidence.
-
-THE LANE'S STAGE 1.1 RULE LIVES HERE, and it has two cases, because a legacy
-face's visual order is a property of the CODE PAGE it was written on:
-
-    wininnwa / ayar    plain slot order: ေ+ra+base -> base+ra+ေ, ra+base -> base+ra,
-                       ေ+base(+ya) -> base+ya+ေ
-    zawcode            the same, plus compound ra/ya guards, an eight-slot window,
-                       and a ွ/ှ run moved after ေ
-
-``reorder_legacy_slots`` is the slot rule, ``reorder_zawcode_text`` the text driver
-that finds the clusters, and ``arrange_legacy_order`` the lane's entry point: it
-takes the case from the code page the face was read through (``layout``), runs the
-ZawCode swap for the compound case, then the kinzi/preposed/AA regexes both cases
-share. ``finish.apply_decision``'s ``legacy`` branch calls it, per line, before the
-one shared ordering every lane gets at page finish.
-
-History, because it matters: these three functions were deleted at cdb05fb, whose
-message and header claimed the lane's rule "does not exist in either tree". It did
-exist -- in this module and in the JS that mirrored it
-(``7504040:B.Parser/main/parser/text/legacy-order.js``, ``reorderLegacySlots``) --
-and its deletion left the lane with the ZawCode swap applied to every face. Both
-cases are back, and the switch between them is the settled code page, not the lane.
-
-What else stays here is the codepage evidence: the shared-glyph pairs from
-``homoglyphs.json`` and the Burmese-number test that tells ``ဝ`` from ``၀``, used by
-``extract/legacy_judgement`` to rank the code pages and by ``normalize/judgement``
-to count homoglyph sites on every lane.
-"""
+"""Legacy ordering and code-page evidence."""
 
 import re
 from functools import lru_cache
@@ -335,39 +307,7 @@ def reorder_zawcode_text(text, *, layout="zawcode"):
 
 
 def arrange_legacy_order(text, *, layout=None):
-    """
-    The legacy lane's beautify rule: visual order in, code-point order out.
-
-    This is the rule the chain puts in the legacy lane's own slot -- called from
-    ``workflow/finish.apply_decision`` for ``decision == 'legacy'``, BEFORE the one
-    shared ordering every lane gets at the page finish (``cleanup.order_text``),
-    and never from the extraction join, where it sat behind a ``legacy_text_fix``
-    boolean that ``workflow/pipeline`` then switched off. The switch is deleted: a
-    lane's repair is not optional, and a repair no pipeline reaches is worse than
-    none, because the next reader cannot tell whether the bytes were fixed.
-
-    It carries the ZawCode swap as well (see :func:`_zawcode_swap`): the preposed
-    movement below is that rule's ancestor, left minimal here while the branch
-    grew for ZawCode PDFs, and a legacy face can be encoded either way.
-
-    TWO CASES, chosen by the identified code page -- ``layout``:
-
-        None / 'zawcode'        THE ZAWCODE SWAP (``visual_order``) and then the
-                                regexes below: today's behaviour, byte for byte
-        'wininnwa' / 'ayar'     ``reorder_zawcode_text(text, layout=...)`` first --
-                                the plain slot case restored above -- then the
-                                same regexes
-
-    ``layout`` is the identified layout, not a lane opinion: it comes from the
-    face's name (``resources.font_names.legacy_layout_for_font``) or from the
-    settled family (``FontDecoder.settle_legacy_family``). With no layout the
-    rule keeps the ZawCode swap, which is what this function always did.
-
-    Intentionally small and conservative: it mirrors the established Ayar ->
-    Myanmar3 conversion -- move preposed \u103c/\u1031 after the base, move the
-    \u1004\u103a\u1039 clusters into their Unicode order -- and preserves zero-width
-    text.
-    """
+    """Apply legacy ordering using the selected layout."""
     text = (reorder_zawcode_text(text, layout=layout)
             if layout in ('wininnwa', 'ayar') else _zawcode_swap(text))
     # A combined kinzi/vowel glyph can precede medials in legacy order.
@@ -420,21 +360,6 @@ def arrange_legacy_order(text, *, layout=None):
     # Ayar writes ဦး as ဦး in a number of older subsets.
     text = text.replace("ဦး", "ဦး")
 
-    # The AA-vowel step used to be gated on ``_aa_vowel_rule_for_legacy(doc)``,
-    # which read the decoder's ``legacy_code_page``/``map``: true for both legacy
-    # code pages and for the default map -- always true on this lane, and the only
-    # way it came out false was the deleted switch. So the gate is gone and the
-    # rule simply runs; the predicate stayed behind in the extract stage, where it
-    # has no subject left.
-    #
-    # Reorder-by-priority is NOT done here. It belongs to exactly one place,
-    # cleanup.reorder_marks, which reads the single shared priority table;
-    # a second implementation here drifted from it once already. What stays
-    # is what only this function can do: the legacy font's visual order.
-    #
-    # The single-word substitution that used to live here (a ``ဲ``/``ွ`` mix-up
-    # in one Arlarwade subset) is gone: per-resource decoding removed the
-    # cause, and patching one word of one document was never a fix.
     # A digit cannot carry a mark; restore the consonant so the marks that
     # follow have a base to attach to.
     text = fix_digit_consonant_confusion(text)

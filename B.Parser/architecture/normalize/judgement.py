@@ -254,28 +254,7 @@ ZAWCODE_MIN_SLOTS = 6
 
 
 def select_page_decision(judgment, parsing_path, zawgyi_codepage=False) -> str:
-    """The lane call: ``legacy`` / ``zawcode`` / ``rabbit`` / ``pass-through``.
-
-    The last one is named for what it does, not for the evidence behind it: the
-    page needs no rule, so stage 1.1 applies nothing to it. It is not exempt from
-    the phase that follows stage 1.1 -- that pass is every lane's, and a
-    pass-through page is normalized by it like any other. (The evidence that gets
-    it there is ``mark_order_aligned``, reported as the per-line ``aligned`` key
-    -- a statement about the text, not a lane.)
-
-    1. Pass-through: the reading already follows Unicode mark order, so it passes
-       through -- nothing but the Normalize behind every finish. Alignment is
-       measured on the reading as emitted (``mark_order_aligned``), and an
-       aligned reading is no rule's business: no swap is offered against it
-       and no conversion overrides it.
-    2. Not aligned -> the two visual-order readings are consulted, and only
-       now can either claim the page. ZawCode: the swapping rule matches more
-       than one slot (``ZAWCODE_MIN_SLOTS``); never on a Zawgyi codepage page,
-       never on a reading whose marks a space took the base from. Otherwise
-       Rabbit: the mark-order rule alone makes that call; no score margin
-       second-guesses it.
-    3. A page with no Myanmar is not consulted at all.
-    """
+    """Select a decision from page evidence and the parsing path."""
     if not judgment["hasMyanmar"]:
         return "legacy" if parsing_path == PDF_PARSING_PATHS["LEGACY"] else "pass-through"
     if judgment["aligned"]:
