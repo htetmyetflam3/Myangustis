@@ -257,9 +257,11 @@ def select_page_decision(judgment, parsing_path, zawgyi_codepage=False) -> str:
     """The lane call: ``legacy`` / ``zawcode`` / ``rabbit`` / ``pass-through``.
 
     The last one is named for what it does, not for the evidence behind it: the
-    page needs no rule, so stage 1.1 applies nothing to it. (The evidence that
-    gets it there is ``mark_order_aligned``, reported as the per-line
-    ``aligned`` key -- a statement about the text, not a lane.)
+    page needs no rule, so stage 1.1 applies nothing to it. It is not exempt from
+    the phase that follows stage 1.1 -- that pass is every lane's, and a
+    pass-through page is normalized by it like any other. (The evidence that gets
+    it there is ``mark_order_aligned``, reported as the per-line ``aligned`` key
+    -- a statement about the text, not a lane.)
 
     1. Pass-through: the reading already follows Unicode mark order, so it passes
        through -- nothing but the Normalize behind every finish. Alignment is

@@ -900,8 +900,9 @@ generated `audit/`, page for page and book for book.
 on part-4, +5 on part-8, +277 on part-5 -- and it is not the legacy phases' to own:
 beautify is a one-arm dispatch (`workflow/finish.apply_decision`: `rabbit` gets the
 conversion, `zawcode` the slot swap, `legacy` the legacy ordering, `pass-through`
-nothing -- the decision is named for that, and the mirror calls the same value
-`aligned`),
+nothing, which still leaves the phase to come round for it like every lane -- the
+decision is named for the rule it does not apply, and the mirror calls the same
+value `aligned`),
 and `normalize/judgement.select_page_decision` consults four fields and no score
 (`hasMyanmar`, `candidateSlots >= ZAWCODE_MIN_SLOTS`, `parsing_path`, `zawgyi_codepage`,
 then `judgment['aligned']`, the evidence that leads to `pass-through`); its own docstring says the mark-order rule alone makes the Rabbit

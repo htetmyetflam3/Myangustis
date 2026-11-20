@@ -49,11 +49,18 @@ def apply_decision(text, decision, *, legacy_layout=None):
     One slot, one rule per lane: the ZawCode lane gets ``arrange_zawcode_order``,
     the legacy lane gets ``legacy_order.arrange_legacy_order`` (a legacy page's
     visual order is a code-page fact, issued by the stem parser's instruction,
-    never a font name), the Rabbit lane gets the conversion. ``aligned`` has no
-    rule of its own and no follow-up either: a ``pass-through`` page ships as
-    decoded. Legacy ASCII slots are repaired where the page's runs are joined,
-    not here: this stage orders and cleans, and it must not carry a second pass
-    that only one lane can see.
+    never a font name), the Rabbit lane gets the conversion, and the
+    ``pass-through`` lane gets no rule of its own.
+
+    No rule is not an exemption. The phase behind this call comes round for every
+    lane alike -- ``finalized_output`` -> ``clean_page`` here, ``finish_text``'s
+    ``base``/``clean`` pair beside it, and ``pipeline``'s layout step for a PDF --
+    so a pass-through page is normalized by exactly the same pass as a ZawCode
+    one, and its ``base`` and ``clean`` columns differ whenever that pass has
+    something to do (``ကမၻာ`` -> ``ကမ္ဘာ``). What the lane has no rule for is the
+    ORDERING, which is what this function is for. Legacy ASCII slots are repaired
+    where the page's runs are joined, not here: this stage orders, never cleans,
+    and it must not carry a second pass that only one lane can see.
     """
     if decision == 'ocr':
         return text
@@ -223,23 +230,20 @@ def finish_text(text, *, source, parsing_path='font-cmap', zawgyi_codepage=False
             'clean': cleaned, 'scan': scan.scan_text(cleaned)}
 
 
-# JS's FINAL_UNICODE_DECISIONS: the lanes the finalized-page step owns.
-FINALIZED_OUTPUT_DECISIONS = ('pass-through', 'zawcode', 'unaligned-unicode', 'rabbit')
-
-
 def finalized_output(text, decision):
-    """The finalized page's ``(base, clean)`` pair, from JS's output step.
+    """The finalized page's ``(base, clean)`` pair.
 
-    Legacy was ordered earlier, and a decision outside JS's final set is handed on
-    as supplied in both columns. Both halves come from here so the two columns can
-    never disagree about what the gate was, and the pair cannot be split into a
-    mode where a page ships ordered-but-uncleaned.
+    The phase is global: ``clean_page`` is called for every decision, because it
+    is not a rule and no lane is asked whether it wants one. JS gates its own
+    column on ``FINAL_UNICODE_DECISIONS`` and hands ``raw`` back for a legacy
+    page; that gate is the mirror's, and this tree does not copy it -- a page's
+    text here is cleaned the same way whoever won stage 1.1.
+
+    Both halves come from here so the two columns can never disagree about what
+    the gate was, and the pair cannot be split into a mode where a page ships
+    ordered-but-uncleaned. ``base`` is the page exactly as stage 1.1 left it --
+    that lane's rule applied, or nothing for ``pass-through``.
     """
-    if decision not in FINALIZED_OUTPUT_DECISIONS:
-        return text, text
-    # PHASE 2 for every lane, pass-through included: clean.py's cleanup half is the
-    # follow-up each lane gets, and it is not a rule. `base` is the page exactly
-    # as phase 1 left it -- stage 1.1's rule applied, or nothing for pass-through.
     return text, clean_page(text)
 
 

@@ -766,8 +766,11 @@ def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: Non
         if cat == 'UNKNOWN':
             # DOCX source.js does not infer a page decision or reorder unknown
             # text; missing/mixed font evidence leaves the stored text alone.
-            base, clean, decision = chunk, None, 'unknown'
-            scan_result = finish.scan.scan_text(base)
+            # The later phase is still global, so the chunk is cleaned and
+            # scanned like every other one -- `clean` is the phase's output, not
+            # a conversion the plan chose.
+            base, clean, decision = chunk, finish.clean_page(chunk), 'unknown'
+            scan_result = finish.scan.scan_text(clean)
         elif cat == 'UNICODE' and source_encoding == 'auto' and has_only_unicode_fonts(fonts):
             # A direct known Unicode face keeps the stored base text; JS's
             # cleanup follow-up does not perform pre-base mark movement. Same
@@ -823,8 +826,12 @@ def build_final_pages(job):
     for pg, rep in zip(job["pages"], job["reports"]):
         if job.get('kind') == 'pdf' and pg.get('_ocr_supplied'):
             # JS finalizes the original geometry ahead of OCR text when any
-            # extractable lines remain; OCR text itself is not PDF-finished.
-            page = {"text": pg["text"], "lines": pg.get("lines", []),
+            # extractable lines remain; the OCR text is not PDF-finished. It does
+            # get the same later phase as every other text in the tree, though --
+            # one name, one step: ``finish.clean_page``, exactly what a DOCX chunk
+            # and a PDF line get. The geometry lines are the PDF's own and were
+            # left as extracted; the OCR text is the page text.
+            page = {"text": finish.clean_page(pg["text"]), "lines": pg.get("lines", []),
                     "wh": pg["wh"], "has_img": pg["has_img"], "images": pg.get("images", [])}
             page["marked"] = page_markup(page)
             page["text"] = markup.strip_markup(page["marked"])
@@ -840,13 +847,13 @@ def build_final_pages(job):
             out.append(page)
             continue
         if rep["clean"] is not None:
-            if job.get('kind') == 'pdf':
-                # PDF base lines have already passed the one output ordering.
-                # Legacy pages must not receive Unicode cleanup at all.
-                transform = ((lambda value: value) if rep.get('decision') == 'legacy'
-                             else finish.clean_page)
-            else:
-                transform = finish.clean
+            # One later phase for every kind and every decision: ``clean_page``
+            # -- the gate's cleanup half, with no ordering of its own. A DOCX
+            # chunk, an OCR page and a PDF line all get this same call, and no
+            # lane is exempt from it (a legacy page included, since cleanup is
+            # not the ordering rule stage 1.1 applies). Never ``finish.clean``
+            # here: that one orders first, and this step is after the order.
+            transform = finish.clean_page
             lines = [(line[0], line[1], line[2], transform(line[3]),
                       line[4] if len(line) > 4 else None) for line in pg["lines"]]
             text = rep["clean"]

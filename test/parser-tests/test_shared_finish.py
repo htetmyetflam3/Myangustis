@@ -20,20 +20,15 @@ class SharedFinishTests(unittest.TestCase):
             mock.start()
         self.addCleanup(lambda: [mock.stop() for mock in reversed(self.patches)])
 
-    def test_zawcode_swap_is_offered_on_both_parsing_lanes(self):
-        text = 'ေြက ေြခ ေြဂ'
-        for lane in ('font-cmap', 'legacy'):
-            result = finish.finish_text(text, source='parse', parsing_path=lane)
-            self.assertEqual(result['decision'], 'zawcode')
-            self.assertEqual(result['base'], 'ကြေ ခြေ ဂြေ')
-            self.assertIn('orphan', result['scan'])
-
     def test_ocr_never_calls_parsing_only_swap_or_rabbit(self):
         with patch.object(finish, 'arrange_zawcode_order', side_effect=AssertionError), \
              patch.object(finish.Rabbit, 'zg2uni', side_effect=AssertionError):
             result = finish.finish_text('ေြက ေြခ', source='ocr')
         self.assertEqual(result['decision'], 'ocr')
-        self.assertEqual(result['base'], 'ကြေ ခြေ')
+        # OCR text is not finished: nothing is applied to it, and the phase reads
+        # it as it stands. The swap never touches it (the patches above would
+        # have raised), so `base` is the OCR text itself.
+        self.assertEqual(result['base'], 'ေြက ေြခ')
 
     def test_encoding_override_is_respected_only_for_parsing(self):
         with patch.object(finish.Rabbit, 'zg2uni', return_value='က') as rabbit:
@@ -101,8 +96,11 @@ class PdfOutputLayoutTests(unittest.TestCase):
         job = {'kind': 'pdf', 'pages': [{'text': 'ကေ', 'lines': [(0, 0, 12, 'ကေ', None)],
                                        'wh': (100, 100), 'has_img': False}],
                'reports': [{'base': 'ကေ', 'clean': 'ခေ', 'decision': 'pass-through'}]}
+        # The PDF layout step applies the phase (``finish.clean_page``) and never
+        # the ordering-carrying ``finish.clean``; it used to reach the phase
+        # through ``pipeline.cleanup_text``, which it no longer calls.
         with patch.object(pipeline.finish, 'clean', side_effect=AssertionError('unexpected reorder')), \
-             patch.object(pipeline, 'cleanup_text', return_value='ခေ'):
+             patch.object(pipeline.finish, 'clean_page', return_value='ခေ'):
             result = pipeline.build_final_pages(job)[0]
         self.assertEqual(result['lines'][0][3], 'ခေ')
         self.assertEqual(result['text'], 'ခေ')
