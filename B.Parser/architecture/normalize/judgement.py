@@ -178,6 +178,7 @@ def judge_page_lines(lines, swap_candidate) -> dict:
     candidate_changed = False
     candidate_aligned = True
     candidate_slots = 0
+    space_broken = 0
     count = 0
     raw_score_total = 0.0
     raw_marks = 0
@@ -197,6 +198,9 @@ def judge_page_lines(lines, swap_candidate) -> dict:
         original_has_text = original_has_text or bool(inspected.strip())
         has_myanmar = has_myanmar or contains_myanmar(inspected)
         aligned = aligned and mm_score.mark_order_aligned(inspected)
+        # Marks the separators took their base from. A spacing fault, carried
+        # as its own evidence: it must not travel as a ZawCode slot count.
+        space_broken += mm_score.space_broken_marks(inspected)
         candidate = swap_candidate(inspected)
         candidate_changed = candidate_changed or candidate != inspected
         if candidate != inspected:
@@ -227,6 +231,7 @@ def judge_page_lines(lines, swap_candidate) -> dict:
         "candidateChanged": candidate_changed,
         "candidateAligned": candidate_aligned,
         "candidateSlots": candidate_slots,
+        "spaceBroken": space_broken,
         "count": count,
         "rawScore": raw_score_total / raw_marks if raw_marks else 0,
         "candidateScore": candidate_score_total / candidate_marks if candidate_marks else 0,
@@ -249,24 +254,17 @@ ZAWCODE_MIN_SLOTS = 6
 
 
 def select_page_decision(judgment, parsing_path, zawgyi_codepage=False) -> str:
-    """The lane call: ``legacy`` / ``zawcode`` / ``rabbit`` / ``aligned``.
-
-    1. ZawCode: the swapping rule is offered as a candidate in BOTH lanes, and
-       matching more than one slot (``ZAWCODE_MIN_SLOTS``) is the ZawCode
-       call. Never offered on a Zawgyi codepage page.
-    2. Mark order violated -> Rabbit. The mark-order rule alone makes this
-       call; no score margin second-guesses it.
-    3. Neither -> aligned (nothing but the Normalize behind every finish).
-    """
+    """Select a decision from page evidence and the parsing path."""
     if not judgment["hasMyanmar"]:
-        return "legacy" if parsing_path == PDF_PARSING_PATHS["LEGACY"] else "aligned"
-    if not zawgyi_codepage and judgment["candidateSlots"] >= ZAWCODE_MIN_SLOTS:
-        return "zawcode"
+        return "legacy" if parsing_path == PDF_PARSING_PATHS["LEGACY"] else "pass-through"
+    if judgment["aligned"]:
+        return "pass-through"
     if parsing_path == PDF_PARSING_PATHS["LEGACY"]:
         return "legacy"
-    if not judgment["aligned"]:
-        return "rabbit"
-    return "aligned"
+    if (not zawgyi_codepage and not judgment.get("spaceBroken")
+            and judgment["candidateSlots"] >= ZAWCODE_MIN_SLOTS):
+        return "zawcode"
+    return "rabbit"
 
 
 def _font_field(font, *names):
@@ -339,7 +337,7 @@ def instruction_lane(page_instruction, source_encoding) -> dict:
 
 # The Unicode-lane decisions, for consumers eligibility checks (the PDF
 # stream's beautify gate asks this instead of keeping its own copy).
-UNICODE_LANE_DECISIONS = frozenset(("aligned", "zawcode", "unaligned-unicode"))
+UNICODE_LANE_DECISIONS = frozenset(("pass-through", "zawcode", "unaligned-unicode"))
 
 
 def is_unicode_lane_decision(decision, category=None) -> bool:

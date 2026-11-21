@@ -22,14 +22,25 @@ def with_brace_bypass(text, transform):
 
 
 def compose(text, ascii_to_mm, base_set):
+    """``$``/``^`` pairs -> characters, dropping the spaces in front of an asat.
+
+    A pair ``X^`` is a base carrying asat, and it composes to the lowercase
+    ``x``. One or more spaces in front of that pair are deleted here, as part of
+    the same substitution -- no second pass over the text:
+
+        "M E^"   ->  "Me"     spaces gone, base+asat composed to lowercase
+        "M E^$"  ->  "ME#"    spaces gone, the virama keeps the base as a base
+    """
     def replace(match):
-        upper_e, upper_dollar, lower_dollar, other_dollar, upper = match.groups()
+        spaced_e, spaced, upper_e, upper_dollar, lower_dollar, other_dollar, upper = match.groups()
+        if spaced_e: return spaced_e + '#'
+        if spaced: return spaced.lower()
         if upper_e: return upper_e + '#'
         asc = upper_dollar or lower_dollar or other_dollar
         if asc: return ascii_to_mm.get(asc, match.group()) if asc in base_set else match.group()
         if upper: return upper.lower()
         return match.group()
-    return from_utf16_units(re.sub(r'([A-Z])\^\$|\$([A-Z])|\$([a-z])|\$([^A-Za-z])|([A-Z])\^', replace, text))
+    return from_utf16_units(re.sub(r' +([A-Z])\^\$| +([A-Z])\^|([A-Z])\^\$|\$([A-Z])|\$([a-z])|\$([^A-Za-z])|([A-Z])\^', replace, text))
 
 
 def decompose(text, mm_bases):

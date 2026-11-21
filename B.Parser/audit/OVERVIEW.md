@@ -20,7 +20,7 @@ The logs cover **5,098 distinct pages** (page numbering is contiguous). The scan
 
 - **The same run appears twice in every part** (1,992 of 1,992 events have an identical twin). Line counts from these files are double unless deduplicated; pages above are a union.
 - They carry only the compressed lane events — `decision: book, pages, rule`, `lane-switch: book, from, page, to` — not the per-page record. `lane_reason`, `category`, `residue`, `detached_marks`, `duplicate_lines`, `warnings` and `status` come from `workflow/diagnostics.py` and need `PARSER_DIAGNOSTICS=1` next to `PARSER_LOG_ENABLED=1`.
-- Decisions per page, one pass: rabbit 3,050, zawcode 1,347, aligned 663, legacy 38.
+- Decisions per page, one pass: rabbit 3,050, zawcode 1,347, pass-through 663, legacy 38.
 - Stem switches: legacy>unicode 213, unicode>legacy 212 — a page that flips and flips back logs both ways.
 
 ## Per-book rollup (`audit/broken-books.jsonl`)

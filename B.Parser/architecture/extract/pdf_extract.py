@@ -1077,7 +1077,7 @@ def _join_page_runs(pieces, doc):
         return _join_visual_runs(pieces, doc)
     return ''.join(piece[2] for piece in pieces)
 
-def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=False, *, used_myanmar_fonts=None, used_legacy_fonts=None, image_records=None, diagnostics=None, probe_page=None):
+def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=False, *, used_myanmar_fonts=None, used_legacy_fonts=None, legacy_families=None, image_records=None, diagnostics=None, probe_page=None):
     """Extract text lines WITH layout: ``(lines, page_w, page_h)``.
 
     ``lines`` is a top-to-bottom list of ``(x, y, size, text, font)`` where x/y are
@@ -1357,6 +1357,25 @@ def extract_page_lines(objects, page_num, page_gen, decoding, detect_columns=Fal
                     name = decoder.base_font or ''
                     if name not in used_legacy_fonts:
                         used_legacy_fonts.append(name)
+                # A face is legacy here only if it was read through a code page or
+                # its family was probed on its own bytes; `family_pinned` is every
+                # decoder's default and says nothing about the lane.
+                if legacy_families is not None and (
+                        decoder.font_legacy_code_page or decoder.family_probe):
+                    # WHICH code page this face is read through, settled where it
+                    # was settled: the probe on the face's own bytes ('page'), or
+                    # the name gate ('name'). The legacy lane's beautify rule has
+                    # two cases and takes this as its switch, so a subset whose
+                    # name says nothing is still ordered by what its bytes decided.
+                    settled = (decoder.family_probe or {}).get('family')
+                    record = {'face': decoder.base_font or '',
+                              'family': settled,
+                              'by': ('page' if settled else
+                                     'name' if decoder.family_pinned else 'default'),
+                              'accepted': (decoder.family_probe or {}).get('accepted'),
+                              'pinned': bool(decoder.family_pinned)}
+                    if record not in legacy_families:
+                        legacy_families.append(record)
                 if used_myanmar_fonts is not None and (contains_myanmar(text)
                         or decoder.font_legacy_code_page or decoder.confirmed_raw_runs):
                     used_myanmar_fonts.add(decoder.base_font or '')

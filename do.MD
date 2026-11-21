@@ -1,5 +1,35 @@
 # Do — from `B.Parser/AUDIT.md`
 
+## Parser chain guard
+
+The requested pinned test tracks the parser chain: which stages run and their
+order from instruction through finalization for each covered lane and task. It
+should catch missing or reordered stages while allowing page or line
+implementations and synchronous or asynchronous calls. Repair may remain
+unwired or pass-through. Automatic PDF OCR and embedded DOCX image OCR are
+excluded from this guard by request; their issues remain follow-ups below.
+The purpose is to stop phase and rule-stage placement drifting over time and
+changing output. The guard does not pin individual rule results or every other
+behavior test; those can be checked separately. On a chain failure, revert the
+change that broke it rather than adjusting the chain or test to hide the failure.
+
+The guard checks stage data flow without pinning exact output text. Its current
+observers are tied to particular function entry points; support for arbitrary
+page/line or async implementations is still incomplete.
+
+## OCR follow-ups
+
+- **DOCX image OCR:** recognized text is inserted after the DOCX chunk has been
+  cleaned, so the inserted text misses that step. Route it through the shared
+  later phase and scan it before output. A generated-input probe exposed this;
+  this path is excluded from the pinned chain guard.
+- **Automatic PDF OCR:** the parser's SSH parse runner sets `PRASER_OCR=off`.
+  A local run verified that setting prevents automatic OCR; with OCR enabled,
+  `prepare_job` can call it for image-only pages. The cleaned OCR text currently
+  misses the structural scan. Check the deployed environment before claiming
+  whether other live entry points reach it. This path is excluded from the
+  pinned chain guard.
+
 Ordered work, each item a general rule. No per-book handling. The order is set
 by whether the cause can be seen from this checkout at all: that is what decides
 whether a fix can be measured, or only asserted.
@@ -59,8 +89,7 @@ those three sites is main's action: `B.Parser/AUDIT.md`,
    pipeline switched off, and the switch is deleted with it) runs in
    `finish.apply_decision`'s `legacy` branch, one step before the shared ordering,
    and moves 39 of the 310 parity samples -- all of them `decision == 'legacy'`,
-   which is the gap `test_pdf_finish_js_parity.py` pins until main mirrors the
-   rule. It also carries the ZawCode swap (`_zawcode_swap`, its own descendant),
+   a difference the now-removed `test_pdf_finish_js_parity.py` used to pin. It also carries the ZawCode swap (`_zawcode_swap`, its own descendant),
    and an unnamed face is decided by `extract/legacy_lane_score.decide_lane` --
    one module that imports mm-score, the scanner, the shared-glyph test and
    English-likeness, called by the instructor, instead of a second page pass
@@ -176,7 +205,7 @@ those three sites is main's action: `B.Parser/AUDIT.md`,
    profile" and can never say "this page reads as Burmese". Acceptance therefore stays
    in the lane, and the swap is not to be moved there.
    Two rules for whoever lifts the lookup: do not widen `instruction_lane`'s inputs
-   (`(page_instruction, source_encoding)`, pinned by `test/parser-tests/test_mirror.py`)
+   (`(page_instruction, source_encoding)`, previously pinned by the removed mirror checks)
    — a new fact inside that function breaks the mirror, so carry it beside it as a
    face fact; and do not let a witnessed profile become a *lane* answer, it pins a
    code page for one program and says nothing about the page. Whether the lane gate
@@ -271,11 +300,10 @@ measurement that frames it is named, so answering means choosing, not re-running
 - **Q3 · Does main mirror `arrange_legacy_order`?** The Python `legacy` branch of
   `finish.apply_decision` moves 39 of the 310 parity samples, all of them
   `decision == 'legacy'`; the JS `decision === "legacy"` branch has no such step, so
-  `test_pdf_finish_js_parity.py` pins the difference *until* main lands it. Same
+  the removed `test_pdf_finish_js_parity.py` used to pin the difference. Same
   question for the deletions listed in `B.Parser/AUDIT.md` (the three
   `@rule/judgement.js` normalize sites, `applyCleanup` in
-  `@core/runtime/finalized-cmap.js`). **main's action**; the parity suite is the
-  countdown.
+  `@core/runtime/finalized-cmap.js`). **main's action**; no differential test remains for this question.
 - **Q4 · Is a *learned* bridge acceptable for a no-bridge face?** (2, 1f) Marks of a
   font with no `/ToUnicode` currently arrive as `:`, `"`, `p`, `g`. Recovering them
   needs either the pooled evidence (7.4 MB, deliberately not shipped) or a table
