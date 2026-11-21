@@ -21,6 +21,10 @@ spec.loader.exec_module(runner)
 
 
 class RunnerTests(unittest.TestCase):
+    def test_standalone_prase_py_launcher_is_removed(self):
+        self.assertFalse((ROOT / 'B.Parser/architecture/entry/prase.py').exists())
+        self.assertEqual(runner.DEFAULT_PARSE_INPUT_DIR, ROOT / 'Junk' / 'Parser' / 'pdf-parts')
+
     def test_ssh_rejects_paths_and_forces_text_parser_no_ocr(self):
         with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
             runner.main(['parse', '--ssh', 'input.pdf'])
@@ -46,12 +50,15 @@ class RunnerTests(unittest.TestCase):
             source.write_bytes(b'pdf')
             def convert(src, out, **kwargs):
                 self.assertEqual(src, source)
+                self.assertEqual(out, junk / 'custom/book/book.pdf')
                 return {'file': str(out)}
             with patch.object(runner, 'REPO_ROOT', root), patch.object(runner, '_safe_document', side_effect=convert), \
                  redirect_stdout(io.StringIO()):
                 self.assertEqual(runner.main(['parse', str(source), 'custom/book']), 0)
-                self.assertEqual(runner._new_output(source, 'custom/book'), junk / 'custom/book.pdf')
+                self.assertEqual(runner._new_output(source, 'custom/book'), junk / 'custom/book/book.pdf')
                 self.assertEqual(runner._new_output(source, 'custom/book.docx'), junk / 'custom/book.docx')
+                with self.assertRaisesRegex(ValueError, 'Output must be PDF, DOCX, or TXT'):
+                    runner._new_output(source, 'custom/book.csv')
                 with redirect_stderr(io.StringIO()):
                     self.assertEqual(runner.main(['parse', str(source), str(root / 'outside.pdf')]), 1)
 
@@ -67,8 +74,10 @@ class RunnerTests(unittest.TestCase):
                 return {'file': str(out)}
             with patch.object(runner, 'REPO_ROOT', root), patch.object(runner, '_safe_document', side_effect=convert), \
                  patch.dict(os.environ, {'PARSER_INPUT_DIR': str(source)}), redirect_stdout(io.StringIO()):
-                self.assertEqual(runner.main(['parse', str(source), 'batch/']), 0)
+                self.assertEqual(runner.main(['parse', str(source), 'batch']), 0)
                 self.assertEqual(calls[0][1], root / 'Junk/batch/nested/book.pdf')
+                with redirect_stderr(io.StringIO()):
+                    self.assertEqual(runner.main(['parse', str(source), 'batch.txt']), 1)
 
     def test_failed_output_is_not_published_or_left_partial(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -103,6 +112,31 @@ class RunnerTests(unittest.TestCase):
         self.assertNotIn('D.Scraper', ' '.join(map(str, command)))
         self.assertEqual(directory, ROOT)
 
+    def test_parse_without_paths_defaults_to_pdf_parts_without_ssh(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source_dir = root / 'Junk' / 'Parser' / 'pdf-parts'
+            source_dir.mkdir(parents=True)
+            source = source_dir / 'book.pdf'
+            source.write_bytes(b'pdf')
+            output_root = root / 'Junk' / 'Parser' / 'output'
+            calls = []
+
+            def convert(src, out, **kwargs):
+                calls.append((src, out, kwargs['use_ocr']))
+                return {'file': str(out)}
+
+            with patch.object(runner, 'REPO_ROOT', root), \
+                 patch.object(runner, 'DEFAULT_PARSE_INPUT_DIR', source_dir), \
+                 patch.object(runner.paths, 'input_dir_from_env', return_value=None), \
+                 patch.object(runner.paths, 'output_dir_for', side_effect=lambda fmt: output_root / fmt), \
+                 patch.object(runner, '_safe_document', side_effect=convert), \
+                 patch.object(remote_queue, 'run_forever', side_effect=AssertionError('unexpected SSH queue')), \
+                 redirect_stdout(io.StringIO()):
+                self.assertEqual(runner.main(['prase']), 0)
+
+            self.assertEqual(calls, [(source, output_root / 'pdf' / 'book.pdf', False)])
+
     def test_local_source_can_be_set_in_env(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -111,7 +145,7 @@ class RunnerTests(unittest.TestCase):
                  patch.object(runner.paths, 'output_dir_for', return_value=root / 'Junk/output'), \
                  patch.object(runner, '_safe_document', return_value={'file': 'saved'}) as convert, \
                  patch.dict(os.environ, {'PARSER_INPUT_DIR': str(source)}), redirect_stdout(io.StringIO()):
-                self.assertEqual(runner.main(['parse']), 0)
+                self.assertEqual(runner.main(['prase']), 0)
                 self.assertEqual(convert.call_args.args[0], source)
                 self.assertEqual(convert.call_args.args[1], root / 'Junk/output/book.pdf')
 

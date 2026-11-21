@@ -3,18 +3,19 @@
 `architecture/` groups the parser by responsibility. The Python import name
 remains `myangustis_parser`, so callers do not need to change:
 
-- `entry/`: CLI, API, manager, JSON job contract and public `index`.
+- `entry/`: API, manager, JSON job contract and public `index`.
 - `extract/`: PDF, font, DOCX and decryption handling.
 - `normalize/`: encoding detection, Zawgyi conversion, cleanup and scanning.
 - `workflow/`: parsing pipeline and OCR lane.
 - `output/`: formatting and document writers.
 - `resources/`: parser JSON maps, paths and in-process Engine data access.
 
-Install from the repository workspace:
+Install from the repository workspace, then run the parser through its single entry point in `B.Parser`:
 
 ```sh
 uv sync --package myangustis-parser
-uv run --package myangustis-parser myangustis-parse --help
+cd B.Parser
+uv run main.py prase --help
 ```
 
 The parser reads its bundled maps from `resources/maps_data/`; set
@@ -193,35 +194,41 @@ parser PDF.js or prove that the extraction problem is fixed.
 
 ## Independent parser and OCR runner
 
-From `B.Parser`, use `uv run main.py parse ...` (`prase` is also accepted),
-or `uv run main.py ocr ...`. These commands do not import the scraper. The
-older one-file `main.py book.pdf --txt` form is also supported.
+From `B.Parser`, use `uv run main.py prase ...` (or `parse`; both names select
+local parsing), or `uv run main.py ocr ...`. These commands do not import the
+scraper. The older one-file `main.py book.pdf --txt` form is also supported.
 
 ```sh
-# A single file, with an explicit output under repository Junk:
-uv run main.py parse /input/book.pdf Parser/output/docx/book.docx
+# With no input path, parse the local PDF parts folder by default.
+uv run main.py prase
+# A single file, writing an explicit output file under repository Junk:
+uv run main.py prase /input/book.pdf Parser/output/txt/book.txt
+# A second argument without an extension is an output directory.
+uv run main.py prase /input/book.pdf Parser/output/txt
 # No output argument: use Junk/Parser/output/ and the source extension.
-uv run main.py parse /input/book.pdf
-# A folder runs a batch, retaining nested folder names. Output ending / is a directory.
-uv run main.py ocr /input/scans Parser/output/ocr/
-# Watch a local folder continuously (default source can be set in .env).
-uv run main.py ocr /input/scans Parser/output/ocr/ --continuous
+uv run main.py prase /input/book.pdf
+# A folder runs a batch and retains nested paths; its output must be a directory.
+uv run main.py ocr /input/scans Parser/output/ocr
+# Watch a local folder continuously.
+uv run main.py ocr /input/scans Parser/output/ocr --continuous
 # Remote queue; output locations are fixed and no positional paths are allowed.
 uv run main.py parse --ssh
 uv run main.py ocr --ssh
 ```
 
-For a single output path without an extension, the source extension is appended.
-All explicit output paths must resolve inside the repository's `Junk` directory
-(or the upload/output directory set in `.env`): relative output paths are
-relative to `Junk`, a leading slash is still a project path
-(`/Parser/output/txt/` is `Junk/Parser/output/txt/`), and paths outside those
-directories are rejected. Input paths follow the same anchoring, and a bare
-filename is looked up in `Junk/Parser/upload/pdf/` or `upload/docx/`. Input
-files are never deleted. Existing output files are not intentionally
-overwritten. Set `PARSER_INPUT_DIR` or `PARSER_OCR_INPUT_DIR` in root `.env` to
-provide a default local input when the input argument is omitted; the CLI works
-from any current working directory.
+The no-input local parse defaults to `Junk/Parser/pdf-parts/`; `PARSER_INPUT_DIR`
+in root `.env` can override it. OCR uses `PARSER_OCR_INPUT_DIR` when its input is
+omitted. A second positional output path with no extension is treated as a
+folder; a supported `.txt`, `.docx`, or `.pdf` extension makes it an exact file
+path. For a batch, the second argument must be a folder. All explicit output
+paths must resolve inside the repository's `Junk` directory (or the
+upload/output directory set in `.env`): relative output paths are relative to
+`Junk`, a leading slash is still a project path (`/Parser/output/txt/` is
+`Junk/Parser/output/txt/`), and paths outside those directories are rejected.
+Input paths follow the same anchoring, and a bare filename is looked up in
+`Junk/Parser/upload/pdf/` or `upload/docx/`. Input files are never deleted.
+Existing output files are not intentionally overwritten. The CLI works from
+any current working directory.
 
 Continuous runs started as root on a systemd host install and start their own
 `myangustis-parse.service` or `myangustis-ocr.service`. Add `--foreground` to

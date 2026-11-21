@@ -123,25 +123,23 @@ Legend: **T** = selected cases compared with pinned JS; **P** = Python counterpa
 
 ## Python-only surface and cross-checks
 
-`entry/api.py`, `entry/cli.py`, `entry/prase.py`, `entry/interop.py`, `workflow/remote_queue.py`, `workflow/lane_log.py`, the launcher scripts and SSH ledger/Parquet/TXT collection are Python integration features; they are not proof of a one-to-one JS mirror. Package `__init__.py` files are wiring, not independent JS behavior. `normalize/legacy_order.py` and the historical evidence scripts have helper/draft functionality outside the pinned normal JS parse route. `output/fonts.py`, resource paths/maps, and Engine data access are Python-side implementations rather than Node subprocesses.
+`entry/api.py`, `entry/interop.py`, `main.py`, `workflow/remote_queue.py`, `workflow/lane_log.py` and the SSH ledger/Parquet/TXT collection are Python integration features; they are not proof of a one-to-one JS mirror. Package `__init__.py` files are wiring, not independent JS behavior. `normalize/legacy_order.py` and the historical evidence scripts have helper/draft functionality outside the pinned normal JS parse route. `output/fonts.py`, resource paths/maps, and Engine data access are Python-side implementations rather than Node subprocesses.
 
 The Python suite retains `test_pdf_image_coverage.py` and `test_pdf_ocr_render.py`; the Python/JS differential tests have been removed. Production Python PDF decoding does not run JS or cache compiled JS. PDF OCR invokes the external Tesseract CLI. Earlier comparisons did not cover actual affected books or OCR recognition.
 
 ### Python file index
 
-These are the 47 Python files under `architecture/`; each is mapped individually so Python-only entry points are not mistaken for ports of a JS file. Package initializer rows denote wiring only.
+These are the 44 Python files under `architecture/`; each is mapped individually so Python-only entry points are not mistaken for ports of a JS file. The deleted `normalize/unicode_evidence.py` row records a removed file. Package initializer rows denote wiring only.
 
 | Python file | Closest JS responsibility / scope |
 |---|---|
 | `__init__.py` | Package wiring. |
 | `entry/__init__.py` | Package wiring. |
 | `entry/api.py` | Python Flask integration; no one-to-one JS core file. |
-| `entry/cli.py` | Python CLI integration; no one-to-one JS core file. |
 | `entry/index.py` | `B.Parser/index.js`, `B.Parser/convert.js`; different stage contract. |
 | `entry/interop.py` | Python JSON job integration; no one-to-one JS core file. |
 | `entry/limits.py` | `@entry/helper/limit.js`; owner and quota behavior differs. |
 | `entry/manager.py` | `@core/run.js` plus Python entry/OCR orchestration; contracts differ. |
-| `entry/prase.py` | Python CLI launcher. |
 | `extract/__init__.py` | Package wiring. |
 | `extract/decrypt.py` | `@init/pdf/helper/decrypt.js`; pypdf rather than qpdf. |
 | `extract/docx_extract.py` | `@core/docx/docx-extract.js`, `zip.js`, and part of DOCX validation. |

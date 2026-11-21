@@ -64,6 +64,7 @@ from myangustis_parser.resources import paths  # noqa: E402
 
 IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".webp", ".gif", ".bmp")
 SUPPORTED_INPUT_SUFFIXES = (".pdf", ".docx", ".doc", ".txt", *IMAGE_SUFFIXES)
+DEFAULT_PARSE_INPUT_DIR = paths.RUNTIME_ROOT / "pdf-parts"
 
 EXAMPLES = """\
 examples:
@@ -177,7 +178,8 @@ def resolve_output_path(source: Path, fmt: str) -> Path:
     return paths.output_dir_for(fmt) / f"{source.stem}.{fmt}"
 
 
-def run_document(source: Path, out_path: Path, *, use_ocr: bool = False, log=print) -> dict:
+def run_document(source: Path, out_path: Path, *, use_ocr: bool = False,
+                 source_encoding: str = "auto", log=print) -> dict:
     """Dispatch parsing (`index.convert`) or OCR (`index.dispatch_ocr`)."""
     from myangustis_parser.entry import index
 
@@ -197,6 +199,7 @@ def run_document(source: Path, out_path: Path, *, use_ocr: bool = False, log=pri
         source,
         out_path,
         include_text=True,
+        source_encoding=source_encoding,
         log=log,
     )
 
@@ -243,24 +246,23 @@ def _new_output(source: Path, raw: str | None, relative: Path | None = None) -> 
         directory = _inside_junk(paths.output_dir_for(default_format))
         return directory / (relative.parent if relative else Path()) / (source.stem + '.' + default_format)
     dest = _inside_junk(raw)
-    is_dir = dest.is_dir() or str(raw).strip().endswith(('/', os.sep))
-    if is_dir:
-        return dest / (relative.parent if relative else Path()) / (source.stem + '.' + default_format)
     if not dest.suffix:
-        dest = dest.with_suffix('.' + default_format)
+        return dest / (relative.parent if relative else Path()) / (source.stem + '.' + default_format)
     if dest.suffix.lower() not in ('.pdf', '.docx', '.txt'):
         raise ValueError('Output must be PDF, DOCX, or TXT.')
     return dest
 
 
-def _safe_document(source: Path, output: Path, *, use_ocr: bool):
+def _safe_document(source: Path, output: Path, *, use_ocr: bool,
+                   source_encoding: str = "auto"):
     """Publish completed output without overwriting or leaving a partial result."""
     output.parent.mkdir(parents=True, exist_ok=True)
     fd, name = tempfile.mkstemp(prefix='.' + output.stem + '.', suffix=output.suffix, dir=output.parent)
     os.close(fd)
     temporary = Path(name)
     try:
-        result = run_document(source, temporary, use_ocr=use_ocr, log=print)
+        result = run_document(source, temporary, use_ocr=use_ocr,
+                              source_encoding=source_encoding, log=print)
         # A hard-link publishes atomically and fails if another process created it.
         os.link(temporary, output)
         result['file'] = str(output)
@@ -270,10 +272,26 @@ def _safe_document(source: Path, output: Path, *, use_ocr: bool):
 
 
 def _modern_cli(argv):
-    parser = argparse.ArgumentParser(prog='main.py', description='Independent parser and OCR runner.')
+    parser = argparse.ArgumentParser(
+        prog='main.py',
+        description=(
+            'Independent parser and OCR runner. Local parse defaults to '
+            'Junk/Parser/pdf-parts/ unless PARSER_INPUT_DIR is set.'
+        ),
+    )
     parser.add_argument('mode', choices=('parse', 'prase', 'ocr'))
-    parser.add_argument('input', nargs='?')
-    parser.add_argument('output', nargs='?')
+    parser.add_argument(
+        'input', nargs='?',
+        help='Local input file or folder; parse defaults to Junk/Parser/pdf-parts/ when omitted.',
+    )
+    parser.add_argument(
+        'output', nargs='?',
+        help='Output file when it has a supported extension; otherwise an output directory.',
+    )
+    parser.add_argument(
+        '--source-encoding', choices=('auto', 'unicode', 'zawgyi-one'), default='auto',
+        help='Declare the input encoding when the PDF font is not labelled.',
+    )
     parser.add_argument('--ssh', action='store_true', help='continuously read the remote queue; parser writes Parquet and combined TXT')
     parser.add_argument('--continuous', action='store_true', help='watch a local input directory')
     service = parser.add_mutually_exclusive_group()
@@ -283,6 +301,10 @@ def _modern_cli(argv):
     mode = 'parse' if args.mode == 'prase' else args.mode
     if args.ssh and (args.input is not None or args.output is not None or args.continuous):
         parser.error('--ssh uses the configured remote directory and fixed output locations; no paths or --continuous')
+    if args.ssh and args.source_encoding != 'auto':
+        parser.error('--source-encoding applies only to local parsing')
+    if mode == 'ocr' and args.source_encoding != 'auto':
+        parser.error('--source-encoding applies only to parse mode')
     if args.service and not (args.ssh or args.continuous):
         parser.error('--service requires --ssh or --continuous')
     try:
@@ -305,6 +327,8 @@ def _modern_cli(argv):
                 command.append('--ssh')
             if args.continuous:
                 command.append('--continuous')
+            if args.source_encoding != 'auto':
+                command.extend(('--source-encoding', args.source_encoding))
             command.append('--foreground')
             install_and_start(f'myangustis-{mode}.service', command, REPO_ROOT)
             return 0
@@ -325,8 +349,10 @@ def _modern_cli(argv):
             source = resolve_input_path(args.input)
         elif configured is not None:
             source = configured
+        elif mode == 'parse':
+            source = DEFAULT_PARSE_INPUT_DIR
         else:
-            raise ValueError('Provide an input file/folder or set PARSER_INPUT_DIR / PARSER_OCR_INPUT_DIR.')
+            raise ValueError('Provide an input file/folder or set PARSER_OCR_INPUT_DIR.')
         if source is None or not source.exists():
             raise FileNotFoundError(f'Input not found: {source}')
         if source.is_file():
@@ -335,15 +361,15 @@ def _modern_cli(argv):
             out = _new_output(source, args.output)
             if out.resolve() == source.resolve() or out.exists():
                 raise ValueError(f'Refusing to overwrite {out}')
-            result = _safe_document(source, out, use_ocr=mode == 'ocr')
+            result = _safe_document(source, out, use_ocr=mode == 'ocr',
+                                    source_encoding=args.source_encoding)
             print(f"[+] Saved: {result['file']}")
             return 0
         if not source.is_dir():
             raise ValueError('Input must be a file or a directory.')
         output_dir = _inside_junk(args.output) if args.output else None
-        if output_dir is not None and not (
-                output_dir.is_dir() or str(args.output).strip().endswith(('/', os.sep))):
-            raise ValueError('Batch output must be an existing directory or end with /.')
+        if output_dir is not None and Path(args.output).suffix:
+            raise ValueError('Batch output must be a directory; omit the extension for a folder.')
         output_roots = ([output_dir] if output_dir is not None else
                         [_inside_junk(paths.output_dir_for(fmt)) for fmt in ('txt', 'docx', 'pdf')])
         while True:
@@ -356,7 +382,8 @@ def _modern_cli(argv):
                 if out.exists() or item.resolve() == out.resolve():
                     continue
                 try:
-                    _safe_document(item, out, use_ocr=mode == 'ocr')
+                    _safe_document(item, out, use_ocr=mode == 'ocr',
+                                   source_encoding=args.source_encoding)
                     print(f'[+] Saved: {out}', flush=True)
                 except (OSError, ValueError, RuntimeError) as exc:
                     failed = True
