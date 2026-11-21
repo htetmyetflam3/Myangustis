@@ -1,4 +1,4 @@
-# Do — from `B.Parser/AUDIT.md`
+# Parser follow-ups
 
 ## Parser chain guard
 
@@ -37,11 +37,11 @@ whether a fix can be measured, or only asserted.
 **Merged PR: [#33](https://github.com/htetmyetflam3/Myangustis/pull/33)** —
 merged into `python` on 2026-11-19. It carried the Python legacy judgement and
 acceptance rule, per-face program identity, the disarmed lane move with its pin
-kept, and this file plus `B.Parser/AUDIT.md`. It is **Python only** — the JS
-notes in here are for main, and nothing on the non-legacy path (zawcode / rabbit /
-aligned) was judged or changed by it. The merged code is the baseline for the
-remaining items below, not pending PR work; the outstanding parity asymmetry is
-still Q3.
+kept, and this task note plus the parser audit note later removed from the
+package. It is **Python only** — the JS notes in here are for main, and nothing
+on the non-legacy path (zawcode / rabbit / aligned) was judged or changed by
+it. The merged code is the baseline for the remaining items below, not pending
+PR work; the outstanding parity asymmetry is still Q3.
 
 **Done: the separate Engine-normalize call is deleted.** The chain reaches the
 Engine once, at its end — `normalize/pos_scan.py` → bind-engine api
@@ -61,9 +61,8 @@ it. Legacy ordering and the injected-gate question are both settled the same way
 the parser owns cleanup at `finish.py`, the Engine owns what happens behind bind.
 The JS is in the same state — its only separate caller is
 `test/parser-test/zawcode-order.test.js`, through `@rule/judgement.js`'s
-`normalizePageLines`/`normalizeOutputText` and `getEngineNormalize` — so deleting
-those three sites is main's action: `B.Parser/AUDIT.md`,
-*"The separate Engine-normalize call is deleted; bind engine is the only door"*.
+`normalizePageLines`/`normalizeOutputText` and `getEngineNormalize`. Deleting
+those three JavaScript sites remains outside this Python change.
 
 1. **A legacy page keeps the visual order its file wrote.** Open, and **not**
    something the finishing stage may fix. What is true of the engine's normalize:
@@ -99,8 +98,7 @@ those three sites is main's action: `B.Parser/AUDIT.md`,
    that were their only readers are **deleted**, because a rule nothing calls is
    worse than no rule at all. Landing it means the JS `decision === "legacy"`
    branch and `finish.apply_decision`'s `legacy` branch in one movement, with the
-   parity suites re-pinned in the same commit: `B.Parser/AUDIT.md`,
-   *"The legacy ordering rule does not exist in either tree"*.
+   parity suites re-pinned in the same commit.
 1a. **The gate has no switch.** Done, and it was a design violation sitting in
    plain sight: an `apply_cleanup` boolean threaded from `workflow/finish.clean`
    through nine functions and the entry callers, so a caller could hand back a page
@@ -110,7 +108,7 @@ those three sites is main's action: `B.Parser/AUDIT.md`,
    report's `base` column beside it. `test_shared_finish.test_the_gate_has_no_switch`
    fails if a `cleanup` parameter comes back to any of them. The JS side still
    threads its `applyCleanup` (`@core/runtime/finalized-cmap.js`,
-   `convertFinalizedPageText`) and is listed for deletion in `B.Parser/AUDIT.md`.
+   `convertFinalizedPageText`); removing that option is a separate JavaScript-side follow-up.
 1b. **A legacy face the file does not name gets the wrong subset table.** Done,
    and it is the parse side of the same lane, not a beautify: the two tables
    disagree on 92 of the 109 slots they share, and every face whose name says
@@ -149,8 +147,7 @@ those three sites is main's action: `B.Parser/AUDIT.md`,
    `wininnwa` answers to five embedded programs and `zawgyione` to sixty plus 1,032
    unembedded references. So `DocumentDecoding.lane_trial` is keyed by the hash, and
    a face with no program in the file is not asked at all — nothing committed, the
-   instructor keeps the side he chose. `B.Parser/AUDIT.md`,
-   *"Pairing a face with a hash, and what happens where it cannot pair"*.
+   instructor keeps the side he chose.
    **Still open:** the return shape. The five fields are verified inline and the
    answer is only ever a code page; there is no
    `subset_font_bridge(font_sha256, to_unicode_sha256, base_font, first_char,
@@ -249,13 +246,13 @@ those three sites is main's action: `B.Parser/AUDIT.md`,
    signature count.
 
 Re-measure after each with the committed scripts, through the doors the design
-already has — the pipeline for a page, the parser's own scanner for text, the
-overview tool for the audit's numbers:
+already has — the pipeline for a page, the parser's own scanner for text, and
+the saved sample overview:
 
 ```bash
 python B.Parser/tools/experiment/bridge_report.py <pdf>             # bridge coverage per font
 python -m myangustis_parser.normalize.scan <txt> -o <scan>          # damage per rule
-python B.Parser/tools/audit_overview.py --check                     # AUDIT.md vs audit/ evidence
+python B.Parser/tools/audit_overview.py --check                     # overview vs committed evidence
 python B.Parser/tools/audit_overview.py --write                     # refresh audit/OVERVIEW.md
 ```
 
@@ -300,10 +297,10 @@ measurement that frames it is named, so answering means choosing, not re-running
 - **Q3 · Does main mirror `arrange_legacy_order`?** The Python `legacy` branch of
   `finish.apply_decision` moves 39 of the 310 parity samples, all of them
   `decision == 'legacy'`; the JS `decision === "legacy"` branch has no such step, so
-  the removed `test_pdf_finish_js_parity.py` used to pin the difference. Same
-  question for the deletions listed in `B.Parser/AUDIT.md` (the three
-  `@rule/judgement.js` normalize sites, `applyCleanup` in
-  `@core/runtime/finalized-cmap.js`). **main's action**; no differential test remains for this question.
+  the removed `test_pdf_finish_js_parity.py` used to pin the difference. The same
+  question applies to the three JavaScript-only normalize sites and
+  `applyCleanup` in `@core/runtime/finalized-cmap.js`. **main's action**; no
+  differential test remains for this question.
 - **Q4 · Is a *learned* bridge acceptable for a no-bridge face?** (2, 1f) Marks of a
   font with no `/ToUnicode` currently arrive as `:`, `"`, `p`, `g`. Recovering them
   needs either the pooled evidence (7.4 MB, deliberately not shipped) or a table
@@ -350,6 +347,6 @@ A label page per source PDF inside each part is what attributes the log's
 
 Committed evidence: `B.Parser/audit/parts/part-N.log`,
 `B.Parser/audit/scans/part-N.scan.txt` and `B.Parser/audit/broken-books.jsonl`,
-digested into `B.Parser/audit/OVERVIEW.md`. The decoded txt is regenerated with
-the command in `B.Parser/AUDIT.md` — with `PARSER_DIAGNOSTICS=1` if the run is
-meant to leave the per-page record behind.
+digested into `B.Parser/audit/OVERVIEW.md`. Use the parser CLI described in
+`B.Parser/README.md` to regenerate text; enable `PARSER_DIAGNOSTICS=on` when
+per-page diagnostics are needed.

@@ -1,13 +1,4 @@
-"""The audit digest and the document have to say the same thing about the evidence.
-
-`B.Parser/audit/` carries the logs and scans a run left behind, and the prose that
-summarised them had already drifted: the totals were stale, the log was described
-as holding fields it does not hold, every part's run had been appended twice, and
-the per-page report the collection cited was never committed. The overview tool
-exists so that drift is a checkable thing instead of a memory -- and these tests
-keep the checker honest, because a regex that quietly stops matching would let it
-report zero of everything and still pass.
-"""
+"""The committed parser evidence digest must match its source files."""
 import collections
 import json
 import re
@@ -43,13 +34,13 @@ def log_events():
 class AuditOverviewTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.claims = json.loads(run('--json'))
+        cls.metrics = json.loads(run('--json'))
 
-    def test_claims_recompute_from_the_raw_files(self):
-        """Derived here without the tool, so the tool cannot pass by reading nothing."""
+    def test_metrics_recompute_from_the_raw_files(self):
+        """Compute key totals separately so a broken parser cannot return zeros."""
         orphan = sum(int(n) for path in AUDIT.glob('scans/part-*.scan.txt')
                      for n in SCAN_HEAD.findall(path.read_text(encoding='utf-8')))
-        self.assertEqual(self.claims['scan orphan'], orphan)
+        self.assertEqual(self.metrics['scan orphan'], orphan)
 
         # Page numbers restart at 1 in every part, so the union is per file and
         # the totals are summed across the nine.
@@ -59,31 +50,28 @@ class AuditOverviewTests(unittest.TestCase):
                 continue
             low, high = PAGES.search(match.group(2)).groups()
             by_part.setdefault(name, set()).update(range(int(low), int(high) + 1))
-        self.assertEqual(self.claims['pages covered by the logs'],
+        self.assertEqual(self.metrics['pages covered by the logs'],
                          sum(len(pages) for pages in by_part.values()))
-        self.assertEqual(self.claims['log events (all parts)'], len(list(log_events())))
+        self.assertEqual(self.metrics['log events (all parts)'], len(list(log_events())))
 
     def test_no_number_is_zero_because_a_pattern_stopped_matching(self):
         self.assertEqual(len(list(AUDIT.glob('parts/part-*.log'))), 9)
         self.assertEqual(len(list(AUDIT.glob('scans/part-*.scan.txt'))), 9)
-        self.assertTrue(all(value > 0 for value in self.claims.values()), self.claims)
+        self.assertTrue(all(value > 0 for value in self.metrics.values()), self.metrics)
 
-    def test_the_document_and_the_evidence_are_in_step(self):
-        out = run('--check')
-        self.assertIn('OK: 0 of', out, out)
-
-    def test_the_digest_stays_a_window(self):
-        """The whole point: a reviewer reads this instead of half a megabyte of logs."""
+    def test_digest_stays_a_window(self):
         text = run()
         self.assertLessEqual(len(text.splitlines()), 60, 'the digest outgrew one screen')
         self.assertIn('| part | log lines | distinct | pages |', text)
-        self.assertIn('Claims vs evidence', text)
-        self.assertIn('Every row of the claim table in `AUDIT.md` matches', text)
-        for number in (self.claims['scan orphan'], self.claims['pages covered by the logs']):
+        self.assertIn('What the logs are, and are not', text)
+        for number in (self.metrics['scan orphan'], self.metrics['pages covered by the logs']):
             self.assertIn(f'{number:,}', text)
 
+    def test_committed_overview_matches_evidence(self):
+        out = run('--check')
+        self.assertIn('OK: B.Parser/audit/OVERVIEW.md matches', out)
+
     def test_every_committed_log_holds_its_run_twice(self):
-        """AUDIT.md says the logs double-count; that has to stay true of the files."""
         by_part = {}
         for name, match in log_events():
             by_part.setdefault(name, []).append((match.group(1), match.group(2)))
@@ -91,8 +79,7 @@ class AuditOverviewTests(unittest.TestCase):
         for name, events in by_part.items():
             counts = collections.Counter(events)
             self.assertTrue(all(n % 2 == 0 for n in counts.values()),
-                            f'{name}: an event lost its twin, so the deduplicated '
-                            f'figures in AUDIT.md need re-deriving')
+                            f'{name}: an event lost its twin; re-derive the deduplicated counts')
             self.assertGreater(len(events) - len(counts), 0, f'{name} is not duplicated')
 
 

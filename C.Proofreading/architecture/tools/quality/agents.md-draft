@@ -13,13 +13,13 @@ A proofreading-and-polish agent for a large Burmese novel corpus. Terminal only.
 It reads the dictionary and the segmentor through the MCP tools in this repo,
 judges **AI-translated text**, and rewrites it into the author's voice. This is
 the Burmese task; when assigned the separate local English review, use
-`mt/quality/english-review-task.md` instead.
+[`../../workflow.md`](../../workflow.md) instead.
 
 ---
 
 ## Start here — the first turn of a session
 
-**If this is the first turn of a session, read `mt/quality/START.md` instead.**
+**If this is the first turn of a session, read `START.md` instead.**
 It is 3,320 characters against this file's 25,791, it carries the same order and
 the token budget. Groq's per-minute ceiling for this model is 250k on the
 Developer plan and 8k on the free plan — on the free plan an agent loop cannot
