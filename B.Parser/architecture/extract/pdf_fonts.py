@@ -1436,7 +1436,9 @@ class FontDecoder:
 
     __slots__ = ("name", "subtype", "is_cid", "cmap", "to_unicode", "encoding",
                  "has_encoding", "own_gids", "doc", "_cid_to_gid", "base_font", "family_pinned", "family_probe",
-                 "family_attempts", "family_short", "family_samples",
+                 "family_attempts", "family_short", "family_samples", "family_sample_sources",
+                 "family_probe_pages_asked", "family_probe_pages_failed",
+                 "family_probe_zeroed_for_few_marks",
                  "font_legacy_code_page", "confirmed_raw_runs", "encoding_has_differences", "selected_legacy", "unicode_cid_legacy", "conflicting_space_map", "padded_simple_to_unicode", "visual_unicode_glyphs", "_space_gids",
                  "_bridge_page_cache", "program_sha256")
 
@@ -1494,8 +1496,14 @@ class FontDecoder:
         self.family_probe = None
         self.family_attempts = 0
         self.family_short = None
-        # The strings collected for a face whose sample was not yet judgeable.
+        # The strings and their source PDF page refs collected for a face whose
+        # sample was not yet judgeable. The parallel source list lets the probe
+        # report page counts without retaining any decoded text in its ledger.
         self.family_samples = None
+        self.family_sample_sources = None
+        self.family_probe_pages_asked = set()
+        self.family_probe_pages_failed = {}
+        self.family_probe_zeroed_for_few_marks = {}
 
     # -- helpers ----------------------------------------------------------
     @property
@@ -1542,65 +1550,120 @@ class FontDecoder:
             self._bridge_page_cache = best
         return self._bridge_page_cache
 
-    def settle_legacy_family(self, chunks):
-        """Decide Ayar or WinInnwa for this face, from the page's own bytes.
+    def settle_legacy_family(self, chunks, *, sample_sources=None):
+        """Choose the table for this unnamed legacy face and retain an audit ledger.
 
-        Reached only for a face the name gate could not name: no witnessed
-        profile and no registered prefix, so the code page it was handed is the
-        documented default. Those are exactly the faces the lane already warns
-        about (``legacy-unknown-font``), and the two tables disagree on 92 of
-        the 109 slots they share, so a default is a guess on nine of ten.
+        The name gate has already put this face on the legacy path, but could not
+        identify its table. Decode the same shown strings through Ayar and
+        WinInnwa, then pin one answer to this face only. The selection and its
+        thresholds remain owned by ``legacy_lane_score.decide_lane`` and its
+        mirrored scorer; this method only supplies bytes, applies the result, and
+        records bounded numeric evidence.
 
-        The sample is this page's strings for this resource, decoded once per
-        candidate through the font's own reading path with nothing but the table
-        swapped -- which is why the caller collects it and this method applies it.
-        The scoring is not done here and not done by re-entering the chain:
-        ``extract/legacy_lane_score.decide_lane`` is the one place that imports
-        mm-score, the scanner, the shared-glyph test and the English-likeness
-        check, and it accepts a reading only above the mirrored scorer's floor
-        (``extract/legacy_judgement.py`` is that scorer, kept for the JS
-        comparison). Below the floor the default stays and the probe is recorded:
-        an undecided face has to stay visible.
-
-        Runs once per face, on the first page that shows it: the decoders are
-        cached per font object, so the whole batch inherits one answer.
+        A short sample may be combined with strings from later pages for up to
+        ``PROBE_MAX_ATTEMPTS`` attempts. ``sample_sources`` contains the retained
+        (PDF page reference, encoded string) pairs in precisely the same order as
+        ``chunks``. Keeping that association lets the ledger count source pages
+        and attribute candidate decode failures without retaining decoded text.
         """
         if (self.family_probe is not None or not chunks
                 or self.family_pinned or not self.selected_legacy):
             return self.family_probe
         if self.family_attempts >= PROBE_MAX_ATTEMPTS:
-            # Looked, could not tell, and no more looks: the face keeps its table and
-            # ``family_short`` says so. A short sample is retried on a later page
-            # because the first page that shows a font is often its title page --
-            # this is not another pass over the text, it is the same capped look at
-            # the content of a page that was going to be read anyway.
             return self.family_short
+        from myangustis_parser.extract.legacy_judgement import MIN_PROBE_MARKS
         from myangustis_parser.extract.legacy_lane_score import decide_lane
-        # "Default" means the table this face was handed before any probe, so an
-        # undecided sample leaves it exactly where the name gate left it.
+
+        # Direct unit callers need not provide page references. Production always
+        # supplies them through _settle_legacy_families.
+        if sample_sources is None:
+            direct_page = ('direct-sample', self.family_attempts + 1)
+            sample_sources = [(direct_page, data) for data in chunks]
+            self.family_probe_pages_asked.add(direct_page)
+        else:
+            sample_sources = list(sample_sources)
+            self.family_probe_pages_asked.update(
+                page for page, _data in sample_sources if page is not None)
+        sample_page_ids = {page for page, _data in sample_sources if page is not None}
         saved = self.font_legacy_code_page
         default = next((key for key, page in LEGACY_CODE_PAGES.items() if page is saved), None)
 
         def decode_sample(page, name):
             self.font_legacy_code_page = page
-            return ''.join(self.decode(data, use_confirmed=False) for data in chunks)
+            decoded = []
+            for source_page, data in sample_sources:
+                try:
+                    decoded.append(self.decode(data, use_confirmed=False))
+                except Exception:
+                    if source_page is not None:
+                        self.family_probe_pages_failed.setdefault(name, set()).add(source_page)
+                    # Preserve the existing candidate-level abstention: the scorer
+                    # converts a failed read to an empty sample, rather than letting
+                    # a decode exception change parser behavior.
+                    raise
+            return ''.join(decoded)
 
         decision = decide_lane(decode_sample, LEGACY_CODE_PAGES, default=default)
         if decision['accepted']:
             self.font_legacy_code_page = decision['codePage']
         else:
             self.font_legacy_code_page = saved
-        record = {'family': decision['name'], 'score': round(decision['score'], 4),
-                  'accepted': decision['accepted'], 'marks': decision.get('marks', 0),
-                  'insufficient': decision.get('insufficient', False),
-                  'attempts': self.family_attempts + 1,
-                  'ranking': [[name, round(score, 4)] for name, score in decision['ranking']]}
-        self.family_attempts += 1
+
+        ranking_scores = {name: score for name, score in decision.get('ranking', ())}
+        candidates = {}
+        for name, candidate in (decision.get('evidence') or {}).items():
+            mirror = candidate.get('mirror') or {}
+            marks = int(mirror.get('marks') or 0)
+            zeroed = marks < MIN_PROBE_MARKS
+            if zeroed:
+                self.family_probe_zeroed_for_few_marks[name] = (
+                    self.family_probe_zeroed_for_few_marks.get(name, 0) + 1)
+            failed_pages = self.family_probe_pages_failed.get(name, set())
+            decode_failed = bool(mirror.get('decodeError'))
+            candidates[name] = {
+                'pagesAsked': len(self.family_probe_pages_asked),
+                'pagesUsed': 0 if decode_failed else len(sample_page_ids),
+                'pagesFailed': len(failed_pages),
+                'marks': marks,
+                'score': round(float(mirror.get('score') or 0.0), 4),
+                'quality': round(float(mirror.get('quality') or 0.0), 4),
+                'rankScore': round(float(ranking_scores.get(name, 0.0)), 4),
+                'impossible': int(mirror.get('impossible') or 0),
+                'homoglyphSites': int(mirror.get('homoglyphSites') or 0),
+                'storedOrder': round(float(mirror.get('storedOrder') or 0.0), 4),
+                'englishPenalty': round(float(candidate.get('penalty') or 0.0), 4),
+                'english': candidate.get('english') or {},
+                'accepted': bool(decision.get('accepted') and decision.get('name') == name),
+                'zeroedForFewMarks': zeroed,
+                'zeroedForFewMarksAttempts': self.family_probe_zeroed_for_few_marks.get(name, 0),
+                'decodeError': decode_failed,
+                'decodeErrorType': mirror.get('decodeErrorType'),
+            }
+
+        failed_pages = set().union(*self.family_probe_pages_failed.values()) \
+            if self.family_probe_pages_failed else set()
+        attempt = self.family_attempts + 1
+        record = {
+            'family': decision['name'], 'score': round(decision['score'], 4),
+            'accepted': decision['accepted'], 'marks': decision.get('marks', 0),
+            'insufficient': decision.get('insufficient', False),
+            'attempts': attempt,
+            'ranking': [[name, round(score, 4)] for name, score in decision['ranking']],
+            'pagesAsked': len(self.family_probe_pages_asked),
+            'pagesUsed': len(sample_page_ids),
+            'pagesFailed': len(failed_pages),
+            'zeroedForFewMarks': sum(self.family_probe_zeroed_for_few_marks.values()),
+            'zeroedForFewMarksByCandidate': dict(self.family_probe_zeroed_for_few_marks),
+            'candidates': candidates,
+            'complete': not (decision.get('insufficient') and attempt < PROBE_MAX_ATTEMPTS),
+        }
+        self.family_attempts = attempt
         if decision.get('insufficient') and self.family_attempts < PROBE_MAX_ATTEMPTS:
             self.family_short = record
-            return record            # open: ``family_samples`` keeps growing for the next page
+            return record            # open: more source-page strings may arrive
         self.family_probe = record
-        self.family_samples = None      # closed: the collected look is no longer needed
+        self.family_samples = None
+        self.family_sample_sources = None  # closed: the collected bytes are no longer needed
         return record
 
     @property

@@ -90,12 +90,16 @@ def decide_legacy_family(decode_sample, code_pages=None, *, default=None):
         if name in code_pages and name not in seen:
             seen.add(name)
             order.append(name)
-    ranking, samples, evidence = [], {}, {}
+    ranking, samples, evidence, decode_errors = [], {}, {}, {}
     for name in order:
         try:
             sample = str(decode_sample(code_pages[name], name) or "")
-        except Exception:
+        except Exception as exc:
+            # Keep the historical abstention behavior, but distinguish a failed
+            # candidate read from a successful decode of an empty sample. Do not
+            # retain the exception message: it can contain input-derived text.
             sample = ""
+            decode_errors[name] = type(exc).__name__
         samples[name] = sample
         # The reading is scored in the ZawCode visual order. This sample has not
         # been through beautify -- the lane is being chosen, not finished -- so its
@@ -127,7 +131,10 @@ def decide_legacy_family(decode_sample, code_pages=None, *, default=None):
             quality = max(0.0, quality - STRUCTURAL_WEIGHT * sites / max(marks, 1))
         evidence[name] = {'marks': marks, 'score': result['score'], 'quality': quality,
                           'impossible': broken, 'homoglyphSites': sites,
-                          'storedOrder': mm_score.score_text(order_text(sample))['score']}
+                          'storedOrder': mm_score.score_text(order_text(sample))['score'],
+                          'zeroedForFewMarks': marks < MIN_PROBE_MARKS,
+                          'decodeError': name in decode_errors,
+                          'decodeErrorType': decode_errors.get(name)}
         ranking.append((name, quality))
     # Clean first, then by quality; the default already sits first in ``order``,
     # so a tie between two clean readings keeps the face where it started.

@@ -121,7 +121,9 @@ class TestLaneLogging(unittest.TestCase):
             def detect(self, text): return 'UNICODE', 1
         def extract(objects, num, gen, doc, **kwargs):
             # This is the callback used by the real font decoder, exercised
-            # across the probe pages as well as the report iterator.
+            # across the probe pages as well as the report iterator. Probe ledgers
+            # must use the one-based page-tree index, not a PDF object number.
+            self.assertEqual(kwargs.get('probe_page'), 1 if num == 10 else 2)
             for lane in (['unicode'] * 5 if num == 10 else ['unicode'] * 5 + ['legacy'] * 5):
                 doc.lane_observer(lane)
             return [(0, 0, 12, 'က')], 100, 100

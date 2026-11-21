@@ -18,8 +18,9 @@ from pathlib import Path
 
 from myangustis_parser.extract.legacy_judgement import (
     LEGACY_QUALITY_FLOOR, MIN_PROBE_MARKS, decide_legacy_family)
-from myangustis_parser.extract.pdf_extract import extract_page_lines, parse_pdf_objects
-from myangustis_parser.extract.pdf_fonts import DocumentDecoding, LEGACY_CODE_PAGES
+from myangustis_parser.extract.pdf_extract import (
+    _settle_legacy_families, extract_page_lines, parse_pdf_objects)
+from myangustis_parser.extract.pdf_fonts import DocumentDecoding, FontDecoder, LEGACY_CODE_PAGES
 from myangustis_parser.normalize import mm_score
 from myangustis_parser.normalize.cleanup import order_text
 
@@ -126,6 +127,10 @@ class UnnamedFaceDoorTests(unittest.TestCase):
         self.assertEqual(probe['family'], 'ayar')
         self.assertTrue(probe['accepted'])
         self.assertIn('wininnwa', [name for name, _score in probe['ranking']])
+        self.assertEqual(probe['pagesAsked'], 1)
+        self.assertEqual(probe['pagesUsed'], 1)
+        self.assertEqual(probe['pagesFailed'], 0)
+        self.assertEqual(set(probe['candidates']), {'ayar', 'wininnwa'})
 
     def test_a_pinned_name_is_never_asked(self):
         """JS's rule, kept: the name gate answers first, the probe only follows silence."""
@@ -173,6 +178,12 @@ class UnnamedFaceDoorTests(unittest.TestCase):
         self.assertIsNone(probe['family'])
         self.assertTrue(probe['insufficient'], 'a short sample must say it was short')
         self.assertEqual(probe['attempts'], 1)
+        self.assertEqual(probe['pagesAsked'], 1)
+        self.assertEqual(probe['pagesUsed'], 1)
+        self.assertEqual(probe['pagesFailed'], 0)
+        self.assertEqual(probe['zeroedForFewMarks'], 2)
+        self.assertTrue(all(candidate['zeroedForFewMarks']
+                            for candidate in probe['candidates'].values()))
         self.assertIsNone(probed_decoder.family_probe,
                           'a short look must leave the face open for a later page')
         self.assertEqual([line[3] for line in probed], [line[3] for line in pinned])
@@ -189,6 +200,80 @@ class UnnamedFaceDoorTests(unittest.TestCase):
         probed_decoder.settle_legacy_family(chunks)
         self.assertEqual(probed_decoder.family_attempts, closed_at,
                          'past the bound the face is not looked at again')
+
+
+class ProbeLedgerTests(unittest.TestCase):
+    """The per-face ledger counts the actual bounded probe, not decoded text."""
+
+    @staticmethod
+    def _decoder():
+        doc = DocumentDecoding('legacy')
+        decoder = FontDecoder(
+            'F2', subtype='TrueType', base_font='EAAAAA+CustomSubset', doc=doc,
+            font_legacy_code_page=LEGACY_CODE_PAGES['wininnwa'],
+            selected_legacy=True, family_pinned=False)
+        return doc, decoder
+
+    @staticmethod
+    def _content(data):
+        return (b'BT /F2 12 Tf <' + data.hex().upper().encode('ascii')
+                + b'> Tj ET')
+
+    def test_short_page_then_useful_page_is_counted_and_keeps_the_same_answer(self):
+        doc, decoder = self._decoder()
+        first_page = SAMPLE[:24]  # twelve dependent marks: below the 50-mark floor
+        second_page = SAMPLE[24:]
+
+        first_events = _settle_legacy_families(
+            self._content(first_page), {'F2': decoder}, doc, page_key=(30, 0))
+        self.assertEqual(len(first_events), 1)
+        first = first_events[0]['ledger']
+        self.assertFalse(first['complete'])
+        self.assertEqual(first['pagesAsked'], 1)
+        self.assertEqual(first['pagesUsed'], 1)
+        self.assertEqual(first['pagesFailed'], 0)
+        self.assertGreater(first['zeroedForFewMarks'], 0)
+
+        second_events = _settle_legacy_families(
+            self._content(second_page), {'F2': decoder}, doc, page_key=(31, 0))
+        self.assertEqual(len(second_events), 1)
+        final = second_events[0]['ledger']
+        self.assertTrue(final['complete'])
+        self.assertTrue(final['accepted'])
+        self.assertEqual(final['family'], 'ayar')
+        self.assertEqual(final['pagesAsked'], 2)
+        self.assertEqual(final['pagesUsed'], 2)
+        self.assertEqual(final['pagesFailed'], 0)
+        self.assertEqual(set(final['candidates']), {'ayar', 'wininnwa'})
+        self.assertEqual(final['candidates']['ayar']['pagesAsked'], 2)
+        self.assertEqual(final['candidates']['ayar']['pagesUsed'], 2)
+        self.assertGreater(final['candidates']['ayar']['marks'], 50)
+        self.assertNotIn('samples', final)
+        self.assertNotIn('decoded_text', final)
+
+    def test_decode_failure_is_counted_without_recording_the_exception_message(self):
+        from unittest.mock import patch
+
+        doc, decoder = self._decoder()
+        original_decode = FontDecoder.decode
+
+        def fail_ayar(self, data, *, use_confirmed=True, stats=None):
+            if self is decoder and self.font_legacy_code_page is LEGACY_CODE_PAGES['ayar']:
+                raise RuntimeError('private PDF string must not enter the ledger')
+            return original_decode(self, data, use_confirmed=use_confirmed, stats=stats)
+
+        with patch.object(FontDecoder, 'decode', new=fail_ayar):
+            events = _settle_legacy_families(
+                self._content(SAMPLE), {'F2': decoder}, doc, page_key=(32, 0))
+
+        ledger = events[0]['ledger']
+        ayar = ledger['candidates']['ayar']
+        self.assertTrue(ayar['decodeError'])
+        self.assertEqual(ayar['decodeErrorType'], 'RuntimeError')
+        self.assertEqual(ayar['pagesFailed'], 1)
+        self.assertEqual(ayar['pagesUsed'], 0)
+        self.assertEqual(ledger['pagesFailed'], 1)
+        self.assertNotIn('private PDF string', repr(ledger))
 
 
 class LaneScoreModuleTests(unittest.TestCase):

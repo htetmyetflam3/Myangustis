@@ -29,7 +29,7 @@ Legend: **T** = selected cases compared with pinned JS; **P** = Python counterpa
 | JS file | Python counterpart / finding | Status |
 |---|---|---|
 | `@core/pdf/instructions.js` | `workflow/pipeline.py`, `extract/pdf_fonts.py`, `normalize/judgement.py`; page facts and stem verdicts precede content; no complete exported instruction renderer/API. | T/P |
-| `@core/pdf/legacy-judgement.js` | `extract/legacy_judgement.py` (`decide_legacy_family`, the floor and the mark minimum), called by `extract/pdf_fonts.FontDecoder.settle_legacy_family` on a sample collected by `extract/pdf_extract._settle_legacy_families`. Pinned JS has the judgement and no caller, so there is nothing to diff against; `test_legacy_family.py` is the Python-side proof. | P |
+| `@core/pdf/legacy-judgement.js` | `extract/legacy_judgement.py` (`decide_legacy_family`, candidate scoring and the mirrored absolute floor), wrapped by `extract/legacy_lane_score.decide_lane` and called by `extract/pdf_fonts.FontDecoder.settle_legacy_family` on the sample collected by `extract/pdf_extract._settle_legacy_families`. The Python wrapper's relative acceptance is an intentional extension; pinned JS has the judgement but no caller to diff against. | P |
 | `@core/pdf/method/decoder.js` | `extract/pdf_fonts.py`; per-resource maps, CID behavior and synthetic differential. | T/P |
 | `@core/pdf/method/legacy/codepage-confirmed.js` | `extract/pdf_fonts.py`; synthetic direct-decoder and extracted-page behavior compared. | T/P |
 | `@core/pdf/method/legacy/codepage-names.js` | `resources/font_names.py`, bundled font names. | T/P |
@@ -123,25 +123,23 @@ Legend: **T** = selected cases compared with pinned JS; **P** = Python counterpa
 
 ## Python-only surface and cross-checks
 
-`entry/api.py`, `entry/cli.py`, `entry/prase.py`, `entry/interop.py`, `workflow/remote_queue.py`, `workflow/lane_log.py`, the launcher scripts and SSH ledger/Parquet/TXT collection are Python integration features; they are not proof of a one-to-one JS mirror. Package `__init__.py` files are wiring, not independent JS behavior. `normalize/legacy_order.py` and the historical evidence scripts have helper/draft functionality outside the pinned normal JS parse route. `output/fonts.py`, resource paths/maps, and Engine data access are Python-side implementations rather than Node subprocesses.
+`entry/api.py`, `entry/interop.py`, `main.py`, `workflow/remote_queue.py`, `workflow/lane_log.py` and the SSH ledger/Parquet/TXT collection are Python integration features; they are not proof of a one-to-one JS mirror. Package `__init__.py` files are wiring, not independent JS behavior. `normalize/legacy_order.py` and the historical evidence scripts have helper/draft functionality outside the pinned normal JS parse route. `output/fonts.py`, resource paths/maps, and Engine data access are Python-side implementations rather than Node subprocesses.
 
 Evidence includes `test_decoder_js_parity.py`, `test_gsub_js_parity.py`, `test_visual_js_parity.py`, `test_pdf_finish_js_parity.py`, `test_pdf_stream_js_parity.py`, `test_pdf_image_coverage.py`, `test_pdf_ocr_js_parity.py`, `test_pdf_ocr_render.py` and `test_docx_js_parity.py`. JS is invoked by these tests only; production Python PDF decoding does not run JS or cache compiled JS. PDF OCR invokes the external Tesseract CLI. The PDF renderer oracle is optional and needs the exact JS rendering dependencies documented in `README.md`. Actual affected books and OCR recognition have not been compared to JS here.
 
 ### Python file index
 
-These are the 47 Python files under `architecture/`; each is mapped individually so Python-only entry points are not mistaken for ports of a JS file. Package initializer rows denote wiring only.
+These are the 45 Python files under `architecture/`; each is mapped individually so Python-only entry points are not mistaken for ports of a JS file. Package initializer rows denote wiring only.
 
 | Python file | Closest JS responsibility / scope |
 |---|---|
 | `__init__.py` | Package wiring. |
 | `entry/__init__.py` | Package wiring. |
 | `entry/api.py` | Python Flask integration; no one-to-one JS core file. |
-| `entry/cli.py` | Python CLI integration; no one-to-one JS core file. |
 | `entry/index.py` | `B.Parser/index.js`, `B.Parser/convert.js`; different stage contract. |
 | `entry/interop.py` | Python JSON job integration; no one-to-one JS core file. |
 | `entry/limits.py` | `@entry/helper/limit.js`; owner and quota behavior differs. |
 | `entry/manager.py` | `@core/run.js` plus Python entry/OCR orchestration; contracts differ. |
-| `entry/prase.py` | Python CLI launcher. |
 | `extract/__init__.py` | Package wiring. |
 | `extract/decrypt.py` | `@init/pdf/helper/decrypt.js`; pypdf rather than qpdf. |
 | `extract/docx_extract.py` | `@core/docx/docx-extract.js`, `zip.js`, and part of DOCX validation. |
@@ -257,17 +255,27 @@ reading a face through the wrong table is not a rounding error — nine codes in
 ten change meaning. Three answers exist for a face, in this order: a witnessed
 resource profile (exact SHA over font program + /ToUnicode + code range), the
 name (`legacy_font_family`, the pin the two hand-built tables were made for),
-and — new — the page itself. The third is `@core/pdf/legacy-judgement.js`'s
-`decideLegacyFamily`, whose Python counterpart had no caller: the module decoded
-nothing and decided nothing on its own, so it needed a caller that owns the
-bytes. `extract/pdf_extract._settle_legacy_families` collects the page's shown
-strings for each undecided face, `FontDecoder.settle_legacy_family` reads them
-twice with only the table swapped, and `extract/legacy_judgement.py` scores both
-readings after the shared `order_text`, accepting one only at or above
-`LEGACY_QUALITY_FLOOR` and only with `MIN_PROBE_MARKS` marks in the sample. A
-tie keeps the documented default (JS's stable sort would have handed a tie to
-whichever entry its Map listed first), and a page that cannot answer leaves the
-face where the default put it, with `family_probe` recording that it looked.
+and — for an unnamed legacy face — a page-sample judgement. The Python caller
+is `extract/pdf_extract._settle_legacy_families`; it collects the shown strings
+for that resource and `FontDecoder.settle_legacy_family` temporarily reads the
+same bounded sample through Ayar and WinInnwa. Short samples accumulate across
+up to `PROBE_MAX_ATTEMPTS` (currently 3) attempts, subject to
+`PROBE_SAMPLE_BYTES`. `extract/legacy_lane_score.decide_lane` applies the
+relative ranking, minimum-mark rule and English penalty around the scorer in
+`extract/legacy_judgement.py`; this is not the scorer's standalone absolute
+0.85 floor. Ties keep the documented default, and the verdict pins a table to
+that face only — it does not move the page between lanes.
+
+The face record retains a bounded ledger: candidate marks, score/quality,
+`impossible` and English evidence, `pagesAsked`, `pagesUsed`, `pagesFailed`, and
+`zeroedForFewMarks`. With `PARSER_DIAGNOSTICS=on` and
+`PARSER_LOG_ENABLED=on`, each evaluation emits a file-only `[PDFDIAG] codepage`
+event. Page counts refer to distinct one-based PDF pages: asked pages showed
+strings for this face, used pages remain in the capped sample, and failed pages
+raised during a candidate decode. Candidate `pagesUsed` is zero when that
+candidate's sample read failed. `zeroedForFewMarks` counts candidate evaluations
+below the mark minimum, with counts by candidate. The event keeps counts and error
+types, never the sample strings or exception messages.
 
 Measured through the pipeline door on a two-face page (one named, one not, both
 written in Ayar codes): `orphan` **96 → 0** and the glyphs change; the same page
@@ -414,14 +422,14 @@ This is the shape the legacy lane should trust, and it is old, not invented:
   `sourcePdfSha256`, `sourcePage(s)` and a `reason`. Re-exported to the repair
   layer as `pdfRepairCandidates`. Python has no loader for it — the `N` row above.
 - **`extend/codepage-resolve.js` `chooseCodePage`** — deleted in `764b272` ("main
-  parser fresh"), and the ancestor of `legacy-judgement.js`. Unlike the restored
-  scoring-only version, it built a whole `DocumentDecoding` per candidate table,
-  sampled **up to six pages** (`CODE_PAGE_PROBE_PAGES = 6`), kept a ledger
-  (`candidates`, `zeroedForFewMarks`, `pagesAsked`, `pagesUsed`, `pagesFailed`,
-  `marks`), emitted it as a `codepage` log event, and could rank
-  `UNICODE_PATH` as a *third* candidate — "neither table, this is Unicode" was an
-  answer the probe could give. The Python port matches the restored version, so
-  the multi-page sample, the ledger and the Unicode candidate are all still open.
+  parser fresh"), and the ancestor of `legacy-judgement.js`. Its fuller design
+  built a `DocumentDecoding` per candidate table, sampled **up to six pages**
+  (`CODE_PAGE_PROBE_PAGES = 6`), kept a ledger (`candidates`,
+  `zeroedForFewMarks`, `pagesAsked`, `pagesUsed`, `pagesFailed`, `marks`), emitted
+  it as a `codepage` event, and could rank `UNICODE_PATH` as a *third* candidate.
+  Python now has a behavior-preserving ledger and up to three accumulated probe
+  attempts, but not that six-page resolver or the third candidate: see
+  `do.MD` item 1e and Q6 for the remaining scope/decision.
 - **Python's side** — `pdf_fonts.py:1905-1912` already has the five-field guard
   inline (`digest` + `baseFont` equality + `firstChar`/`lastChar` +
   `toUnicodeSha256`, no `/Encoding`) against the 22 profiles in
@@ -910,7 +918,7 @@ means a repair left its phase.
 | phase | what it owns | the class that should move here | what a hit here *means* |
 |---|---|---|---|
 | `extract/pdf_extract` + `pdf_fonts` (decode) | turning the file's codes into Unicode | `orphan` where the base never arrived; `virama` with nothing stacked | the file has no per-glyph link (no `/ToUnicode`, no `/Encoding`) -- root cause 2, not a rule to add downstream |
-| the lane's beautify rule (`apply_decision`: `arrange_legacy_order` incl. the ZawCode swap, `arrange_zawcode_order`, `Rabbit`) | the code page's own ordering and shared-glyph habits | `digit` (``၀`` wearing a mark, ``ရ`` inside a word run), preposed/kinzi order | a wrong or undecided table: check `family_probe` on the face (floor 0.85, `MIN_PROBE_MARKS = 50`) before blaming the ordering |
+| the lane's beautify rule (`apply_decision`: `arrange_legacy_order` incl. the ZawCode swap, `arrange_zawcode_order`, `Rabbit`) | the code page's own ordering and shared-glyph habits | `digit` (``၀`` wearing a mark, ``ရ`` inside a word run), preposed/kinzi order | a wrong or undecided table: inspect the per-face `codepage` ledger (marks, candidate scores, `impossible`/English evidence and page counts) before blaming the ordering |
 | `cleanup` at `workflow/finish` | mark order inside a cluster that *has* a base, imposter replacement | `orphan` whose base is present but out of order; ``မၻာ``-style imposters | a rule missing from `order_text`/`cleanup_text` -- the one shared ordering, never a lane-specific copy |
 | `normalize/pos_scan` → bind-engine api | reporting only | none: it must not change any count | a difference here is the Engine's reading of the text, and the Engine normalizes *behind* the api; nothing is written back |
 | extraction piece dedup + `_collapse_overprint` | double-drawn shadow copies | `stray`, `repeat` | a piece that is one unit repeated is a piece-level fact -- fixed at the piece, never re-parsed later |
@@ -1121,13 +1129,13 @@ them, which is what keeps the text where it was.
 
 The first base-vs-branch run on the books that *have* legacy pages said "barely": part-4 moved 78 pages of
 340 and part-1 869 of 1,359, yet `digit` was unchanged on part-4 (875 -> 875) and `orphan` went up. The
-record added for that run answered why, and the answer was in my own module. `extract/legacy_lane_score`
-accepted a reading only when its mm-score reached the mirrored scorer's absolute
-`LEGACY_QUALITY_FLOOR = 0.85` -- and a legacy page cannot reach it, because `1 - max(orphan, disorder)`
-charges for exactly the visual mark order a legacy page is written in. Measured, part-4: **63 probes,
-0 accepted, best score 0.7158, median 0.0**. So the lane looked at the face, refused, and left the
-default table in place: the ordering work was reached and then discarded, and every number above is what
-a decision-free run looks like.
+record added for that initial implementation showed why: `extract/legacy_lane_score` used to accept a
+reading only when its mm-score reached the mirrored scorer's absolute `LEGACY_QUALITY_FLOOR = 0.85`.
+A legacy page could not reach it, because `1 - max(orphan, disorder)` charges for exactly the visual mark
+order a legacy page is written in. Measured, part-4: **63 probes, 0 accepted, best score 0.7158, median
+0.0**. That was the pre-revision rule: the lane looked at the face, refused, and left the default table
+in place. The following two changes replaced that acceptance rule; the historical counts above are not
+the current probe behavior.
 
 Two changes, both inside the legacy lane's own decision -- the modern path and rule selection were not
 touched:

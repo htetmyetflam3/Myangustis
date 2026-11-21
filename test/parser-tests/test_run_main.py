@@ -55,7 +55,7 @@ _install_test_stubs_if_missing()
 if str(TEST_PARSER_DIR) not in sys.path:
     sys.path.insert(0, str(TEST_PARSER_DIR))
 
-from myangustis_parser.entry import cli, index, interop, manager  # noqa: E402
+from myangustis_parser.entry import index, manager  # noqa: E402
 from myangustis_parser.normalize import beautify, cleanup, pos_scan  # noqa: E402
 from myangustis_parser.resources import paths  # noqa: E402
 from myangustis_parser.workflow import ocr  # noqa: E402
@@ -137,12 +137,6 @@ class RunnerCliTests(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertIn("usage: main.py", buf.getvalue())
 
-        cli_buf = io.StringIO()
-        with redirect_stdout(cli_buf):
-            cli_rc = cli.main([])
-        self.assertEqual(cli_rc, 0)
-        self.assertIn("usage:", cli_buf.getvalue())
-
         help_buf = io.StringIO()
         with redirect_stdout(help_buf):
             with self.assertRaises(SystemExit) as ctx:
@@ -165,15 +159,40 @@ class RunnerCliTests(unittest.TestCase):
                     run_main.main(bad_argv)
                 self.assertEqual(ctx.exception.code, 2)
 
-        with redirect_stderr(io.StringIO()):
-            with self.assertRaises(SystemExit) as ctx:
-                cli.main(["book.pdf", "--cleanup", "yes"])
-            self.assertEqual(ctx.exception.code, 2)
-        self.assertFalse(hasattr(cli, "ask_cleanup_once"))
-
         pdf_tool_src = (ROOT / "B.Parser" / "tools" / "svg" / "pdf_tool.py").read_text(encoding="utf-8")
         for removed in ("--admin", "--auto-approve", "--cleanup"):
             self.assertNotIn(removed, pdf_tool_src)
+
+    def test_parser_execution_uses_main_as_its_only_cli(self):
+        parser_root = ROOT / "B.Parser"
+        self.assertFalse((parser_root / "architecture" / "entry" / "cli.py").exists())
+        pyproject = (parser_root / "pyproject.toml").read_text(encoding="utf-8")
+        self.assertNotIn("myangustis_parser.entry.cli", pyproject)
+
+        pdf_tool_src = (parser_root / "tools" / "svg" / "pdf_tool.py").read_text(encoding="utf-8")
+        self.assertNotIn("myangustis_parser.entry.cli", pdf_tool_src)
+        self.assertIn("from main import main as parser_main", pdf_tool_src)
+        self.assertIn('parser_main(["parse", *sys.argv[1:]])', pdf_tool_src)
+
+    def test_main_forwards_source_encoding_to_parser(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "book.pdf"
+            output = root / "book.txt"
+            source.write_bytes(b"%PDF-1.4")
+
+            with (
+                patch.object(run_main, "_inside_junk", side_effect=lambda raw: Path(raw)),
+                patch.object(index, "convert", return_value={"file": str(output)}) as convert,
+                redirect_stdout(io.StringIO()),
+            ):
+                rc = run_main.main([
+                    "parse", str(source), str(output),
+                    "--source-encoding", "zawgyi-one",
+                ])
+
+            self.assertEqual(rc, 0)
+            self.assertEqual(convert.call_args.kwargs["source_encoding"], "zawgyi-one")
 
     def test_resolves_bare_inputs_and_inherited_output_paths(self):
         with tempfile.TemporaryDirectory() as tmp:
