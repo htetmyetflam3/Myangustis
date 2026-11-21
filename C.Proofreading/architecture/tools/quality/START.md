@@ -65,5 +65,5 @@ the damaged text prevents an exact hit, do not guess or copy a form from it.
   paragraph index and a concise reason grounded in the Chinese.
 - Do not read whole-book sources or return a whole tool result. Use bounded
   comparison/context tools instead.
-- `mt/quality/english-review-task.md` has the detailed procedure. The Burmese
+- [`../../workflow.md`](../../workflow.md) has the review procedure. The Burmese
   rewrite procedure remains suspended unless the human explicitly re-enables it.
