@@ -7,8 +7,12 @@ def walk_reverse(tree, syllable, root):
     if not body:
         return {'action': 'continue', 'id': None}
     reverse = body[::-1]
-    entry = tree.get(f'St-{len(utf16_units(reverse))}', {}).get(reverse, {})
-    for suffix, roots in entry.items():
-        if root in roots:
-            return {'action': 'continue', 'id': root + suffix}
+    step_map = tree.get(f'St-{len(utf16_units(reverse))}')
+    if not step_map:
+        return {'action': 'continue', 'id': None}
+    entry = step_map.get(reverse)
+    if entry:
+        for suffix, roots in entry.items():
+            if root in roots:
+                return {'action': 'continue', 'id': root + suffix}
     return {'action': 'continue', 'id': None}

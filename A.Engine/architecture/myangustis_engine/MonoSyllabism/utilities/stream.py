@@ -13,13 +13,15 @@ def collect_from_text(text, chunk_size=None):
     if size <= 0:
         raise ValueError('chunk_size must be positive')
     # JS slices text in UTF-16 code units, including across surrogate pairs.
-    text = _utf16_units(text)
-    while text:
-        window = text[:size]
-        last = window.rfind('\n')
+    units = _utf16_units(text)
+    n = len(units)
+    pos = 0
+    while pos < n:
+        end = min(pos + size, n)
+        last = units.rfind('\n', pos, end)
         if last < 0:
-            yield _from_utf16_units(window)
-            text = text[len(window):]
+            yield _from_utf16_units(units[pos:end])
+            pos = end
         else:
-            yield _from_utf16_units(window[:last + 1])
-            text = window[last + 1:] + text[len(window):]
+            yield _from_utf16_units(units[pos:last + 1])
+            pos = last + 1

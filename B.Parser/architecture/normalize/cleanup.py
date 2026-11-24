@@ -235,17 +235,24 @@ def clean_imposters(t: str) -> str:
     if table is not None:
         return t.translate(table)
 
-    chars = list(t)
-    n = len(chars)
+    if not any(ch in trie for ch in t):
+        return t
+
+    n = len(t)
     out = []
     i = 0
     while i < n:
-        node = trie
-        j = i
-        last_match = -1
-        replacement = None
-        while j < n and chars[j] in node:
-            node = node[chars[j]]
+        ch = t[i]
+        if ch not in trie:
+            out.append(ch)
+            i += 1
+            continue
+        node = trie[ch]
+        j = i + 1
+        last_match = j if _REPLACEMENT in node else -1
+        replacement = node.get(_REPLACEMENT)
+        while j < n and t[j] in node:
+            node = node[t[j]]
             j += 1
             if _REPLACEMENT in node:
                 last_match = j
@@ -254,7 +261,7 @@ def clean_imposters(t: str) -> str:
             out.append(replacement)
             i = last_match
         else:
-            out.append(chars[i])
+            out.append(ch)
             i += 1
     return "".join(out)
 
@@ -264,16 +271,15 @@ def reorder_marks(t: str) -> str:
     if not t or not isinstance(t, str):
         return ""
 
-    chars = list(t)
     out = []
     i = 0
-    n = len(chars)
+    n = len(t)
 
     # One loop, no leading-prefix phase: the engine has none either, and it
     # needs none -- a leading space or any other non-base falls through to
     # the pass-through branch at the bottom.
     while i < n:
-        ch = chars[i]
+        ch = t[i]
         if _is_index(ch):
             out.append(ch)
             i += 1
@@ -284,7 +290,7 @@ def reorder_marks(t: str) -> str:
             marks = []
             seen_priorities = set()
             while i < n:
-                nxt = chars[i]
+                nxt = t[i]
                 if _is_index(nxt) or nxt in (" ", "\n"):
                     break
                 p = reorder_rank(nxt)
@@ -295,8 +301,9 @@ def reorder_marks(t: str) -> str:
                     marks.append(nxt)
                 i += 1
 
-            if marks:
+            if len(marks) > 1:
                 marks.sort(key=reorder_rank)
+            if marks:
                 out.extend(marks)
         else:
             out.append(ch)
@@ -316,8 +323,10 @@ def normalize_text(t: str) -> str:
     if not t or not isinstance(t, str):
         return ""
     glue = _glue()
-    return "".join(ch for ch in unicodedata.normalize("NFC", t)
-                   if ch not in glue)
+    norm = t if unicodedata.is_normalized("NFC", t) else unicodedata.normalize("NFC", t)
+    if not any(ch in glue for ch in norm):
+        return norm
+    return "".join(ch for ch in norm if ch not in glue)
 
 
 def order_text(t: str) -> str:
@@ -354,7 +363,9 @@ def normalize_phase2(t: str) -> str:
                     seen.add(p)
                     marks.append(text[i])
                 i += 1
-            out.extend(sorted(marks, key=lambda c: priority[c]))
+            if len(marks) > 1:
+                marks.sort(key=priority.__getitem__)
+            out.extend(marks)
             continue
         out.append(ch)
         i += 1

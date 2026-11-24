@@ -592,9 +592,6 @@ def render_texts(out_path, pages, counts, pdf_path):
 
     texts = [p["text"] if isinstance(p, dict) else p for p in pages]
     header = build_meta_header(pdf_path, texts, counts, {})
-    marked = [(page['marked'] if isinstance(page.get('marked'), str) else page_markup(page, text))
-              if isinstance(page, dict) else markup.text_to_markup(text)
-              for page, text in zip(pages, texts)]
 
     if ext == ".txt":
         with open(out_path, "w", encoding="utf-8") as f:
@@ -611,9 +608,15 @@ def render_texts(out_path, pages, counts, pdf_path):
         if os.environ.get("PRASER_DOCX_LAYOUT", "").lower() in ("1", "true", "yes", "on"):
             _write_docx_layout(out_path, pages, pdf_path)
         else:
+            marked = [(page['marked'] if isinstance(page.get('marked'), str) else page_markup(page, text))
+                      if isinstance(page, dict) else markup.text_to_markup(text)
+                      for page, text in zip(pages, texts)]
             write_docx_markup(out_path, iter(marked), len(marked))
 
     elif ext == ".pdf":
+        marked = [(page['marked'] if isinstance(page.get('marked'), str) else page_markup(page, text))
+                  if isinstance(page, dict) else markup.text_to_markup(text)
+                  for page, text in zip(pages, texts)]
         _write_pdf(out_path, iter(marked), {}, pdf_path, len(marked))
 
     else:

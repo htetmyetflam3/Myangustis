@@ -27,16 +27,19 @@ def arrange_zawcode_order(text, *, prebase_vowel_slot=True):
     """
     if not isinstance(text, str):
         raise TypeError('Expected text')
-    chars = list(text.replace('\u200b', ''))
+    s = text.replace('\u200b', '') if '\u200b' in text else text
+    n = len(s)
     bases = _bases()
     out = []
     i = 0
     e, aa, ra = 'ေ', 'ာ', 'ြ'
-    while i < len(chars):
-        cur = chars[i]
-        nxt, after, fourth, fifth = (chars[k] if k < len(chars) else None
-                                      for k in range(i + 1, i + 5))
-        if i == 0 or chars[i - 1] != e:
+    while i < n:
+        cur = s[i]
+        if i == 0 or s[i - 1] != e:
+            nxt = s[i + 1] if i + 1 < n else None
+            after = s[i + 2] if i + 2 < n else None
+            fourth = s[i + 3] if i + 3 < n else None
+            fifth = s[i + 4] if i + 4 < n else None
             if cur == e and nxt == ra and after in bases and fourth == e and fifth in bases:
                 out.extend((after, ra, e, fifth, e)); i += 5; continue
             if cur == e and nxt in bases and after in bases and fourth == aa:
