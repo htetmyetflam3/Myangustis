@@ -58,7 +58,7 @@ if str(TEST_PARSER_DIR) not in sys.path:
 from myangustis_parser.entry import index, manager  # noqa: E402
 from myangustis_parser.normalize import beautify, cleanup, pos_scan  # noqa: E402
 from myangustis_parser.resources import paths  # noqa: E402
-from myangustis_parser.workflow import ocr  # noqa: E402
+from myangustis_parser.workflow import ocr, pipeline  # noqa: E402
 import test_ocr  # noqa: E402
 
 
@@ -314,6 +314,39 @@ class RunnerCliTests(unittest.TestCase):
                 self.assertEqual(ocr_call.call_args.args[0], book_pdf)
                 self.assertEqual(ocr_call.call_args.args[1], out_dir / "txt" / "story.txt")
 
+    def test_directory_input_parses_pdfs_without_requiring_parse_subcommand(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            junk = root / "Junk"
+            in_dir = junk / "Parser" / "upload" / "pdf"
+            out_dir = junk / "Parser" / "output"
+            (in_dir / "sub").mkdir(parents=True)
+            a_pdf = in_dir / "a.pdf"
+            b_pdf = in_dir / "sub" / "b.pdf"
+            a_pdf.write_bytes(b"%PDF-1.4\n")
+            b_pdf.write_bytes(b"%PDF-1.4\n")
+
+            calls = []
+
+            def fake_safe_doc(src, dst, **kwargs):
+                calls.append((src, dst, kwargs["use_ocr"]))
+                return {"file": str(dst)}
+
+            with patch.object(run_main, "REPO_ROOT", root), \
+                 patch.object(paths, "OUTPUT_DIR", out_dir), \
+                 patch.object(paths, "TXT_OUTPUT_DIR", out_dir / "txt"), \
+                 patch.object(paths, "DOCX_OUTPUT_DIR", out_dir / "docx"), \
+                 patch.object(paths, "PDF_OUTPUT_DIR", out_dir / "pdf"), \
+                 patch.object(run_main, "_safe_document", side_effect=fake_safe_doc), \
+                 redirect_stdout(io.StringIO()):
+                rc = run_main.main([str(in_dir), "--txt"])
+
+            self.assertEqual(rc, 0)
+            self.assertEqual(calls, [
+                (a_pdf, out_dir / "txt" / "a.txt", False),
+                (b_pdf, out_dir / "txt" / "sub" / "b.txt", False),
+            ])
+
 
 class ManagerOcrAndDocxTests(unittest.TestCase):
     def setUp(self):
@@ -414,6 +447,110 @@ class ManagerOcrAndDocxTests(unittest.TestCase):
             self.assertEqual(result["file"], str(dst))
             self.assertEqual(result["to"], "docx")
             self.assertTrue(dst.is_file())
+
+
+class DocxImageOcrPhaseTests(unittest.TestCase):
+    @staticmethod
+    def _docx_with_image(jpeg: bytes, *, run_props: str = "", body_text: str = "Before") -> bytes:
+        import zipfile
+        w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+        a = "http://schemas.openxmlformats.org/drawingml/2006/main"
+        r = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as z:
+            z.writestr(
+                "[Content_Types].xml",
+                '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/'
+                'package/2006/content-types"><Default Extension="xml" '
+                'ContentType="application/xml"/><Default Extension="jpg" '
+                'ContentType="image/jpeg"/><Override PartName="/word/document.xml" '
+                'ContentType="application/vnd.openxmlformats-officedocument.'
+                'wordprocessingml.document.main+xml"/></Types>',
+            )
+            z.writestr(
+                "word/document.xml",
+                f'<?xml version="1.0"?><w:document xmlns:w="{w}" xmlns:a="{a}" xmlns:r="{r}">'
+                f'<w:body><w:p><w:r><w:rPr>{run_props}</w:rPr><w:t>{body_text}</w:t></w:r></w:p>'
+                '<w:p><w:r><w:drawing><a:blip r:embed="rId9"/></w:drawing></w:r></w:p>'
+                '<w:p><w:r><w:t>After</w:t></w:r></w:p></w:body></w:document>',
+            )
+            z.writestr(
+                "word/_rels/document.xml.rels",
+                '<?xml version="1.0"?><Relationships xmlns="http://schemas.'
+                'openxmlformats.org/package/2006/relationships"><Relationship '
+                'Id="rId9" Type="http://schemas.openxmlformats.org/officeDocument/'
+                '2006/relationships/image" Target="media/pic.jpg"/></Relationships>',
+            )
+            z.writestr("word/media/pic.jpg", jpeg)
+        return buf.getvalue()
+
+    def test_docx_image_ocr_routes_through_clean_and_scans_before_output(self):
+        from contextlib import ExitStack
+        from test_parser_chain import Trace
+
+        cases = (
+            ("unknown", "", "Before", "Before\nကမ္ဘာ\nAfter"),
+            (
+                "unicode",
+                '<w:rFonts w:ascii="Padauk" w:hAnsi="Padauk"/>',
+                "မြန်မာ",
+                "မြန်မာ\nကမ္ဘာ\nAfter",
+            ),
+            (
+                "zawgyi",
+                '<w:rFonts w:ascii="Zawgyi-One" w:hAnsi="Zawgyi-One"/>',
+                "ေကာင္းကင္",
+                "ကောင်းကင်\nကောင်းကင် ကမ္ဘာ\nAfter",
+            ),
+        )
+        for case, props, body_text, expected in cases:
+            ocr_reading = "ကောင်းကင် ကမၻာ\u200b\n" if case == "zawgyi" else "ကမၻာ\u200b\n"
+            data = self._docx_with_image(test_ocr.jpeg_bytes(), run_props=props, body_text=body_text)
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as tmp, ExitStack() as stack:
+                trace = Trace(stack)
+                stack.enter_context(patch.object(ocr, "available", return_value=True))
+                stack.enter_context(patch.object(ocr, "ocr_image", return_value=ocr_reading))
+                target = Path(tmp) / "out.txt"
+                result = manager._convert(
+                    data, "input.docx", target, kind="docx",
+                    include_text=True, include_preview=True,
+                )
+                self.assertEqual(result["ocrPages"], ["0001"])
+                self.assertEqual(result["text"], expected)
+                positions = [trace.events.index(s) for s in (
+                    "docx-extract", "docx-decision", "clean",
+                    "structural-scan", "render", "pos-scan", "publish",
+                )]
+                self.assertEqual(positions, sorted(positions), trace.events)
+                if case == "zawgyi":
+                    zg_pos = [trace.events.index(s) for s in (
+                        "docx-decision", "text-decision", "beautify", "clean",
+                    )]
+                    self.assertEqual(zg_pos, sorted(zg_pos), trace.events)
+                    self.assertEqual(trace.values["text-decision"][0], "rabbit")
+                self.assertNotIn("\uE000", trace.values["clean"][0][0])
+                self.assertEqual(trace.values["structural-scan"][0], trace.values["clean"][0][1])
+                self.assertEqual(trace.values["render"][0], [expected])
+                self.assertEqual(trace.values["pos-scan"][0], [expected])
+                self.assertTrue(any(c["suggested"].endswith("ကမ္ဘာ") for c in result["changes"]))
+
+    def test_docx_image_ocr_damage_is_captured_in_report_scan_and_off_strips_before_clean(self):
+        data = self._docx_with_image(test_ocr.jpeg_bytes())
+        with patch.object(ocr, "available", return_value=True), \
+             patch.object(ocr, "ocr_image", return_value="ိင်း\n"):
+            job = manager.prepare_job(data, "input.docx", kind="docx")
+        self.assertEqual(job["ocrPages"], ["0001"])
+        self.assertEqual(job["reports"][0]["scan"]["orphan"]["total"], 1)
+
+        seen_clean_inputs = []
+        real_clean = pipeline.finish.clean_page
+        with patch.dict(os.environ, {"PRASER_OCR": "off"}), \
+             patch.object(pipeline.finish, "clean_page",
+                          side_effect=lambda t: (seen_clean_inputs.append(t), real_clean(t))[1]):
+            off_job = manager.prepare_job(data, "input.docx", kind="docx")
+        self.assertEqual(off_job["ocrPages"], [])
+        self.assertEqual(len(seen_clean_inputs), 1)
+        self.assertNotIn("\uE000", seen_clean_inputs[0])
 
 
 if __name__ == "__main__":

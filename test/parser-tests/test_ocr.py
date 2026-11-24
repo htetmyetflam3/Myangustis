@@ -226,6 +226,19 @@ def main() -> int:
                   "\uE000" not in result["text"] and
                   "Before" in result["text"] and "After" in result["text"],
                   repr(result["text"]))
+            os.environ.pop("PRASER_OCR", None)
+
+            imposter_stub = work / "tesseract-imposter"
+            imposter_stub.write_text(
+                '#!/bin/sh\nprintf "ကမၻာ\\n"\n', encoding="utf-8"
+            )
+            imposter_stub.chmod(0o755)
+            os.environ["PRASER_TESSERACT_BIN"] = str(imposter_stub)
+            result = manager.dispatch_path(docx, work / "docx-cleaned.txt",
+                                           include_text=True)
+            check("DOCX OCR text cleaned before output",
+                  result["text"] == "Before\nကမ္ဘာ\nAfter",
+                  repr(result["text"]))
         finally:
             for key, value in saved.items():
                 if value is None:

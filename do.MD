@@ -19,10 +19,11 @@ page/line or async implementations is still incomplete.
 
 ## OCR follow-ups
 
-- **DOCX image OCR:** recognized text is inserted after the DOCX chunk has been
-  cleaned, so the inserted text misses that step. Route it through the shared
-  later phase and scan it before output. A generated-input probe exposed this;
-  this path is excluded from the pinned chain guard.
+- **DOCX image OCR:** Done. Embedded DOCX picture placeholders are resolved
+  after the chunk's own text encoding step and before `finish.clean_page` and
+  `scan.scan_text`, so recognized OCR text goes through the shared clean phase
+  and structural scan before render and POS scan (`test_run_main.py`,
+  `test_ocr.py`). This path remains excluded from `test_parser_chain.py`.
 - **Automatic PDF OCR:** the parser's SSH parse runner sets `PRASER_OCR=off`.
   A local run verified that setting prevents automatic OCR; with OCR enabled,
   `prepare_job` can call it for image-only pages. The cleaned OCR text currently
