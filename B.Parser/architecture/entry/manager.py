@@ -33,7 +33,6 @@ from myangustis_parser.resources import paths
 from myangustis_parser.workflow import ocr
 from myangustis_parser.workflow import pipeline, finish
 from myangustis_parser.output import render
-from myangustis_parser.extract.docx_extract import strip_image_markers
 
 __all__ = [
     "ManagerError",
@@ -275,51 +274,27 @@ def _ocr_pdf_image_pages(job, data, log):
     return done
 
 
-def _replace_markers(job, replacements, log, clean_replacements=None):
-    """Swap OCR placeholders in page and report text; drop the leftovers."""
-    def swap(value, replacements):
-        if not isinstance(value, str):
-            return value
-        for marker, text in replacements.items():
-            value = value.replace(marker, text)
-        return strip_image_markers(value)
-
-    for page in job.get("pages") or []:
-        page["text"] = swap(page.get("text"), replacements)
-    for report in job.get("reports") or []:
-        report["base"] = swap(report.get("base"), replacements)
-        report["clean"] = swap(report.get("clean"), clean_replacements if clean_replacements is not None else replacements)
-    job["changes"] = pipeline.collect_changes(job.get("reports") or [])
-
-
-def _ocr_docx_images(job, log):
-    """OCR pictures embedded in a DOCX; returns their ids."""
-    files = job.get("image_files") or []
+def _ocr_docx_images(files, log):
+    """OCR pictures extracted from a DOCX; returns ``(replacements, ids)``."""
     if not files:
-        return []
+        return {}, []
     replacements = {item["marker"]: "" for item in files}
     if not _ocr_enabled() or not ocr.available():
         log(f"[i] {ocr.describe() if _ocr_enabled() else 'OCR disabled'}; "
             "embedded DOCX images left as placeholders (removed)")
-        _replace_markers(job, replacements, log)
-        return []
-    clean_replacements = dict(replacements)
+        return replacements, []
     recognized = []
     for item in files:
         try:
             data = Path(item["path"]).read_bytes()
             text = ocr.ocr_image(data, suffix=Path(item["path"]).suffix)
-            # JS inserts the trimmed OCR reading directly, without a separate
-            # parsing or cleanup pass for the embedded image.
-            replacements[item['marker']] = (text or '').strip(_JS_TRIM_CHARS)
-            clean_replacements[item['marker']] = replacements[item['marker']]
+            replacements[item["marker"]] = (text or "").strip(_JS_TRIM_CHARS)
             if replacements[item["marker"]]:
                 recognized.append(item["id"])
                 log(f"    DOCX image {item['id']}: OCR supplied the text")
         except Exception as exc:  # noqa: BLE001 - OCR never fails the parse
             log(f"    DOCX image {item['id']}: OCR skipped ({exc})")
-    _replace_markers(job, replacements, log, clean_replacements)
-    return recognized
+    return replacements, recognized
 
 
 def prepare_job(data, name, *, kind, source_encoding="auto", text_layout=None, log=None):
@@ -335,13 +310,13 @@ def prepare_job(data, name, *, kind, source_encoding="auto", text_layout=None, l
             job = _ocr_job(data, name, log)
             ocr_pages = [1]
         elif kind == "docx":
-            # Pictures are extracted to a scratch dir, OCR'd, then their
-            # placeholders are replaced; the dir never outlives the call.
+            # Pictures are extracted to a scratch dir, OCR'd before chunk
+            # cleaning and structural scanning; the dir never outlives the call.
             image_dir = tempfile.mkdtemp(prefix="myangustis-docx-img-")
             job = pipeline.process_docx_bytes(
                 data, _detector(), filename=name, log=log, image_dir=image_dir,
-                source_encoding=source_encoding)
-            ocr_pages = _ocr_docx_images(job, log)
+                image_ocr=_ocr_docx_images, source_encoding=source_encoding)
+            ocr_pages = job.pop("ocr_pages", [])
         else:
             job = pipeline.process_bytes(
                 data, kind, _detector(), filename=name, log=log,

@@ -70,16 +70,16 @@ EXAMPLES = """\
 examples:
   uv run main.py book.pdf
   uv run main.py book.pdf --txt
-  uv run main.py book.pdf --docx
-  uv run main.py book.docx
+  uv run main.py Junk/Parser/upload/pdf/ --txt
+  uv run main.py parse Junk/Parser/upload/pdf/
   uv run main.py book.docx --txt
-  uv run main.py book.pdf --ocr
   uv run main.py book.pdf --ocr --txt
   uv run main.py scan.png --ocr --txt
 
 defaults:
   bare PDF filenames   -> Junk/Parser/upload/pdf/<name>
   bare DOCX filenames  -> Junk/Parser/upload/docx/<name>
+  directory input      -> parses all supported files inside the directory
   output directory     -> Junk/Parser/output/{txt,docx,pdf}/<stem>.<fmt>
   omitted output flag  -> matches the input file format (images default to .txt)
 
@@ -91,9 +91,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="main.py",
         description=(
-            "Single entry point for B.Parser: parse or OCR one document.\n"
-            "Without --ocr the document is parsed (including OCR on image-only pages);\n"
-            "with --ocr the OCR lane runs across the document."
+            "Single entry point for B.Parser: parse or OCR a document or directory.\n"
+            "Without --ocr documents are parsed (including OCR on image-only pages);\n"
+            "with --ocr the OCR lane runs across each PDF or image."
         ),
         epilog=EXAMPLES,
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -104,13 +104,19 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "Input filename (resolved under Junk/Parser/upload/pdf/ or "
-            "Junk/Parser/upload/docx/) or an explicit file path."
+            "Junk/Parser/upload/docx/) or an explicit file or directory path."
         ),
     )
     parser.add_argument(
         "--ocr",
         action="store_true",
-        help="Run OCR across the input document using B.Parser's OCR lane.",
+        help="Run OCR across the input document(s) using B.Parser's OCR lane.",
+    )
+    parser.add_argument(
+        "--source-encoding",
+        choices=("auto", "unicode", "zawgyi-one"),
+        default="auto",
+        help="Declare the input encoding when the PDF font is not labelled.",
     )
     formats = parser.add_mutually_exclusive_group()
     formats.add_argument(
@@ -240,16 +246,19 @@ def _output_roots():
     return roots
 
 
-def _new_output(source: Path, raw: str | None, relative: Path | None = None) -> Path:
-    default_format = resolve_output_format(source, None)
+def _new_output(source: Path, raw: str | None, relative: Path | None = None,
+                requested_format: str | None = None) -> Path:
+    fmt = resolve_output_format(source, requested_format)
     if raw is None:
-        directory = _inside_junk(paths.output_dir_for(default_format))
-        return directory / (relative.parent if relative else Path()) / (source.stem + '.' + default_format)
+        directory = _inside_junk(paths.output_dir_for(fmt))
+        return directory / (relative.parent if relative else Path()) / (source.stem + '.' + fmt)
     dest = _inside_junk(raw)
     if not dest.suffix:
-        return dest / (relative.parent if relative else Path()) / (source.stem + '.' + default_format)
+        return dest / (relative.parent if relative else Path()) / (source.stem + '.' + fmt)
     if dest.suffix.lower() not in ('.pdf', '.docx', '.txt'):
         raise ValueError('Output must be PDF, DOCX, or TXT.')
+    if requested_format and dest.suffix.lower().lstrip('.') != requested_format:
+        raise ValueError(f'Output extension {dest.suffix} conflicts with --{requested_format}.')
     return dest
 
 
@@ -269,6 +278,63 @@ def _safe_document(source: Path, output: Path, *, use_ocr: bool,
         return result
     finally:
         temporary.unlink(missing_ok=True)
+
+
+def _run_directory_batch(
+    source: Path,
+    *,
+    raw_output: str | None = None,
+    requested_format: str | None = None,
+    use_ocr: bool = False,
+    source_encoding: str = "auto",
+    continuous: bool = False,
+) -> int:
+    output_dir = _inside_junk(raw_output) if raw_output else None
+    if output_dir is not None and Path(raw_output).suffix:
+        raise ValueError('Batch output must be a directory; omit the extension for a folder.')
+    resolved_source = source.resolve()
+    candidate_roots = (
+        [output_dir] if output_dir is not None else
+        [_inside_junk(paths.output_dir_for(fmt)) for fmt in ('txt', 'docx', 'pdf')]
+    )
+    output_roots = [
+        root.resolve() for root in candidate_roots
+        if not resolved_source.is_relative_to(root.resolve())
+    ]
+    while True:
+        failed = False
+        matched = 0
+        for item in sorted(source.rglob('*')):
+            if not item.is_file():
+                continue
+            rel = item.relative_to(source)
+            if any(part.startswith('.') for part in rel.parts):
+                continue
+            suffix = item.suffix.lower()
+            if suffix not in SUPPORTED_INPUT_SUFFIXES:
+                continue
+            if use_ocr and suffix in ('.txt', '.docx', '.doc'):
+                continue
+            if not use_ocr and suffix == '.txt' and requested_format != 'docx':
+                continue
+            if any(item.resolve().is_relative_to(root) for root in output_roots):
+                continue
+            matched += 1
+            out = _new_output(item, raw_output, rel, requested_format=requested_format)
+            if out.exists() or item.resolve() == out.resolve():
+                continue
+            try:
+                _safe_document(item, out, use_ocr=use_ocr,
+                               source_encoding=source_encoding)
+                print(f'[+] Saved: {out}', flush=True)
+            except (OSError, ValueError, RuntimeError) as exc:
+                failed = True
+                print(f'[failed] {item}: {exc}', file=sys.stderr, flush=True)
+        if not continuous:
+            if matched == 0:
+                print(f'[i] No supported input files found in {source}', flush=True)
+            return 1 if failed else 0
+        time.sleep(60)
 
 
 def _modern_cli(argv):
@@ -292,6 +358,10 @@ def _modern_cli(argv):
         '--source-encoding', choices=('auto', 'unicode', 'zawgyi-one'), default='auto',
         help='Declare the input encoding when the PDF font is not labelled.',
     )
+    formats = parser.add_mutually_exclusive_group()
+    formats.add_argument('--txt', action='store_const', const='txt', dest='output_format')
+    formats.add_argument('--docx', action='store_const', const='docx', dest='output_format')
+    formats.add_argument('--pdf', action='store_const', const='pdf', dest='output_format')
     parser.add_argument('--ssh', action='store_true', help='continuously read the remote queue; parser writes Parquet and combined TXT')
     parser.add_argument('--continuous', action='store_true', help='watch a local input directory')
     service = parser.add_mutually_exclusive_group()
@@ -299,7 +369,7 @@ def _modern_cli(argv):
     service.add_argument('--foreground', action='store_true', help='run the continuous worker in this process')
     args = parser.parse_args(argv)
     mode = 'parse' if args.mode == 'prase' else args.mode
-    if args.ssh and (args.input is not None or args.output is not None or args.continuous):
+    if args.ssh and (args.input is not None or args.output is not None or args.continuous or args.output_format is not None):
         parser.error('--ssh uses the configured remote directory and fixed output locations; no paths or --continuous')
     if args.ssh and args.source_encoding != 'auto':
         parser.error('--source-encoding applies only to local parsing')
@@ -323,6 +393,8 @@ def _modern_cli(argv):
                 # The service runs from the repository root; keep the resolved
                 # path so .env/CLI values cannot drift with the working directory.
                 command.append(str(_inside_junk(args.output)))
+            if args.output_format is not None:
+                command.append(f'--{args.output_format}')
             if args.ssh:
                 command.append('--ssh')
             if args.continuous:
@@ -358,7 +430,7 @@ def _modern_cli(argv):
         if source.is_file():
             if args.continuous:
                 raise ValueError('--continuous requires an input directory.')
-            out = _new_output(source, args.output)
+            out = _new_output(source, args.output, requested_format=args.output_format)
             if out.resolve() == source.resolve() or out.exists():
                 raise ValueError(f'Refusing to overwrite {out}')
             result = _safe_document(source, out, use_ocr=mode == 'ocr',
@@ -367,30 +439,14 @@ def _modern_cli(argv):
             return 0
         if not source.is_dir():
             raise ValueError('Input must be a file or a directory.')
-        output_dir = _inside_junk(args.output) if args.output else None
-        if output_dir is not None and Path(args.output).suffix:
-            raise ValueError('Batch output must be a directory; omit the extension for a folder.')
-        output_roots = ([output_dir] if output_dir is not None else
-                        [_inside_junk(paths.output_dir_for(fmt)) for fmt in ('txt', 'docx', 'pdf')])
-        while True:
-            failed = False
-            for item in sorted(source.rglob('*')):
-                if (not item.is_file() or item.suffix.lower() not in SUPPORTED_INPUT_SUFFIXES
-                        or any(item.resolve().is_relative_to(root) for root in output_roots)):
-                    continue
-                out = _new_output(item, args.output, item.relative_to(source))
-                if out.exists() or item.resolve() == out.resolve():
-                    continue
-                try:
-                    _safe_document(item, out, use_ocr=mode == 'ocr',
-                                   source_encoding=args.source_encoding)
-                    print(f'[+] Saved: {out}', flush=True)
-                except (OSError, ValueError, RuntimeError) as exc:
-                    failed = True
-                    print(f'[failed] {item}: {exc}', file=sys.stderr, flush=True)
-            if not args.continuous:
-                return 1 if failed else 0
-            time.sleep(60)
+        return _run_directory_batch(
+            source,
+            raw_output=args.output,
+            requested_format=args.output_format,
+            use_ocr=mode == 'ocr',
+            source_encoding=args.source_encoding,
+            continuous=args.continuous,
+        )
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
         print(f'error: {error}', file=sys.stderr)
         return 1
@@ -406,18 +462,31 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     if args.input is None:
-        if args.ocr or args.output_format is not None:
-            parser.error("an input file is required")
+        if args.ocr or args.output_format is not None or args.source_encoding != "auto":
+            parser.error("an input file or directory is required")
         parser.print_help()
         return 0
     if not args.input.strip():
-        parser.error("an input file is required")
+        parser.error("an input file or directory is required")
 
     try:
         source = resolve_input_path(args.input)
+        if source.is_dir():
+            return _run_directory_batch(
+                source,
+                requested_format=args.output_format,
+                use_ocr=args.ocr,
+                source_encoding=args.source_encoding,
+            )
         fmt = resolve_output_format(source, args.output_format)
         out_path = resolve_output_path(source, fmt)
-        result = run_document(source, out_path, use_ocr=args.ocr, log=print)
+        result = run_document(
+            source,
+            out_path,
+            use_ocr=args.ocr,
+            source_encoding=args.source_encoding,
+            log=print,
+        )
     except (OSError, ValueError, RuntimeError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1

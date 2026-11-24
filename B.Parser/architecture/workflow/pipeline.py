@@ -717,14 +717,25 @@ def _chunk_paragraphs(paragraphs, per_chunk=_DOCX_CHUNK_PARAGRAPHS):
             for i in range(0, len(paragraphs), per_chunk)]
 
 
+def _swap_image_markers(value, replacements):
+    """Replace DOCX OCR placeholders with recognized text and drop leftovers."""
+    if not isinstance(value, str):
+        return value
+    for marker, text in replacements.items():
+        value = value.replace(marker, text)
+    return strip_image_markers(value)
+
+
 def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: None,
-                       *, image_dir=None, source_encoding="auto"):
+                       *, image_dir=None, image_ocr=None, source_encoding="auto"):
     """Extract DOCX chunks, classify from encoding/font evidence, and finish.
 
-    With ``image_dir`` set, embedded pictures are extracted and replaced by
-    OCR markers for the manager. Unknown text stays in stored order; direct
-    run bold/italic marks are retained. Coordinates are not retained, but
-    finished pages can be written as TXT, DOCX or PDF.
+    With ``image_dir`` set, embedded pictures are extracted as private markers,
+    resolved via ``image_ocr`` after the DOCX chunk's own encoding transform,
+    and routed through the shared clean phase and structural scan before output.
+    Unknown text stays in stored order; direct run bold/italic marks are
+    retained. Coordinates are not retained, but finished pages can be written
+    as TXT, DOCX or PDF.
     """
     with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
         tmp.write(data)
@@ -746,6 +757,8 @@ def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: Non
     reports = []
     pages = []
     counts = {"ZAWGYI": 0, "UNICODE": 0, "UNKNOWN": 0}
+    replacements = None
+    ocr_pages = []
     for idx, chunk in enumerate(chunks):
         # OCR placeholders are internal; they are not evidence about the
         # document's encoding or keyboard.
@@ -760,7 +773,21 @@ def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: Non
         # or mixed font declarations never count as a Zawgyi face.
         chosen = ('zawgyi-one' if cat == 'ZAWGYI' else
                   'unicode' if cat == 'UNICODE' else source_encoding)
-        if cat == 'UNKNOWN':
+        if chunk != text:
+            if cat == 'UNKNOWN':
+                converted, decision = chunk, 'unknown'
+            elif cat == 'UNICODE' and source_encoding == 'auto' and has_only_unicode_fonts(fonts):
+                converted, decision = chunk, 'pass-through'
+            else:
+                decision, _ = finish.decide(text, source='parse', source_encoding=chosen)
+                converted = finish.apply_decision(chunk, decision)
+            if replacements is None:
+                replacements, ocr_pages = (image_ocr(image_files, log)
+                                           if image_ocr is not None else ({}, []))
+            base = _swap_image_markers(converted, replacements)
+            clean = finish.clean_page(base)
+            scan_result = finish.scan.scan_text(clean)
+        elif cat == 'UNKNOWN':
             base, clean, decision = chunk, finish.clean_page(chunk), 'unknown'
             scan_result = finish.scan.scan_text(clean)
         elif cat == 'UNICODE' and source_encoding == 'auto' and has_only_unicode_fonts(fonts):
@@ -790,6 +817,7 @@ def process_docx_bytes(data, detector, filename="upload.docx", log=lambda m: Non
     }
     if image_files is not None:
         job["image_files"] = image_files
+        job["ocr_pages"] = ocr_pages
     return job
 
 
