@@ -1013,7 +1013,6 @@ def lane_trial(loader, page_key, shared, legacy):
             flip = True
         elif (verdict.get('reason') == 'map-reads-burmese'
               or (verdict.get('modernMyanmar', 0) >= 0.5
-                  and verdict.get('modernScore', 0) >= 0.85
                   and sum(len(item) for item in strings) >= SKIP_AFTER_BYTES)):
             answered[key] = {'skip': True, 'lane': 'modern', 'reason': verdict.get('reason') or 'modern',
                              'baseFont': normalise_font_name(font.base_font)}
