@@ -408,23 +408,34 @@ def page_has_images(objects, page_num, page_gen):
     -> /XObject dict (inline or ref) -> its entries, which may be inline
     dicts or refs to the image-stream objects carrying /Subtype /Image.
     """
-    def _get(ref_match):
-        raw = objects.get((int(ref_match.group(1)), 0), b'')
-        return raw.decode('latin-1', errors='replace')
+    def _head(num, gen=0):
+        raw = objects.get((num, gen))
+        if raw is None and gen != 0:
+            raw = objects.get((num, 0))
+        if not raw:
+            return b''
+        stream_at = raw.find(b'stream')
+        return raw[:stream_at] if stream_at >= 0 else raw
 
-    d = objects.get((page_num, page_gen), b'').decode('latin-1', errors='replace')
+    d = _head(page_num, page_gen)
     res = d
-    m = re.search(r'/Resources\s+(\d+)\s+\d+\s+R', d)
+    m = re.search(rb'/Resources\s+(\d+)\s+(\d+)\s+R', d)
     if m:
-        res = _get(m)
-    if re.search(r'/Subtype\s*/Image', res):
+        res = _head(int(m.group(1)), int(m.group(2)))
+    if re.search(rb'/Subtype\s*/Image\b', res):
         return True                       # inline image dict in resources
-    mx = re.search(r'/XObject\s+(\d+)\s+\d+\s+R', res)
-    xo = _get(mx) if mx else res          # XObject dict: indirect or inline
-    if re.search(r'/Subtype\s*/Image', xo):
+    mx = re.search(rb'/XObject\s+(\d+)\s+(\d+)\s+R', res)
+    if mx:
+        xo = _head(int(mx.group(1)), int(mx.group(2)))
+    else:
+        inline_xo = re.search(rb'/XObject\s*<<(.*?)>>', res, re.DOTALL)
+        if not inline_xo:
+            return False
+        xo = inline_xo.group(1)
+    if re.search(rb'/Subtype\s*/Image\b', xo):
         return True
-    for rm in re.finditer(r'(\d+)\s+\d+\s+R', xo):
-        if re.search(r'/Subtype\s*/Image', _get(rm)):
+    for rm in re.finditer(rb'(\d+)\s+(\d+)\s+R', xo):
+        if re.search(rb'/Subtype\s*/Image\b', _head(int(rm.group(1)), int(rm.group(2)))):
             return True                   # image stream behind an entry ref
     return False
 
@@ -961,7 +972,8 @@ def lane_trial(loader, page_key, shared, legacy):
         # bridge reads.
         if font.has_encoding and not font.encoding_has_differences:
             continue
-        if (answered.get(key) or {}).get('skip'):
+        prior = answered.get(key)
+        if prior and (prior.get('skip') or prior.get('lane') == 'legacy'):
             continue
         faces[name] = font
     if not faces:
@@ -999,6 +1011,12 @@ def lane_trial(loader, page_key, shared, legacy):
                              'marks': verdict['marks'], 'quality': verdict['quality'],
                              'baseFont': normalise_font_name(font.base_font)}
             flip = True
+        elif (verdict.get('reason') == 'map-reads-burmese'
+              or (verdict.get('modernMyanmar', 0) >= 0.5
+                  and verdict.get('modernScore', 0) >= 0.85
+                  and sum(len(item) for item in strings) >= SKIP_AFTER_BYTES)):
+            answered[key] = {'skip': True, 'lane': 'modern', 'reason': verdict.get('reason') or 'modern',
+                             'baseFont': normalise_font_name(font.base_font)}
     return flip
 
 

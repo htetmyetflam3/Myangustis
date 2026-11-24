@@ -197,31 +197,34 @@ def judge_page_lines(lines, swap_candidate) -> dict:
         homoglyph_sites += len(legacy_order.number_in_word_sites(inspected))
         original_has_text = original_has_text or bool(inspected.strip())
         has_myanmar = has_myanmar or contains_myanmar(inspected)
-        aligned = aligned and mm_score.mark_order_aligned(inspected)
+        line_aligned = mm_score.mark_order_aligned(inspected)
+        aligned = aligned and line_aligned
         # Marks the separators took their base from. A spacing fault, carried
         # as its own evidence: it must not travel as a ZawCode slot count.
         space_broken += mm_score.space_broken_marks(inspected)
         candidate = swap_candidate(inspected)
-        candidate_changed = candidate_changed or candidate != inspected
-        if candidate != inspected:
+        line_changed = candidate != inspected
+        candidate_changed = candidate_changed or line_changed
+        if line_changed:
             # Slots the swapping rule touched on this line, counted as the
             # character positions it rearranged (one slot touches at most
             # five). The ZawCode call needs more than one slot -- see
             # ZAWCODE_MIN_SLOTS below.
-            before = list(inspected)
-            after = list(candidate)
-            for i in range(max(len(before), len(after))):
-                if (before[i] if i < len(before) else None) != \
-                        (after[i] if i < len(after) else None):
+            n_in, n_cand = len(inspected), len(candidate)
+            for i in range(max(n_in, n_cand)):
+                if (inspected[i] if i < n_in else None) != \
+                        (candidate[i] if i < n_cand else None):
                     candidate_slots += 1
-        candidate_aligned = candidate_aligned and mm_score.mark_order_aligned(candidate)
+            candidate_aligned = candidate_aligned and mm_score.mark_order_aligned(candidate)
+        else:
+            candidate_aligned = candidate_aligned and line_aligned
         if inspected:
             # Mm-score judges the readings exactly as emitted -- no reordering
             # first, or a crossed page would score as if already fixed.
             raw_reading = mm_score.score_text(inspected)
             raw_score_total += raw_reading["score"] * raw_reading["marks"]
             raw_marks += raw_reading["marks"]
-            candidate_reading = mm_score.score_text(candidate)
+            candidate_reading = mm_score.score_text(candidate) if line_changed else raw_reading
             candidate_score_total += candidate_reading["score"] * candidate_reading["marks"]
             candidate_marks += candidate_reading["marks"]
     return {

@@ -17,10 +17,12 @@ Two execution modes share the same building blocks:
       inline change previews, because the frontend job store needs them.
 """
 
+import errno
 import os
 import re
 import difflib
 import math
+import shutil
 import tempfile
 
 from myangustis_parser.extract.decrypt import (
@@ -592,9 +594,6 @@ def render_texts(out_path, pages, counts, pdf_path):
 
     texts = [p["text"] if isinstance(p, dict) else p for p in pages]
     header = build_meta_header(pdf_path, texts, counts, {})
-    marked = [(page['marked'] if isinstance(page.get('marked'), str) else page_markup(page, text))
-              if isinstance(page, dict) else markup.text_to_markup(text)
-              for page, text in zip(pages, texts)]
 
     if ext == ".txt":
         with open(out_path, "w", encoding="utf-8") as f:
@@ -611,9 +610,15 @@ def render_texts(out_path, pages, counts, pdf_path):
         if os.environ.get("PRASER_DOCX_LAYOUT", "").lower() in ("1", "true", "yes", "on"):
             _write_docx_layout(out_path, pages, pdf_path)
         else:
+            marked = [(page['marked'] if isinstance(page.get('marked'), str) else page_markup(page, text))
+                      if isinstance(page, dict) else markup.text_to_markup(text)
+                      for page, text in zip(pages, texts)]
             write_docx_markup(out_path, iter(marked), len(marked))
 
     elif ext == ".pdf":
+        marked = [(page['marked'] if isinstance(page.get('marked'), str) else page_markup(page, text))
+                  if isinstance(page, dict) else markup.text_to_markup(text)
+                  for page, text in zip(pages, texts)]
         _write_pdf(out_path, iter(marked), {}, pdf_path, len(marked))
 
     else:
@@ -626,7 +631,7 @@ def render_and_scan(out_path, pages, counts, filename):
     """Render first, scan its text with Engine POS, then atomically publish.
 
     A failed render or POS scan leaves any existing destination untouched.
-    The scratch output has the same suffix and filesystem as the destination.
+    Scratch work stays in the system temp directory until publish.
     """
     from pathlib import Path
     from myangustis_parser.normalize import pos_scan
@@ -634,16 +639,28 @@ def render_and_scan(out_path, pages, counts, filename):
     target = Path(out_path)
     if not target.suffix:
         target = target.with_name(target.name + '.txt')
-    fd, scratch = tempfile.mkstemp(prefix='.' + target.stem + '-', suffix=target.suffix,
-                                    dir=target.parent)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fd, scratch = tempfile.mkstemp(prefix='myangustis-' + target.stem + '-', suffix=target.suffix)
     os.close(fd)
+    staged = None
     try:
         render_texts(scratch, pages, counts, filename)
         report = pos_scan.scan_pages_sync(pages)
-        os.replace(scratch, target)
+        try:
+            os.replace(scratch, target)
+        except OSError as exc:
+            if exc.errno != errno.EXDEV:
+                raise
+            stage_fd, staged = tempfile.mkstemp(
+                prefix='.' + target.stem + '-', suffix=target.suffix, dir=target.parent)
+            os.close(stage_fd)
+            shutil.copyfile(scratch, staged)
+            os.replace(staged, target)
     finally:
         if os.path.exists(scratch):
             os.unlink(scratch)
+        if staged and os.path.exists(staged):
+            os.unlink(staged)
     return str(target), report
 
 

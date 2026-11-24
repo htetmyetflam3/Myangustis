@@ -1431,6 +1431,14 @@ def detect_legacy_layout_fonts(objects, get_stream_fn, parse_tounicode_fn):
     return found
 
 
+_OBSERVABLE_MYANMAR_CHARS = frozenset(
+    chr(cp)
+    for start, end in ((0x1000, 0x109F), (0xA9E0, 0xA9FF), (0xAA60, 0xAA7F))
+    for cp in range(start, end + 1)
+    if unicodedata.category(chr(cp))[0] in ("L", "M")
+)
+
+
 class FontDecoder:
     """Decodes shown strings for ONE ``/Font`` resource."""
 
@@ -1440,7 +1448,7 @@ class FontDecoder:
                  "family_probe_pages_asked", "family_probe_pages_failed",
                  "family_probe_zeroed_for_few_marks",
                  "font_legacy_code_page", "confirmed_raw_runs", "encoding_has_differences", "selected_legacy", "unicode_cid_legacy", "conflicting_space_map", "padded_simple_to_unicode", "visual_unicode_glyphs", "_space_gids",
-                 "_bridge_page_cache", "program_sha256")
+                 "_bridge_page_cache", "program_sha256", "_unresolved_legacy")
 
     def __init__(self, name, subtype="", base_font="", is_cid=False, cmap=None,
                  to_unicode=None, encoding=None, has_encoding=False,
@@ -1470,6 +1478,7 @@ class FontDecoder:
         # then: this is the face's identity, and a code-space answer is kept for the
         # program it was taken on. See :func:`font_program_sha256` and :attr:`pairable`.
         self.program_sha256 = program_sha256
+        self._unresolved_legacy = is_unresolved_legacy_font(base_font)
         groups = getattr(to_unicode, 'by_width', None)
         self.padded_simple_to_unicode = bool(not is_cid and groups and set(groups) == {2}
                                              and all(c <= 0xff for c in groups[2]))
@@ -1754,16 +1763,13 @@ class FontDecoder:
     def _observe_lane(self, text, lane):
         # Ignore Latin, punctuation and unresolved slots; they are not a
         # Myanmar Unicode/legacy parsing decision. Called only on actual hits.
-        if self.doc.lane_observer and text and any(
-                ("\u1000" <= ch <= "\u109f" or "\ua9e0" <= ch <= "\ua9ff"
-                 or "\uaa60" <= ch <= "\uaa7f")
-                and unicodedata.category(ch)[0] in ("L", "M") for ch in text):
+        if self.doc.lane_observer and text and any(ch in _OBSERVABLE_MYANMAR_CHARS for ch in text):
             self.doc.lane_observer(lane)
         return text
 
     def decode_code(self, code, cid=None, width=None, use_confirmed=True):
         """Decode ONE character code to text (``None`` when unmapped)."""
-        if is_unresolved_legacy_font(self.base_font):
+        if self._unresolved_legacy:
             return None
         if use_confirmed and self.confirmed_raw_runs:
             if code in self.confirmed_raw_runs['unresolved']:
@@ -1810,7 +1816,7 @@ class FontDecoder:
         """Decode a shown string (``bytes``) with this font's rules."""
         if not data:
             return ""
-        if is_unresolved_legacy_font(self.base_font):
+        if self._unresolved_legacy:
             if self.is_cid:
                 def placeholders():
                     for code, _, _ in self.cmap.iter_codes(data):
@@ -1880,18 +1886,29 @@ def font_program_sha256(loader, descriptor, entry=None, truetype_only=False):
     """
     cache = getattr(loader, '_program_cache', None)
     key = (entry, truetype_only) if isinstance(entry, Ref) else None
-    if key is not None and key in cache:
+    if cache is not None and key is not None and key in cache:
         return cache[key]
     found = None
     descriptor = loader.resolve(descriptor)
     if isinstance(descriptor, dict):
         keys = ('FontFile2',) if truetype_only else ('FontFile2', 'FontFile3', 'FontFile')
         for file_key in keys:
-            blob = loader.stream_of(descriptor.get(file_key))
+            file_ref = descriptor.get(file_key)
+            ref_key = ('stream', file_ref) if isinstance(file_ref, Ref) else None
+            if cache is not None and ref_key is not None and ref_key in cache:
+                found = cache[ref_key]
+                if found is not None:
+                    break
+                continue
+            blob = loader.stream_of(file_ref)
             if blob:
                 found = hashlib.sha256(blob).hexdigest()
+                if cache is not None and ref_key is not None:
+                    cache[ref_key] = found
                 break
-    if key is not None:
+            if cache is not None and ref_key is not None:
+                cache[ref_key] = None
+    if cache is not None and key is not None:
         cache[key] = found
     return found
 

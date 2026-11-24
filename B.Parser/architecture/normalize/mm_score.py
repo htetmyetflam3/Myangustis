@@ -91,22 +91,27 @@ UNICODE_MARK_ORDER = {
 
 ASAT = "\u103a"
 
+_ZS_CHARS = frozenset((
+    "\u0020", "\u00a0", "\u1680",
+    "\u2000", "\u2001", "\u2002", "\u2003", "\u2004", "\u2005",
+    "\u2006", "\u2007", "\u2008", "\u2009", "\u200a",
+    "\u202f", "\u205f", "\u3000",
+))
+_SPACE_OR_NL = _ZS_CHARS | frozenset(("\n",))
+_INDEX_BASES = frozenset(chr(c) for c in (*range(0x1000, 0x1022), 0x1025, 0x1027))
+_UNICODE_BASES = frozenset(
+    chr(c) for c in (*range(0x1000, 0x1022), *range(0x1023, 0x1028), 0x1029, 0x102a, 0x103f, 0x104e)
+)
+
 
 def is_unicode_base(ch):
     """Consonant/independent-vowel bases of the Unicode syllable table."""
-    if not ch:
-        return False
-    cp = ord(ch)
-    return ((0x1000 <= cp <= 0x1021) or (0x1023 <= cp <= 0x1027)
-            or cp in (0x1029, 0x102A, 0x103F, 0x104E))
+    return len(ch) == 1 and ch in _UNICODE_BASES if ch else False
 
 
 def is_index(ch):
     """True for a base character that can carry marks."""
-    if not ch:
-        return False
-    cp = ord(ch)
-    return (0x1000 <= cp <= 0x1021) or cp == 0x1025 or cp == 0x1027
+    return len(ch) == 1 and ch in _INDEX_BASES if ch else False
 
 
 def is_mark(ch):
@@ -116,7 +121,7 @@ def is_mark(ch):
 
 def is_myanmar(ch):
     """True for any code point in the Myanmar block."""
-    return bool(ch) and 0x1000 <= ord(ch) <= 0x109F
+    return bool(ch) and "\u1000" <= ch <= "\u109f"
 
 
 def myanmar_ratio(text):
@@ -124,8 +129,8 @@ def myanmar_ratio(text):
     if not text:
         return 0.0
     # JS String.length counts UTF-16 code units, not Unicode code points.
-    length = len(text.encode("utf-16-le", "surrogatepass")) // 2
-    return sum(1 for ch in text if is_myanmar(ch)) / length
+    length = len(text) if max(text) <= "\uffff" else len(text) + sum(1 for ch in text if ch > "\uffff")
+    return sum(1 for ch in text if "\u1000" <= ch <= "\u109f") / length
 
 
 def _walk(text):
@@ -239,19 +244,73 @@ def score_text(text):
 
     Compare results only between candidate decodings of the same bytes.
     """
-    marks = sum(1 for ch in text if is_mark(ch))
+    if not text:
+        return {"score": 0.0, "orphan": 0.0, "disorder": 0.0, "duplicate": 0.0,
+                "marks": 0, "myanmar_ratio": 0.0}
+
+    marks_set = MARKS
+    bases_set = _INDEX_BASES
+    mark_order = MARK_ORDER
+
+    marks = 0
+    orphan_bad = 0
+    attached_total = 0
+    dup_bad = 0
+    pairs = 0
+    order_bad = 0
+    mm_count = 0
+    astral = 0
+
+    attached = False
+    seen = None
+    prev_order = -1
+
+    for ch in text:
+        if "\u1000" <= ch <= "\u109f":
+            mm_count += 1
+            if ch in bases_set:
+                attached = True
+                seen = set()
+                prev_order = -1
+                continue
+            if ch in marks_set:
+                marks += 1
+                if not attached:
+                    orphan_bad += 1
+                else:
+                    attached_total += 1
+                    if ch in seen:
+                        dup_bad += 1
+                    else:
+                        seen.add(ch)
+                    cur_order = mark_order[ch]
+                    if prev_order >= 0:
+                        pairs += 1
+                        if prev_order > cur_order:
+                            order_bad += 1
+                    prev_order = cur_order
+                continue
+        elif ch > "\uffff":
+            astral += 1
+        attached = False
+        seen = None
+        prev_order = -1
+
+    utf16_len = len(text) + astral
+    mm_ratio = mm_count / utf16_len
     if not marks:
         return {"score": 0.0, "orphan": 0.0, "disorder": 0.0, "duplicate": 0.0,
-                "marks": 0, "myanmar_ratio": myanmar_ratio(text)}
-    orphan = orphan_mark_rate(text)
-    disorder = order_violation_rate(text)
+                "marks": 0, "myanmar_ratio": mm_ratio}
+    orphan = orphan_bad / marks
+    disorder = (order_bad / pairs) if pairs else 0.0
+    duplicate = (dup_bad / attached_total) if attached_total else 0.0
     return {
         "score": 1.0 - max(orphan, disorder),
         "orphan": orphan,
         "disorder": disorder,
-        "duplicate": duplicate_mark_rate(text),
+        "duplicate": duplicate,
         "marks": marks,
-        "myanmar_ratio": myanmar_ratio(text),
+        "myanmar_ratio": mm_ratio,
     }
 
 
@@ -279,16 +338,19 @@ def _walk_mark_runs(text):
     previous = -1
     run_start = True
     stranded = 0
-    import unicodedata
+    space_or_nl = _SPACE_OR_NL
+    unicode_bases = _UNICODE_BASES
+    mark_order = UNICODE_MARK_ORDER
+    asat = ASAT
     for ch in str(text if text is not None else ""):
-        if ch == " " or ch == "\n" or unicodedata.category(ch) == "Zs":
+        if ch in space_or_nl:
             attached = False
             preceding_marks = False
             stranded_run = False
             previous = -1
             run_start = True
             continue
-        if is_unicode_base(ch):
+        if ch in unicode_bases:
             if not attached and preceding_marks:
                 return False, stranded
             attached = True
@@ -297,7 +359,7 @@ def _walk_mark_runs(text):
             previous = -1
             run_start = False
             continue
-        if ch == ASAT or ch in UNICODE_MARK_ORDER:
+        if ch == asat or ch in mark_order:
             if not attached:
                 if run_start or stranded_run:
                     # The run began with this mark: the space took its base.
@@ -307,11 +369,11 @@ def _walk_mark_runs(text):
                     continue
                 preceding_marks = True
                 continue
-            if ch == ASAT:
+            if ch == asat:
                 if previous < 0:
                     previous = 0
                 continue
-            priority = UNICODE_MARK_ORDER[ch]
+            priority = mark_order[ch]
             if priority < previous:
                 return False, stranded
             previous = priority

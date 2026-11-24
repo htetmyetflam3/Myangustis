@@ -16,7 +16,27 @@ def _maps():
     return mm, ascii
 
 
+@lru_cache(maxsize=1)
+def _char_sets():
+    data = tables()
+    new = data['NewMap']
+    clause = data['newClause']
+    return {
+        'new_base': frozenset(new['Base']),
+        'new_tail': frozenset(new['Tail']),
+        'new_asat0': new['Asat'][0],
+        'new_num': frozenset(new['Num']),
+        'mm_base': frozenset(data['MMap']['Base']),
+        'stick': frozenset(clause['stick']),
+        'standalone': frozenset(clause['standalone']),
+    }
+
+
 def _iterate(text):
+    if '{' not in text:
+        for ch in text:
+            yield False, ch
+        return
     pos = 0
     while pos < len(text):
         if text[pos] == '{':
@@ -31,25 +51,49 @@ def _iterate(text):
 
 def mapperStr(text):
     mm, ascii = _maps()
-    out = ''.join(char if bypass else mm.get(char, char) for bypass, char in _iterate(text))
-    return compose(out, ascii, set(tables()['NewMap']['Base']))
+    sets = _char_sets()
+    if '{' not in text:
+        out = ''.join(mm.get(char, char) for char in text)
+    else:
+        out = ''.join(char if bypass else mm.get(char, char) for bypass, char in _iterate(text))
+    return compose(out, ascii, sets['new_base'])
+
+
+@lru_cache(maxsize=8192)
+def _to_burmese_cached(text):
+    _, ascii = _maps()
+    sets = _char_sets()
+    decomposed = decompose(text, sets['mm_base'])
+    if '{' not in decomposed:
+        out = ''.join(ascii.get(char, char) for char in decomposed)
+        return from_utf16_units(out.replace('}', '') if '}' in out else out)
+    out = ''.join(char if bypass else ascii.get(char, char) for bypass, char in _iterate(decomposed))
+    return from_utf16_units(out.replace('{', '').replace('}', ''))
 
 
 def toBurmeseStr(text):
+    return _to_burmese_cached(text) if len(text) <= 64 else _to_burmese_uncached(text)
+
+
+def _to_burmese_uncached(text):
     _, ascii = _maps()
-    decomposed = decompose(text, set(tables()['MMap']['Base']))
+    sets = _char_sets()
+    decomposed = decompose(text, sets['mm_base'])
+    if '{' not in decomposed:
+        out = ''.join(ascii.get(char, char) for char in decomposed)
+        return from_utf16_units(out.replace('}', '') if '}' in out else out)
     out = ''.join(char if bypass else ascii.get(char, char) for bypass, char in _iterate(decomposed))
     return from_utf16_units(out.replace('{', '').replace('}', ''))
 
 
 def isTail(ch):
-    new = tables()['NewMap']
-    if ch in 'abcdefghijklmnopqrstuvwxyz' and len(ch) == 1: return 'baseasat'
-    if ch == new['Asat'][0]: return 'asat'
-    return 'Mark' if ch in new['Tail'] else False
+    if len(ch) == 1 and 'a' <= ch <= 'z': return 'baseasat'
+    sets = _char_sets()
+    if ch == sets['new_asat0']: return 'asat'
+    return 'Mark' if ch in sets['new_tail'] else False
 
 
-def isBase(ch): return ch in tables()['NewMap']['Base']
-def isNum(ch): return ch in tables()['NewMap']['Num']
-def isStick(ch): return ch in tables()['newClause']['stick']
-def isStandalone(ch): return ch in tables()['newClause']['standalone']
+def isBase(ch): return ch in _char_sets()['new_base']
+def isNum(ch): return ch in _char_sets()['new_num']
+def isStick(ch): return ch in _char_sets()['stick']
+def isStandalone(ch): return ch in _char_sets()['standalone']

@@ -4,14 +4,40 @@ from myangustis_engine.MonoSyllabism.main.grapheme.tree_loaded import load_tree,
 from myangustis_engine.MonoSyllabism.main.grapheme.traverser import walk_pos
 from myangustis_engine.MonoSyllabism.main.phoneme.classify_number import classify_number
 
-def _classify(token, tables):
+_TREE_ID_RE = re.compile(r'^[A-Z¶£¥¦§¨©ª«¬®¯°±²³π][0-9]{3}$')
+_NON_WORD_RAW_POS = frozenset(('?', 'pan', 'eos', 'en', 'count', 'phone', 'addr', 'year', 'exactdate'))
+_CACHED_TAGGER_STATE = (None, None, None)
+
+
+def _classify(token, digits, punctuation):
     if token in (' ', '\t', '\r', '\n'): return None
-    digits = set(tables.get('ALL_DIGITS', []))
     if token and any(ch in digits for ch in token) and all(ch in digits or ch in ' -/.,' for ch in token):
         return classify_number(token)['rawPos']
-    if token == '။' or token in tables.get('PUNCTUATION', []): return ['pan']
+    if token == '။' or token in punctuation: return ['pan']
     if token.startswith('{') and token.endswith('}'): return ['en']
     return ['F']
+
+
+def _tagger_tree_and_sets(tables, ids):
+    global _CACHED_TAGGER_STATE
+    raw_tree = load_tree('pos.tree.json')
+    cached_src, cached_tables, cached_bundle = _CACHED_TAGGER_STATE
+    if cached_src is raw_tree and cached_tables is tables:
+        return cached_bundle
+    tree = dict(raw_tree)
+    for form in tables.get('newClause', {}).get('standalone', []):
+        ident = ids.get(form)
+        if not ident: continue
+        override = {'ဪ': 'in', 'ဦး': 'r'}.get(form)
+        if override:
+            tree[ident] = {**tree.get(ident, {}), 'x': [override]}
+        elif ident not in tree:
+            tree[ident] = {'x': ['r']}
+    digits = frozenset(tables.get('ALL_DIGITS', []))
+    punctuation = frozenset(tables.get('PUNCTUATION', []))
+    bundle = (tree, digits, punctuation)
+    _CACHED_TAGGER_STATE = (raw_tree, tables, bundle)
+    return bundle
 
 
 def run_tagger(units, runtime, logger=None):
@@ -22,16 +48,8 @@ def run_tagger(units, runtime, logger=None):
     token_count = word_count = 0
     tables = runtime.tables()
     ids = mappings()['burmese']
-    tree = dict(load_tree('pos.tree.json'))
-    for form in tables.get('newClause', {}).get('standalone', []):
-        ident = ids.get(form)
-        if not ident: continue
-        override = {'ဪ': 'in', 'ဦး': 'r'}.get(form)
-        if override:
-            tree[ident] = {**tree.get(ident, {}), 'x': [override]}
-        elif ident not in tree:
-            tree[ident] = {'x': ['r']}
-    tree_id = re.compile(r'^[A-Z¶£¥¦§¨©ª«¬®¯°±²³π][0-9]{3}$')
+    tree, digits, punctuation = _tagger_tree_and_sets(tables, ids)
+    fullmatch_id = _TREE_ID_RE.fullmatch
     for line in units:
         syllables = fmt.split_syllables(line)
         id_tokens = [ids.get(s, s) for s in syllables]
@@ -41,8 +59,8 @@ def run_tagger(units, runtime, logger=None):
             if syl == '။':
                 tokens.append({'syllables': [syl + fmt.EOS_MARK], 'ids': [ident], 'rawPos': ['eos']})
                 pos += 1
-            elif not tree_id.fullmatch(ident):
-                tags = _classify(syl, tables)
+            elif not fullmatch_id(ident):
+                tags = _classify(syl, digits, punctuation)
                 if tags is not None:
                     tokens.append({'syllables': [syl], 'ids': [ident], 'rawPos': tags})
                 pos += 1
@@ -52,7 +70,7 @@ def run_tagger(units, runtime, logger=None):
                 tokens.append({'syllables': syllables[pos:end], 'ids': [''.join(id_tokens[pos:end])], 'rawPos': result['rawPos']})
                 pos = end
         token_count += len(tokens)
-        word_count += sum(1 for t in tokens if t['rawPos'][0] not in ('?', 'pan', 'eos', 'en', 'count', 'phone', 'addr', 'year', 'exactdate'))
+        word_count += sum(1 for t in tokens if t['rawPos'][0] not in _NON_WORD_RAW_POS)
         yield {'tokens': tokens, 'isEos': bool(syllables and syllables[-1] == '။')}
     if logger:
         tracker = logger.tracker('TAGGER')

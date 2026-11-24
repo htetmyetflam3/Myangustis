@@ -7,6 +7,7 @@ It never uses a separate dictionary and never performs vector repair.
 from __future__ import annotations
 
 import asyncio
+from functools import lru_cache
 import re
 import unicodedata
 from myangustis_engine.api import collect
@@ -37,15 +38,25 @@ def parse_tagged_line(raw):
     return tokens
 
 
+@lru_cache(maxsize=4096)
+def _is_non_ascii_latin(char):
+    return unicodedata.category(char).startswith('L') and 'LATIN' in unicodedata.name(char, '')
+
+
 def _pos_source(source):
-    is_myanmar = any(0x1000 <= ord(c) <= 0x109f or 0xaa60 <= ord(c) <= 0xaa7f
-                     or 0xa9e0 <= ord(c) <= 0xa9ff for c in source)
+    is_myanmar = any('\u1000' <= c <= '\u109f' or '\uaa60' <= c <= '\uaa7f'
+                     or '\ua9e0' <= c <= '\ua9ff' for c in source)
     if not is_myanmar and not _NUMERIC.fullmatch(source):
         return ''
     # JS replaces runs of Script=Latin by a space, preserving original source.
     out, was_latin = [], False
     for char in source:
-        latin = 'LATIN' in unicodedata.name(char, '') and unicodedata.category(char).startswith('L')
+        if char < '\x80':
+            latin = 'A' <= char <= 'Z' or 'a' <= char <= 'z'
+        elif '\u1000' <= char <= '\u109f':
+            latin = False
+        else:
+            latin = _is_non_ascii_latin(char)
         if latin:
             if not was_latin:
                 out.append(' ')

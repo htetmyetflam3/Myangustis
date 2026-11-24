@@ -11,14 +11,20 @@ def js_trim(value):
 
 
 def utf16_units(value):
+    if not value or max(value) <= '\uffff':
+        return value
     data = value.encode('utf-16-le', 'surrogatepass')
     return ''.join(chr(int.from_bytes(data[i:i + 2], 'little')) for i in range(0, len(data), 2))
 
 
 def from_utf16_units(value):
+    if not value or max(value) < '\ud800' or not any('\ud800' <= c <= '\udfff' for c in value):
+        return value
     return value.encode('utf-16-le', 'surrogatepass').decode('utf-16-le', 'surrogatepass')
 
 
 def js_utf8_length(value):
+    if not value or max(value) < '\ud800' or not any('\ud800' <= c <= '\udfff' for c in value):
+        return len(value.encode('utf-8'))
     # Node's Buffer.byteLength replaces unpaired surrogate code units with U+FFFD.
     return len(value.encode('utf-16-le', 'surrogatepass').decode('utf-16-le', 'replace').encode('utf-8'))

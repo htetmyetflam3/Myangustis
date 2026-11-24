@@ -77,12 +77,14 @@ class AtomicOutputTests(unittest.TestCase):
             target.write_text('old')
             def check(pages):
                 self.assertEqual(target.read_text(), 'old')
+                self.assertEqual([p.name for p in Path(directory).iterdir()], ['out.txt'])
                 return {'unknownCount': 0}
             with patch.object(pos_scan, 'scan_pages_sync', side_effect=check):
                 name, report = pipeline.render_and_scan(target, [{'text': 'က'}], {}, 'source.pdf')
             self.assertEqual(name, str(target))
             self.assertEqual(report['unknownCount'], 0)
             self.assertIn('က', target.read_text())
+            self.assertEqual([p.name for p in Path(directory).iterdir()], ['out.txt'])
 
 
 class PosScanTests(unittest.IsolatedAsyncioTestCase):

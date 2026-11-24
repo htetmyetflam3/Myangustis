@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import errno
 import importlib.util
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -266,14 +268,28 @@ def _safe_document(source: Path, output: Path, *, use_ocr: bool,
                    source_encoding: str = "auto"):
     """Publish completed output without overwriting or leaving a partial result."""
     output.parent.mkdir(parents=True, exist_ok=True)
-    fd, name = tempfile.mkstemp(prefix='.' + output.stem + '.', suffix=output.suffix, dir=output.parent)
+    if output.exists():
+        raise FileExistsError(errno.EEXIST, os.strerror(errno.EEXIST), str(output))
+    fd, name = tempfile.mkstemp(prefix='myangustis-' + output.stem + '.', suffix=output.suffix)
     os.close(fd)
     temporary = Path(name)
     try:
         result = run_document(source, temporary, use_ocr=use_ocr,
                               source_encoding=source_encoding, log=print)
-        # A hard-link publishes atomically and fails if another process created it.
-        os.link(temporary, output)
+        if output.exists():
+            raise FileExistsError(errno.EEXIST, os.strerror(errno.EEXIST), str(output))
+        try:
+            os.replace(temporary, output)
+        except OSError as exc:
+            if exc.errno != errno.EXDEV:
+                raise
+            out_fd = os.open(output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
+            try:
+                with os.fdopen(out_fd, 'wb') as dst, temporary.open('rb') as src:
+                    shutil.copyfileobj(src, dst)
+            except BaseException:
+                output.unlink(missing_ok=True)
+                raise
         result['file'] = str(output)
         return result
     finally:
@@ -304,6 +320,7 @@ def _run_directory_batch(
     while True:
         failed = False
         matched = 0
+        skipped = 0
         for item in sorted(source.rglob('*')):
             if not item.is_file():
                 continue
@@ -322,6 +339,7 @@ def _run_directory_batch(
             matched += 1
             out = _new_output(item, raw_output, rel, requested_format=requested_format)
             if out.exists() or item.resolve() == out.resolve():
+                skipped += 1
                 continue
             try:
                 _safe_document(item, out, use_ocr=use_ocr,
@@ -333,6 +351,14 @@ def _run_directory_batch(
         if not continuous:
             if matched == 0:
                 print(f'[i] No supported input files found in {source}', flush=True)
+            elif skipped == matched:
+                print(
+                    f'[i] Skipped all {skipped} file(s) in {source}: '
+                    'outputs already exist (delete existing output files or pass a new output folder to re-parse).',
+                    flush=True,
+                )
+            elif skipped:
+                print(f'[i] Skipped {skipped} existing output(s).', flush=True)
             return 1 if failed else 0
         time.sleep(60)
 
