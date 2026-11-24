@@ -505,7 +505,7 @@ BASE_ENCODINGS = {
     "MacExpertEncoding": STANDARD_ENCODING,
 }
 
-_UNI_NAME_RE = re.compile(r"^uni([0-9A-Fa-f]{4,6})$")
+_UNI_NAME_RE = re.compile(r"^uni([0-9A-Fa-f]{4,6}|(?:[0-9A-Fa-f]{4}){2,})$")
 _U_NAME_RE = re.compile(r"^u([0-9A-Fa-f]{4,6})$")
 
 
@@ -523,10 +523,13 @@ def glyph_name_to_unicode(name):
         return hit
     m = _UNI_NAME_RE.match(name)
     if m:
+        hex_part = m.group(1)
+        if len(hex_part) in (5, 6):
+            cp = int(hex_part, 16)
+            return chr(cp) if 0 <= cp <= 0x10FFFF and not 0xD800 <= cp <= 0xDFFF else None
         try:
-            return "".join(chr(int(m.group(1)[i:i + 4], 16))
-                           for i in range(0, len(m.group(1)), 4))
-        except ValueError:
+            return bytes.fromhex(hex_part).decode("utf-16-be")
+        except (ValueError, UnicodeDecodeError):
             return None
     m = _U_NAME_RE.match(name)
     if m:
@@ -1144,7 +1147,9 @@ def map_code(code_to_uni, cid):
                 if unicodedata.category(ch)[0] not in 'CC':
                     return ch       # exact-Unicode font, identity decode
         return None
-    return chr(v) if isinstance(v, int) else v
+    if isinstance(v, int):
+        return chr(v) if 0 <= v <= 0x10FFFF and not (0xD800 <= v <= 0xDFFF) else None
+    return v
 
 
 def usable_tounicode(mapping):
@@ -1745,7 +1750,9 @@ class FontDecoder:
         if self.doc.key_kind == "gid" and self.own_gids:
             hit = self.own_gids.get(key)
             if hit is not None:
-                return chr(hit) if isinstance(hit, int) else hit
+                if isinstance(hit, int):
+                    return chr(hit) if 0 <= hit <= 0x10FFFF and not (0xD800 <= hit <= 0xDFFF) else None
+                return hit
             own = self.to_unicode.get(cid) if cid is not None and self.to_unicode else None
             if own:
                 if self._space_gids is None:

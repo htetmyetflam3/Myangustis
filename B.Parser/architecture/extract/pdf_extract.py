@@ -520,6 +520,8 @@ def parse_ttf_cmap(data):
                 if start == 0xffff:
                     continue
                 for code in range(start, end + 1):
+                    if 0xD800 <= code <= 0xDFFF:
+                        continue
                     if offset == 0:
                         gid = (code + delta) & 0xffff
                     else:
@@ -541,8 +543,9 @@ def parse_ttf_cmap(data):
                 if 12 + i * 2 > len(sub):
                     break
                 gid = struct.unpack_from('>H', sub, 10 + i * 2)[0]
-                if gid:
-                    mapping[first + i] = gid
+                code = first + i
+                if gid and not (0xD800 <= code <= 0xDFFF):
+                    mapping[code] = gid
         elif fmt == 12 and len(sub) >= 16:
             groups = struct.unpack_from('>I', sub, 12)[0]
             for i in range(groups):
@@ -555,7 +558,8 @@ def parse_ttf_cmap(data):
                 if end < start or end > 0x10ffff or end - start > 0x100000:
                     continue
                 for code in range(start, end + 1):
-                    mapping[code] = gid + code - start
+                    if not (0xD800 <= code <= 0xDFFF):
+                        mapping[code] = gid + code - start
         if mapping:
             return mapping
     return {}

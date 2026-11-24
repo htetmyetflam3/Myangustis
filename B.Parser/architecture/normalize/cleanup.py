@@ -322,6 +322,8 @@ def normalize_text(t: str) -> str:
     """
     if not t or not isinstance(t, str):
         return ""
+    if max(t) >= "\ud800" and any("\ud800" <= ch <= "\udfff" for ch in t):
+        t = t.encode("utf-16-le", "surrogatepass").decode("utf-16-le", "replace")
     glue = _glue()
     norm = t if unicodedata.is_normalized("NFC", t) else unicodedata.normalize("NFC", t)
     if not any(ch in glue for ch in norm):

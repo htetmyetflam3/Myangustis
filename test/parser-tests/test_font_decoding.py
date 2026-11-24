@@ -476,6 +476,8 @@ class SimpleFontEncodingTest(unittest.TestCase):
     def test_glyph_name_resolution(self):
         self.assertEqual(glyph_name_to_unicode("eacute"), "\u00E9")
         self.assertEqual(glyph_name_to_unicode("uni1000"), "\u1000")
+        self.assertEqual(glyph_name_to_unicode("uniD835DC00"), "\U0001D400")
+        self.assertIsNone(glyph_name_to_unicode("uniD835"))
         self.assertEqual(glyph_name_to_unicode("u1015"), "\u1015")
         self.assertEqual(glyph_name_to_unicode("a.sc"), "a")
         self.assertIsNone(glyph_name_to_unicode(".notdef"))
