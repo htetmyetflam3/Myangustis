@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import errno
 import importlib.util
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -266,14 +268,28 @@ def _safe_document(source: Path, output: Path, *, use_ocr: bool,
                    source_encoding: str = "auto"):
     """Publish completed output without overwriting or leaving a partial result."""
     output.parent.mkdir(parents=True, exist_ok=True)
-    fd, name = tempfile.mkstemp(prefix='.' + output.stem + '.', suffix=output.suffix, dir=output.parent)
+    if output.exists():
+        raise FileExistsError(errno.EEXIST, os.strerror(errno.EEXIST), str(output))
+    fd, name = tempfile.mkstemp(prefix='myangustis-' + output.stem + '.', suffix=output.suffix)
     os.close(fd)
     temporary = Path(name)
     try:
         result = run_document(source, temporary, use_ocr=use_ocr,
                               source_encoding=source_encoding, log=print)
-        # A hard-link publishes atomically and fails if another process created it.
-        os.link(temporary, output)
+        if output.exists():
+            raise FileExistsError(errno.EEXIST, os.strerror(errno.EEXIST), str(output))
+        try:
+            os.replace(temporary, output)
+        except OSError as exc:
+            if exc.errno != errno.EXDEV:
+                raise
+            out_fd = os.open(output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
+            try:
+                with os.fdopen(out_fd, 'wb') as dst, temporary.open('rb') as src:
+                    shutil.copyfileobj(src, dst)
+            except BaseException:
+                output.unlink(missing_ok=True)
+                raise
         result['file'] = str(output)
         return result
     finally:

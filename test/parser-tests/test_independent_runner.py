@@ -85,12 +85,36 @@ class RunnerTests(unittest.TestCase):
             source = root / 'source.pdf'; source.write_bytes(b'input')
             output = root / 'output' / 'out.txt'
             def fail(src, path, **kwargs):
+                self.assertEqual(path.parent, Path(tempfile.gettempdir()))
+                self.assertEqual(list(output.parent.iterdir()), [])
                 path.write_text('partial')
                 raise ValueError('failed')
             with patch.object(runner, 'run_document', side_effect=fail):
                 with self.assertRaises(ValueError): runner._safe_document(source, output, use_ocr=False)
             self.assertFalse(output.exists())
             self.assertEqual(list(output.parent.iterdir()), [])
+
+    def test_safe_document_stages_in_tmp_without_hardlinks_and_handles_exdev(self):
+        import errno
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / 'source.pdf'; source.write_bytes(b'input')
+            output = root / 'output' / 'out.txt'
+            seen_temp = []
+            def succeed(src, path, **kwargs):
+                seen_temp.append(path)
+                self.assertEqual(path.parent, Path(tempfile.gettempdir()))
+                self.assertEqual(list(output.parent.iterdir()), [])
+                path.write_text('published content', encoding='utf-8')
+                return {'file': str(path)}
+            with patch.object(runner, 'run_document', side_effect=succeed), \
+                 patch.object(runner.os, 'link', side_effect=AssertionError('os.link must not run')), \
+                 patch.object(runner.os, 'replace', side_effect=OSError(errno.EXDEV, 'cross-device')):
+                result = runner._safe_document(source, output, use_ocr=False)
+            self.assertEqual(result['file'], str(output))
+            self.assertEqual(output.read_text(encoding='utf-8'), 'published content')
+            self.assertEqual([p.name for p in output.parent.iterdir()], ['out.txt'])
+            self.assertFalse(seen_temp[0].exists())
 
     def test_no_overwrite_and_invalid_ssh_folder(self):
         with tempfile.TemporaryDirectory() as temp:
