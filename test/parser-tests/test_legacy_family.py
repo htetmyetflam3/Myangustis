@@ -452,6 +452,49 @@ class FaceIdentityTests(unittest.TestCase):
         self.assertFalse(lane_trial(self._loader(pdf), (3, 0), shared, legacy))
         self.assertEqual(legacy.lane_trial, {})
 
+    def test_stem_instruction_and_zawgyi_trial_run_on_font_change_not_every_page(self):
+        """Contiguous pages sharing a font set compute stem instruction and Zawgyi trial once."""
+        import tempfile
+        from unittest.mock import patch
+        from pdfbuild import build_pdf
+        from myangustis_parser.extract import legacy_lane_score
+        from myangustis_parser.workflow import pipeline
+
+        zg = 'ေျမန္မာႏိုင္ငံသားမ်ားအတြက္ ပညာေရးႏွင့္က်န္းမာေရး '
+        chars = sorted(set(zg))
+        bf = '\n'.join(f'<{i+33:02X}> <{ord(c):04X}>' for i, c in enumerate(chars)).encode()
+        cmap = b'begincmap\n' + str(len(chars)).encode() + b' beginbfchar\n' + bf + b'\nendbfchar\nendcmap'
+        codes = {c: i + 33 for i, c in enumerate(chars)}
+        shown = (bytes(codes[c] for c in zg) * 5).hex().encode()
+        content = b'BT /F 12 Tf 1 0 0 1 10 700 Tm <' + shown + b'> Tj ET'
+        objects = {
+            1: b'<< /Type /Catalog /Pages 2 0 R >>',
+            2: b'<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R 6 0 R 7 0 R] /Count 5 >>',
+            3: b'<< /Type /Page /Parent 2 0 R /Resources << /Font << /F 10 0 R >> >> /Contents 20 0 R >>',
+            4: b'<< /Type /Page /Parent 2 0 R /Resources << /Font << /F 10 0 R >> >> /Contents 20 0 R >>',
+            5: b'<< /Type /Page /Parent 2 0 R /Resources << /Font << /F 10 0 R >> >> /Contents 20 0 R >>',
+            6: b'<< /Type /Page /Parent 2 0 R /Resources << /Font << /F 14 0 R >> >> /Contents 20 0 R >>',
+            7: b'<< /Type /Page /Parent 2 0 R /Resources << /Font << /F 14 0 R >> >> /Contents 20 0 R >>',
+            10: b'<< /Type /Font /Subtype /TrueType /BaseFont /SubA+ZawgyiOne /FirstChar 32 /LastChar 255 /Encoding << /Type /Encoding /Differences [33 /g33] >> /FontDescriptor 11 0 R /ToUnicode 13 0 R >>',
+            11: b'<< /Type /FontDescriptor /FontFile2 12 0 R >>',
+            12: (b'<< >>', b'\x00\x01\x00\x00subset-a-bytes'),
+            13: (b'<< >>', cmap),
+            14: b'<< /Type /Font /Subtype /TrueType /BaseFont /SubB+ZawgyiOne /FirstChar 32 /LastChar 255 /Encoding << /Type /Encoding /Differences [33 /g33] >> /FontDescriptor 15 0 R /ToUnicode 13 0 R >>',
+            15: b'<< /Type /FontDescriptor /FontFile2 16 0 R >>',
+            16: (b'<< >>', b'\x00\x01\x00\x00subset-b-bytes'),
+            20: (b'<< >>', content),
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            pdf_path = Path(tmp) / 'batch.pdf'
+            pdf_path.write_bytes(build_pdf(objects))
+            with patch.object(pipeline, 'instruction_lane', wraps=pipeline.instruction_lane) as inst, \
+                 patch.object(legacy_lane_score, 'trial_lane', wraps=legacy_lane_score.trial_lane) as trial:
+                _, npages, pages = pipeline.stream_pdf_pages(pdf_path, text_layout='off')
+                extracted = list(pages)
+            self.assertEqual((npages, len(extracted)), (5, 5))
+            self.assertEqual(inst.call_count, 2, 'stem instruction must run once per distinct font set')
+            self.assertEqual(trial.call_count, 2, 'lane_trial must settle each Zawgyi font program once')
+
     # -- helpers for the page-level door --------------------------------------
     @staticmethod
     def _font_body(descriptor=False):

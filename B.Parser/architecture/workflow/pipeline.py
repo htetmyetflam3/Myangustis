@@ -202,42 +202,69 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
         }
 
     # Match the JS instruction/stem pass: collect dictionary facts for the
-    # whole page tree before reading any page content, then settle the known
-    # indirect font objects once. Inline fonts fall back to their own facts.
+    # whole page tree before reading any page content, group pages by font-set
+    # signature so stem instructions are decided on font changes (per batch)
+    # rather than re-evaluated on every page, and settle indirect font objects once.
     instruction_loader = FontResourceLoader(objects, get_stream, parse_ttf_cmap, parse_tounicode_stream)
-    page_instructions = []
+    font_facts_by_ref = {}
+    instruction_by_sig = {}
+    page_font_sigs = []
     for pnum, pgen in all_pages:
         fonts = []
+        sig_items = []
         for entry in instruction_loader.page_font_resources(pnum, pgen).values():
-            font = instruction_loader.resolve(entry)
-            if isinstance(font, dict):
-                fonts.append({'baseFont': str(instruction_loader.resolve(font.get('BaseFont')) or ''),
-                              'subtype': str(instruction_loader.resolve(font.get('Subtype')) or ''),
-                              'toUnicode': isinstance(font.get('ToUnicode'), Ref),
-                              'entry': entry})
-        page_instructions.append({'fonts': fonts})
+            if isinstance(entry, Ref):
+                fact = font_facts_by_ref.get(entry)
+                if fact is None:
+                    font = instruction_loader.resolve(entry)
+                    if isinstance(font, dict):
+                        fact = {
+                            'baseFont': str(instruction_loader.resolve(font.get('BaseFont')) or ''),
+                            'subtype': str(instruction_loader.resolve(font.get('Subtype')) or ''),
+                            'toUnicode': isinstance(font.get('ToUnicode'), Ref),
+                            'entry': entry,
+                        }
+                    else:
+                        fact = False
+                    font_facts_by_ref[entry] = fact
+                if fact:
+                    fonts.append(fact)
+                    sig_items.append(('ref', entry.num, entry.gen))
+            else:
+                font = instruction_loader.resolve(entry)
+                if isinstance(font, dict):
+                    fact = {
+                        'baseFont': str(instruction_loader.resolve(font.get('BaseFont')) or ''),
+                        'subtype': str(instruction_loader.resolve(font.get('Subtype')) or ''),
+                        'toUnicode': isinstance(font.get('ToUnicode'), Ref),
+                        'entry': entry,
+                    }
+                    fonts.append(fact)
+                    sig_items.append(('inline', fact['baseFont'], fact['subtype'], int(fact['toUnicode'])))
+        sig = tuple(sorted(sig_items))
+        if sig not in instruction_by_sig:
+            instruction_by_sig[sig] = {'fonts': fonts}
+        page_font_sigs.append(sig)
 
     stem_fonts = {}
-    for instruction in page_instructions:
-        for fact in instruction['fonts']:
-            entry = fact['entry']
-            if not isinstance(entry, Ref) or entry in stem_fonts:
-                continue
-            to_unicode = 'none'
-            try:
-                font = instruction_loader.resolve(entry)
-                mapping = instruction_loader.tounicode_of(font, preserve_spaces=True)
-                if mapping:
-                    to_unicode = 'myanmar' if any(
-                        any('\u1000' <= ch <= '\u109f' for ch in value)
-                        for value in mapping.values()) else 'latin'
-            except Exception:
-                # Like JS, an unreadable map supplies no stem verdict; the
-                # resource decoder still follows its own normal error path.
-                pass
-            family = legacy_font_family(fact['baseFont'])
-            stem_fonts[entry] = {'baseFont': fact['baseFont'], 'toUnicode': to_unicode,
-                                 'family': family, 'known': family is not None}
+    for entry, fact in font_facts_by_ref.items():
+        if not fact or entry in stem_fonts:
+            continue
+        to_unicode = 'none'
+        try:
+            font = instruction_loader.resolve(entry)
+            mapping = instruction_loader.tounicode_of(font, preserve_spaces=True)
+            if mapping:
+                to_unicode = 'myanmar' if any(
+                    any('\u1000' <= ch <= '\u109f' for ch in value)
+                    for value in mapping.values()) else 'latin'
+        except Exception:
+            # Like JS, an unreadable map supplies no stem verdict; the
+            # resource decoder still follows its own normal error path.
+            pass
+        family = legacy_font_family(fact['baseFont'])
+        stem_fonts[entry] = {'baseFont': fact['baseFont'], 'toUnicode': to_unicode,
+                             'family': family, 'known': family is not None}
 
     shared = DocumentDecoding('font')
     shared.visual_unicode_enabled = source_encoding != 'zawgyi-one'
@@ -246,8 +273,15 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
     for strategy in (shared, legacy):
         strategy.loader = instruction_loader
         strategy.stem_fonts = stem_fonts
+    choice_by_sig = {}
+    unknown_font_memo = {}
+
     def normal_page(idx):
-        choice = instruction_lane(page_instructions[idx], source_encoding)
+        sig = page_font_sigs[idx]
+        choice = choice_by_sig.get(sig)
+        if choice is None:
+            choice = instruction_lane(instruction_by_sig[sig], source_encoding)
+            choice_by_sig[sig] = choice
         strategy = legacy if choice['parser'] == 'legacy' else shared
         page_key = all_pages[idx]
         if strategy is shared:
@@ -266,9 +300,13 @@ def stream_pdf_pages(pdf_path, detector=None, log=lambda m: None, *, text_layout
         if strategy is legacy:
             shared_fonts = page_font_decoders(instruction_loader, *page_key, shared)
             for name, font in shared_fonts.items():
-                clusters = sum(len(value) > 1 and contains_myanmar(value)
-                               for value in (font.to_unicode or {}).values()) if not font.conflicting_space_map else 0
-                if not font.is_cid and not legacy_layout_for_font(font.base_font)['known'] and clusters < 4:
+                is_unknown = unknown_font_memo.get(id(font))
+                if is_unknown is None:
+                    clusters = sum(len(value) > 1 and contains_myanmar(value)
+                                   for value in (font.to_unicode or {}).values()) if not font.conflicting_space_map else 0
+                    is_unknown = bool(not font.is_cid and not legacy_layout_for_font(font.base_font)['known'] and clusters < 4)
+                    unknown_font_memo[id(font)] = is_unknown
+                if is_unknown:
                     unknown_fonts.append(font.base_font or name)
         try:
             item = _page(idx, strategy)
