@@ -23,6 +23,12 @@ def from_utf16_units(value):
     return value.encode('utf-16-le', 'surrogatepass').decode('utf-16-le', 'surrogatepass')
 
 
+def to_valid_utf8_str(value):
+    if not value or max(value) < '\ud800' or not any('\ud800' <= c <= '\udfff' for c in value):
+        return value
+    return value.encode('utf-16-le', 'surrogatepass').decode('utf-16-le', 'replace')
+
+
 def js_utf8_length(value):
     if not value or max(value) < '\ud800' or not any('\ud800' <= c <= '\udfff' for c in value):
         return len(value.encode('utf-8'))

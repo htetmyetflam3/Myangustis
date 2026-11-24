@@ -1,4 +1,4 @@
-from myangustis_engine.MonoSyllabism.main.phoneme.lexer import _utf16_units, _from_utf16_units
+from myangustis_engine.MonoSyllabism.main.phoneme.lexer import _utf16_units, _from_utf16_units, _node_utf8_length
 
 def read_chunk_size(size):
     mb = size / (1024 * 1024)
@@ -9,7 +9,7 @@ def read_chunk_size(size):
 
 
 def collect_from_text(text, chunk_size=None):
-    size = chunk_size if chunk_size is not None else read_chunk_size(len(text.encode('utf-8')))
+    size = chunk_size if chunk_size is not None else read_chunk_size(_node_utf8_length(text))
     if size <= 0:
         raise ValueError('chunk_size must be positive')
     # JS slices text in UTF-16 code units, including across surrogate pairs.

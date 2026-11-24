@@ -289,6 +289,43 @@ class RemoteQueueTests(unittest.TestCase):
             self.assertEqual(row['segmented'], 'segments')
             self.assertTrue(generated.exists())
 
+    def test_ssh_queue_with_unmocked_segment_text_handles_math_surrogates(self):
+        from pdfbuild import simple_page_pdf
+        cfg = {'user': 'u', 'host': 'h', 'port': 22, 'directory': 'pdfs', 'folder': 'convertable', 'key': ''}
+        cmap = (b'begincmap\n2 beginbfchar\n'
+                b'<01> <1000>\n'
+                b'<02> <D835DC00>\n'
+                b'endbfchar\nendcmap')
+        pdf_bytes = simple_page_pdf(
+            {'F1': 10, 'F2': 12},
+            b'BT /F1 12 Tf 1 0 0 1 20 700 Tm <0102> Tj /F2 12 Tf (A) Tj ET',
+            fonts={
+                10: b'<< /Type /Font /Subtype /TrueType /BaseFont /Other /ToUnicode 11 0 R >>',
+                11: (b'<< >>', cmap),
+                12: b'<< /Type /Font /Subtype /TrueType /BaseFont /Broken /Encoding << /Type /Encoding /Differences [65 /uniD835] >> >>',
+            },
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            runtime = Path(temp)
+            def download(config, source, target):
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(pdf_bytes)
+                return remote_queue.digest_file(target)
+            def convert(src, out, mode):
+                return runner.run_document(src, out, use_ocr=False, log=lambda *a: None)
+            with patch.object(remote_queue, 'discover', return_value=['convertable/1689564403074.pdf']), \
+                 patch.object(remote_queue, 'download', side_effect=download), \
+                 redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                output = remote_queue.run_once('parse', convert, cfg, runtime)
+            row = pq.read_table(output).to_pylist()[0]
+            self.assertIn('က', row['text'])
+            self.assertIn('𝐀', row['text'])
+            self.assertIn('𝐀', row['segmented'])
+            self.assertTrue(row['text'].encode('utf-8'))
+            self.assertTrue(row['segmented'].encode('utf-8'))
+            combined = (runtime / 'output/txt/parsed-books.txt').read_text(encoding='utf-8')
+            self.assertIn('1689564403074', combined)
+
     def test_untracked_existing_parquet_is_never_overwritten(self):
         with tempfile.TemporaryDirectory() as temp:
             runtime = Path(temp)

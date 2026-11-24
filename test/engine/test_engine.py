@@ -228,5 +228,25 @@ class RuntimeNormalizationTests(unittest.TestCase):
             path.write_text(text, encoding='utf-8')
             self.assertEqual(''.join(read_and_prepare(path, loader)), normalize.mapperNormalize(text))
 
+    def test_astral_and_lone_surrogates_produce_valid_utf8(self):
+        from myangustis_engine.api import pos_views, segment_text
+        # U+1D400 (𝐀, high surrogate \ud835) and U+1F600 (😀) must stay intact,
+        # not split into unpaired UTF-16 halves separated by delimiter spaces.
+        text = 'က 𝐀 {Math 𝐱} 😀 ခ။'
+        seg = segment_text(text)
+        self.assertIn('𝐀', seg)
+        self.assertIn('😀', seg)
+        self.assertIn('Math', seg)
+        self.assertIn('𝐱', seg)
+        self.assertTrue(seg.encode('utf-8'))
+        views = pos_views(text)
+        self.assertIn('𝐀', views['syllable'])
+        self.assertTrue(views['syllable'].encode('utf-8'))
+        self.assertTrue(views['raw_pos'].encode('utf-8'))
+        # Even an unpaired lone surrogate in caller text must never emit invalid UTF-8.
+        malformed_seg = segment_text('က \ud835 ခ')
+        self.assertTrue(malformed_seg.encode('utf-8'))
+        self.assertTrue(pos_views('က \ud835 ခ')['raw_pos'].encode('utf-8'))
+
 
 if __name__ == '__main__': unittest.main()

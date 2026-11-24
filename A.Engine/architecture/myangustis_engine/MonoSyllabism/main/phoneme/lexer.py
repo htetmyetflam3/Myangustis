@@ -4,7 +4,7 @@ from myangustis_engine.MonoSyllabism.main.grapheme.traverser import walk
 
 from myangustis_engine.MonoSyllabism.utilities.js_string import (
     utf16_units as _utf16_units, from_utf16_units as _from_utf16_units,
-    js_utf8_length as _node_utf8_length,
+    to_valid_utf8_str as _to_valid_utf8_str, js_utf8_length as _node_utf8_length,
 )
 
 
@@ -31,16 +31,35 @@ def run_segmentor(blocks, runtime, logger=None):
                 pos += 1
             elif char == '{':
                 end = block.find('}', pos)
-                end = end + 1 if end != -1 else pos + 1
-                yield fmt.to_syllable_token(block[pos:end], runtime)
-                pos = end
+                if end != -1:
+                    yield fmt.to_syllable_token(_to_valid_utf8_str(block[pos:end + 1]), runtime)
+                    pos = end + 1
+                else:
+                    yield fmt.to_syllable_token(char, runtime)
+                    pos += 1
             elif (runtime.isTail(char) and not runtime.isLowercaseAZ(char)) or (not runtime.isBase(char) and not runtime.isLowercaseAZ(char)):
-                yield fmt.to_syllable_token(char, runtime)
-                pos += 1
+                if '\ud800' <= char <= '\udbff' and pos + 1 < len(block) and '\udc00' <= block[pos + 1] <= '\udfff':
+                    yield fmt.to_syllable_token(_to_valid_utf8_str(block[pos:pos + 2]), runtime)
+                    pos += 2
+                elif '\ud800' <= char <= '\udfff':
+                    yield fmt.to_syllable_token('\ufffd', runtime)
+                    pos += 1
+                else:
+                    yield fmt.to_syllable_token(char, runtime)
+                    pos += 1
             else:
                 end = walk(block, pos, _utf16=True)['lastValidPos']
-                end = end if end > pos else pos + 1
-                yield fmt.to_syllable_token(block[pos:end], runtime)
-                pos = end
+                if end > pos:
+                    yield fmt.to_syllable_token(_to_valid_utf8_str(block[pos:end]), runtime)
+                    pos = end
+                elif '\ud800' <= char <= '\udbff' and pos + 1 < len(block) and '\udc00' <= block[pos + 1] <= '\udfff':
+                    yield fmt.to_syllable_token(_to_valid_utf8_str(block[pos:pos + 2]), runtime)
+                    pos += 2
+                elif '\ud800' <= char <= '\udfff':
+                    yield fmt.to_syllable_token('\ufffd', runtime)
+                    pos += 1
+                else:
+                    yield fmt.to_syllable_token(char, runtime)
+                    pos += 1
     if logger:
         print(f'[SEGMENTOR] Done. Total lines: {line_count}')
