@@ -320,6 +320,7 @@ def _run_directory_batch(
     while True:
         failed = False
         matched = 0
+        skipped = 0
         for item in sorted(source.rglob('*')):
             if not item.is_file():
                 continue
@@ -338,6 +339,7 @@ def _run_directory_batch(
             matched += 1
             out = _new_output(item, raw_output, rel, requested_format=requested_format)
             if out.exists() or item.resolve() == out.resolve():
+                skipped += 1
                 continue
             try:
                 _safe_document(item, out, use_ocr=use_ocr,
@@ -349,6 +351,14 @@ def _run_directory_batch(
         if not continuous:
             if matched == 0:
                 print(f'[i] No supported input files found in {source}', flush=True)
+            elif skipped == matched:
+                print(
+                    f'[i] Skipped all {skipped} file(s) in {source}: '
+                    'outputs already exist (delete existing output files or pass a new output folder to re-parse).',
+                    flush=True,
+                )
+            elif skipped:
+                print(f'[i] Skipped {skipped} existing output(s).', flush=True)
             return 1 if failed else 0
         time.sleep(60)
 
