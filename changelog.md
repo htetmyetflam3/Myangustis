@@ -38,3 +38,16 @@
 ### Test record
 - Parser-chain guard: 5 passed. Full parser discovery: 301 tests, 7 failing subcases and 4 skips; the DOCX font-evidence and PDF page-routing failures match the previous record above.
 - Engine: 45 tests, 1 skipped. Translation: 240 passed. Scraper: 12 passed. Shared: 15 tests, 1 skipped. Tools: 22 passed, including 8 archive tests. The archive's SSH integration used a local fake SSH transport, not the actual hosting server.
+- Follow-up: PDFs are grouped into bounded Parquet shards instead of one file per PDF. Eleven archive tests passed, including signal interruption, recovery and byte-for-byte round trips using a local fake SSH transport.
+- Follow-up: the archive consolidates the original one-PDF Parquet files without downloading them again, verifies each row before removing its old shard, uses a recoverable append journal, and caps each Parquet file at 25 GB. Sixteen archive tests passed, including migration of 210 shards and interrupted/disk-full recovery; real SSH remains untested.
+
+## [1.0.2] - 2026-11-25
+
+### Changed
+- Consolidate the original single-PDF Parquet shards into files of at most 25 GB without re-downloading already archived PDFs; verify each copy before deleting its old shard and journal appends for recovery.
+- Add a read-only remote PDF count and stop when there is not enough space to safely append.
+
+### Test record
+- Parser-chain guard: 5 passed. Parser discovery: 301 tests, with 7 failing DOCX font-evidence and PDF page-routing subcases and 4 skips, matching the previous record.
+- Engine: 45 tests, 1 skipped. Translation: 240 passed. Scraper: 12 passed. Shared: 15 tests, 1 skipped. Tools: 30 passed, including 16 archive tests.
+- Archive tests include 210-shard migration, recovery, disk-full handling, and a fake SSH transport. The actual hosting server was not tested.
