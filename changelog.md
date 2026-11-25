@@ -29,3 +29,12 @@
 - Previous full-suite record: 661 cases, 612 passed, 48 skipped, and one error because `Junk/fonts/zawgyi one/ZAWGYI-ONE_V3.1.TTF` was absent.
 - Current repository Python suites after merging `python`: 620 cases, 607 passed, 6 skipped, and 7 failing parser subcases. These are the existing DOCX font-evidence and PDF page-routing failures recorded above.
 - The required parser-chain guard passed all 5 tests.
+
+## [1.0.1] - 2026-11-25
+
+### Added
+- A resumable SSH PDF archive tool that stores original PDF bytes and relative filenames in a Parquet dataset without deleting remote files.
+
+### Test record
+- Parser-chain guard: 5 passed. Full parser discovery: 301 tests, 7 failing subcases and 4 skips; the DOCX font-evidence and PDF page-routing failures match the previous record above.
+- Engine: 45 tests, 1 skipped. Translation: 240 passed. Scraper: 12 passed. Shared: 15 tests, 1 skipped. Tools: 22 passed, including 8 archive tests. The archive's SSH integration used a local fake SSH transport, not the actual hosting server.
