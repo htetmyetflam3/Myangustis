@@ -51,3 +51,14 @@
 - Parser-chain guard: 5 passed. Parser discovery: 301 tests, with 7 failing DOCX font-evidence and PDF page-routing subcases and 4 skips, matching the previous record.
 - Engine: 45 tests, 1 skipped. Translation: 240 passed. Scraper: 12 passed. Shared: 15 tests, 1 skipped. Tools: 30 passed, including 16 archive tests.
 - Archive tests include 210-shard migration, recovery, disk-full handling, and a fake SSH transport. The actual hosting server was not tested.
+
+## [1.0.3] - 2026-11-25
+
+### Changed
+- Simplify the SSH PDF archive to start a fresh dataset with PDF bytes and filenames as Parquet rows, rolling over at 25 GB. Preserve interrupted progress and skip PDFs already saved in this new archive.
+- Remove old-archive consolidation and the count option; no Hugging Face upload is performed. The new default output is separate from the earlier archive.
+
+### Test record
+- Parser-chain guard: 5 passed. Parser discovery: 301 tests, 7 previously recorded failing DOCX font-evidence and PDF page-routing subcases, 4 skipped.
+- Engine: 45 tests, 1 skipped. Translation: 240 passed. Scraper: 12 passed. Shared: 15 tests, 1 skipped. Tools: 28 passed, including 14 archive tests.
+- Archive tests cover Ctrl+C, journal recovery, disk-full handling, byte-for-byte Parquet contents and fake SSH. The actual shared-host SSH connection was not tested.

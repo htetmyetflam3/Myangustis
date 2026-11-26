@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["pyarrow>=17", "fastparquet>=2024.5"]
+# dependencies = ["pyarrow>=17", "fastparquet>=2024.5", "python-dotenv>=1"]
 # ///
 """Copy PDFs under SSH_DIR into a resumable, read-only Parquet dataset.
 
 Run: uv run tools-box/python/pdf_archive.py
-The root .env uses the same SSH settings as B.Parser/run/parse.py. The dataset
-is Junk/tools-box/pdf-archive/dataset; each row has filename (relative to
-SSH_DIR) and pdf (the original bytes). Multiple PDFs are written into each
-Parquet shard of at most 25 GB. Ctrl+C preserves progress; rerun to resume.
-The first version's single-PDF Parquet files are verified and consolidated
-without downloading those PDFs again. Remote files stay untouched.
+Uses SSH_HOST, SSH_USER, SSH_PORT, SSH_KEY and SSH_DIR from the root .env.
+Each row contains the relative filename and the original PDF bytes. Parquet
+files are at most 25 GB each. Ctrl+C and rerun to resume. Remote files stay
+untouched; this script does not upload or process older archives.
 """
 from __future__ import annotations
 
@@ -19,11 +17,11 @@ import argparse
 import errno
 import fcntl
 import hashlib
-import importlib.util
 import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import shlex
 import signal
 import shutil
 import sqlite3
@@ -33,25 +31,87 @@ import sys
 import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_ARCHIVE = ROOT / 'Junk' / 'tools-box' / 'pdf-archive'
+DEFAULT_ARCHIVE = ROOT / 'Junk' / 'tools-box' / 'pdf-archive-fresh'
 
-# Load the same path and SSH helpers as the parser without requiring it to be
-# installed as a package. Its paths module also loads the workspace .env.
-if 'myangustis_parser' not in sys.modules:
-    init = ROOT / 'B.Parser' / 'architecture' / '__init__.py'
-    spec = importlib.util.spec_from_file_location(
-        'myangustis_parser', init, submodule_search_locations=[str(init.parent)])
-    package = importlib.util.module_from_spec(spec)
-    sys.modules['myangustis_parser'] = package
-    spec.loader.exec_module(package)
-from myangustis_parser.workflow import remote_queue as ssh_queue
+def load_config():
+    """Read the workspace SSH settings, keeping process environment first."""
+    from dotenv import dotenv_values
+
+    for path in (ROOT / '.env', ROOT / 'A.Engine/architecture/myangustis_engine/.data/.env'):
+        if path.is_file():
+            for name, value in dotenv_values(path, interpolate=False).items():
+                if value is not None and not os.environ.get(name):
+                    os.environ[name] = value
+    host = os.environ.get('SSH_HOST', '').strip()
+    user = os.environ.get('SSH_USER', '').strip()
+    if not host or not user or host.startswith('-') or not re.fullmatch(r'[A-Za-z0-9_.-]+', user):
+        raise ValueError('Set valid SSH_HOST and SSH_USER in the root .env.')
+    port = int(os.environ.get('SSH_PORT') or '22')
+    if not 1 <= port <= 65535:
+        raise ValueError('SSH_PORT must be between 1 and 65535.')
+    key = os.environ.get('SSH_KEY', '').strip()
+    if key:
+        key = str(local_path(key))
+    return {'host': host, 'user': user, 'port': port, 'key': key,
+            'directory': os.environ.get('SSH_DIR') or 'pdfs'}
+
+
+def local_path(value):
+    """Resolve SSH_KEY with the workspace's local .env path conventions."""
+    def anchor(text, base):
+        for prefix in ('abs:', 'file:', 'path:'):
+            if text.lower().startswith(prefix):
+                return Path(text[len(prefix):].strip()).expanduser()
+        if text.startswith('~'):
+            return Path(text).expanduser()
+        candidate = Path(text)
+        if candidate.is_absolute():
+            current = candidate
+            while not current.exists() and current != current.parent:
+                current = current.parent
+            if current != Path(current.anchor) or candidate.is_relative_to(base):
+                return candidate
+            return base / text.lstrip('/')
+        return base / candidate
+
+    override = (os.environ.get('PRASER_PATH_ROOT') or os.environ.get('MYANGUSTIS_PATH_ROOT') or '').strip()
+    base = anchor(override, ROOT) if override else ROOT
+    return anchor(value, base)
+
+
+def shell_path(value):
+    if value == '~':
+        return '"$HOME"'
+    if value.startswith('~/'):
+        return '"$HOME"/' + shlex.quote(value[2:])
+    return shlex.quote(value)
+
+
+def ssh_args(config, command):
+    args = ['ssh', '-p', str(config['port']), '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=20',
+            '-o', 'ServerAliveInterval=30', '-o', 'ServerAliveCountMax=6']
+    if config['key']:
+        args += ['-i', config['key'], '-o', 'IdentitiesOnly=yes']
+    return args + [config['user'] + '@' + config['host'], command]
+
+
+def ssh(config, command):
+    return subprocess.run(ssh_args(config, command), stdout=subprocess.PIPE, check=True).stdout
+
+
+def digest_file(path):
+    digest = hashlib.sha256()
+    with path.open('rb') as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b''):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 def discover(config):
-    command = ('cd -- ' + ssh_queue.shell_path(config['directory']) +
+    command = ('cd -- ' + shell_path(config['directory']) +
                " && find . -type f -iname '*.pdf' -print0")
     sources = []
-    for raw in ssh_queue.ssh(config, command).split(b'\0'):
+    for raw in ssh(config, command).split(b'\0'):
         if not raw:
             continue
         source = PurePosixPath(os.fsdecode(raw))
@@ -93,7 +153,7 @@ def configure_archive(root, config):
 
 def remote_digest(config, source):
     path = str(PurePosixPath(config['directory']) / source)
-    output = ssh_queue.ssh(config, 'sha256sum < ' + ssh_queue.shell_path(path))
+    output = ssh(config, 'sha256sum < ' + shell_path(path))
     fields = output.decode('ascii', errors='strict').split()
     digest = fields[0].lower() if fields else ''
     if not re.fullmatch(r'[0-9a-f]{64}', digest):
@@ -107,7 +167,7 @@ def get_download(config, source, ready):
     for candidate in (ready, part):
         if candidate.is_file():
             before = remote_digest(config, source)
-            actual = ssh_queue.digest_file(candidate)
+            actual = digest_file(candidate)
             after = remote_digest(config, source)
             if actual == before == after:
                 if candidate == part:
@@ -116,12 +176,20 @@ def get_download(config, source, ready):
                 return actual
     before = remote_digest(config, source)
     path = str(PurePosixPath(config['directory']) / source)
+    size_text = ssh(config, 'wc -c < ' + shell_path(path)).decode('ascii').strip()
+    if not size_text.isdigit():
+        raise ValueError('Invalid remote PDF size')
+    size = int(size_text)
+    # Allow room for one temporary download and its Parquet row at the same
+    # time. Refuse before starting rather than filling the disk mid-transfer.
+    if shutil.disk_usage(ready.parent).free < 2 * size + 1024 * 1024:
+        raise OSError(errno.ENOSPC, 'Not enough free disk space for the next PDF')
     with part.open('wb') as stream:
-        subprocess.run(ssh_queue.ssh_args(config, 'cat -- ' + ssh_queue.shell_path(path)),
+        subprocess.run(ssh_args(config, 'cat -- ' + shell_path(path)),
                        stdout=stream, check=True)
         stream.flush()
         os.fsync(stream.fileno())
-    actual = ssh_queue.digest_file(part)
+    actual = digest_file(part)
     after = remote_digest(config, source)
     if actual != before or actual != after:
         raise RuntimeError('Remote file changed or checksum mismatch; retry the run')
@@ -137,18 +205,12 @@ def file_id(source):
 # 25 GB in decimal bytes. The limit is for the finished Parquet file, not
 # the number of PDFs or the total size of the dataset.
 MAX_SHARD_BYTES = 25_000_000_000
-LEGACY_NAME = re.compile(r'^[0-9a-f]{64}\.parquet$')
 
 
 def open_ledger(root, dataset):
     ledger = root / 'state' / 'archive-v2.sqlite3'
-    if (root / 'state' / 'archive.sqlite3').exists():
-        raise RuntimeError('A different archive ledger is present; no files were modified. '
-                           'Use the version that created it.')
-    if not ledger.exists():
-        unknown = [p.name for p in dataset.glob('*.parquet') if not LEGACY_NAME.fullmatch(p.name)]
-        if unknown:
-            raise RuntimeError(f'Untracked Parquet files: {unknown}; no files were modified')
+    if not ledger.exists() and any(dataset.glob('*.parquet')):
+        raise RuntimeError('This directory contains an untracked archive; choose a new --output directory.')
     db = sqlite3.connect(ledger)
     db.execute('PRAGMA journal_mode=WAL')
     db.execute('PRAGMA synchronous=FULL')
@@ -230,7 +292,7 @@ def validate_shards(db, dataset):
     shards = db.execute('SELECT id, size, rows FROM shards').fetchall()
     expected = {shard_path(dataset, shard).name for shard, _, _ in shards}
     for path in dataset.glob('*.parquet'):
-        if path.name not in expected and not LEGACY_NAME.fullmatch(path.name):
+        if path.name not in expected:
             raise RuntimeError(f'Untracked Parquet file: {path}')
     for shard, size, rows in shards:
         path = shard_path(dataset, shard)
@@ -308,45 +370,6 @@ def append_record(db, dataset, source, contents, digest, max_bytes):
             raise
 
 
-def legacy_record(path):
-    import pyarrow.parquet as pq
-    if path.is_symlink():
-        raise RuntimeError(f'Refusing a symlink in the archive: {path}')
-    parquet = pq.ParquetFile(path)
-    metadata = parquet.metadata.metadata or {}
-    if parquet.metadata.num_rows != 1 or parquet.schema_arrow.names != ['filename', 'pdf']:
-        raise RuntimeError(f'Invalid original Parquet file: {path}')
-    record = parquet.read().to_pylist()[0]
-    source, pdf = record['filename'], record['pdf']
-    if not isinstance(source, str) or not isinstance(pdf, bytes):
-        raise RuntimeError(f'Invalid original Parquet row: {path}')
-    if (path.name != file_id(source) + '.parquet' or
-            metadata.get(b'source') != source.encode('utf-8')):
-        raise RuntimeError(f'Original Parquet filename or source mismatch: {path}')
-    digest = hashlib.sha256(pdf).hexdigest()
-    if metadata.get(b'sha256') != digest.encode('ascii'):
-        raise RuntimeError(f'Original Parquet checksum mismatch: {path}')
-    return source, pdf, digest
-
-
-def migrate_legacy(db, dataset, max_bytes):
-    """Move old one-row shards one by one, deleting only verified originals."""
-    originals = sorted(path for path in dataset.glob('*.parquet') if LEGACY_NAME.fullmatch(path.name))
-    if originals:
-        print(f'Consolidating {len(originals)} existing single-PDF Parquet files.', flush=True)
-    for path in originals:
-        source, pdf, digest = legacy_record(path)
-        row = db.execute('SELECT digest FROM files WHERE source=?', (source,)).fetchone()
-        if row is None:
-            append_record(db, dataset, source, pdf, digest, max_bytes)
-        elif row[0] != digest:
-            raise RuntimeError(f'Existing archive conflicts with original: {path}')
-        verify_record(db, dataset, source)
-        path.unlink()
-        sync_dir(dataset)
-        print(f'Consolidated: {source}', flush=True)
-
-
 def run(config, root=DEFAULT_ARCHIVE, max_bytes=MAX_SHARD_BYTES):
     if max_bytes <= 0:
         raise ValueError('Maximum Parquet size must be positive')
@@ -366,7 +389,6 @@ def run(config, root=DEFAULT_ARCHIVE, max_bytes=MAX_SHARD_BYTES):
         try:
             rollback(db, dataset)
             validate_shards(db, dataset)
-            migrate_legacy(db, dataset, max_bytes)
             sources = discover(config)
             print(f'Found {len(sources)} PDFs under {config["directory"]}.', flush=True)
             failures = 0
@@ -407,7 +429,6 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--output', type=Path, default=DEFAULT_ARCHIVE,
                         help='absolute archive directory (default: %(default)s)')
-    parser.add_argument('--count', action='store_true', help='only count PDFs on the SSH host; do not modify the archive')
     args = parser.parse_args(argv)
     if not args.output.is_absolute():
         parser.error('--output must be an absolute path')
@@ -417,11 +438,7 @@ def main(argv=None):
 
     signal.signal(signal.SIGTERM, interrupt)
     try:
-        config = ssh_queue.remote_config('parse')
-        if args.count:
-            print(f'PDFs under {config["directory"]}: {len(discover(config))}')
-            return 0
-        return run(config, args.output)
+        return run(load_config(), args.output)
     except KeyboardInterrupt:
         print('\nInterrupted. Run the script again to resume.', file=sys.stderr)
         return 130
