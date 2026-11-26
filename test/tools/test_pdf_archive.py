@@ -14,7 +14,6 @@ import unittest
 from unittest.mock import patch
 
 import fastparquet
-import pyarrow as pa
 import pyarrow.parquet as pq
 
 SCRIPT = Path(__file__).resolve().parents[2] / 'tools-box/python/pdf_archive.py'
@@ -52,18 +51,6 @@ class ArchiveTests(unittest.TestCase):
     def shards(self):
         return list((self.root / 'dataset').glob('batch-*.parquet'))
 
-    def legacy(self, source):
-        dataset = self.root / 'dataset'
-        dataset.mkdir(exist_ok=True)
-        data = self.files[source]
-        digest = hashlib.sha256(data).hexdigest()
-        schema = pa.schema([('filename', pa.string()), ('pdf', pa.binary())],
-                           metadata={b'source': source.encode(), b'sha256': digest.encode()})
-        path = dataset / (archive.file_id(source) + '.parquet')
-        table = pa.Table.from_arrays([pa.array([source]), pa.array([data])], schema=schema)
-        pq.write_table(table, path, compression='zstd')
-        return path
-
     def test_multiple_rows_per_file_and_no_redownload(self):
         self.assertEqual(self.run_archive(), 0)
         self.assertEqual(len(self.shards()), 1)
@@ -72,65 +59,6 @@ class ArchiveTests(unittest.TestCase):
         self.assertEqual(self.run_archive(), 0)
         self.assertEqual(self.calls, list(self.files))
         self.assertFalse(list((self.root / 'state').glob('*.pdf')))
-
-    def test_original_one_pdf_shards_migrate_without_download(self):
-        archive.configure_archive(self.root, CONFIG)
-        originals = [self.legacy(name) for name in list(self.files)[:2]]
-        self.assertEqual(self.run_archive(), 0)
-        self.assertTrue(all(not path.exists() for path in originals))
-        self.assertEqual(self.calls, ['three/စာ.pdf'])
-        self.assertEqual(self.rows(), self.files)
-        self.assertEqual(len(self.shards()), 1)
-        self.assertEqual(self.run_archive(), 0)
-        self.assertEqual(self.calls, ['three/စာ.pdf'])
-
-    def test_migrate_over_200_original_parquets_without_network_download(self):
-        self.files = {f'old/{index:04d}.pdf': f'%PDF-{index}'.encode() for index in range(210)}
-        archive.configure_archive(self.root, CONFIG)
-        for source in self.files:
-            self.legacy(source)
-        self.assertEqual(self.run_archive(), 0)
-        self.assertEqual(self.calls, [])
-        self.assertEqual(len(self.shards()), 1)
-        self.assertEqual(len(list((self.root / 'dataset').glob('*.parquet'))), 1)
-        self.assertEqual(self.rows(), self.files)
-
-    def test_interruption_during_legacy_append_preserves_original(self):
-        archive.configure_archive(self.root, CONFIG)
-        old = self.legacy('one/a.pdf')
-        real_write = fastparquet.write
-        def interrupted(*args, **kwargs):
-            real_write(*args, **kwargs)
-            raise KeyboardInterrupt
-        with patch.object(fastparquet, 'write', side_effect=interrupted):
-            with self.assertRaises(KeyboardInterrupt):
-                self.run_archive()
-        self.assertTrue(old.exists())
-        self.assertEqual(self.run_archive(), 0)
-        self.assertFalse(old.exists())
-        self.assertNotIn('one/a.pdf', self.calls)
-        self.assertEqual(self.rows(), self.files)
-
-    def test_interruption_after_commit_before_legacy_cleanup(self):
-        archive.configure_archive(self.root, CONFIG)
-        old = self.legacy('one/a.pdf')
-        with patch.object(archive, 'verify_record', side_effect=KeyboardInterrupt):
-            with self.assertRaises(KeyboardInterrupt):
-                self.run_archive()
-        self.assertTrue(old.exists())
-        self.assertEqual(self.run_archive(), 0)
-        self.assertFalse(old.exists())
-        self.assertNotIn('one/a.pdf', self.calls)
-        self.assertEqual(self.rows(), self.files)
-
-    def test_corrupt_legacy_never_deleted_or_downloaded(self):
-        archive.configure_archive(self.root, CONFIG)
-        old = self.legacy('one/a.pdf')
-        old.write_bytes(b'corrupt')
-        with self.assertRaises((ValueError, OSError)):
-            self.run_archive()
-        self.assertEqual(old.read_bytes(), b'corrupt')
-        self.assertEqual(self.calls, [])
 
     def test_shard_limit_is_actual_file_size_not_pdf_count(self):
         for key in self.files:
@@ -201,6 +129,17 @@ class ArchiveTests(unittest.TestCase):
             self.run_archive()
         self.assertEqual(self.calls, list(self.files))
 
+    def test_insufficient_space_stops_before_transfer(self):
+        ready = self.root / 'large.pdf'
+        with patch.object(archive, 'remote_digest', return_value='a' * 64), \
+             patch.object(archive, 'ssh', return_value=b'10000\n'), \
+             patch.object(archive.shutil, 'disk_usage', return_value=type('Usage', (), {'free': 1024})()), \
+             patch.object(archive.subprocess, 'run', side_effect=AssertionError('transfer started')):
+            with self.assertRaises(OSError) as error:
+                archive.get_download(CONFIG, 'large.pdf', ready)
+        self.assertEqual(error.exception.errno, errno.ENOSPC)
+        self.assertFalse(ready.exists())
+
     def test_disk_full_mid_append_restores_existing_footer(self):
         self.files = {'a.pdf': b'first', 'b.pdf': b'second'}
         original_write = fastparquet.write
@@ -219,16 +158,17 @@ class ArchiveTests(unittest.TestCase):
         self.assertEqual(self.rows(), self.files)
         self.assertEqual(self.calls, ['a.pdf', 'b.pdf'])
 
-    def test_no_space_stops_and_preserves_original(self):
-        archive.configure_archive(self.root, CONFIG)
-        old = self.legacy('one/a.pdf')
-        with patch.object(archive.shutil, 'disk_usage', return_value=type('Usage', (), {'free': 0})()):
-            with self.assertRaises(OSError):
-                self.run_archive()
-        self.assertTrue(old.exists())
+    def test_untracked_parquet_not_modified(self):
+        dataset = self.root / 'dataset'
+        dataset.mkdir()
+        old = dataset / 'old.parquet'
+        old.write_bytes(b'old data')
+        with self.assertRaisesRegex(RuntimeError, 'without source.json'):
+            self.run_archive()
+        self.assertEqual(old.read_bytes(), b'old data')
         self.assertEqual(self.calls, [])
 
-    def test_cli_fake_ssh_and_count(self):
+    def test_cli_fake_ssh(self):
         remote, output, bin_dir = self.root / 'remote', self.root / 'archive', self.root / 'bin'
         (remote / 'nested').mkdir(parents=True)
         bin_dir.mkdir()
@@ -243,10 +183,6 @@ class ArchiveTests(unittest.TestCase):
                    SSH_HOST='host', SSH_USER='user', SSH_PORT='22', SSH_KEY='',
                    SSH_DIR=str(remote), SSH_LOG=str(log))
         command = [sys.executable, str(SCRIPT), '--output', str(output)]
-        count = subprocess.run(command + ['--count'], env=env, capture_output=True, text=True)
-        self.assertEqual(count.returncode, 0, count.stderr)
-        self.assertIn(': 2', count.stdout)
-        self.assertFalse(output.exists())
         for _ in range(2):
             result = subprocess.run(command, env=env, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
@@ -256,8 +192,56 @@ class ArchiveTests(unittest.TestCase):
         self.assertEqual(sum(line.startswith('cat -- ') for line in log.read_text().splitlines()), 2)
         self.assertTrue(all((remote / name).exists() for name in remote_files))
 
+    def test_workspace_env_and_key_path(self):
+        (self.root / '.env').write_text('SSH_HOST=from-env\nSSH_USER=reader\nSSH_PORT=2222\n'
+                                        'SSH_KEY=/secret/id_ed25519\nSSH_DIR="pdfs with spaces"\n')
+        with patch.object(archive, 'ROOT', self.root), patch.dict(os.environ, {'SSH_HOST': 'override'}, clear=True):
+            config = archive.load_config()
+        self.assertEqual(config['host'], 'override')
+        self.assertEqual(config['user'], 'reader')
+        self.assertEqual(config['port'], 2222)
+        self.assertEqual(config['key'], str(self.root / 'secret/id_ed25519'))
+        self.assertEqual(config['directory'], 'pdfs with spaces')
+
+    def test_ctrl_c_then_resume_does_not_repeat_completed_download(self):
+        remote, output, bin_dir = self.root / 'remote', self.root / 'archive', self.root / 'bin'
+        remote.mkdir(); bin_dir.mkdir()
+        (remote / 'a.pdf').write_bytes(b'%PDF first')
+        (remote / 'b.pdf').write_bytes(b'%PDF second')
+        log, marker = self.root / 'ssh.log', self.root / 'paused'
+        fake = bin_dir / 'ssh'
+        fake.write_text("#!/bin/sh\nfor arg do command=$arg; done\nprintf '%s\\n' \"$command\" >> \"$SSH_LOG\"\n"
+                        "case \"$command\" in *'b.pdf'*) case \"$command\" in cat*) "
+                        "if [ ! -e \"$PAUSE_MARKER\" ]; then touch \"$PAUSE_MARKER\"; sleep 2; fi;; esac;; esac\n"
+                        "eval \"$command\"\n")
+        fake.chmod(0o755)
+        env = dict(os.environ, PATH=str(bin_dir) + os.pathsep + os.environ['PATH'],
+                   SSH_HOST='host', SSH_USER='user', SSH_PORT='22', SSH_KEY='',
+                   SSH_DIR=str(remote), SSH_LOG=str(log), PAUSE_MARKER=str(marker))
+        command = [sys.executable, str(SCRIPT), '--output', str(output)]
+        process = subprocess.Popen(command, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            deadline = time.monotonic() + 10
+            while not marker.exists() and process.poll() is None and time.monotonic() < deadline:
+                time.sleep(0.02)
+            self.assertTrue(marker.exists(), 'second download did not start')
+            process.send_signal(signal.SIGINT)
+            _, stderr = process.communicate(timeout=8)
+            self.assertEqual(process.returncode, 130, stderr)
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.communicate()
+        result = subprocess.run(command, env=env, capture_output=True, text=True, timeout=15)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        rows = pq.read_table(output / 'dataset').to_pylist()
+        self.assertEqual({r['filename']: r['pdf'] for r in rows},
+                         {'a.pdf': b'%PDF first', 'b.pdf': b'%PDF second'})
+        cats = [line for line in log.read_text().splitlines() if line.startswith('cat -- ')]
+        self.assertEqual(sum('a.pdf' in line for line in cats), 1)
+
     def test_remote_find_rejects_unsafe_paths(self):
-        with patch.object(archive.ssh_queue, 'ssh', return_value=b'../outside.pdf\0'):
+        with patch.object(archive, 'ssh', return_value=b'../outside.pdf\0'):
             with self.assertRaises(ValueError):
                 archive.discover(CONFIG)
 
